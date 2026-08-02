@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lesson Plan Generator - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#ffddb4",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "outline-variant": "#c3c6cf",
+                      "on-surface": "#1b1c1c",
+                      "surface-variant": "#e5e2e1",
+                      "outline": "#74777f",
+                      "primary": "#002447",
+                      "on-surface-variant": "#43474e",
+                      "surface-bright": "#fcf9f8",
+                      "background": "#fcf9f8",
+                      "on-secondary": "#ffffff",
+                      "on-background": "#1b1c1c",
+                      "inverse-primary": "#abc8f5",
+                      "tertiary-fixed": "#8df9ac",
+                      "primary-fixed-dim": "#abc8f5",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#feae2c",
+                      "on-secondary-container": "#6b4500",
+                      "inverse-on-surface": "#f3f0ef",
+                      "surface-tint": "#436087",
+                      "tertiary": "#002b12",
+                      "surface-dim": "#dcd9d9",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#00210d",
+                      "primary-container": "#1b3a5f",
+                      "on-primary-container": "#88a4cf",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-primary-fixed": "#001c39",
+                      "surface-container": "#f0eded",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#fcf9f8",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "surface-container-highest": "#e5e2e1",
+                      "on-tertiary-container": "#4bb771",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "primary-fixed": "#d4e3ff",
+                      "tertiary-container": "#004320",
+                      "on-error": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "inverse-surface": "#303030",
+                      "surface-container-high": "#eae7e7",
+                      "secondary-fixed-dim": "#ffb955",
+                      "error": "#ba1a1a",
+                      "surface-container-low": "#f6f3f2",
+                      "secondary": "#835500",
+                      "on-secondary-fixed": "#291800"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "xl": "32px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "xs": "4px",
+                      "margin-desktop": "48px",
+                      "margin-mobile": "16px",
+                      "sm": "12px",
+                      "base": "8px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "display-lg": [
+                              "Work Sans"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        /* Floating Label Styles */
+        .floating-input:focus-within label,
+        .floating-input input:not(:placeholder-shown) + label,
+        .floating-input select:not(:empty) + label {
+            transform: translateY(-120%) scale(0.85);
+            color: theme('colors.primary');
+        }
+        .floating-input input::placeholder {
+            color: transparent;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-16 pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b border-outline-variant dark:border-outline bg-surface dark:bg-surface-container-low text-primary dark:text-primary-fixed flex justify-between items-center h-16 px-4 flat no shadows transition-colors duration-150">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant active:scale-95 duration-150 md:hidden">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<!-- Brand Logo -->
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-primary-fixed tracking-tight">SchoolPilot</h1>
+</div>
+<!-- Desktop Navigation Cluster (Hidden on Mobile) -->
+<nav class="hidden md:flex gap-8 absolute left-1/2 -translate-x-1/2 h-full">
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:bg-surface-variant transition-colors text-label-sm font-label-sm" href="#">Home</a>
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:bg-surface-variant transition-colors text-label-sm font-label-sm" href="#">Classes</a>
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:bg-surface-variant transition-colors text-label-sm font-label-sm" href="#">Grades</a>
+<a class="h-full flex items-center px-2 text-primary font-bold border-b-2 border-primary transition-colors text-label-sm font-label-sm" href="#">AI Studio</a>
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:bg-surface-variant transition-colors text-label-sm font-label-sm" href="#">Messages</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant active:scale-95 duration-150 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-label-sm text-label-sm border border-outline-variant overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
+<img alt="User Profile Avatar" class="object-cover w-full h-full" data-alt="A professional headshot of a Nigerian school teacher in a well-lit classroom setting. Modern corporate style, high-contrast functionalism, calm control. Soft daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClvbMyIrhvTDuhekcUmcsBRvRNlhZxGLTKld2iYbcaa-ZytXB_IXMMH4I-JVcCQe2Eog3AP4HG9CKK2wT8dBVlnLvZyizd-Rfo_MQNwtATU_5Hj2UgMDO7pfcfNqQF44NNy-OPIK9IbI-61REnIr1xe1QDGioJj3_TkUDPeo67Nz7SxC5HooD--49wG7Zzj76lr4j2y2YtauZqPlQFJ02ilM1L2GTtRw2EzFPL8rZLIru2tW8wUZ9rVQ"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 max-w-4xl mx-auto w-full p-margin-mobile md:p-margin-desktop flex flex-col gap-lg">
+<!-- Header -->
+<div class="flex flex-col gap-xs mb-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Lesson Plan Generator</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Generate structured lesson plans aligned with the Nigerian curriculum standard.</p>
+</div>
+<!-- Input Form (Compact) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+<form class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Subject -->
+<div class="floating-input relative bg-surface-container-low rounded-DEFAULT border border-outline-variant focus-within:border-primary transition-colors h-14">
+<input class="w-full h-full bg-transparent border-none px-4 pt-4 pb-1 text-on-surface font-body-md text-body-md focus:ring-0 peer" id="subject" placeholder="e.g., Mathematics" type="text" value="Mathematics"/>
+<label class="absolute left-4 top-4 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none origin-left" for="subject">Subject</label>
+</div>
+<!-- Topic -->
+<div class="floating-input relative bg-surface-container-low rounded-DEFAULT border border-outline-variant focus-within:border-primary transition-colors h-14">
+<input class="w-full h-full bg-transparent border-none px-4 pt-4 pb-1 text-on-surface font-body-md text-body-md focus:ring-0 peer" id="topic" placeholder="e.g., Quadratic Equations" type="text" value="Quadratic Equations"/>
+<label class="absolute left-4 top-4 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none origin-left" for="topic">Topic</label>
+</div>
+<!-- Class Level -->
+<div class="floating-input relative bg-surface-container-low rounded-DEFAULT border border-outline-variant focus-within:border-primary transition-colors h-14">
+<select class="w-full h-full bg-transparent border-none px-4 pt-4 pb-1 text-on-surface font-body-md text-body-md focus:ring-0 appearance-none peer" id="classLevel">
+<option value="JSS1">JSS1</option>
+<option value="JSS2">JSS2</option>
+<option value="JSS3">JSS3</option>
+<option value="SS1">SS1</option>
+<option selected="" value="SS2">SS2</option>
+<option value="SS3">SS3</option>
+</select>
+<label class="absolute left-4 top-4 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none origin-left" for="classLevel">Class Level</label>
+<span class="material-symbols-outlined absolute right-4 top-4 text-on-surface-variant pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Duration -->
+<div class="floating-input relative bg-surface-container-low rounded-DEFAULT border border-outline-variant focus-within:border-primary transition-colors h-14">
+<input class="w-full h-full bg-transparent border-none px-4 pt-4 pb-1 text-on-surface font-body-md text-body-md focus:ring-0 peer" id="duration" placeholder="e.g., 40" type="number" value="40"/>
+<label class="absolute left-4 top-4 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none origin-left" for="duration">Duration (minutes)</label>
+</div>
+<!-- Form Action (Desktop mostly) -->
+<div class="md:col-span-2 flex justify-end mt-sm hidden md:flex">
+<button class="h-12 px-6 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-DEFAULT flex items-center justify-center gap-2 hover:bg-secondary transition-colors hover:text-on-secondary active:scale-95 duration-150 min-w-[48px]" type="button">
+<span class="material-symbols-outlined" data-icon="magic_button">magic_button</span>
+                        Regenerate Plan
+                    </button>
+</div>
+</form>
+</section>
+<!-- Document Result Canvas -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-margin-mobile md:p-margin-desktop shadow-sm relative">
+<!-- Document Header -->
+<div class="border-b border-outline-variant pb-md mb-lg">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Quadratic Equations</h3>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-2 py-1 bg-surface-variant text-on-surface-variant font-label-sm text-label-sm rounded-DEFAULT">Mathematics</span>
+<span class="inline-flex items-center px-2 py-1 bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm rounded-DEFAULT border border-primary-fixed-dim">SS2</span>
+<span class="inline-flex items-center px-2 py-1 bg-surface-variant text-on-surface-variant font-label-sm text-label-sm rounded-DEFAULT">
+<span class="material-symbols-outlined text-[16px] mr-1" data-icon="schedule">schedule</span>
+                                40 mins
+                            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Blocks -->
+<div class="space-y-xl">
+<!-- Learning Objectives -->
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="flag">flag</span>
+                        Learning Objectives
+                    </h4>
+<ul class="list-disc list-outside ml-5 space-y-2 font-body-md text-body-md text-on-surface">
+<li>Define a quadratic equation and identify its standard form (ax² + bx + c = 0).</li>
+<li>Solve simple quadratic equations using the factorization method.</li>
+<li>Apply quadratic equations to solve basic real-world word problems.</li>
+</ul>
+</div>
+<!-- Teaching Activities -->
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="directions_run">directions_run</span>
+                        Teaching Activities
+                    </h4>
+<div class="space-y-4 font-body-md text-body-md text-on-surface">
+<div class="flex gap-4">
+<div class="w-16 flex-shrink-0 text-on-surface-variant font-data-mono text-data-mono">5 mins</div>
+<div>
+<strong class="text-on-surface">Introduction:</strong> Briefly review linear equations. Introduce the concept of a variable squared using area of a square example.
+                            </div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 flex-shrink-0 text-on-surface-variant font-data-mono text-data-mono">15 mins</div>
+<div>
+<strong class="text-on-surface">Direct Instruction:</strong> Write the standard form on the board. Demonstrate factorization with a clear example (e.g., x² + 5x + 6 = 0). Show how to find factors of 'c' that add up to 'b'.
+                            </div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 flex-shrink-0 text-on-surface-variant font-data-mono text-data-mono">15 mins</div>
+<div>
+<strong class="text-on-surface">Guided Practice:</strong> Have students pair up and solve three varying problems on the board or in their notebooks while the teacher circulates to offer support.
+                            </div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 flex-shrink-0 text-on-surface-variant font-data-mono text-data-mono">5 mins</div>
+<div>
+<strong class="text-on-surface">Conclusion:</strong> Recap the steps for factorization. Assign homework from the textbook (Exercise 4.2, Q1-5).
+                            </div>
+</div>
+</div>
+</div>
+<!-- Assessment Strategy -->
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="assignment_turned_in">assignment_turned_in</span>
+                        Assessment Strategy
+                    </h4>
+<p class="font-body-md text-body-md text-on-surface">
+                        Formative assessment during guided practice by checking students' steps in factorization. A quick 2-question exit ticket at the end of the class asking them to factorize a simple expression to gauge immediate understanding.
+                    </p>
+</div>
+</div>
+<!-- Sticky Actions (Bottom of document area) -->
+<div class="mt-xl pt-lg border-t border-outline-variant flex flex-col sm:flex-row gap-4 justify-end sticky bottom-4 md:static md:bottom-auto bg-surface-container-lowest md:bg-transparent p-4 md:p-0 rounded-lg shadow-lg md:shadow-none z-10">
+<button class="h-12 px-6 bg-transparent border border-primary text-primary font-label-sm text-label-sm rounded-DEFAULT flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors active:scale-95 duration-150 min-w-[48px] w-full sm:w-auto order-2 sm:order-1" type="button">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+                    Regenerate
+                </button>
+<button class="h-12 px-6 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-DEFAULT flex items-center justify-center gap-2 hover:bg-secondary transition-colors hover:text-on-secondary active:scale-95 duration-150 min-w-[48px] w-full sm:w-auto order-1 sm:order-2 shadow-md" type="button">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+                    Save to My Materials
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-2 pb-safe bg-surface dark:bg-surface-container-high border-t border-outline-variant dark:border-outline shadow-md text-primary dark:text-primary-fixed-dim rounded-t-xl transition-colors duration-150">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="school">school</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="grade">grade</span>
+<span class="font-label-sm text-label-sm">Grades</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 h-14" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="psychology">psychology</span>
+<span class="font-label-sm text-label-sm">AI Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="mail">mail</span>
+<span class="font-label-sm text-label-sm">Messages</span>
+</a>
+</nav>
+</body></html>

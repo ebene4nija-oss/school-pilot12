@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Platform Settings - EduOps Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "secondary-fixed-dim": "#ffb955",
+                    "secondary": "#835500",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#88a4cf",
+                    "on-secondary-container": "#6b4500",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#002447",
+                    "on-tertiary-container": "#4bb771",
+                    "on-background": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#dcd9d9",
+                    "on-surface": "#1b1c1c",
+                    "background": "#fcf9f8",
+                    "surface-container-high": "#eae7e7",
+                    "primary-container": "#1b3a5f",
+                    "on-primary-fixed": "#001c39",
+                    "on-secondary-fixed": "#291800",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e5e2e1",
+                    "secondary-fixed": "#ffddb4",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "tertiary-container": "#004320",
+                    "surface-tint": "#436087",
+                    "secondary-container": "#feae2c",
+                    "primary-fixed": "#d4e3ff",
+                    "tertiary": "#002b12",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "primary-fixed-dim": "#abc8f5",
+                    "on-surface-variant": "#43474e",
+                    "outline-variant": "#c3c6cf",
+                    "inverse-surface": "#303030",
+                    "on-tertiary-fixed": "#00210d",
+                    "inverse-primary": "#abc8f5",
+                    "tertiary-fixed": "#8df9ac",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "error-container": "#ffdad6",
+                    "surface": "#fcf9f8",
+                    "outline": "#74777f",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f3f0ef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-desktop": "48px",
+                    "sm": "12px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "display-lg": [
+                            "Work Sans"
+                    ],
+                    "data-mono": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ],
+                    "display-lg-mobile": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "data-mono": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "26px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "22px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom scrollbar for data sections */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #fcf9f8;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c3c6cf;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #74777f;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md m-0 p-0 overflow-x-hidden">
+<!-- SideNavBar (Desktop Only) -->
+<nav class="bg-primary dark:bg-primary-container font-body-md text-body-md h-screen w-64 fixed left-0 top-0 border-r border-outline-variant hidden md:flex flex-col py-lg px-md z-20">
+<div class="mb-xl flex items-center gap-md px-md">
+<img class="w-10 h-10 rounded-DEFAULT object-cover bg-surface" data-alt="A clean, minimalist logo icon for a school management platform. The icon is simple, geometric, and professional, using high-contrast deep blue and vibrant amber colors. It represents structure and control in an educational setting. No text, just the icon." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAO9zMXd1BWxo1sOzZg_A-87XXASZ-RzPjyVBV2rApmcaU_LE3UkrvReQZTucVdn_ZrZ3wGoKDbgiEd6pnO4C-bcgyk8_6xT_4TOua1yEpD8R2r1-OLy-ahPuDw8w_wQZ_V1iLKHD-nxd1jz8RwoKL1U55eVg92nS0F6sJXATP1NkfaLJupuxmds7qsy6DUoDZXxgBy0tjbXwaUH85M7fkyOYImgCe-K-g3pWgy1gjXx_GqbKdjux2ntg"/>
+<div>
+<div class="font-display-lg text-display-lg font-bold text-on-primary dark:text-on-primary-container leading-none text-lg">EduOps Admin</div>
+<div class="text-on-primary/70 text-xs mt-1">System Control</div>
+</div>
+</div>
+<div class="flex flex-col gap-sm flex-grow">
+<!-- Inactive Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary-fixed-dim transition-colors" data-icon="domain">domain</span>
+<span>Schools</span>
+</a>
+<!-- Inactive Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary-fixed-dim transition-colors" data-icon="supervisor_account">supervisor_account</span>
+<span>Accounts</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-secondary-fixed-dim font-bold border-r-4 border-secondary-fixed-dim bg-on-primary-fixed-variant/10 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings" data-weight="fill">settings</span>
+<span>Platform Settings</span>
+</a>
+<!-- Inactive Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary-fixed-dim transition-colors" data-icon="payments">payments</span>
+<span>Billing</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-sm pt-md border-t border-on-primary/10">
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary-fixed-dim transition-colors" data-icon="help">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary-fixed-dim transition-colors" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<div class="md:ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container-low font-body-lg text-body-lg docked full-width top-0 sticky z-10 flex justify-between items-center h-16 px-margin-desktop border-b border-outline-variant">
+<!-- Mobile Menu Toggle (Visible only on mobile) -->
+<button class="md:hidden text-primary p-2 mr-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Brand / Product Name -->
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed flex-grow text-center md:text-left truncate">
+                Operations Console
+            </div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-lg">
+<!-- Global Search -->
+<div class="relative hidden md:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-1.5 pl-10 pr-4 text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search settings..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a system administrator. The person looks authoritative yet approachable, set against a clean, neutral background. Corporate modern style, high contrast lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_tnSP0cczz6VDrxxcEaws4FvDMnzmycpK7ln8X2b87t_7xI3micPTDZ1ZwICSx11_tAvhBZ75Big04XsIYq-HGIYUbbVQiMTQXaJpAaDghySq34mQZbfjqMqV-Uxkz13pgeuYpfc0EVGKkT6z_doHq1AG-dFV_RW6Od8TSfQfzoaBCn3xWKkMqpi1oVK2LZoZmnLgn7vdGjwjho3KAMCkuS-IhVZYq0ubIs1E6xxCECM5Hbtm6g9Gdg"/>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-grow p-margin-mobile md:p-margin-desktop bg-surface-container-lowest custom-scrollbar overflow-y-auto">
+<div class="max-w-6xl mx-auto space-y-xl">
+<!-- Header -->
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-2">Platform Settings</h1>
+<p class="text-on-surface-variant">Configure core system integrations, security policies, and global communications.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg items-start">
+<!-- Left Column: AI & Security (Takes up 2/3 on large screens) -->
+<div class="lg:col-span-2 space-y-lg">
+<!-- 1) AI Service Configuration -->
+<section class="bg-surface border border-outline-variant rounded-xl p-lg shadow-sm">
+<div class="flex items-center gap-sm mb-md border-b border-outline-variant pb-sm">
+<span class="material-symbols-outlined text-secondary-container bg-secondary-container/10 p-2 rounded-DEFAULT">smart_toy</span>
+<h2 class="font-headline-md text-headline-md text-primary">AI Service Configuration</h2>
+</div>
+<div class="space-y-lg">
+<!-- Model Selection -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase">Active Processing Model</label>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<label class="flex items-start gap-3 p-3 border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors relative">
+<input checked="" class="mt-1 text-primary focus:ring-primary border-outline" name="ai_model" type="radio"/>
+<div>
+<div class="font-body-md font-semibold text-primary">Edu-Fast (Default)</div>
+<div class="text-sm text-on-surface-variant">Optimized for rapid broadsheet processing. Lower cost.</div>
+</div>
+<div class="absolute top-3 right-3"><span class="material-symbols-outlined text-outline text-sm">bolt</span></div>
+</label>
+<label class="flex items-start gap-3 p-3 border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors relative">
+<input class="mt-1 text-primary focus:ring-primary border-outline" name="ai_model" type="radio"/>
+<div>
+<div class="font-body-md font-semibold text-primary">Edu-Reasoning</div>
+<div class="text-sm text-on-surface-variant">Advanced logical parsing for unstructured curriculum data.</div>
+</div>
+<div class="absolute top-3 right-3"><span class="material-symbols-outlined text-secondary-fixed-dim text-sm" data-weight="fill">stars</span></div>
+</label>
+</div>
+</div>
+<!-- API Keys -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase">API Endpoints</label>
+<div class="space-y-sm">
+<div class="flex gap-2">
+<div class="relative flex-grow">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">key</span>
+<input class="w-full pl-9 pr-4 py-2 border border-outline-variant rounded-DEFAULT bg-surface-container-low text-data-mono font-data-mono focus:border-primary focus:ring-1 focus:ring-primary" readonly="" type="password" value="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/>
+</div>
+<button class="px-4 py-2 bg-surface text-primary border border-outline-variant rounded-DEFAULT hover:bg-surface-container-low transition-colors font-label-sm text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">visibility</span> Reveal
+                                            </button>
+</div>
+</div>
+</div>
+<!-- Cost Controls -->
+<div class="bg-surface-container-low p-md rounded-lg border border-outline-variant flex items-center justify-between">
+<div>
+<div class="font-body-md font-semibold text-primary">Enforce Hard Cost Limits</div>
+<div class="text-sm text-on-surface-variant">Automatically disable non-critical AI features when monthly budget is reached.</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-on-tertiary-container"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- 2) Global Security Settings -->
+<section class="bg-surface border border-outline-variant rounded-xl p-lg shadow-sm">
+<div class="flex items-center gap-sm mb-md border-b border-outline-variant pb-sm">
+<span class="material-symbols-outlined text-error bg-error/10 p-2 rounded-DEFAULT">shield_lock</span>
+<h2 class="font-headline-md text-headline-md text-primary">Global Security Settings</h2>
+</div>
+<div class="space-y-md">
+<!-- MFA Enforcement -->
+<div class="flex items-start justify-between p-md border border-outline-variant rounded-lg">
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-outline mt-1">phonelink_lock</span>
+<div>
+<div class="font-body-md font-semibold text-primary">Mandatory Multi-Factor Authentication</div>
+<div class="text-sm text-on-surface-variant">Require all Administrator and Teacher roles to use MFA.</div>
+</div>
+</div>
+<select class="border-outline-variant rounded-DEFAULT text-body-md focus:border-primary focus:ring-1 focus:ring-primary bg-surface py-1">
+<option>Strict (All Roles)</option>
+<option selected="">Admins Only</option>
+<option>Optional</option>
+</select>
+</div>
+<!-- Session Timeout -->
+<div class="flex items-start justify-between p-md border border-outline-variant rounded-lg">
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-outline mt-1">timer</span>
+<div>
+<div class="font-body-md font-semibold text-primary">Idle Session Timeout</div>
+<div class="text-sm text-on-surface-variant">Automatically log users out after a period of inactivity.</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<input class="w-20 border-outline-variant rounded-DEFAULT text-center text-body-md py-1 focus:border-primary focus:ring-1 focus:ring-primary" type="number" value="30"/>
+<span class="text-on-surface-variant text-sm">mins</span>
+</div>
+</div>
+<div class="pt-sm">
+<button class="bg-surface hover:bg-surface-container-low text-primary border border-outline-variant px-md py-2 rounded-DEFAULT font-label-sm text-label-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">history</span> View Security Audit Log
+                                    </button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Announcements (Takes up 1/3) -->
+<div class="lg:col-span-1">
+<!-- 3) Platform Announcement Composer -->
+<section class="bg-primary border border-primary-container rounded-xl p-lg shadow-sm text-on-primary relative overflow-hidden">
+<!-- Subtle decorative element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container rounded-bl-full opacity-50 pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-sm mb-md border-b border-primary-container pb-sm">
+<span class="material-symbols-outlined text-secondary-fixed-dim">campaign</span>
+<h2 class="font-headline-md text-headline-md">System Announcement</h2>
+</div>
+<form class="space-y-md">
+<div>
+<label class="block font-label-sm text-label-sm text-on-primary/70 mb-2 uppercase">Target Audience</label>
+<select class="w-full bg-primary-container border-none rounded-DEFAULT text-on-primary focus:ring-2 focus:ring-secondary-fixed-dim py-2">
+<option>All Platform Users</option>
+<option>All School Administrators</option>
+<option>Teachers Only</option>
+<option>Parents Only</option>
+</select>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-primary/70 mb-2 uppercase">Message Title</label>
+<input class="w-full bg-primary-container border-none rounded-DEFAULT text-on-primary placeholder:text-on-primary/40 focus:ring-2 focus:ring-secondary-fixed-dim py-2" placeholder="e.g., Scheduled Maintenance" type="text"/>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-primary/70 mb-2 uppercase">Message Body</label>
+<textarea class="w-full bg-primary-container border-none rounded-DEFAULT text-on-primary placeholder:text-on-primary/40 focus:ring-2 focus:ring-secondary-fixed-dim py-2 resize-none custom-scrollbar" placeholder="Enter announcement details..." rows="4"></textarea>
+</div>
+<div class="pt-sm flex justify-end gap-3 border-t border-primary-container mt-sm pt-md">
+<button class="px-4 py-2 bg-transparent text-on-primary border border-primary-container rounded-DEFAULT hover:bg-primary-container transition-colors font-label-sm text-label-sm" type="button">
+                                            Save Draft
+                                        </button>
+<button class="px-4 py-2 bg-secondary-container text-on-secondary-container border border-secondary-container rounded-DEFAULT hover:bg-secondary-fixed-dim transition-colors font-label-sm text-label-sm flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-sm">send</span> Broadcast
+                                        </button>
+</div>
+</form>
+</div>
+</section>
+</div>
+</div>
+<!-- Page Level Actions -->
+<div class="flex justify-end gap-md border-t border-outline-variant pt-lg mt-xl pb-xl">
+<button class="px-6 py-2.5 bg-surface text-primary border border-outline-variant rounded-DEFAULT hover:bg-surface-container-low transition-colors font-label-sm text-label-sm tracking-wider">
+                        DISCARD CHANGES
+                    </button>
+<button class="px-6 py-2.5 bg-primary text-on-primary rounded-DEFAULT hover:bg-primary-container transition-colors font-label-sm text-label-sm tracking-wider shadow-sm">
+                        SAVE PLATFORM SETTINGS
+                    </button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

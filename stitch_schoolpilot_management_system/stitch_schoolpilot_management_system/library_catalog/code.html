@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduBackbone - Library Catalog</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#eae7e7",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "outline-variant": "#c3c6cf",
+                        "on-secondary-container": "#6b4500",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "on-surface": "#1b1c1c",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-container": "#88a4cf",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#abc8f5",
+                        "surface-variant": "#e5e2e1",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#436087",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-tertiary-container": "#4bb771",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary-fixed": "#00210d",
+                        "primary": "#002447",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#303030",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "surface": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "outline": "#74777f",
+                        "tertiary-container": "#004320",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "primary-fixed-dim": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "secondary": "#835500",
+                        "tertiary-fixed": "#8df9ac",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "sm": "12px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pb-24 md:pb-0 md:pl-64">
+<!-- Mobile TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface dark:bg-on-surface border-b border-outline-variant dark:border-outline flex justify-between items-center px-4 py-2 w-full md:hidden">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">U</div>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">EduBackbone</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-on-surface-variant dark:text-outline-variant">notifications</span>
+</button>
+</header>
+<!-- Desktop Navigation Drawer -->
+<nav class="hidden md:flex flex-col h-full py-4 gap-2 bg-surface-container-low dark:bg-on-surface border-r border-outline-variant dark:border-outline h-full w-64 fixed left-0 top-0 z-40 transition-all duration-200 ease-in-out">
+<div class="px-4 py-6 mb-4">
+<h1 class="font-headline-md text-headline-md font-black text-primary">EduBackbone</h1>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">AO</div>
+<div>
+<div class="font-label-sm text-label-sm text-on-surface">Admin Office</div>
+<div class="text-[10px] text-on-surface-variant">Sess: 2023/24</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 pr-4">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-variant rounded-r-full transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-variant rounded-r-full transition-colors" href="#">
+<span class="material-symbols-outlined">minor_crash</span>
+<span class="font-body-md text-body-md">Bus Tracking</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-variant rounded-r-full transition-colors" href="#">
+<span class="material-symbols-outlined">video_chat</span>
+<span class="font-body-md text-body-md">Live Classes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary font-bold rounded-r-full" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">book</span>
+<span class="font-body-md text-body-md">Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-variant rounded-r-full transition-colors" href="#">
+<span class="material-symbols-outlined">hotel</span>
+<span class="font-body-md text-body-md">Hostel</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-variant rounded-r-full transition-colors" href="#">
+<span class="material-symbols-outlined">medical_services</span>
+<span class="font-body-md text-body-md">Clinic</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="w-full max-w-7xl mx-auto p-4 md:p-8">
+<!-- Header & Search -->
+<div class="mb-8">
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-6">Library Catalog</h2>
+<div class="relative w-full max-w-2xl">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow font-body-md text-body-md shadow-sm text-on-surface" placeholder="Search by title, author, or ISBN..." type="text"/>
+</div>
+<div class="flex gap-2 mt-4 overflow-x-auto pb-2 hide-scrollbar">
+<button class="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm whitespace-nowrap border border-primary">All Books</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface border border-outline-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-low transition-colors">Science</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface border border-outline-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-low transition-colors">Mathematics</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface border border-outline-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-low transition-colors">Literature</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface border border-outline-variant font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-container-low transition-colors">Available Only</button>
+</div>
+</div>
+<!-- Book Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Book Card 1 -->
+<div class="bg-surface rounded-xl border border-outline-variant overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+<div class="h-48 w-full bg-surface-container-low relative">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-90" data-alt="A detailed, realistic photograph of a thick, modern physics textbook with a dark blue cover, resting on a clean wooden desk in a bright, sunlit library setting. The lighting is crisp and natural, highlighting the texture of the book cover and casting soft shadows. The mood is academic and studious, aligned with a high-contrast functional UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5VjVzVgeFASG7h1ObZRZqTQyeBYbykX7PEU0JdQQli-bHE6hZKsdJ87AEshDmFzS9cyFbacw0q9MK6KDUtQCoJK2MZyUZCrqChesTHG4hJIdV10NCfmF-yLBzunLRV4_BkFStIthDmiN-e5ylU1hKo6y56DDmUOqgfBpFJBpwlnH5uB0ZbPu2T5wdKeHNhnmm50d9h5noPV_XZCc5TqP_n5COXaN9RviZt190-ZtQK6HiBZO1lsowEA"/>
+<div class="absolute top-2 right-2 px-2 py-1 rounded-full bg-[#E8F5E9] text-[#1B5E20] font-label-sm text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border border-[#A5D6A7]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50]"></span> Available
+                    </div>
+</div>
+<div class="p-4 flex-1 flex flex-col border-l-4 border-[#4CAF50]">
+<h3 class="font-headline-md text-[16px] leading-tight text-on-surface font-bold mb-1 line-clamp-2">Advanced Principles of Physics</h3>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4">Dr. Jonathan K. Arthur</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-data-mono text-[12px] text-outline">REF: PHY-402</span>
+<span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform cursor-pointer">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Book Card 2 -->
+<div class="bg-surface rounded-xl border border-outline-variant overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+<div class="h-48 w-full bg-surface-container-low relative">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-90" data-alt="A high-quality image of a classic literature anthology book with an ornate, deep red cover, placed on a minimalist white shelf. The setting is a modern institutional library with even, diffuse lighting. The aesthetic is clean, structured, and professional, supporting a corporate functional design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF_R6At67_4oc8EIhTKzHSpQWykvUSfV5kxD19PtEteChDW8VSvUMYqYK3wjWM0cfdz6EXYip1lwNGOYcJmYPsHVYjdFymfWaAqlShztHN-C9_yT8xJHB4FJabky8NYRBXEQEmCGkO_ONAM6BxfhT7qMjRyRA9JM0kp_KX3JaX9549KvWxTuoCnSKREdP9GwfIB3Em4DtMqhzUTvivKoJYxPlg5gsQPrPNYiJaukGKGByEwhTkoHeAjQ"/>
+<div class="absolute top-2 right-2 px-2 py-1 rounded-full bg-[#FFEBEE] text-[#B71C1C] font-label-sm text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border border-[#EF9A9A]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#F44336]"></span> Borrowed
+                    </div>
+</div>
+<div class="p-4 flex-1 flex flex-col border-l-4 border-[#F44336]">
+<h3 class="font-headline-md text-[16px] leading-tight text-on-surface font-bold mb-1 line-clamp-2">African Literature Anthology</h3>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4">Prof. Chinua Achebe</p>
+<div class="mt-auto flex flex-col gap-1">
+<span class="font-data-mono text-[12px] text-outline">REF: LIT-101</span>
+<span class="font-label-sm text-[11px] text-error">Return by: Oct 24</span>
+</div>
+</div>
+</div>
+<!-- Book Card 3 -->
+<div class="bg-surface rounded-xl border border-outline-variant overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+<div class="h-48 w-full bg-surface-container-low relative">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-90" data-alt="A sharp, clear photo of a mathematics textbook with geometric patterns on the cover in shades of teal and gray. It is stacked neatly with other books in a brightly lit academic environment. The visual style is crisp, high-contrast, and suitable for a digital school management interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy4wTDylDWr5R6jVH6WVG-R1WNoHlMFk66ncVkHJ_6Fik1A64MkTKfYWkwrfciG53oV1bK0ZXIGow61jcQhDPanMBs-zmeW1eX1PVJQuSh3PIee_X7Ls36Q9_kvAF-FaUDXFlVuFCO6U52kAjmPO2jwX2Q4sNVTA6JoKJW0stsNSeJFoOyfjMBs4H06XnNtewEKqi_OCBMl5dznbedaYELRNT-bZkwVFruxD88Xi7AzvVooi2ml5H7wA"/>
+<div class="absolute top-2 right-2 px-2 py-1 rounded-full bg-[#FFF8E1] text-[#F57F17] font-label-sm text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border border-[#FFE082]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#FFC107]"></span> Due Soon
+                    </div>
+</div>
+<div class="p-4 flex-1 flex flex-col border-l-4 border-[#FFC107]">
+<h3 class="font-headline-md text-[16px] leading-tight text-on-surface font-bold mb-1 line-clamp-2">Further Mathematics for SSS</h3>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4">S.O. Adebayo</p>
+<div class="mt-auto flex flex-col gap-1">
+<span class="font-data-mono text-[12px] text-outline">REF: MTH-305</span>
+<span class="font-label-sm text-[11px] text-secondary">Return by: Tomorrow</span>
+</div>
+</div>
+</div>
+<!-- Book Card 4 -->
+<div class="bg-surface rounded-xl border border-outline-variant overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+<div class="h-48 w-full bg-surface-container-low relative">
+<img class="w-full h-full object-cover mix-blend-multiply opacity-90" data-alt="A well-lit, professional photograph of a biology textbook featuring a vivid green leaf macro shot on the cover. The book is standing upright on a pale gray desk. The lighting emphasizes clarity and structure, fitting perfectly into a functional, modern corporate design system for education." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtHyHRfMpYurui_4B6pB6bM3EeSlpuuhzoPC7Q5csnrtkoz2Kso65JQIYbG-tlaIUsJ3gEIa5o4ideiJuOBrM-eyWEQi-iAoW2Y6J61YDWO5KxdWGaRzmxvXecLKZuqFU7Ty2_gsy8UVNUbMfSux2y_pcji4zAXupbvSxwAsXfxumyjeo9vmhDiI3nHyx2hqZCsYJuNEACiJi2gUmvHL1gE19o_d4lzXn6LiVv1WSUkuGbo0WER9ZoCw"/>
+<div class="absolute top-2 right-2 px-2 py-1 rounded-full bg-[#E8F5E9] text-[#1B5E20] font-label-sm text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border border-[#A5D6A7]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#4CAF50]"></span> Available
+                    </div>
+</div>
+<div class="p-4 flex-1 flex flex-col border-l-4 border-[#4CAF50]">
+<h3 class="font-headline-md text-[16px] leading-tight text-on-surface font-bold mb-1 line-clamp-2">Essential Biology</h3>
+<p class="font-body-md text-[13px] text-on-surface-variant mb-4">M.C. Michael</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-data-mono text-[12px] text-outline">REF: BIO-201</span>
+<span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform cursor-pointer">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Scan Button (Floating Action) -->
+<div class="fixed bottom-20 md:bottom-8 left-0 right-0 flex justify-center pointer-events-none z-40 md:ml-64">
+<button class="pointer-events-auto bg-secondary-container text-on-surface font-label-sm text-[14px] px-8 py-4 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center gap-2 hover:bg-secondary-fixed-dim transition-colors active:scale-95">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-bold tracking-wide">Scan to Borrow</span>
+</button>
+</div>
+<!-- Mobile BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface dark:bg-on-surface border-t border-outline-variant dark:border-outline flex justify-around items-center w-full h-16 px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined">directions_bus</span>
+<span class="font-label-sm text-[10px] mt-1">Bus</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-xl px-3 py-1 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_library</span>
+<span class="font-label-sm text-[10px] mt-1">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined">live_tv</span>
+<span class="font-label-sm text-[10px] mt-1">Class</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label-sm text-[10px] mt-1">More</span>
+</a>
+</nav>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

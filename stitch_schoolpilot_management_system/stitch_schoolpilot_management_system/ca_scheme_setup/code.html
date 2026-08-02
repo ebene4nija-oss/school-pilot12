@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CA Scheme Setup - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "primary": "#002447",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-surface": "#1b1c1c",
+                    "tertiary-container": "#004320",
+                    "secondary-fixed-dim": "#ffb955",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "on-surface-variant": "#43474e",
+                    "on-primary-fixed": "#001c39",
+                    "secondary": "#835500",
+                    "inverse-primary": "#abc8f5",
+                    "on-tertiary-container": "#4bb771",
+                    "on-secondary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-secondary-container": "#6b4500",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#f0eded",
+                    "on-secondary-fixed": "#291800",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "surface-bright": "#fcf9f8",
+                    "primary-fixed-dim": "#abc8f5",
+                    "primary-fixed": "#d4e3ff",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#303030",
+                    "tertiary-fixed": "#8df9ac",
+                    "tertiary": "#002b12",
+                    "outline-variant": "#c3c6cf",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "inverse-on-surface": "#f3f0ef",
+                    "primary-container": "#1b3a5f",
+                    "on-tertiary-fixed": "#00210d",
+                    "background": "#fcf9f8",
+                    "surface-variant": "#e5e2e1",
+                    "surface-container-high": "#eae7e7",
+                    "on-primary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "secondary-container": "#feae2c",
+                    "outline": "#74777f",
+                    "surface": "#fcf9f8",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-tint": "#436087",
+                    "on-primary-container": "#88a4cf",
+                    "surface-dim": "#dcd9d9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "base": "8px",
+                    "margin-desktop": "48px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "margin-mobile": "16px",
+                    "xs": "4px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ],
+                    "data-mono": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Work Sans"
+                    ],
+                    "display-lg": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "22px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "data-mono": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "26px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            pointer-events: all;
+            width: 24px;
+            height: 24px;
+            -webkit-appearance: none;
+            @apply w-6 h-6 appearance-none pointer-events-auto rounded-full bg-secondary-container shadow-md cursor-pointer;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- SideNavBar -->
+<nav class="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline flex-col p-md gap-base z-50">
+<div class="mb-lg px-md">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+<div class="flex flex-col gap-xs flex-1 overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="grading">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold transition-transform scale-95 duration-100 group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-md border-t border-outline-variant/20">
+<button class="w-full bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container font-label-sm text-label-sm py-sm px-md rounded-lg flex items-center justify-center gap-sm transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Assessment
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-lg w-full bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline sticky top-0 z-40">
+<div class="flex items-center gap-md">
+<button class="md:hidden p-xs rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">CA Scheme Setup</h2>
+<span class="hidden md:inline-flex items-center px-sm py-xs bg-surface-container-high text-on-surface-variant rounded-full font-label-sm text-label-sm border border-outline-variant/30">
+                    Term 1, 2023/2024
+                </span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-sm rounded-full text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container overflow-hidden border border-outline-variant">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A small circular avatar placeholder image for the admin profile, professional and subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzM_8WYZLyxqsE_5ZQrekpctS3KU2NiFHKS1Ke3WN3qvTTM_K8rCi85oTPSOifQ4S3M-ijiZ_A5ypdTvjjnzfWo3SEjIWWpdTt60WqVQn1oxrK-tA1BiccSaT8xk73Z6wuhDFF0o2aQlp-i-6yIY2WBXw3qYdTX3oQgI1XVnLLM_8Nwl9PVrZ_OmuPtQHoioaZMbc71ZhxdGEGyfrgrkf0ingIpvGbeaEhq3egQqyLTYxwSzkYUGpHew"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<div class="max-w-4xl mx-auto space-y-xl">
+<!-- Header Info -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-md pb-md border-b border-outline-variant">
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-primary">Continuous Assessment Configuration</h1>
+<p class="font-body-md text-on-surface-variant mt-xs">Define the global weighting scheme for formative and summative assessments across all classes.</p>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary font-label-sm text-label-sm py-sm px-lg rounded-lg transition-colors flex items-center gap-sm shadow-sm">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                        Save Scheme
+                    </button>
+</div>
+<!-- Weighting Builder Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+<div class="flex items-center justify-between mb-lg">
+<h3 class="font-headline-md text-headline-md text-primary">Global Weighting Allocations</h3>
+<div class="px-sm py-xs bg-primary-fixed text-on-primary-fixed-variant rounded font-data-mono text-data-mono border border-primary-fixed-dim">
+                            Total: <span class="font-bold text-error" id="total-display">100%</span>
+</div>
+</div>
+<div class="space-y-xl">
+<!-- CA1 Slider -->
+<div class="relative group">
+<div class="flex justify-between items-center mb-sm">
+<label class="font-label-sm text-label-sm text-on-surface flex items-center gap-xs">
+<span class="w-3 h-3 rounded-full bg-[#1B3A5F]"></span>
+                                    First Continuous Assessment (CA1)
+                                </label>
+<span class="font-data-mono text-data-mono bg-surface-container-high px-sm py-xs rounded">20%</span>
+</div>
+<input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary focus:ring-2 focus:ring-primary focus:ring-offset-2" max="100" min="0" type="range" value="20"/>
+</div>
+<!-- CA2 Slider -->
+<div class="relative group">
+<div class="flex justify-between items-center mb-sm">
+<label class="font-label-sm text-label-sm text-on-surface flex items-center gap-xs">
+<span class="w-3 h-3 rounded-full bg-[#F5A623]"></span>
+                                    Second Continuous Assessment (CA2)
+                                </label>
+<span class="font-data-mono text-data-mono bg-surface-container-high px-sm py-xs rounded">20%</span>
+</div>
+<input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-secondary-container focus:ring-2 focus:ring-secondary-container focus:ring-offset-2" max="100" min="0" type="range" value="20"/>
+</div>
+<!-- Exam Slider -->
+<div class="relative group">
+<div class="flex justify-between items-center mb-sm">
+<label class="font-label-sm text-label-sm text-on-surface flex items-center gap-xs">
+<span class="w-3 h-3 rounded-full bg-tertiary-container"></span>
+                                    Terminal Examination (Exam)
+                                </label>
+<span class="font-data-mono text-data-mono bg-surface-container-high px-sm py-xs rounded">60%</span>
+</div>
+<input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-tertiary-container focus:ring-2 focus:ring-tertiary-container focus:ring-offset-2" max="100" min="0" type="range" value="60"/>
+</div>
+</div>
+<!-- Progress Bar Visualization -->
+<div class="mt-xl pt-lg border-t border-outline-variant border-dashed">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-sm">Visual Distribution Map</p>
+<div class="h-4 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
+<div class="bg-[#1B3A5F] h-full" style="width: 20%"></div>
+<div class="bg-[#F5A623] h-full" style="width: 20%"></div>
+<div class="bg-tertiary-container h-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+<!-- Settings & Overrides -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Per Subject Override -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-start gap-md hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="p-sm bg-primary-fixed rounded-lg text-on-primary-fixed-variant">
+<span class="material-symbols-outlined">tune</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-base font-bold text-on-surface mb-xs">Per-Subject Override</h4>
+<p class="font-body-md text-sm text-on-surface-variant">Allow Subject Teachers to modify this scheme for specific subjects (e.g., Practical subjects).</p>
+</div>
+<div class="pt-sm">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant rounded-full peer peer-focus:ring-2 peer-focus:ring-primary peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- CA Naming -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-start gap-md hover:bg-surface-container-low transition-colors">
+<div class="p-sm bg-surface-container-high rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined">edit_document</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-base font-bold text-on-surface mb-xs">Assessment Naming</h4>
+<p class="font-body-md text-sm text-on-surface-variant mb-md">Customize how these assessments appear on Broad-sheets and Report Cards.</p>
+<button class="text-primary font-label-sm text-label-sm flex items-center gap-xs hover:underline">
+                                Configure Labels <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

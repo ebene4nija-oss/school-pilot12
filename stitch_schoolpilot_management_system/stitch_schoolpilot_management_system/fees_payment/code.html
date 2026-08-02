@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Fees &amp; Payment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#f0eded",
+                      "tertiary": "#002b12",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "secondary-fixed": "#ffddb4",
+                      "surface-tint": "#436087",
+                      "inverse-primary": "#abc8f5",
+                      "outline-variant": "#c3c6cf",
+                      "background": "#fcf9f8",
+                      "outline": "#74777f",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#ffb955",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#1b3a5f",
+                      "on-background": "#1b1c1c",
+                      "secondary-container": "#feae2c",
+                      "surface": "#fcf9f8",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-low": "#f6f3f2",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "surface-dim": "#dcd9d9",
+                      "on-tertiary-container": "#4bb771",
+                      "on-tertiary-fixed": "#00210d",
+                      "on-primary-container": "#88a4cf",
+                      "error": "#ba1a1a",
+                      "primary-fixed": "#d4e3ff",
+                      "on-error-container": "#93000a",
+                      "on-surface": "#1b1c1c",
+                      "on-primary-fixed": "#001c39",
+                      "primary": "#002447",
+                      "on-secondary-fixed": "#291800",
+                      "surface-container-high": "#eae7e7",
+                      "inverse-surface": "#303030",
+                      "inverse-on-surface": "#f3f0ef",
+                      "secondary": "#835500",
+                      "surface-container-highest": "#e5e2e1",
+                      "surface-variant": "#e5e2e1",
+                      "on-secondary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#6b4500",
+                      "tertiary-fixed": "#8df9ac",
+                      "surface-bright": "#fcf9f8",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-surface-variant": "#43474e",
+                      "primary-fixed-dim": "#abc8f5",
+                      "tertiary-container": "#004320"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "md": "16px",
+                      "xs": "4px",
+                      "base": "8px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "margin-desktop": "48px",
+                      "margin-mobile": "16px",
+                      "gutter": "16px",
+                      "sm": "12px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Work Sans"],
+                      "data-mono": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "display-lg-mobile": ["Work Sans"],
+                      "display-lg": ["Work Sans"]
+              },
+              "fontSize": {
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md flex h-screen overflow-hidden selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col p-md gap-base bg-surface h-full w-80 rounded-r-xl shadow-xl z-40 border-r border-outline-variant">
+<div class="flex items-center gap-sm px-4 py-6 mb-4 border-b border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-headline-md text-headline-md">
+                PN
+            </div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-primary">Parent Name</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Academic Year 2023/24</span>
+<span class="font-label-sm text-label-sm text-tertiary-container mt-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified</span> Verified Account
+                </span>
+</div>
+</div>
+<nav class="flex flex-col gap-xs flex-1">
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md">Student Profiles</span>
+</a>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-300" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-body-md text-body-md">Term Dates</span>
+</a>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-300" href="#">
+<span class="material-symbols-outlined">policy</span>
+<span class="font-body-md text-body-md">School Policy</span>
+</a>
+<a class="flex items-center gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all duration-300" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+</nav>
+</aside>
+<!-- Main Viewport -->
+<div class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="bg-surface text-primary fixed top-0 w-full md:w-[calc(100%-20rem)] z-50 border-b border-outline-variant flex justify-between items-center px-margin-mobile h-16 transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<!-- Mobile Menu Trigger (simulated) -->
+<button class="md:hidden text-on-surface-variant p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-md text-headline-md-mobile font-bold text-primary">SchoolPilot</span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant md:hidden">
+<img class="w-full h-full object-cover" data-alt="A clean, professional headshot of an adult parent in a neutral setting, soft lighting, suitable for an app avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPNqgpcfri7jVBqDFUkm52ks-kcnIRfY96DqfnmsHLFiLUaLvx6P9ldKrb_MtjrRoeWp5WP2d7HIjIqRbbf-yY_iQHGGf79gkDymalyAMvqlzNyXEpxSGOBtFcQy067_7Elm1PncEQy4F-DHajFfB7KaMAeKyoQiQpwL5swbq5HRnq4DoOcVRU3-PT2ZIho_1cFtn7whzGFjEpaKNts__w1qJSLFtVcwld_7ShxHBT9AVKQ6Y-AIX7Ww"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto mt-16 pb-24 md:pb-8 bg-background">
+<div class="max-w-3xl mx-auto p-margin-mobile md:p-margin-desktop flex flex-col gap-lg">
+<!-- Page Header -->
+<div class="flex flex-col gap-xs mt-md">
+<h1 class="font-headline-md text-headline-md text-on-surface">Fees &amp; Payments</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage tuition and boarding fees for your wards.</p>
+</div>
+<!-- Primary Action / Status Card -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm relative overflow-hidden shadow-sm">
+<!-- High contrast left border indicator -->
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-error"></div>
+<div class="flex flex-col gap-1 z-10 pl-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-widest uppercase">Total Outstanding Balance</span>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg font-data-mono text-on-surface tracking-tight">₦150,000.00</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-md">
+                            Please settle the outstanding balance before the commencement of Term 3 to ensure uninterrupted access to school facilities.
+                        </p>
+</div>
+<div class="mt-md pl-2">
+<button class="w-full md:w-auto bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim active:scale-95 transition-all duration-200 px-xl py-3 rounded-full font-label-sm text-label-sm flex justify-center items-center gap-2 shadow-sm" id="triggerPaymentBtn">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                            Pay Now
+                        </button>
+</div>
+</section>
+<!-- Breakdown Section -->
+<section class="flex flex-col gap-md mt-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Fee Breakdown</h2>
+<div class="flex flex-col gap-sm">
+<!-- Unpaid Term Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col md:flex-row justify-between md:items-center gap-md relative overflow-hidden group hover:border-outline transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error group-hover:w-2 transition-all"></div>
+<div class="flex flex-col gap-xs pl-2">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Term 2, 2023/24</span>
+<span class="font-data-mono text-data-mono text-on-surface-variant">Tuition &amp; Boarding Levy</span>
+</div>
+<div class="flex items-center justify-between md:flex-col md:items-end gap-xs pl-2 md:pl-0 border-t border-outline-variant md:border-none pt-sm md:pt-0 mt-sm md:mt-0">
+<span class="font-data-mono text-data-mono text-on-surface font-semibold text-[16px]">₦150,000.00</span>
+<span class="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm">Unpaid</span>
+</div>
+</div>
+<!-- Paid Term Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col md:flex-row justify-between md:items-center gap-md relative overflow-hidden opacity-80">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary-container"></div>
+<div class="flex flex-col gap-xs pl-2">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Term 1, 2023/24</span>
+<span class="font-data-mono text-data-mono text-on-surface-variant">Tuition &amp; Boarding Levy</span>
+</div>
+<div class="flex items-center justify-between md:flex-col md:items-end gap-xs pl-2 md:pl-0 border-t border-outline-variant md:border-none pt-sm md:pt-0 mt-sm md:mt-0">
+<span class="font-data-mono text-data-mono text-on-surface font-semibold text-[16px] text-outline">₦100,000.00</span>
+<span class="bg-surface-container text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Paid
+                                </span>
+</div>
+</div>
+</div>
+</section>
+<!-- Information Box -->
+<div class="bg-surface-container-low rounded-lg p-md flex gap-md items-start mt-lg">
+<span class="material-symbols-outlined text-outline">info</span>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">
+                        Payments made via manual bank transfer may take up to 48 hours to reflect on your dashboard. Please retain your payment receipt.
+                    </p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="bg-surface text-primary fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant shadow-md flex justify-around items-center h-20 pb-safe px-xs md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">calendar_month</span>
+<span class="font-label-sm text-label-sm mt-1">Attendance</span>
+</a>
+<!-- Active State -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform w-16 h-14" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Fees</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">chat</span>
+<span class="font-label-sm text-label-sm mt-1">Messages</span>
+</a>
+</nav>
+</div>
+<!-- Payment Modal Overlay -->
+<div class="fixed inset-0 z-[100] flex items-end md:items-center justify-center pointer-events-none" id="paymentModal">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-on-surface/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none" id="modalBackdrop"></div>
+<!-- Modal Panel -->
+<div class="bg-surface w-full md:w-[480px] rounded-t-2xl md:rounded-xl shadow-xl relative z-10 flex flex-col max-h-[90vh] transform translate-y-full transition-transform duration-300 ease-out pointer-events-auto border md:border-outline-variant border-transparent" id="modalPanel">
+<!-- Handle for mobile pull-down visual -->
+<div class="w-full flex justify-center pt-3 pb-1 md:hidden">
+<div class="w-12 h-1.5 bg-outline-variant rounded-full"></div>
+</div>
+<div class="flex justify-between items-center p-md border-b border-outline-variant pt-2 md:pt-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Select Payment Method</h3>
+<button class="text-on-surface-variant hover:bg-surface-container rounded-full p-2 transition-colors" id="closeModalBtn">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-md flex flex-col gap-sm overflow-y-auto">
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Amount to pay: <strong class="font-data-mono text-data-mono text-on-surface">₦150,000.00</strong></p>
+<!-- Option: Paystack -->
+<button class="flex items-center gap-md p-md border border-outline-variant rounded-xl hover:border-primary hover:bg-surface-container-low transition-all text-left group">
+<div class="w-12 h-12 bg-primary-fixed text-on-primary-fixed rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">credit_card</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Paystack</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Card, Bank Transfer, USSD</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+<!-- Option: Flutterwave -->
+<button class="flex items-center gap-md p-md border border-outline-variant rounded-xl hover:border-primary hover:bg-surface-container-low transition-all text-left group">
+<div class="w-12 h-12 bg-secondary-fixed text-on-secondary-fixed rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Flutterwave</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Card, Bank Transfer</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+<!-- Option: Manual Transfer -->
+<button class="flex items-center gap-md p-md border border-outline-variant rounded-xl hover:border-primary hover:bg-surface-container-low transition-all text-left group mt-2">
+<div class="w-12 h-12 bg-surface-container-high text-on-surface rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Manual Bank Transfer</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Upload proof of payment</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+</div>
+<div class="p-md bg-surface-container-lowest rounded-b-xl border-t border-outline-variant flex justify-center">
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span> Secure Encrypted Payment
+                </span>
+</div>
+</div>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('paymentModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            const panel = document.getElementById('modalPanel');
+            const openBtn = document.getElementById('triggerPaymentBtn');
+            const closeBtn = document.getElementById('closeModalBtn');
+
+            function openModal() {
+                modal.classList.remove('pointer-events-none');
+                backdrop.classList.remove('pointer-events-none');
+                
+                // Trigger animation frame for CSS transitions
+                requestAnimationFrame(() => {
+                    backdrop.classList.remove('opacity-0');
+                    backdrop.classList.add('opacity-100');
+                    panel.classList.remove('translate-y-full');
+                    panel.classList.add('translate-y-0');
+                });
+            }
+
+            function closeModal() {
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                panel.classList.remove('translate-y-0');
+                panel.classList.add('translate-y-full');
+                
+                // Wait for transition to finish before hiding container
+                setTimeout(() => {
+                    modal.classList.add('pointer-events-none');
+                    backdrop.classList.add('pointer-events-none');
+                }, 300); // matches duration-300
+            }
+
+            openBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            backdrop.addEventListener('click', closeModal);
+        });
+    </script>
+</body></html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>School Setup Wizard - Academic Structure</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#1b1c1c",
+                    "on-primary-fixed": "#001c39",
+                    "primary": "#002447",
+                    "on-secondary-fixed": "#291800",
+                    "primary-fixed": "#d4e3ff",
+                    "on-error-container": "#93000a",
+                    "secondary": "#835500",
+                    "surface-container-highest": "#e5e2e1",
+                    "inverse-on-surface": "#f3f0ef",
+                    "surface-container-high": "#eae7e7",
+                    "inverse-surface": "#303030",
+                    "on-secondary-container": "#6b4500",
+                    "tertiary-fixed": "#8df9ac",
+                    "surface-bright": "#fcf9f8",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e5e2e1",
+                    "tertiary-container": "#004320",
+                    "on-surface-variant": "#43474e",
+                    "primary-fixed-dim": "#abc8f5",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "secondary-fixed": "#ffddb4",
+                    "tertiary": "#002b12",
+                    "surface-container": "#f0eded",
+                    "outline": "#74777f",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#ffb955",
+                    "outline-variant": "#c3c6cf",
+                    "background": "#fcf9f8",
+                    "inverse-primary": "#abc8f5",
+                    "surface-tint": "#436087",
+                    "secondary-container": "#feae2c",
+                    "surface": "#fcf9f8",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#1b3a5f",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#00210d",
+                    "on-primary-container": "#88a4cf",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#4bb771",
+                    "surface-dim": "#dcd9d9",
+                    "surface-container-low": "#f6f3f2",
+                    "on-primary-fixed-variant": "#2a486e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "margin-desktop": "48px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "sm": "12px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Work Sans"],
+                    "data-mono": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg-mobile": ["Work Sans"],
+                    "display-lg": ["Work Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { background-color: #F8F9FA; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="text-on-surface flex font-body-md">
+<!-- SideNavBar (Suppressed due to linear/transactional intent of wizard) -->
+<div class="flex-1 flex flex-col min-h-screen relative w-full max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg">
+<!-- Header -->
+<header class="mb-xl flex items-center justify-between">
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-primary">School Setup Wizard</h1>
+<p class="text-on-surface-variant mt-xs font-body-lg">Configure your institutional structure.</p>
+</div>
+<div class="hidden md:flex items-center gap-sm">
+<span class="font-label-sm text-outline">Need help?</span>
+<button class="flex items-center gap-xs px-sm py-xs border border-primary text-primary rounded font-label-sm hover:bg-primary-fixed-variant/10 transition-colors">
+<span class="material-symbols-outlined text-[16px]">help</span>
+                    Support
+                </button>
+</div>
+</header>
+<!-- Stepper -->
+<div class="mb-xl">
+<div class="flex items-center justify-between relative">
+<!-- Line background -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-outline-variant/50 -z-10"></div>
+<!-- Step 1: Done -->
+<div class="flex flex-col items-center gap-sm bg-[#F8F9FA] px-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary flex items-center justify-center font-label-sm shadow-sm ring-4 ring-[#F8F9FA]">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-label-sm text-on-surface">School Info</span>
+</div>
+<!-- Step 2: Active -->
+<div class="flex flex-col items-center gap-sm bg-[#F8F9FA] px-sm">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm shadow-sm ring-4 ring-[#F8F9FA]">
+                        2
+                    </div>
+<span class="font-label-sm text-primary font-bold">Academic Structure</span>
+</div>
+<!-- Step 3: Pending -->
+<div class="flex flex-col items-center gap-sm bg-[#F8F9FA] px-sm">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-outline flex items-center justify-center font-label-sm shadow-sm ring-4 ring-[#F8F9FA]">
+                        3
+                    </div>
+<span class="font-label-sm text-outline">Finalize</span>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] p-lg md:p-xl mb-xl">
+<h2 class="font-headline-md text-primary mb-lg">Define Academic Structure</h2>
+<form class="space-y-xl">
+<!-- Section 1: Sessions & Terms -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg border-b border-outline-variant/50 pb-lg">
+<div class="relative">
+<label class="block font-label-sm text-on-surface-variant mb-xs" for="current_session">Current Academic Session</label>
+<select class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-body-md rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" id="current_session">
+<option>2023/2024</option>
+<option>2024/2025</option>
+<option>2025/2026</option>
+</select>
+</div>
+<div class="relative">
+<label class="block font-label-sm text-on-surface-variant mb-xs" for="current_term">Current Term</label>
+<select class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-body-md rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" id="current_term">
+<option>First Term</option>
+<option>Second Term</option>
+<option>Third Term</option>
+</select>
+</div>
+</div>
+<!-- Section 2: Classes & Arms Repeater -->
+<div>
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-label-sm text-on-surface font-bold uppercase tracking-wider">Classes &amp; Arms</h3>
+<button class="text-primary hover:text-primary-container font-label-sm flex items-center gap-xs transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">info</span> What is an arm?
+                        </button>
+</div>
+<!-- Repeater Container -->
+<div class="space-y-md">
+<!-- Row 1 -->
+<div class="flex flex-col md:flex-row gap-sm items-start md:items-end bg-surface-container-low p-sm rounded border border-outline-variant/50">
+<div class="w-full md:w-1/3">
+<label class="block font-label-sm text-on-surface-variant mb-xs">Class Level</label>
+<input class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-data-mono rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" placeholder="e.g. JSS1" type="text" value="JSS1"/>
+</div>
+<div class="w-full md:w-2/3 flex gap-sm items-end">
+<div class="flex-1">
+<label class="block font-label-sm text-on-surface-variant mb-xs">Arms (Comma separated)</label>
+<input class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-body-md rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" placeholder="e.g. Gold, Blue, A, B" type="text" value="Gold, Silver, Bronze"/>
+</div>
+<button class="h-12 w-12 flex items-center justify-center text-error hover:bg-error-container rounded transition-colors" title="Remove Class" type="button">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col md:flex-row gap-sm items-start md:items-end bg-surface-container-low p-sm rounded border border-outline-variant/50">
+<div class="w-full md:w-1/3">
+<label class="block font-label-sm text-on-surface-variant mb-xs">Class Level</label>
+<input class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-data-mono rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" placeholder="e.g. JSS1" type="text" value="SS1"/>
+</div>
+<div class="w-full md:w-2/3 flex gap-sm items-end">
+<div class="flex-1">
+<label class="block font-label-sm text-on-surface-variant mb-xs">Arms (Comma separated)</label>
+<input class="w-full h-12 bg-surface border border-outline-variant text-on-surface font-body-md rounded focus:ring-2 focus:ring-primary focus:border-primary px-sm" placeholder="e.g. Gold, Blue, A, B" type="text" value="Science, Arts, Commercial"/>
+</div>
+<button class="h-12 w-12 flex items-center justify-center text-error hover:bg-error-container rounded transition-colors" title="Remove Class" type="button">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add Button -->
+<button class="mt-md flex items-center gap-sm px-md py-sm border border-dashed border-primary text-primary rounded hover:bg-primary-fixed-variant/10 font-label-sm transition-colors w-full justify-center" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add Another Class
+                    </button>
+</div>
+</form>
+</main>
+<!-- Bottom Actions -->
+<footer class="flex items-center justify-between border-t border-outline-variant/50 pt-lg">
+<button class="px-lg py-sm border border-primary text-primary font-label-sm rounded hover:bg-primary-fixed-variant/10 transition-colors" type="button">
+                Back
+            </button>
+<button class="px-lg py-sm bg-secondary-container text-on-secondary-container font-label-sm rounded shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:opacity-90 transition-opacity" type="button">
+                Next Step
+            </button>
+</footer>
+</div>
+</body></html>

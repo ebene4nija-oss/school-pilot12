@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Messages - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0eded",
+                        "tertiary": "#002b12",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#436087",
+                        "inverse-primary": "#abc8f5",
+                        "outline-variant": "#c3c6cf",
+                        "background": "#fcf9f8",
+                        "outline": "#74777f",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1b3a5f",
+                        "on-background": "#1b1c1c",
+                        "secondary-container": "#feae2c",
+                        "surface": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#4bb771",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-primary-container": "#88a4cf",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d4e3ff",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#1b1c1c",
+                        "on-primary-fixed": "#001c39",
+                        "primary": "#002447",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-high": "#eae7e7",
+                        "inverse-surface": "#303030",
+                        "inverse-on-surface": "#f3f0ef",
+                        "secondary": "#835500",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-variant": "#e5e2e1",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#6b4500",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-bright": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-surface-variant": "#43474e",
+                        "primary-fixed-dim": "#abc8f5",
+                        "tertiary-container": "#004320"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "display-lg": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col relative pb-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b border-outline-variant dark:border-outline bg-surface dark:bg-surface-dim transition-colors duration-200 flex justify-between items-center px-margin-mobile h-16">
+<div class="flex items-center gap-sm cursor-pointer hover:bg-surface-container-low dark:hover:bg-surface-container-highest p-1 rounded-full transition-colors duration-200">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden shrink-0 flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A small, professional portrait photo of a Nigerian parent, suitable for a user avatar in a light-mode mobile app. The subject is smiling warmly, set against a solid, neutral gray background to ensure high contrast and legibility. The lighting is soft and even." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ9pRnYhkahkOBUq0a2HYWT2RZkev2jyUCFfshEcZlfbvyB64KWKS7jidiZSR-2v4dUAN-Do_Y7N_wtlVdcohgfaZfLwE8dRkluiRoyBrpUiAXCSY33w3HAVELkNJvrWQZzUvmWWIwWayzF8Gzc1IIFynn4MYar255Vp4_UoF77-OGjNQ5EVQmHOLSDq8Ye4ZuO-b3Tcqb7qz8h7BZ805fv6_YS4Ao2rwM8StFLDVBAHXuhYxuy7-QqA"/>
+</div>
+<span class="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim">SchoolPilot</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Main Content: Messages List -->
+<main class="flex-grow pt-20 px-margin-mobile flex flex-col gap-base max-w-2xl mx-auto w-full">
+<div class="flex justify-between items-center py-base">
+<h1 class="font-headline-md text-headline-md text-primary">Messages</h1>
+<button class="p-2 text-primary hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</div>
+<div class="flex flex-col gap-xs">
+<!-- Thread 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center gap-md cursor-pointer hover:bg-surface-container-low transition-colors duration-200 shadow-sm" onclick="toggleChatView()">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 font-headline-md text-headline-md">
+                    JD
+                </div>
+<div class="flex-grow min-w-0 flex flex-col">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-headline-md text-headline-md text-on-surface truncate">Mrs. Jane Doe (Maths)</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap ml-2">10:42 AM</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Thank you for the update on the CA test.</p>
+<div class="bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center font-label-sm text-[10px] shrink-0 ml-2">2</div>
+</div>
+</div>
+</div>
+<!-- Thread 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center gap-md cursor-pointer hover:bg-surface-container-low transition-colors duration-200 shadow-sm">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 font-headline-md text-headline-md">
+                    MA
+                </div>
+<div class="flex-grow min-w-0 flex flex-col">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-headline-md text-headline-md text-on-surface truncate">Mr. Adeyemi (Science)</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap ml-2">Yesterday</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Please remind him to bring his lab coat.</p>
+<div class="bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center font-label-sm text-[10px] shrink-0 ml-2">1</div>
+</div>
+</div>
+</div>
+<!-- Thread 3 (Read) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center gap-md cursor-pointer hover:bg-surface-container-low transition-colors duration-200">
+<div class="w-12 h-12 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0 font-headline-md text-headline-md">
+                    PO
+                </div>
+<div class="flex-grow min-w-0 flex flex-col">
+<div class="flex justify-between items-baseline mb-1">
+<h2 class="font-body-lg text-body-lg text-on-surface truncate">Principal's Office</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap ml-2">Mon</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-body-md text-body-md text-outline truncate">Mid-term break announcements attached.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Overlay Chat View (Hidden by default) -->
+<div class="fixed inset-0 bg-background z-[60] flex flex-col hidden transform translate-x-full transition-transform duration-300" id="chat-overlay">
+<!-- Chat Header -->
+<header class="border-b border-outline-variant bg-surface flex items-center px-margin-mobile h-16 shrink-0 shadow-sm">
+<button class="p-2 -ml-2 mr-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors" onclick="toggleChatView()">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 font-headline-md text-headline-md mr-sm">
+                JD
+            </div>
+<div class="flex flex-col">
+<h2 class="font-headline-md text-headline-md text-on-surface leading-tight">Mrs. Jane Doe</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">Maths Teacher</span>
+</div>
+<button class="ml-auto p-2 text-primary hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<!-- Chat History -->
+<div class="flex-grow overflow-y-auto p-margin-mobile flex flex-col gap-md bg-surface-container-lowest">
+<div class="text-center my-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-3 py-1 rounded-full">Today</span>
+</div>
+<!-- Teacher Message -->
+<div class="flex gap-sm self-start max-w-[85%]">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 font-label-sm text-label-sm mt-auto mb-1">
+                    JD
+                </div>
+<div class="flex flex-col gap-1">
+<div class="bg-surface-container p-sm rounded-2xl rounded-bl-none text-on-surface font-body-md text-body-md shadow-sm border border-outline-variant/30">
+                        Good morning. I wanted to let you know that David performed exceptionally well in the recent Continuous Assessment test. He scored 18/20.
+                    </div>
+<span class="font-label-sm text-[10px] text-on-surface-variant ml-1">10:35 AM</span>
+</div>
+</div>
+<!-- Parent Message -->
+<div class="flex gap-sm self-end max-w-[85%] flex-row-reverse">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-[#F5A623] text-[#222222] p-sm rounded-2xl rounded-br-none font-body-md text-body-md shadow-sm">
+                        That is fantastic news! Thank you for letting me know.
+                    </div>
+<span class="font-label-sm text-[10px] text-on-surface-variant mr-1">10:40 AM</span>
+</div>
+</div>
+<!-- Parent Message -->
+<div class="flex gap-sm self-end max-w-[85%] flex-row-reverse">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-[#F5A623] text-[#222222] p-sm rounded-2xl rounded-br-none font-body-md text-body-md shadow-sm">
+                        Is there anything specific he should focus on for the upcoming term exams?
+                    </div>
+<span class="font-label-sm text-[10px] text-on-surface-variant mr-1">10:41 AM <span class="material-symbols-outlined text-[12px] align-middle">done_all</span></span>
+</div>
+</div>
+<!-- Teacher Message -->
+<div class="flex gap-sm self-start max-w-[85%] mt-2">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 font-label-sm text-label-sm mt-auto mb-1">
+                    JD
+                </div>
+<div class="flex flex-col gap-1">
+<div class="bg-surface-container p-sm rounded-2xl rounded-bl-none text-on-surface font-body-md text-body-md shadow-sm border border-outline-variant/30">
+                        He should review algebraic fractions, as that will be a major part of the exam. I'll send some practice worksheets later today.
+                    </div>
+<span class="font-label-sm text-[10px] text-on-surface-variant ml-1">10:42 AM</span>
+</div>
+</div>
+</div>
+<!-- Chat Input -->
+<div class="border-t border-outline-variant bg-surface p-sm pb-safe flex items-end gap-sm">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors mb-1 shrink-0">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<div class="flex-grow bg-surface-container-low rounded-xl border border-outline-variant focus-within:border-primary transition-colors flex items-center min-h-[44px]">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md text-on-surface py-sm px-3 max-h-32" placeholder="Type a message..." rows="1" style="field-sizing: content;"></textarea>
+</div>
+<button class="w-11 h-11 bg-primary text-on-primary rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0 shadow-md">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-surface-dim shadow-md border-t border-outline-variant dark:border-outline md:hidden">
+<div class="flex justify-around items-center h-20 pb-safe px-xs">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">calendar_month</span>
+<span class="font-label-sm text-label-sm">Attendance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-95 transition-transform w-16 py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">assessment</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<!-- Active State -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-label-sm text-label-sm font-bold">Messages</span>
+</a>
+</div>
+</nav>
+<script>
+        function toggleChatView() {
+            const overlay = document.getElementById('chat-overlay');
+            if (overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                // Small delay to allow display:block to apply before animating transform
+                setTimeout(() => {
+                    overlay.classList.remove('translate-x-full');
+                }, 10);
+            } else {
+                overlay.classList.add('translate-x-full');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300); // match transition duration
+            }
+        }
+    </script>
+</body></html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Grading Queue</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#1b1c1c",
+                    "surface-dim": "#dcd9d9",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "surface-container-high": "#eae7e7",
+                    "primary-container": "#1b3a5f",
+                    "on-primary-fixed": "#001c39",
+                    "background": "#fcf9f8",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#6b4500",
+                    "surface-container-low": "#f6f3f2",
+                    "secondary-fixed-dim": "#ffb955",
+                    "secondary": "#835500",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#88a4cf",
+                    "on-tertiary-container": "#4bb771",
+                    "primary": "#002447",
+                    "secondary-fixed": "#ffddb4",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "surface-variant": "#e5e2e1",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed": "#291800",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c3c6cf",
+                    "primary-fixed-dim": "#abc8f5",
+                    "on-surface-variant": "#43474e",
+                    "on-tertiary-fixed": "#00210d",
+                    "inverse-surface": "#303030",
+                    "primary-fixed": "#d4e3ff",
+                    "secondary-container": "#feae2c",
+                    "tertiary-container": "#004320",
+                    "surface-tint": "#436087",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "tertiary": "#002b12",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "surface": "#fcf9f8",
+                    "outline": "#74777f",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f3f0ef",
+                    "error-container": "#ffdad6",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#8df9ac",
+                    "surface-container-highest": "#e5e2e1",
+                    "inverse-primary": "#abc8f5",
+                    "surface-container": "#f0eded",
+                    "surface-bright": "#fcf9f8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "base": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "48px",
+                    "gutter": "16px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "display-lg-mobile": ["Work Sans"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Work Sans"],
+                    "data-mono": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-24 font-body-md text-body-md flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky border-b border-outline-variant bg-background flex justify-between items-center px-margin-mobile py-xs z-40">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant shrink-0 bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a Nigerian teacher in their 30s, wearing smart-casual attire. Bright, evenly lit portrait shot with a clean, light mode corporate background. High contrast, sharp focus, exuding authority and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVmqOavj1l3ZCPWmpz8hnn37puB202emgwkvka7k6w641Y9jhiNmGG2XvmhKYrI3JpHvoI0_aVFgV41E22H0aeH8mbKPYfHcUg5n0gf2aax7RrFE0npSO-AlKFCr_lTqCtghbJT2NcFvHoPiHM-lH5GWwSUy57gPYDQxWm1d0AnLkf3a83fcXnKXAhPSSVy7vnpsgb0dIYf94W2mdsZxrGvKEMqb9_cg_sC6VOWqRFAnAk6e7j7wTd5g"/>
+</div>
+<h1 class="font-headline-md text-headline-md-mobile font-bold text-primary">SchoolPilot</h1>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low active:opacity-80 transition-opacity focus:outline-none">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col w-full max-w-3xl mx-auto px-margin-mobile pt-lg pb-xl gap-lg">
+<!-- Context Header -->
+<section class="flex flex-col gap-xs">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+<span>JSS3 Mathematics</span>
+</div>
+<h2 class="font-display-lg-mobile text-display-lg-mobile text-primary">Term 2 Midterm Project</h2>
+<p class="text-on-surface-variant font-body-md text-body-md">Due: Friday, 14th Nov • 40 Students</p>
+</section>
+<!-- Progress/Stats Bento Block -->
+<section class="grid grid-cols-2 gap-sm">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Graded</span>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-headline-md text-headline-md-mobile text-tertiary-container">12</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/40</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Pending Review</span>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-headline-md text-headline-md-mobile text-secondary-container">28</span>
+</div>
+</div>
+</section>
+<!-- Queue Section -->
+<section class="flex flex-col gap-sm">
+<div class="flex justify-between items-center mb-xs">
+<h3 class="font-headline-md text-headline-md-mobile text-on-surface">Submissions</h3>
+<button class="flex items-center gap-1 text-primary font-label-sm text-label-sm px-2 py-1 rounded hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" style="font-size: 18px;">sort</span>
+                    Sort
+                </button>
+</div>
+<!-- Student Cards List -->
+<div class="flex flex-col gap-xs">
+<!-- Card: Needs Grading (Amber Status) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex items-center relative shadow-sm border-l-4 border-l-secondary-container">
+<div class="flex-1 p-sm flex flex-col justify-center min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<h4 class="font-headline-md text-headline-md-mobile text-on-surface truncate">Chidi Okafor</h4>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Needs Grading</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>
+<span class="truncate">Submitted 2h ago</span>
+</div>
+</div>
+<div class="p-sm flex items-center justify-center">
+<button class="w-12 h-12 rounded-full bg-surface-container-low text-primary flex items-center justify-center hover:bg-outline-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined">edit_document</span>
+</button>
+</div>
+</article>
+<!-- Card: Needs Grading (Amber Status) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex items-center relative shadow-sm border-l-4 border-l-secondary-container">
+<div class="flex-1 p-sm flex flex-col justify-center min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<h4 class="font-headline-md text-headline-md-mobile text-on-surface truncate">Aisha Mohammed</h4>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Needs Grading</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>
+<span class="truncate">Submitted 5h ago</span>
+</div>
+</div>
+<div class="p-sm flex items-center justify-center">
+<button class="w-12 h-12 rounded-full bg-surface-container-low text-primary flex items-center justify-center hover:bg-outline-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined">edit_document</span>
+</button>
+</div>
+</article>
+<!-- Card: Late Submission (Red Status) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex items-center relative shadow-sm border-l-4 border-l-error">
+<div class="flex-1 p-sm flex flex-col justify-center min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<h4 class="font-headline-md text-headline-md-mobile text-on-surface truncate">Oluwaseun Adeyemi</h4>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Late</span>
+</div>
+<div class="flex items-center gap-xs text-error font-body-md text-body-md">
+<span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
+<span class="truncate">Submitted 1 day late</span>
+</div>
+</div>
+<div class="p-sm flex items-center justify-center">
+<button class="w-12 h-12 rounded-full bg-surface-container-low text-primary flex items-center justify-center hover:bg-outline-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined">edit_document</span>
+</button>
+</div>
+</article>
+<!-- Card: Graded (Green Status) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex items-center relative shadow-sm border-l-4 border-l-tertiary-container opacity-75">
+<div class="flex-1 p-sm flex flex-col justify-center min-w-0">
+<div class="flex items-center justify-between gap-2 mb-1">
+<h4 class="font-headline-md text-headline-md-mobile text-on-surface truncate">Ngozi Eze</h4>
+<div class="flex items-center gap-2">
+<span class="font-data-mono text-data-mono font-bold text-tertiary-container">85%</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Graded</span>
+</div>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+<span class="truncate">Graded Yesterday</span>
+</div>
+</div>
+<div class="p-sm flex items-center justify-center">
+<button class="w-12 h-12 rounded-full text-on-surface-variant flex items-center justify-center hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</article>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant shadow-sm fixed bottom-0 left-0 w-full flex justify-around items-center px-xs py-base bg-surface-container-lowest">
+<!-- Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- Classes (Active per Intent) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl py-1 px-3 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 24px;">school</span>
+<span class="font-label-sm text-label-sm mt-1">Classes</span>
+</a>
+<!-- Grades (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Grades</span>
+</a>
+<!-- AI Studio (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">auto_awesome</span>
+<span class="font-label-sm text-label-sm mt-1">AI Studio</span>
+</a>
+<!-- Messages (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">mail</span>
+<span class="font-label-sm text-label-sm mt-1">Messages</span>
+</a>
+</nav>
+</body></html>

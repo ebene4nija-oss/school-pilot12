@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Staff Profile</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Google Fonts: Inter & Work Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS & Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error": "#ba1a1a",
+                        "primary-container": "#1b3a5f",
+                        "on-secondary-fixed": "#291800",
+                        "secondary-container": "#feae2c",
+                        "primary-fixed": "#d4e3ff",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#4bb771",
+                        "background": "#fcf9f8",
+                        "on-primary-container": "#88a4cf",
+                        "surface": "#fcf9f8",
+                        "inverse-primary": "#abc8f5",
+                        "secondary": "#835500",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "primary": "#002447",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb955",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#002b12",
+                        "surface-variant": "#e5e2e1",
+                        "on-background": "#1b1c1c",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-primary-fixed": "#001c39",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-container-low": "#f6f3f2",
+                        "surface-container-high": "#eae7e7",
+                        "on-surface": "#1b1c1c",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#303030",
+                        "on-secondary-container": "#6b4500",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#fcf9f8",
+                        "outline-variant": "#c3c6cf",
+                        "on-surface-variant": "#43474e",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary-container": "#004320",
+                        "tertiary-fixed": "#8df9ac",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "outline": "#74777f",
+                        "surface-tint": "#436087"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "sm": "12px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "base": "8px",
+                        "lg": "24px"
+                    },
+                    fontFamily: {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "data-mono": ["Inter"]
+                    },
+                    fontSize: {
+                        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["14px", { lineHeight: "22px", fontWeight: "400" }],
+                        "body-lg": ["16px", { lineHeight: "26px", fontWeight: "400" }],
+                        "display-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "data-mono": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased min-h-screen flex">
+<!-- Shared Component: SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-primary dark:bg-primary-container border-r border-outline-variant flex flex-col py-md gap-xs z-50">
+<!-- Brand Header -->
+<div class="px-lg pb-md mb-md border-b border-outline-variant/20">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-size: 20px;">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 flex flex-col gap-1">
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<!-- Active State (Semantically matching Staff Profile intent) -->
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 mx-2 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-label-sm text-label-sm">CBT</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+</nav>
+<!-- Settings (Bottom) -->
+<div class="mt-auto border-t border-outline-variant/20 pt-sm">
+<a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-64 flex flex-col min-h-screen w-[calc(100%-16rem)]">
+<!-- Shared Component: TopNavBar -->
+<header class="h-16 w-full sticky top-0 z-40 bg-surface border-b border-outline-variant flex justify-between items-center px-lg">
+<!-- Search on Left -->
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Search staff records..." type="text"/>
+</div>
+<!-- Trailing Icons & Profile -->
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full text-on-surface-variant relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full text-on-surface-variant">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<img class="w-9 h-9 rounded-full object-cover border border-outline-variant cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" data-alt="A professional headshot of a female school administrator in a modern office setting. She is wearing a dark blue blazer. The lighting is soft and bright, creating a clean, corporate light-mode aesthetic. Depth of field is shallow, blurring the background slightly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWFPo41qtxNgy39xmnY5bQaJGnPEZPPnxXq5ns6OyHmAD8fyj_5tj6lGDLpyKgFOdoxnd1cT6nrwnVWi88UqB1fz5ALxUW7a1j_44a8QVsCxmVH64CV9IObQdF1SXnA9Wv2Esl41bvHmc3ki6Z_BvZMf0WYnKaJqPHYoQFJm1X3Za81GkMZk8yEGW9eCk5mKKKlyO9yMJSXwija5UNxx55fx0l-ZpN7Pxe7z2lrmZF20w_furrc-Uf0A"/>
+</div>
+</header>
+<!-- Canvas Area -->
+<main class="flex-1 p-margin-desktop bg-background overflow-y-auto">
+<div class="max-w-6xl mx-auto space-y-lg">
+<!-- Profile Header Card (Glassy/Elevated Minimal) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col md:flex-row items-start md:items-center gap-lg shadow-sm">
+<div class="relative">
+<img class="w-32 h-32 rounded-full object-cover border-4 border-surface shadow-md" data-alt="A high-quality, professional headshot of a male senior mathematics teacher. He has a warm, confident expression and is wearing a neat button-down shirt and tie. The background is a subtle, out-of-focus modern classroom or office environment. Bright, even lighting suitable for a corporate profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCEuMRHpj_IRvPcUud32BppFC-kbgaBYYJeSmi6kxQae4lXHn_pb7gYPH9QHuv8DeeFrjIcuqpOnN6PbwfHkCaBkNtnCaSmuaFPRO16RIGWvxMRGkQfrOsVUkXeA-_OTvO7Yy59u6GLa4EQHtAQRTWSsyJamGNFicpP_IhheoMuhHuKrRzkVraqWTMPpstpi-V3D62adbfdF4nxQCMCcalNR5GCPQzO8jeLfIile0kiv_j-nfjCoxxdQ"/>
+<span class="absolute bottom-1 right-1 w-6 h-6 bg-tertiary-container border-2 border-surface rounded-full flex items-center justify-center" title="Active Status">
+<span class="w-2.5 h-2.5 bg-on-tertiary-container rounded-full"></span>
+</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<h2 class="font-display-lg text-display-lg text-on-surface">Dr. Samuel Ojo</h2>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;" title="Verified Staff">verified</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-container/10 text-primary-fixed-variant rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">work</span>
+                                Head of Department - Sciences
+                            </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">pin_drop</span>
+                                Main Campus
+                            </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                            Senior educator with over 15 years of experience in curriculum development and advanced mathematics instruction. Responsible for coordinating science department activities and standardizing assessment protocols.
+                        </p>
+</div>
+<div class="flex flex-col gap-3 min-w-[140px]">
+<button class="w-full bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim transition-colors py-2.5 px-4 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">mail</span>
+                            Message
+                        </button>
+<button class="w-full border border-primary text-primary hover:bg-primary/5 transition-colors py-2.5 px-4 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                            Edit Profile
+                        </button>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Left Column: Qualifications (Spans 2 cols on wide screens) -->
+<div class="lg:col-span-2 flex flex-col gap-lg">
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg h-full">
+<div class="flex justify-between items-center mb-md pb-sm border-b border-outline-variant/30">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">school</span>
+                                    Qualifications &amp; Certifications
+                                </h3>
+<button class="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- Custom Asymmetric List instead of standard <ul> -->
+<div class="space-y-6 mt-4">
+<!-- Item 1 -->
+<div class="flex gap-md relative group">
+<div class="w-12 h-12 rounded-lg bg-primary-container/5 border border-primary-container/20 flex items-center justify-center shrink-0 group-hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined text-primary-container">workspace_premium</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface">Ph.D. in Educational Administration</h4>
+<div class="flex items-center gap-2 mt-1 mb-2">
+<span class="font-body-md text-body-md text-on-surface-variant">University of Lagos</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-body-md text-body-md text-on-surface-variant">2018</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant/80 text-sm">Thesis focused on predictive modeling for student performance in standardized testing environments.</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-md relative group">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 group-hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">history_edu</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface">M.Sc. Applied Mathematics</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-md text-body-md text-on-surface-variant">Obafemi Awolowo University</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-body-md text-body-md text-on-surface-variant">2012</span>
+</div>
+</div>
+</div>
+<!-- Item 3 (Certification) -->
+<div class="flex gap-md relative group">
+<div class="w-12 h-12 rounded-lg bg-tertiary-container/10 border border-tertiary-container/20 flex items-center justify-center shrink-0 group-hover:bg-tertiary-container/20 transition-colors">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface">TRCN Professional Certification</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-md text-body-md text-on-surface-variant">Teachers Registration Council of Nigeria</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-label-sm text-label-sm text-tertiary-container bg-tertiary-container/10 px-2 py-0.5 rounded">Active</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Security/Data Widgets -->
+<div class="flex flex-col gap-lg">
+<!-- Salary Band Widget (Secure/Muted Look) -->
+<section class="bg-surface-container-low border border-surface-variant rounded-xl p-lg relative overflow-hidden group shadow-sm">
+<!-- Subtle secure background pattern (CSS driven) -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-position: 0 0, 10px 10px; background-size: 20px 20px;"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">lock</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Remuneration</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-variant px-2 py-1 rounded">Confidential</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-md mb-4 flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Current Band</span>
+<div class="flex items-baseline gap-2">
+<span class="font-data-mono text-data-mono text-2xl font-bold text-on-surface">Level 12</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Step 4</span>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/30 pt-3">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Next Review Date</span>
+<span class="font-data-mono text-data-mono font-medium text-on-surface">15 Jan, 2025</span>
+</div>
+<button class="text-primary hover:bg-primary/5 p-2 rounded-lg transition-colors flex items-center justify-center" title="Request Access/View Details">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Leave Balance Widget -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+<div class="flex items-center gap-2 mb-md">
+<span class="material-symbols-outlined text-secondary-container">flight_takeoff</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Annual Leave</h3>
+</div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body-md text-body-md text-on-surface-variant">Days Used</span>
+<span class="font-data-mono text-data-mono font-bold text-on-surface">14 <span class="font-body-sm text-on-surface-variant font-normal">/ 21</span></span>
+</div>
+<!-- Custom Progress Bar -->
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden mb-4">
+<!-- 14/21 is roughly 66% -->
+<div class="h-full bg-secondary-container rounded-full" style="width: 66%;"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<div class="bg-surface-container p-sm rounded-lg flex flex-col items-center justify-center text-center">
+<span class="font-data-mono text-data-mono text-lg font-bold text-on-surface">7</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Remaining</span>
+</div>
+<div class="bg-surface-container p-sm rounded-lg flex flex-col items-center justify-center text-center hover:bg-surface-variant transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
+<span class="material-symbols-outlined text-primary mb-1">edit_calendar</span>
+<span class="font-label-sm text-label-sm text-primary">Log Leave</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

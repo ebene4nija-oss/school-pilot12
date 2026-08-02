@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - CBT Exam Setup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "surface-container-low": "#f6f3f2",
+                            "primary": "#002447",
+                            "surface-container-highest": "#e5e2e1",
+                            "on-surface": "#1b1c1c",
+                            "tertiary-container": "#004320",
+                            "secondary-fixed-dim": "#ffb955",
+                            "on-primary-fixed-variant": "#2a486e",
+                            "on-surface-variant": "#43474e",
+                            "on-primary-fixed": "#001c39",
+                            "secondary": "#835500",
+                            "inverse-primary": "#abc8f5",
+                            "on-tertiary-container": "#4bb771",
+                            "on-secondary": "#ffffff",
+                            "on-error": "#ffffff",
+                            "on-secondary-container": "#6b4500",
+                            "surface-container-lowest": "#ffffff",
+                            "surface-container": "#f0eded",
+                            "on-secondary-fixed": "#291800",
+                            "on-secondary-fixed-variant": "#633f00",
+                            "surface-bright": "#fcf9f8",
+                            "primary-fixed-dim": "#abc8f5",
+                            "primary-fixed": "#d4e3ff",
+                            "on-error-container": "#93000a",
+                            "inverse-surface": "#303030",
+                            "tertiary-fixed": "#8df9ac",
+                            "tertiary": "#002b12",
+                            "outline-variant": "#c3c6cf",
+                            "on-background": "#1b1c1c",
+                            "tertiary-fixed-dim": "#71dc92",
+                            "inverse-on-surface": "#f3f0ef",
+                            "primary-container": "#1b3a5f",
+                            "on-tertiary-fixed": "#00210d",
+                            "background": "#fcf9f8",
+                            "surface-variant": "#e5e2e1",
+                            "surface-container-high": "#eae7e7",
+                            "on-primary": "#ffffff",
+                            "on-tertiary": "#ffffff",
+                            "on-tertiary-fixed-variant": "#005229",
+                            "secondary-container": "#feae2c",
+                            "outline": "#74777f",
+                            "surface": "#fcf9f8",
+                            "error-container": "#ffdad6",
+                            "error": "#ba1a1a",
+                            "secondary-fixed": "#ffddb4",
+                            "surface-tint": "#436087",
+                            "on-primary-container": "#88a4cf",
+                            "surface-dim": "#dcd9d9"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {
+                            "xl": "32px",
+                            "gutter": "16px",
+                            "base": "8px",
+                            "margin-desktop": "48px",
+                            "sm": "12px",
+                            "md": "16px",
+                            "margin-mobile": "16px",
+                            "xs": "4px",
+                            "lg": "24px"
+                    },
+                    "fontFamily": {
+                            "body-md": ["Inter"],
+                            "label-sm": ["Inter"],
+                            "headline-md": ["Work Sans"],
+                            "data-mono": ["Inter"],
+                            "body-lg": ["Inter"],
+                            "display-lg-mobile": ["Work Sans"],
+                            "display-lg": ["Work Sans"]
+                    },
+                    "fontSize": {
+                            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                            "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                            "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                            "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-x-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-primary dark:bg-primary-container h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline z-20 flex flex-col p-md gap-base">
+<div class="flex items-center gap-sm px-md py-sm mb-lg">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container" data-weight="fill">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary-container rounded-lg py-sm px-md font-label-sm text-label-sm font-bold flex items-center justify-center gap-xs hover:bg-secondary-fixed-dim transition-colors mb-sm shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Assessment
+        </button>
+<div class="flex-1 overflow-y-auto flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">group</span>
+                Students
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">badge</span>
+                Staff
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+                Timetable
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">grading</span>
+                Results
+            </a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold font-label-sm text-label-sm scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-weight="fill">quiz</span>
+                CBT
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">payments</span>
+                Fees
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="ml-64 flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 sticky border-b border-outline-variant dark:border-outline z-10">
+<div class="flex justify-between items-center h-16 px-lg w-full">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed hidden">SchoolPilot</span>
+<nav class="flex gap-md">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-xl pr-sm py-xs rounded-full border border-outline-variant bg-surface-container-low text-body-md font-body-md focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="p-xs text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden border border-outline-variant cursor-pointer ml-xs">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a Nigerian school administrator, smiling slightly, well-lit modern corporate environment, high-key lighting, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk4e9Kgfxwqv6Y3n514-u7e4B1KWNajdCDQs6CPypAAVkrKfQYiAxgkpd7NTc-ZyBnGKLqdKmsWdc7owaeB7oAYs6UAOC0HvJHE-QdcTC33pbCeFNd_IY8M6SDd7o0RYkQFmQDwJGRGcShEAQgsQ4ZZ4LGBPTQHk1LQ6i-YdphES1w_jaQYKkcFJshjbv4CEXc-I2nPbopIxlJKcz_tqNwJcmLKIZKVCaeOqzRtY7cDNdWuXyGtUG2yQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-lg bg-background flex flex-col gap-lg">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary mb-xs">CBT Exam Setup</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure parameters and select questions for the upcoming assessment.</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm border border-primary-container text-primary-container rounded-lg font-label-sm text-label-sm hover:bg-surface-container-low transition-colors">Save Draft</button>
+<button class="px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-label-sm text-label-sm font-bold shadow-[0px_4px_12px_rgba(0,0,0,0.05)] hover:bg-secondary-fixed-dim transition-colors flex items-center gap-xs">
+                        Publish Exam
+                        <span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+<!-- Two Panel Layout -->
+<div class="flex flex-col lg:flex-row gap-lg h-full min-h-[600px]">
+<!-- Left Panel: Question Bank -->
+<div class="flex-[3] bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h3 class="font-label-sm text-label-sm text-on-surface font-bold uppercase tracking-wider">Question Bank</h3>
+<div class="text-body-md font-body-md text-on-surface-variant">Total Selected: <span class="font-bold text-primary">0</span></div>
+</div>
+<!-- Filters -->
+<div class="p-md border-b border-outline-variant bg-surface flex flex-wrap gap-sm">
+<div class="relative flex-1 min-w-[150px]">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-body-md font-body-md focus:ring-2 focus:ring-primary focus:border-primary pt-6 pb-2">
+<option value="">All Subjects</option>
+<option value="math">Mathematics</option>
+<option value="eng">English Language</option>
+<option value="phy">Physics</option>
+</select>
+<label class="absolute left-sm top-1 text-[10px] font-label-sm text-on-surface-variant uppercase tracking-wider">Subject</label>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+<div class="relative flex-1 min-w-[150px]">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-body-md font-body-md focus:ring-2 focus:ring-primary focus:border-primary pt-6 pb-2">
+<option value="">All Topics</option>
+<option value="alg">Algebra</option>
+<option value="geom">Geometry</option>
+<option value="stat">Statistics</option>
+</select>
+<label class="absolute left-sm top-1 text-[10px] font-label-sm text-on-surface-variant uppercase tracking-wider">Topic</label>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+<div class="flex items-center gap-xs ml-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant mr-xs">Difficulty:</span>
+<button class="px-sm py-xs rounded-full border border-outline-variant text-label-sm font-label-sm hover:bg-surface-container-low transition-colors bg-tertiary-container/10 text-tertiary border-tertiary/30">Easy</button>
+<button class="px-sm py-xs rounded-full border border-outline-variant text-label-sm font-label-sm hover:bg-surface-container-low transition-colors">Medium</button>
+<button class="px-sm py-xs rounded-full border border-outline-variant text-label-sm font-label-sm hover:bg-surface-container-low transition-colors">Hard</button>
+</div>
+</div>
+<!-- Question List -->
+<div class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm bg-surface-container-low/50">
+<!-- Empty State Example (Hidden for now, just to show structure if needed) -->
+<!-- <div class="flex-1 flex flex-col items-center justify-center text-on-surface-variant p-lg text-center">
+                            <span class="material-symbols-outlined text-[48px] mb-sm opacity-50">search_off</span>
+                            <p class="font-body-md text-body-md">No questions found matching the selected filters.</p>
+                        </div> -->
+<!-- Question Card 1 -->
+<div class="bg-surface-container-lowest p-md rounded-lg border border-outline-variant hover:border-primary transition-colors cursor-pointer group relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary rounded-l-lg hidden group-hover:block"></div>
+<div class="flex gap-md">
+<div class="pt-1">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex gap-xs items-center">
+<span class="bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-label-sm text-on-surface uppercase">Mathematics</span>
+<span class="bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-label-sm text-on-surface uppercase">Algebra</span>
+</div>
+<span class="bg-tertiary/10 text-tertiary border border-tertiary/20 px-2 py-0.5 rounded text-[10px] font-label-sm uppercase">Easy</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface mb-sm">Solve for x: 2x + 5 = 15</p>
+<div class="grid grid-cols-2 gap-xs text-body-md font-body-md text-on-surface-variant text-[13px]">
+<div class="flex items-center gap-xs"><span class="font-bold">A.</span> 5</div>
+<div class="flex items-center gap-xs"><span class="font-bold">B.</span> 10</div>
+<div class="flex items-center gap-xs"><span class="font-bold">C.</span> 20</div>
+<div class="flex items-center gap-xs"><span class="font-bold">D.</span> 2.5</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Question Card 2 -->
+<div class="bg-surface-container-lowest p-md rounded-lg border border-outline-variant hover:border-primary transition-colors cursor-pointer group relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary rounded-l-lg hidden group-hover:block"></div>
+<div class="flex gap-md">
+<div class="pt-1">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex gap-xs items-center">
+<span class="bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-label-sm text-on-surface uppercase">Mathematics</span>
+<span class="bg-surface-container-high px-2 py-0.5 rounded text-[10px] font-label-sm text-on-surface uppercase">Geometry</span>
+</div>
+<span class="bg-secondary-container/20 text-on-secondary-container border border-secondary-container/30 px-2 py-0.5 rounded text-[10px] font-label-sm uppercase">Medium</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface mb-sm">What is the area of a circle with radius 7cm? (Take π = 22/7)</p>
+<div class="grid grid-cols-2 gap-xs text-body-md font-body-md text-on-surface-variant text-[13px]">
+<div class="flex items-center gap-xs"><span class="font-bold">A.</span> 44 cm²</div>
+<div class="flex items-center gap-xs"><span class="font-bold">B.</span> 154 cm²</div>
+<div class="flex items-center gap-xs"><span class="font-bold">C.</span> 22 cm²</div>
+<div class="flex items-center gap-xs"><span class="font-bold">D.</span> 49 cm²</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: Exam Builder Settings -->
+<div class="flex-[1.5] flex flex-col gap-md">
+<!-- Settings Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low">
+<h3 class="font-label-sm text-label-sm text-on-surface font-bold uppercase tracking-wider">Exam Configuration</h3>
+</div>
+<div class="p-md flex flex-col gap-md">
+<!-- Format Selector -->
+<div class="relative w-full">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm text-body-md font-body-md focus:ring-2 focus:ring-primary focus:border-primary pt-7 pb-2">
+<option value="internal">Internal Assessment</option>
+<option value="waec">WAEC Format</option>
+<option value="neco">NECO Format</option>
+<option value="jamb">JAMB Format</option>
+</select>
+<label class="absolute left-md top-2 text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider">Exam Format</label>
+<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+<!-- Duration -->
+<div class="relative w-full">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm text-body-md font-body-md focus:ring-2 focus:ring-primary focus:border-primary pt-7 pb-2 pr-12" type="number" value="60"/>
+<label class="absolute left-md top-2 text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider">Duration (Minutes)</label>
+<span class="absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant font-label-sm text-label-sm">MIN</span>
+</div>
+<!-- Toggles -->
+<div class="flex flex-col gap-sm mt-xs">
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Shuffle Questions</span>
+<div class="relative">
+<input checked="" class="sr-only" type="checkbox"/>
+<div class="block bg-primary w-10 h-6 rounded-full transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform translate-x-4"></div>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Shuffle Options</span>
+<div class="relative">
+<input checked="" class="sr-only" type="checkbox"/>
+<div class="block bg-primary w-10 h-6 rounded-full transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform translate-x-4"></div>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Show Immediate Results</span>
+<div class="relative">
+<input class="sr-only" type="checkbox"/>
+<div class="block bg-surface-variant w-10 h-6 rounded-full transition-colors border border-outline-variant"></div>
+<div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform border border-outline-variant"></div>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Custom Question Action -->
+<button class="w-full py-md border-2 border-dashed border-outline-variant rounded-xl text-on-surface-variant font-label-sm text-label-sm flex flex-col items-center justify-center gap-xs hover:border-primary hover:text-primary hover:bg-primary-fixed/20 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[24px]">add_circle</span>
+                        Create Custom Question
+                    </button>
+<!-- Summary Card -->
+<div class="mt-auto bg-primary-container text-on-primary-container rounded-xl p-md">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-sm text-label-sm opacity-80 uppercase tracking-wider">Estimated Score</span>
+<span class="font-headline-md text-headline-md font-bold">100 marks</span>
+</div>
+<div class="text-[12px] font-body-md opacity-80 border-t border-on-primary-container/20 pt-sm">
+                            Based on selected questions weightage.
+                        </div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

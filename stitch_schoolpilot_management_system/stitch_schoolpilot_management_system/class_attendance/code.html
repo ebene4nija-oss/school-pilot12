@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Class Attendance - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .material-symbols-outlined {
+                font-family: 'Material Symbols Outlined';
+                font-weight: normal;
+                font-style: normal;
+                font-size: 24px;
+                line-height: 1;
+                letter-spacing: normal;
+                text-transform: none;
+                display: inline-block;
+                white-space: nowrap;
+                word-wrap: normal;
+                direction: ltr;
+                -webkit-font-feature-settings: 'liga';
+                -webkit-font-smoothing: antialiased;
+            }
+        }
+    </style>
+<style>
+        @keyframes scan {
+            0%, 100% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            50% { top: 100%; }
+        }
+        .animate-scan {
+            animation: scan 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        /* Hide scrollbar for clean UI but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#1b1c1c",
+                        "surface-dim": "#dcd9d9",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#6b4500",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#ffb955",
+                        "secondary": "#835500",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#88a4cf",
+                        "on-tertiary-container": "#4bb771",
+                        "primary": "#002447",
+                        "secondary-fixed": "#ffddb4",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-variant": "#e5e2e1",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c3c6cf",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary-fixed": "#00210d",
+                        "inverse-surface": "#303030",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "tertiary-container": "#004320",
+                        "surface-tint": "#436087",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary": "#002b12",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "surface": "#fcf9f8",
+                        "outline": "#74777f",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-container-highest": "#e5e2e1",
+                        "inverse-primary": "#abc8f5",
+                        "surface-container": "#f0eded",
+                        "surface-bright": "#fcf9f8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "48px",
+                        "gutter": "16px",
+                        "md": "16px"
+                    },
+                    fontFamily: {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "display-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "body-md": ["14px", { lineHeight: "22px", fontWeight: "400" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "data-mono": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "26px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md pb-[72px] md:pb-0">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky border-b border-outline-variant bg-background flex justify-between items-center px-margin-mobile py-xs z-40">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex-shrink-0 border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a Nigerian school teacher, natural daylight, sharp focus, wearing a neat corporate shirt, conveying authority and approachability in a light-mode UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD32cRdomLBNTG080g5ecB1GSqdCiEK2Cei0W9stDunKOwuYV7RMl6YZKgGWgRA5PI7PVfJDH1Mz1xCr00MxQFy8M11eC-FrwKQfe1chkjpvJDDdyz5F-T0vTyRb_PSGJ_Wra6nlJNWaO1c5yGO1-lbKdiW1erZFzozKfJR1xeMDo1i28ivd8dgdtuGvmneUkWBERnGg5zu0CIXtaPUJIbHo6ILYSqGHEKFa8poU-eZLjg8h5JXXKgJpQ"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary truncate px-2">SchoolPilot</h1>
+<button class="text-primary hover:bg-surface-container-low active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="flex-1 flex flex-col">
+<!-- QR Scanner Area -->
+<section class="bg-inverse-surface relative w-full h-[280px] flex flex-col items-center justify-center overflow-hidden flex-shrink-0">
+<!-- Simulated Camera Feed Background -->
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity" data-alt="A slightly blurred view of a bright classroom environment, wooden desks, whiteboards, acting as a background for a camera viewfinder overlay, high-key lighting, modern corporate style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCTQCAtUuNjniFi7r3f5b3oFYB7PjyfoiNaH82xYLgRsQt3FxcqQmLP_19EMbTQh-D-cDrUxF67qUWaAyflGSibcmyrCYLfjynipMBljSzg65AIKLR54Dadysg0y2gSmky791QJQgmifQLW87Gz0tCWGl05XJ2l0vVv_Us0RQimB3YzeUU5QDI4j0bVpPYzJSnbnuPwNZ2Hc5kaHiF_aD8XQZ9OHNgf7-AYDLMlD-YQ_4ZkghDx6WJJAw')"></div>
+<!-- Viewfinder -->
+<div class="relative w-48 h-48 border-2 border-outline-variant rounded-xl flex items-center justify-center overflow-hidden z-10 bg-black/10 backdrop-blur-sm">
+<!-- Corner Guides -->
+<div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary-fixed rounded-tl-xl"></div>
+<div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary-fixed rounded-tr-xl"></div>
+<div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary-fixed rounded-bl-xl"></div>
+<div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary-fixed rounded-br-xl"></div>
+<!-- Scanning Line -->
+<div class="absolute left-0 w-full h-[2px] bg-secondary-container shadow-[0_0_8px_rgba(254,174,44,0.8)] animate-scan"></div>
+</div>
+<div class="mt-lg z-10 flex items-center gap-2 bg-inverse-surface/80 px-4 py-2 rounded-full backdrop-blur-md">
+<span class="material-symbols-outlined text-inverse-on-surface text-[18px]">qr_code_scanner</span>
+<p class="font-label-sm text-label-sm text-inverse-on-surface uppercase tracking-wider">Scan Student ID</p>
+</div>
+</section>
+<!-- Roster Section -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest">
+<!-- Sticky Header for Roster -->
+<div class="sticky top-[56px] z-30 bg-surface-container-lowest border-b border-outline-variant px-margin-mobile py-sm flex justify-between items-end shadow-sm">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">JSS 3A - Mathematics</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">42 Students Total</p>
+</div>
+<div class="flex gap-2 font-data-mono text-data-mono">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed px-2 py-1 rounded">P: 12</span>
+<span class="bg-error-container text-on-error-container px-2 py-1 rounded">A: 1</span>
+<span class="bg-secondary-fixed text-on-secondary-fixed px-2 py-1 rounded">L: 0</span>
+</div>
+</div>
+<!-- Roster List -->
+<div class="px-margin-mobile py-base flex flex-col gap-xs overflow-y-auto no-scrollbar">
+<!-- Student Row: Present (Active) -->
+<div class="flex items-center justify-between p-2 bg-surface border border-outline-variant rounded-lg">
+<div class="flex items-center gap-sm overflow-hidden flex-1">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A portrait of a Nigerian student, young teenager, wearing a neat school uniform, sharp focus, natural classroom lighting, modern corporate UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgiQKU2rB7wGJPzCkSsZIxRvY8L9D0M_TT-y77duO4K7Ak5TSK_vl5ePhVHz15nh05uE4sQwp0vK0edCQgNOQahBfrT82lt9ahvLW6sTomlzaQ489OjyrxOy7xCKJcATD-HLF7aiyoSMRuFBHlupXoD297amA4QaBZkCXhlTpGFf0ZVF1FxVIDwKqx_arc8uDP2OXChfXgOykFpPL6rq55Q0hdXCs574Dx5aaNZj2_RRx_haEfFzXL0w"/>
+</div>
+<div class="truncate">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Abubakar, Fatima</p>
+<p class="font-body-md text-[12px] text-on-surface-variant truncate">ID: SP-2023-014</p>
+</div>
+</div>
+<div class="flex gap-xs flex-shrink-0 ml-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-tertiary-fixed text-on-tertiary-fixed shadow-sm">P</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">A</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">L</button>
+</div>
+</div>
+<!-- Student Row: Absent (Active) -->
+<div class="flex items-center justify-between p-2 bg-error-container/10 border border-error-container rounded-lg">
+<div class="flex items-center gap-sm overflow-hidden flex-1">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A portrait of a Nigerian student, young teenager, wearing a neat school uniform, sharp focus, natural classroom lighting, modern corporate UI style, neutral expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwZ9cCsotM6K7V2oWu1cWGFIYjjHt1pFo1A5pelygplDxitCUb4_yNTRqv67c7-m166XH-x-ZbURPXb6khUPGxxLFWoZ9R5lgZEnbyGnU25bDPD1bOv_LDuql0xj_eD3Vw5BDrpDCgnu77VzjwQPARt_FoVjq6lEi7XY_arQ9MjtvxpNJcBnIxZWHAC5vPmFRvXHGUQ3vXKVZ993dNxl6Q3PJDSDN7Tu2SY1n4CXWc73YEBgyO3RmfeA"/>
+</div>
+<div class="truncate">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Adeyemi, Oluwaseun</p>
+<p class="font-body-md text-[12px] text-error truncate">ID: SP-2023-082</p>
+</div>
+</div>
+<div class="flex gap-xs flex-shrink-0 ml-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">P</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-error-container text-on-error-container shadow-sm">A</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">L</button>
+</div>
+</div>
+<!-- Student Row: Late (Active) -->
+<div class="flex items-center justify-between p-2 bg-secondary-container/10 border border-secondary-container rounded-lg">
+<div class="flex items-center gap-sm overflow-hidden flex-1">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A portrait of a Nigerian student, young teenager, wearing a neat school uniform, sharp focus, natural classroom lighting, modern corporate UI style, slightly hurried expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiEnorxs4tnkWWHj0opGKbc4O8jgCO7WskJJIWrN7TptmqZUWkIlSgClMiP8lD6ar0NgLozcSeYNVT6qBhgUqrBXbjy2ijVBoSsg6aDGGQYGhwly-EPvjR1-NQOZa1rwMhY7oMOPUMaLwf3vpFR4Bd8ryhObdGxeuhYzxxUtxcex2-VZcCsq7KUvhppJLKwyJr3_6VAs1pS2kT4C1S_PFb2FMaUQWYLZwEs_0zIqsp91LT2mRH8lvxQg"/>
+</div>
+<div class="truncate">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Okafor, Chinedu</p>
+<p class="font-body-md text-[12px] text-on-secondary-container truncate">ID: SP-2023-115</p>
+</div>
+</div>
+<div class="flex gap-xs flex-shrink-0 ml-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">P</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">A</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-secondary-fixed text-on-secondary-fixed shadow-sm">L</button>
+</div>
+</div>
+<!-- Student Row: Unmarked -->
+<div class="flex items-center justify-between p-2 bg-surface border border-outline-variant rounded-lg">
+<div class="flex items-center gap-sm overflow-hidden flex-1">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex-shrink-0 flex items-center justify-center text-outline font-label-sm">
+                            SO
+                        </div>
+<div class="truncate">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Suleiman, Omolara</p>
+<p class="font-body-md text-[12px] text-on-surface-variant truncate">ID: SP-2023-204</p>
+</div>
+</div>
+<div class="flex gap-xs flex-shrink-0 ml-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">P</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">A</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">L</button>
+</div>
+</div>
+<!-- Student Row: Unmarked -->
+<div class="flex items-center justify-between p-2 bg-surface border border-outline-variant rounded-lg">
+<div class="flex items-center gap-sm overflow-hidden flex-1">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex-shrink-0 flex items-center justify-center text-outline font-label-sm">
+                            IE
+                        </div>
+<div class="truncate">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Ibrahim, Emeka</p>
+<p class="font-body-md text-[12px] text-on-surface-variant truncate">ID: SP-2023-205</p>
+</div>
+</div>
+<div class="flex gap-xs flex-shrink-0 ml-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">P</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">A</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-label-sm text-label-sm transition-colors bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high">L</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-xs py-base bg-surface-container-lowest border-t border-outline-variant shadow-sm z-50">
+<!-- Home (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</button>
+<!-- Classes (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl py-1 px-3 scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+<span class="font-label-sm text-label-sm mt-1">Classes</span>
+</button>
+<!-- Grades (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Grades</span>
+</button>
+<!-- AI Studio (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-label-sm text-label-sm mt-1">AI Studio</span>
+</button>
+<!-- Messages (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-label-sm text-label-sm mt-1">Messages</span>
+</button>
+</nav>
+</body></html>

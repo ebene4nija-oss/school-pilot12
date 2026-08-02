@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clinic Log - EduCore Nigeria</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#eae7e7",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "outline-variant": "#c3c6cf",
+                        "on-secondary-container": "#6b4500",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "on-surface": "#1b1c1c",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-container": "#88a4cf",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#abc8f5",
+                        "surface-variant": "#e5e2e1",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#436087",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-tertiary-container": "#4bb771",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary-fixed": "#00210d",
+                        "primary": "#002447",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#303030",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "surface": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "outline": "#74777f",
+                        "tertiary-container": "#004320",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "primary-fixed-dim": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "secondary": "#835500",
+                        "tertiary-fixed": "#8df9ac",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "sm": "12px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden lg:flex flex-col h-screen overflow-y-auto bg-surface-container w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
+<div class="p-lg flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">
+<span class="material-symbols-outlined text-xl">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary truncate">Admin Portal</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate">Academic Session 2023/24</p>
+</div>
+</div>
+<div class="flex-1 py-md">
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="directions_bus">directions_bus</span>
+<span class="font-label-sm text-label-sm">Bus Tracking</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="local_library">local_library</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="video_camera_front">video_camera_front</span>
+<span class="font-label-sm text-label-sm">Live Class</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="hotel">hotel</span>
+<span class="font-label-sm text-label-sm">Hostel</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors bg-secondary-container text-on-secondary-container font-bold rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services" data-weight="fill" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<span class="font-label-sm text-label-sm">Clinic</span>
+</a>
+</div>
+<div class="p-md border-t border-outline-variant">
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</div>
+</nav>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-2 lg:hidden bg-surface border-t border-outline-variant rounded-t-xl shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-container-high scale-95 transition-transform duration-100 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-container-high scale-95 transition-transform duration-100 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+<span class="font-label-sm text-label-sm">Tracking</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-container-high scale-95 transition-transform duration-100 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="book">book</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services" data-weight="fill" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<span class="font-label-sm text-label-sm">Clinic</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-container-high scale-95 transition-transform duration-100 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 lg:ml-64 flex flex-col h-screen overflow-hidden pb-[72px] lg:pb-0">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-30 flex justify-between items-center px-4 md:px-margin-desktop h-16 w-full bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary lg:hidden">EduCore Nigeria</span>
+<span class="font-headline-md text-headline-md font-bold text-on-surface hidden lg:block">Clinic Log</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Content Layout: Split Screen -->
+<div class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-background">
+<!-- Left Panel: Table of Visit Logs (60%) -->
+<section class="w-full lg:w-[60%] flex flex-col h-full border-r border-outline-variant overflow-hidden">
+<div class="p-lg bg-surface border-b border-outline-variant flex justify-between items-center z-10 shadow-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface">Recent Visits</h2>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface w-64 transition-all" placeholder="Search logs..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-auto bg-surface">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low border-b border-outline-variant z-10 shadow-sm">
+<tr>
+<th class="p-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Date/Time</th>
+<th class="p-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Student Name</th>
+<th class="p-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Reason</th>
+<th class="p-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-lowest transition-colors cursor-pointer group">
+<td class="p-sm font-data-mono text-data-mono text-on-surface group-hover:text-primary">Oct 24, 09:15</td>
+<td class="p-sm">
+<div class="font-body-md text-body-md font-medium text-on-surface">Oluwaseun Adebayo</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">JSS 2A</div>
+</td>
+<td class="p-sm font-body-md text-body-md text-on-surface-variant truncate max-w-[200px]">Headache &amp; Mild Fever</td>
+<td class="p-sm">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary-container text-on-secondary-container">Treated</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors cursor-pointer group">
+<td class="p-sm font-data-mono text-data-mono text-on-surface group-hover:text-primary">Oct 24, 11:30</td>
+<td class="p-sm">
+<div class="font-body-md text-body-md font-medium text-on-surface">Ngozi Okafor</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">SS 1C</div>
+</td>
+<td class="p-sm font-body-md text-body-md text-on-surface-variant truncate max-w-[200px]">Sports Injury (Ankle)</td>
+<td class="p-sm">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-error-container text-on-error-container">Referred</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors cursor-pointer group">
+<td class="p-sm font-data-mono text-data-mono text-on-surface group-hover:text-primary">Oct 23, 14:00</td>
+<td class="p-sm">
+<div class="font-body-md text-body-md font-medium text-on-surface">Chukwudi Eze</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Primary 5</div>
+</td>
+<td class="p-sm font-body-md text-body-md text-on-surface-variant truncate max-w-[200px]">Stomach Ache</td>
+<td class="p-sm">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary-container text-on-secondary-container">Treated</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors cursor-pointer group">
+<td class="p-sm font-data-mono text-data-mono text-on-surface group-hover:text-primary">Oct 23, 10:45</td>
+<td class="p-sm">
+<div class="font-body-md text-body-md font-medium text-on-surface">Amina Bello</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">JSS 3B</div>
+</td>
+<td class="p-sm font-body-md text-body-md text-on-surface-variant truncate max-w-[200px]">Routine Checkup</td>
+<td class="p-sm">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-variant text-on-surface-variant">Discharged</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Right Panel: Add Visit Form (40%) -->
+<section class="w-full lg:w-[40%] bg-surface flex flex-col h-full overflow-hidden">
+<div class="p-lg border-b border-outline-variant bg-surface-container-lowest z-10 shadow-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">add_circle</span>
+                        New Visit Entry
+                    </h2>
+</div>
+<div class="flex-1 overflow-y-auto p-lg">
+<form class="space-y-lg">
+<!-- Student Search -->
+<div class="space-y-xs relative">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Student</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">person_search</span>
+<input class="w-full pl-10 pr-4 py-3 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface transition-all" placeholder="Search by name or ID..." type="text"/>
+</div>
+</div>
+<!-- Date & Time -->
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Date</label>
+<input class="w-full px-4 py-3 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface transition-all" type="date"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Time In</label>
+<input class="w-full px-4 py-3 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface transition-all" type="time"/>
+</div>
+</div>
+<!-- Reason -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Primary Complaint / Reason</label>
+<select class="w-full px-4 py-3 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface transition-all appearance-none">
+<option disabled="" selected="" value="">Select category...</option>
+<option value="fever">Fever / Temperature</option>
+<option value="injury">Physical Injury / Trauma</option>
+<option value="stomach">Stomach Ache / Nausea</option>
+<option value="headache">Headache / Migraine</option>
+<option value="other">Other (Specify in notes)</option>
+</select>
+</div>
+<!-- Treatment Notes -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Treatment Details &amp; Notes</label>
+<textarea class="w-full px-4 py-3 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none font-body-md text-body-md text-on-surface transition-all resize-none" placeholder="Enter treatment provided, medications administered, and general observations..." rows="4"></textarea>
+</div>
+<!-- Action Buttons -->
+<div class="pt-md flex gap-md justify-end border-t border-outline-variant">
+<button class="px-6 py-3 border border-primary text-primary font-label-sm text-label-sm rounded-lg hover:bg-surface-container-low transition-colors uppercase tracking-wider" type="button">
+                                Clear
+                            </button>
+<button class="px-6 py-3 bg-[#F5A623] text-[#222222] font-label-sm text-label-sm rounded-lg hover:opacity-90 transition-opacity uppercase tracking-wider font-bold shadow-sm flex items-center gap-2" type="submit">
+<span class="material-symbols-outlined text-sm">save</span>
+                                Save Entry
+                            </button>
+</div>
+</form>
+</div>
+</section>
+</div>
+</main>
+</body></html>

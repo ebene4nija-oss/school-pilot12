@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduCore Academic - Assignments</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#43474e",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#303030",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-tertiary-container": "#4bb771",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#00210d",
+                        "secondary-fixed": "#ffddb4",
+                        "primary-fixed": "#d4e3ff",
+                        "surface-container-high": "#eae7e7",
+                        "tertiary": "#002b12",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e5e2e1",
+                        "on-surface": "#1b1c1c",
+                        "background": "#fcf9f8",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "surface-tint": "#436087",
+                        "outline": "#74777f",
+                        "tertiary-container": "#004320",
+                        "primary-container": "#1b3a5f",
+                        "secondary-fixed-dim": "#ffb955",
+                        "primary": "#002447",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-container": "#feae2c",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-bright": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "on-secondary-container": "#6b4500",
+                        "inverse-primary": "#abc8f5",
+                        "outline-variant": "#c3c6cf",
+                        "secondary": "#835500",
+                        "surface-dim": "#dcd9d9",
+                        "on-background": "#1b1c1c",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "48px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "sm": "12px",
+                        "base": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pb-24 md:pb-0 pt-16">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant flex items-center justify-between px-margin-mobile h-16 transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a cheerful African student in a crisp white uniform shirt, brightly lit in a modern, light-mode educational environment with a soft focus background. High contrast, clean corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGYWviMpdtRxg_cCbWrfCBt98GD8svEoj6KAOIVojvI9GQ1Ol3KPdBs8kTk0Ts4mTu_Ix4UTGrvZz7_HdSda-V-Rjn0aRh5WNJOfEYWC-idb7OgNI0huCKB5KXI0FjMytG4zGJjZdpnasRYuLfbChxb2oo-N_faGiKzsQt9Zz_INBLt5mc8SHqweAoIsHVLOQloxlMkry67cUiBOswaRp_oXqoYebNoqv6dyUL3wUGj2WJpBtOEaUa_A"/>
+</div>
+<span class="font-headline-md text-headline-md text-primary font-bold">EduCore Academic</span>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container rounded-full p-2 transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Assignment List Section -->
+<section class="md:col-span-5 flex flex-col gap-md">
+<div class="flex justify-between items-center mb-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Active Assignments</h2>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface-variant px-2 py-1 rounded-full">3 Pending</span>
+</div>
+<!-- Task 1: Due in 5 Days (Green/On Track) -->
+<button class="w-full text-left bg-surface-container-lowest border-y border-r border-outline-variant rounded-lg border-l-4 border-l-tertiary-fixed-dim p-md flex flex-col gap-xs hover:bg-surface-container-low transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
+<div class="flex justify-between items-start w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Mathematics</span>
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded-full">5 days left</span>
+</div>
+<h3 class="font-headline-md text-body-lg font-semibold text-on-surface mt-xs">Algebraic Equations Problem Set</h3>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Complete exercises 1-15 on page 42 of the textbook.</p>
+</button>
+<!-- Task 2: Due in 1 Day (Amber/Urgent) - Active Selection -->
+<button class="w-full text-left bg-surface-container border-y border-r border-outline-variant rounded-lg border-l-4 border-l-secondary-container p-md flex flex-col gap-xs ring-1 ring-secondary-container focus:outline-none">
+<div class="flex justify-between items-start w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">English Language</span>
+<span class="font-label-sm text-label-sm bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 1 day left
+                    </span>
+</div>
+<h3 class="font-headline-md text-body-lg font-semibold text-on-surface mt-xs">Term 1 Essay Submission</h3>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Write a 500-word essay on the impact of technology...</p>
+</button>
+<!-- Task 3: Overdue (Red/Critical) -->
+<button class="w-full text-left bg-surface-container-lowest border-y border-r border-outline-variant rounded-lg border-l-4 border-l-error p-md flex flex-col gap-xs hover:bg-surface-container-low transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
+<div class="flex justify-between items-start w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Physics</span>
+<span class="font-label-sm text-label-sm bg-error-container text-on-error-container px-2 py-0.5 rounded-full">Overdue</span>
+</div>
+<h3 class="font-headline-md text-body-lg font-semibold text-on-surface mt-xs">Kinematics Lab Report</h3>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Submit the final draft of the pendulum experiment.</p>
+</button>
+</section>
+<!-- Assignment Detail Section -->
+<section class="md:col-span-7 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col shadow-sm">
+<!-- Detail Header -->
+<div class="border-b border-surface-variant pb-md mb-md">
+<div class="flex items-center gap-2 mb-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">English Language</span>
+<span class="text-outline-variant">•</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Due Tomorrow, 11:59 PM</span>
+</div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-sm">Term 1 Essay</h1>
+<div class="flex items-center gap-sm mt-xs">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-label-sm text-label-sm">
+                        JD
+                    </div>
+<div class="flex flex-col">
+<span class="font-body-md text-[13px] font-medium text-on-surface">Mrs. Jane Doe</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Senior Tutor</span>
+</div>
+</div>
+</div>
+<!-- Detail Content -->
+<div class="flex-grow flex flex-col gap-md">
+<div>
+<h4 class="font-headline-md text-body-lg font-semibold text-on-surface mb-xs">Instructions</h4>
+<p class="font-body-lg text-body-md text-on-surface-variant leading-relaxed">
+                        Write a 500-word essay on the impact of technology on modern education. Ensure you cite at least three sources and use proper formatting. Plagiarism will result in an automatic failure.
+                    </p>
+</div>
+<!-- Reference Materials -->
+<div>
+<h4 class="font-headline-md text-body-lg font-semibold text-on-surface mb-xs">Materials</h4>
+<a class="flex items-center gap-sm p-sm border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors w-max" href="#">
+<span class="material-symbols-outlined text-error" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-body-md text-body-md text-on-surface underline">Essay_Guidelines_v2.pdf</span>
+</a>
+</div>
+<!-- Submission Area -->
+<div class="mt-auto pt-lg">
+<h4 class="font-headline-md text-body-lg font-semibold text-on-surface mb-sm">Your Submission</h4>
+<!-- File Upload Dropzone -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer mb-md">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined text-primary" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface font-medium mb-xs">Tap to upload or drag files here</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">DOC, DOCX, PDF (Max 5MB)</span>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full bg-secondary-container text-on-secondary-container hover:bg-secondary hover:text-on-secondary font-headline-md text-body-lg font-bold py-sm px-lg rounded-full flex items-center justify-center gap-sm transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+                        Submit Assignment
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface border-t border-outline-variant rounded-t-xl shadow-md flex justify-around items-center h-20 pb-2 px-2">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<!-- Active Tab: Assignments -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform scale-95 active:scale-90 w-auto min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment" data-weight="fill" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label-sm text-label-sm">Assignments</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="school">school</span>
+<span class="font-label-sm text-label-sm">Tutor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90 w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Attendance Overview - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "primary-container": "#1b3a5f",
+                      "on-secondary-fixed": "#291800",
+                      "secondary-container": "#feae2c",
+                      "primary-fixed": "#d4e3ff",
+                      "surface-dim": "#dcd9d9",
+                      "on-tertiary-container": "#4bb771",
+                      "background": "#fcf9f8",
+                      "on-primary-container": "#88a4cf",
+                      "surface": "#fcf9f8",
+                      "inverse-primary": "#abc8f5",
+                      "secondary": "#835500",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "primary": "#002447",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#ffb955",
+                      "error-container": "#ffdad6",
+                      "on-primary": "#ffffff",
+                      "tertiary": "#002b12",
+                      "surface-variant": "#e5e2e1",
+                      "on-background": "#1b1c1c",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "on-primary-fixed": "#001c39",
+                      "secondary-fixed": "#ffddb4",
+                      "surface-container-low": "#f6f3f2",
+                      "surface-container-high": "#eae7e7",
+                      "on-surface": "#1b1c1c",
+                      "surface-container": "#f0eded",
+                      "inverse-surface": "#303030",
+                      "on-secondary-container": "#6b4500",
+                      "on-secondary": "#ffffff",
+                      "surface-bright": "#fcf9f8",
+                      "outline-variant": "#c3c6cf",
+                      "on-surface-variant": "#43474e",
+                      "inverse-on-surface": "#f3f0ef",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "tertiary-container": "#004320",
+                      "tertiary-fixed": "#8df9ac",
+                      "primary-fixed-dim": "#abc8f5",
+                      "on-tertiary-fixed": "#00210d",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#e5e2e1",
+                      "outline": "#74777f",
+                      "surface-tint": "#436087"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "12px",
+                      "md": "16px",
+                      "margin-mobile": "16px",
+                      "xl": "32px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "margin-desktop": "48px",
+                      "base": "8px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "display-lg": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-primary dark:bg-primary-container text-primary dark:text-primary-fixed-dim h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-primary dark:bg-primary-container border-r border-outline-variant hidden md:flex flex-col h-full py-md gap-xs z-50">
+<div class="px-lg py-md mb-md flex flex-col gap-xs">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-primary-fixed">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/80">Admin Portal</p>
+</div>
+<ul class="flex-1 flex flex-col gap-xs">
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> <span class="font-label-sm text-label-sm">Dashboard</span></a></li>
+<li><a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 mx-2 opacity-90 transition-all duration-150" href="#"><span class="material-symbols-outlined" data-icon="groups">groups</span> <span class="font-label-sm text-label-sm">Students</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="badge">badge</span> <span class="font-label-sm text-label-sm">Staff</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span> <span class="font-label-sm text-label-sm">Timetable</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="grading">grading</span> <span class="font-label-sm text-label-sm">Results</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="quiz">quiz</span> <span class="font-label-sm text-label-sm">CBT</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="payments">payments</span> <span class="font-label-sm text-label-sm">Fees</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="analytics">analytics</span> <span class="font-label-sm text-label-sm">Analytics</span></a></li>
+<li><a class="flex items-center gap-3 text-on-primary/70 hover:text-on-primary rounded-lg px-4 py-3 mx-2 hover:bg-primary-container/50 dark:hover:bg-surface-container-high transition-colors duration-200" href="#"><span class="material-symbols-outlined" data-icon="settings">settings</span> <span class="font-label-sm text-label-sm">Settings</span></a></li>
+</ul>
+<div class="px-md pb-md pt-lg mt-auto flex items-center gap-3 border-t border-outline-variant/30 mx-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small, professional portrait photograph of an African school administrator wearing business attire against a neutral backdrop. Modern corporate style, well-lit, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnbU4H5TnIsoE-L94w7mrLLcNhXfUtscX69GG5vohwKYXBqdmyX4EaJ8uLsM7rzTrc_IkKA3dtGAzxQSS0hWOstCwPAh4p0uB1Ysns8vg4JYmvIjg6b0_z4QF9QydlQGxTKyX4Z9RIMMN9EjhQGlgWpI3JECWydgrpkZhCdoxKnVxRpqXhjgqmPX-N_G_xpVmosi5Yu5N6XIvlyb4OQY2dX_sGuP2V971g9nKiOads1LwWU9TA2tk3tA"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-64 w-full h-full bg-surface">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container-low text-primary dark:text-primary-fixed-dim font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed h-16 w-full sticky top-0 z-40 bg-surface dark:bg-surface-container-low border-b border-outline-variant flex justify-between items-center px-lg">
+<div class="flex items-center gap-sm">
+<!-- Mobile Menu Button -->
+<button class="md:hidden p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="font-headline-md text-headline-md hidden md:block">Attendance Overview</h2>
+<h2 class="font-headline-md text-headline-md md:hidden font-bold">SchoolPilot</h2>
+</div>
+<!-- Search -->
+<div class="hidden md:flex flex-1 max-w-md mx-lg relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Search students, classes..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors text-on-surface-variant font-medium">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors text-on-surface-variant font-medium">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<!-- Mobile Profile -->
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden md:hidden ml-sm">
+<img class="w-full h-full object-cover" data-alt="A small, professional portrait photograph of an African school administrator wearing business attire against a neutral backdrop. Modern corporate style, well-lit, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZYcEmwYqXvEflivk1GYaiE59VYZLX9x6cAcansTfCQ8jRyDrWVOJdX0YlQxkDNpTFwrHkLXe3cEok5DMwafdsExvQqf4DHUxJmTeKorI8pjAGlrz4ypoFP1eMGfrPO2zbfp5syUgvaqZwRi4LrTvEmfJeIU1JWxMaHwSn0-7EwY4HiFsEpbge_MZJEJd_dKmdV5C8eUgiJV6PVc96MBtkwlL4Z-QG5pOOzVuOzzUjCMHsGx139g8VbQ"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop">
+<div class="max-w-7xl mx-auto flex flex-col gap-lg">
+<div class="flex items-center justify-between">
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background">Today's Overview</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">March 14, 2024</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Today's Summary (Horizontal Bars) -->
+<div class="md:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-md shadow-sm">
+<div class="flex justify-between items-end mb-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">Class Attendance</h3>
+<span class="font-label-sm text-label-sm text-primary px-2 py-1 bg-primary-container/10 rounded-md">School Avg: 94%</span>
+</div>
+<div class="flex flex-col gap-sm">
+<!-- Bar 1 -->
+<div class="flex items-center gap-md">
+<span class="w-24 font-label-sm text-label-sm text-on-surface-variant shrink-0">JSS1 Gold</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary-container rounded-full" style="width: 98%;"></div>
+</div>
+<span class="w-12 text-right font-data-mono text-data-mono text-on-surface">98%</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex items-center gap-md">
+<span class="w-24 font-label-sm text-label-sm text-on-surface-variant shrink-0">JSS1 Blue</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary-container rounded-full" style="width: 92%;"></div>
+</div>
+<span class="w-12 text-right font-data-mono text-data-mono text-on-surface">92%</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex items-center gap-md">
+<span class="w-24 font-label-sm text-label-sm text-on-surface-variant shrink-0">SS2 Science</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container rounded-full" style="width: 85%;"></div>
+</div>
+<span class="w-12 text-right font-data-mono text-data-mono text-on-surface">85%</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex items-center gap-md">
+<span class="w-24 font-label-sm text-label-sm text-on-surface-variant shrink-0">SS3 Arts</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full" style="width: 78%;"></div>
+</div>
+<span class="w-12 text-right font-data-mono text-data-mono text-on-error">78%</span>
+</div>
+</div>
+</div>
+<!-- Check-in Card (QR Code) -->
+<div class="md:col-span-4 bg-primary text-on-primary rounded-xl p-lg flex flex-col items-center justify-center gap-md text-center relative overflow-hidden shadow-sm">
+<!-- Abstract Background Pattern -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+<h3 class="font-headline-md text-headline-md relative z-10">Morning Check-in</h3>
+<div class="bg-surface-container-lowest p-sm rounded-lg relative z-10">
+<!-- Simulated QR Code -->
+<div class="w-40 h-40 bg-surface-container-lowest relative border-4 border-surface-container-lowest flex flex-wrap gap-[2px]">
+<!-- Simple representation of a QR using grid squares for visual effect without using an image placeholder here as requested by rules if not generating image -->
+<div class="w-full h-full bg-primary-container grid grid-cols-4 grid-rows-4 gap-1 p-2">
+<div class="bg-surface-container-lowest"></div><div class="bg-surface-container-lowest col-span-2"></div><div></div>
+<div class="col-span-2 bg-surface-container-lowest"></div><div></div><div class="bg-surface-container-lowest"></div>
+<div></div><div class="bg-surface-container-lowest col-span-2"></div><div class="bg-surface-container-lowest"></div>
+<div class="bg-surface-container-lowest"></div><div class="col-span-2"></div><div class="bg-surface-container-lowest"></div>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-primary-fixed relative z-10 max-w-[200px]">Students scan this to check in</p>
+<button class="mt-sm bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed font-label-sm text-label-sm px-md py-sm rounded-full transition-colors relative z-10 flex items-center gap-2 min-h-[48px] min-w-[48px] justify-center">
+<span class="material-symbols-outlined text-[18px]">refresh</span> Refresh Code
+                        </button>
+</div>
+<!-- Manual Override Section -->
+<div class="md:col-span-12 bg-surface-container-lowest border border-outline-variant rounded-xl flex flex-col overflow-hidden shadow-sm">
+<div class="p-lg border-b border-outline-variant bg-surface-container-low/50">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-sm">Correct Attendance Exceptions</h3>
+<!-- Search / Filter Area -->
+<div class="flex flex-col md:flex-row gap-md">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all h-[48px]" placeholder="Search by student name or ID..." type="text"/>
+</div>
+<select class="bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary h-[48px] min-w-[150px]">
+<option>All Classes</option>
+<option>JSS1</option>
+<option>SS2</option>
+</select>
+</div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant border-b border-outline-variant">
+<tr>
+<th class="py-3 px-md font-semibold">Student Name</th>
+<th class="py-3 px-md font-semibold">Class</th>
+<th class="py-3 px-md font-semibold">Current Status</th>
+<th class="py-3 px-md font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y divide-outline-variant/50">
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-sm px-md flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A small profile picture of an African teenage student wearing a smart blue school uniform, smiling lightly, neutral background. High quality, well-lit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRkY-9iGeBkZD8rHxpOalfb-5m0dXS5AnRTypfBuBQePH39ribQAVGMH5d1yq2ItEP7zxzJ23cgZ0kXnWZZJJ_ZmYkTSd-_lupSf5ko85umKHBr8kHIxE3f1tAGUS8FFKxaBm54GVALLGnylLzmbqdJM03_s9O6upEfTofWjtjdMLYXDnjHBC85sQZhgoAtTAqD2O4JzvtM37ebOXeIQrMq8H4mib0GbGA8qMbY57f_8NKAq7jeTeCuw"/>
+</div>
+<span class="font-medium">Oluwaseun Adebayo</span>
+</td>
+<td class="py-sm px-md">JSS1 Gold</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-1 bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-1 rounded-sm border-l-4 border-error">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Absent
+                                            </span>
+</td>
+<td class="py-sm px-md text-right">
+<button class="bg-surface border border-primary text-primary hover:bg-primary-container/10 font-label-sm text-label-sm px-3 py-2 rounded-md transition-colors min-h-[48px] min-w-[48px]">
+                                                Mark Present
+                                            </button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-sm px-md flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A small profile picture of an African teenage female student with braided hair, wearing a white shirt school uniform, looking forward, neutral background. High quality, well-lit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtjvxIOMcxAW_avVKKRMZPWD9-e8s8Za1JwErdX65FU9zuyXbCvuQNSsZVC6KjW1Y02FbHmtughzbHplABjAJaVf2L3sZy9vLlI7HdvjnDLHJOw4hTkN25sk1t0XjN6IrsQ8ah8Gni17Lz4cO_SIDmqdWhpELXE36l9GumaHNyjScTAlT8DmCuSgBCmIRxFwODy6eJzNFZ4awrN33Z22m3ZDXNnlKfIspnXuTsjyJuQPi69z0jjQOEDw"/>
+</div>
+<span class="font-medium">Chiamaka Nwosu</span>
+</td>
+<td class="py-sm px-md">SS2 Science</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-1 bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm px-2 py-1 rounded-sm border-l-4 border-secondary">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Late
+                                            </span>
+</td>
+<td class="py-sm px-md text-right">
+<button class="bg-surface border border-primary text-primary hover:bg-primary-container/10 font-label-sm text-label-sm px-3 py-2 rounded-md transition-colors min-h-[48px] min-w-[48px]">
+                                                Update Status
+                                            </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Tutor Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#002b12",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#ffb955",
+                        "error-container": "#ffdad6",
+                        "primary": "#002447",
+                        "on-error": "#ffffff",
+                        "secondary": "#835500",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface": "#fcf9f8",
+                        "inverse-primary": "#abc8f5",
+                        "on-primary-container": "#88a4cf",
+                        "background": "#fcf9f8",
+                        "on-tertiary-container": "#4bb771",
+                        "surface-dim": "#dcd9d9",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "primary-container": "#1b3a5f",
+                        "on-secondary-fixed": "#291800",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#436087",
+                        "outline": "#74777f",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-tertiary-fixed": "#00210d",
+                        "tertiary-fixed": "#8df9ac",
+                        "tertiary-container": "#004320",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-surface-variant": "#43474e",
+                        "surface-bright": "#fcf9f8",
+                        "outline-variant": "#c3c6cf",
+                        "on-secondary-container": "#6b4500",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#303030",
+                        "surface-container-low": "#f6f3f2",
+                        "surface-container-high": "#eae7e7",
+                        "on-surface": "#1b1c1c",
+                        "secondary-fixed": "#ffddb4",
+                        "on-primary-fixed": "#001c39",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1b1c1c",
+                        "surface-variant": "#e5e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "48px",
+                        "base": "8px",
+                        "xs": "4px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Hide scrollbar for horizontal scrolling */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim font-headline-md text-headline-md docked full-width top-0 border-b border-outline-variant dark:border-outline flat no shadows flex justify-between items-center px-margin-mobile w-full h-16 z-50 fixed">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a Nigerian student smiling warmly in a modern classroom setting. High contrast lighting, professional photography, crisp details, natural skin tones, deep navy background. The student looks engaged and ready to learn, setting a positive educational tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlfOIVdjn_14j6veMkWJfE2pNi4pj9ziJwFj4qPxeMlkjWJu-FXfk0pPSIRKc1B3qIFcLvGPyFObNEnSvxB3Excs3e_amTJvhB-zNNJ_9qkZAuxOc8Iw4Iho7DH5gqy6jg8WztFRT3P8CzKiW37kiygZ6SVkZg03NA2fWSfUsx5jm5R54oXsNdUN45K5sCJ3YS93tmb1Perx00wMzxuy1K5f1qp7Ib91O-BU4CEqBU2TecXoQHBkzQ_w"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">StudentPortal</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-150 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content Area - Scrollable Chat -->
+<main class="flex-1 overflow-y-auto pt-16 pb-[160px] md:pb-[140px] px-margin-mobile md:px-margin-desktop flex flex-col max-w-4xl mx-auto w-full">
+<!-- Subject Selection Chips (Horizontal Scroll) -->
+<div class="w-full py-md bg-background sticky top-0 z-40 mb-md hide-scrollbar overflow-x-auto whitespace-nowrap border-b border-surface-variant">
+<div class="inline-flex gap-sm px-xs">
+<button class="bg-primary text-on-primary px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform">Mathematics</button>
+<button class="bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant">Physics</button>
+<button class="bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant">English</button>
+<button class="bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant">Chemistry</button>
+<button class="bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant">Biology</button>
+<button class="bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant">Economics</button>
+</div>
+</div>
+<!-- Chat Messages -->
+<div class="flex flex-col gap-lg pb-xl">
+<!-- AI Message -->
+<div class="flex gap-sm max-w-[85%] self-start">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-none p-md shadow-sm">
+<p class="font-body-md text-body-md text-on-surface">Hello! I'm your AI Tutor. We're focusing on Mathematics today. How can I help you with your studies?</p>
+</div>
+</div>
+<!-- Student Message -->
+<div class="flex gap-sm max-w-[85%] self-end flex-row-reverse">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0 mt-1 overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a Nigerian student smiling warmly in a modern classroom setting. High contrast lighting, professional photography, crisp details, natural skin tones, deep navy background. The student looks engaged and ready to learn, setting a positive educational tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMdZ0rgCF3jXLVLTrkDHVrnl4Tw8uPhgWUuY1szzWpZ07OJ-0C911Dfw6ycMZnS1P1ii8hWO5-JQapnGeV2TGquVusEMpqElLogkhx5xFuQtKpq8fm0s4PNrwA1I0aDUT80X07ASzEbiU1enPKqqz46Ejk-jqmT0WAGhMKRLPiFaKBBeUTqCPzb3sAXERkN79OoNpg6kjxjXRjiiFJQ32YPasFwcw3jpCFaFc5U96GdqgD5obD2zrSGA"/>
+</div>
+<div class="bg-primary-container text-on-primary-container rounded-2xl rounded-tr-none p-md shadow-sm">
+<p class="font-body-md text-body-md text-on-primary">I'm struggling with quadratic equations. Specifically finding the roots using the formula method.</p>
+</div>
+</div>
+<!-- AI Message (Detailed) -->
+<div class="flex gap-sm max-w-[90%] self-start">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-none p-md shadow-sm space-y-md w-full">
+<p class="font-body-md text-body-md text-on-surface">I can help with that! The quadratic formula is used to find the roots of an equation in the form <span class="font-data-mono text-data-mono font-medium">ax² + bx + c = 0</span>.</p>
+<div class="bg-surface-container-low p-md rounded-lg border border-surface-variant flex flex-col items-center justify-center py-lg">
+<span class="font-headline-md text-headline-md text-primary font-bold">x = (-b ± √(b² - 4ac)) / 2a</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Let's break it down step-by-step with an example: <span class="font-data-mono text-data-mono">2x² - 5x - 3 = 0</span>. <br/><br/>First, identify your a, b, and c values. Can you tell me what they are for this equation?</p>
+</div>
+</div>
+<!-- Student Message -->
+<div class="flex gap-sm max-w-[85%] self-end flex-row-reverse">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0 mt-1 overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a Nigerian student smiling warmly in a modern classroom setting. High contrast lighting, professional photography, crisp details, natural skin tones, deep navy background. The student looks engaged and ready to learn, setting a positive educational tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc42O9eJaov_oU8BKjZH47_4RPzaUtBpVAqBOGo_FeUS6rUKVjEwmv5vPK55WUqELhV8bliVhzs98QftUdu0TIbXfTE1st2ce1HBdl-_3w5lu4O8S9Im-xz0xDeZbzTBkFvOVIGQeO97ClU6WhdNhFgbtT0XfF4Bgr6J3qUX47srMH1h2TDeGX8lYEVu-3PRMeWnxRi6PcCWOJDbvqr7nRcfsVz2SWYIMtNusJU_IaCyOB5tTSSt7Brw"/>
+</div>
+<div class="bg-primary-container text-on-primary-container rounded-2xl rounded-tr-none p-md shadow-sm">
+<p class="font-body-md text-body-md text-on-primary">a = 2, b = -5, c = -3 ?</p>
+</div>
+</div>
+<!-- AI Message -->
+<div class="flex gap-sm max-w-[85%] self-start mb-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-none p-md shadow-sm">
+<p class="font-body-md text-body-md text-on-surface">Spot on! Excellent. Now, plug those into the formula. The part inside the square root (b² - 4ac) is called the discriminant. Try calculating just that part first.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Input Area (Fixed above NavBar) -->
+<div class="fixed bottom-[80px] md:bottom-0 left-0 w-full bg-surface/95 backdrop-blur-sm border-t border-outline-variant z-40">
+<div class="max-w-4xl mx-auto w-full px-margin-mobile md:px-margin-desktop py-sm flex flex-col gap-sm">
+<!-- Suggested Actions -->
+<div class="flex gap-sm hide-scrollbar overflow-x-auto py-1">
+<button class="shrink-0 bg-surface-container-lowest border border-secondary text-secondary hover:bg-secondary/10 px-3 py-1.5 rounded-full font-label-sm text-label-sm flex items-center gap-xs transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="lightbulb">lightbulb</span>
+                    Explain this differently
+                </button>
+<button class="shrink-0 bg-surface-container-lowest border border-secondary text-secondary hover:bg-secondary/10 px-3 py-1.5 rounded-full font-label-sm text-label-sm flex items-center gap-xs transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="quiz">quiz</span>
+                    Give me a practice question
+                </button>
+<button class="shrink-0 bg-surface-container-lowest border border-secondary text-secondary hover:bg-secondary/10 px-3 py-1.5 rounded-full font-label-sm text-label-sm flex items-center gap-xs transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="summarize">summarize</span>
+                    Summarize key points
+                </button>
+</div>
+<!-- Input Field -->
+<div class="flex items-end gap-sm relative pb-md">
+<div class="flex-1 bg-surface-container-low rounded-xl border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all relative">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none py-3 px-4 font-body-md text-body-md text-on-surface placeholder-on-surface-variant max-h-32 min-h-[48px]" placeholder="Ask your tutor anything..." rows="1"></textarea>
+<button class="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="attach_file">attach_file</span>
+</button>
+</div>
+<button class="w-12 h-12 shrink-0 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center shadow-sm hover:bg-secondary hover:text-on-secondary transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="send" data-weight="fill">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface dark:bg-surface-dim font-label-sm text-label-sm fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe h-20 border-t border-outline-variant dark:border-outline shadow-lg rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span>Timetable</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span>Assignments</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy" data-weight="fill">smart_toy</span>
+<span>Tutor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="grade">grade</span>
+<span>Results</span>
+</a>
+</nav>
+<script>
+        // Simple auto-resize for textarea
+        const textarea = document.querySelector('textarea');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if(this.scrollHeight > 128) {
+                this.style.overflowY = 'auto';
+            } else {
+                this.style.overflowY = 'hidden';
+            }
+        });
+    </script>
+</body></html>

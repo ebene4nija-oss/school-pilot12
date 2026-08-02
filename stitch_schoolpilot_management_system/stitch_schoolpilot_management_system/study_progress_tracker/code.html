@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Study Progress Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#002b12",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed-dim": "#ffb955",
+                      "error-container": "#ffdad6",
+                      "primary": "#002447",
+                      "on-error": "#ffffff",
+                      "secondary": "#835500",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface": "#fcf9f8",
+                      "inverse-primary": "#abc8f5",
+                      "on-primary-container": "#88a4cf",
+                      "background": "#fcf9f8",
+                      "on-tertiary-container": "#4bb771",
+                      "surface-dim": "#dcd9d9",
+                      "primary-fixed": "#d4e3ff",
+                      "secondary-container": "#feae2c",
+                      "primary-container": "#1b3a5f",
+                      "on-secondary-fixed": "#291800",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#436087",
+                      "outline": "#74777f",
+                      "surface-container-highest": "#e5e2e1",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed-dim": "#abc8f5",
+                      "on-tertiary-fixed": "#00210d",
+                      "tertiary-fixed": "#8df9ac",
+                      "tertiary-container": "#004320",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "inverse-on-surface": "#f3f0ef",
+                      "on-surface-variant": "#43474e",
+                      "surface-bright": "#fcf9f8",
+                      "outline-variant": "#c3c6cf",
+                      "on-secondary-container": "#6b4500",
+                      "on-secondary": "#ffffff",
+                      "surface-container": "#f0eded",
+                      "inverse-surface": "#303030",
+                      "surface-container-low": "#f6f3f2",
+                      "surface-container-high": "#eae7e7",
+                      "on-surface": "#1b1c1c",
+                      "secondary-fixed": "#ffddb4",
+                      "on-primary-fixed": "#001c39",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "on-error-container": "#93000a",
+                      "on-background": "#1b1c1c",
+                      "surface-variant": "#e5e2e1"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "sm": "12px",
+                      "md": "16px",
+                      "xl": "32px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "48px",
+                      "base": "8px",
+                      "xs": "4px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-md": ["Work Sans"],
+                      "display-lg": ["Work Sans"],
+                      "data-mono": ["Inter"],
+                      "display-lg-mobile": ["Work Sans"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                      "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-24 md:pb-0 pt-16">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant flex justify-between items-center px-margin-mobile h-16">
+<div class="flex items-center gap-sm">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a young student in uniform, brightly lit, isolated on a light neutral background. The lighting is soft and even, typical of modern corporate or educational portraiture, giving a clean and polished look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1lnByyvXUVFuDTGiyuvUWb9tSx10lBrmnxvfY9zuJ0x0kqhfZxINzZqBytOuSH8hlj2t3hyDG2A0XIL6RDwGXuHVvrpE0lFfsZKsc2i-tNu0F26aIjafDlfvY2bvPxkBp-Uo82O9X-Ba5CLjOzUCDYorIKaKimjL0NRaDgsCxH4HyUlzc7OmfX3L7794c_pg-glnncFf290kimkpICxeNxlKX12GRuS_dJqPrba5cpWBdQBPA0txJlQ"/>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">StudentPortal</h1>
+</div>
+<button class="p-2 text-primary hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-lg space-y-xl">
+<!-- Header Section -->
+<section>
+<h2 class="font-display-lg-mobile md:font-display-lg text-primary mb-xs">Study Progress</h2>
+<p class="font-body-md text-on-surface-variant">Track your mastery, streaks, and achievements.</p>
+</section>
+<!-- Topic Mastery (Bento Layout) -->
+<section class="space-y-md">
+<h3 class="font-headline-md text-headline-md text-primary">Topic Mastery</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Subject Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Mathematics</span>
+<span class="font-data-mono text-data-mono text-primary">85%</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-sm">
+<div class="bg-secondary-container h-2 rounded-full" style="width: 85%"></div>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Excelling in Algebra. Needs focus on Geometry.</p>
+</div>
+<!-- Subject Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Physics</span>
+<span class="font-data-mono text-data-mono text-primary">70%</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-sm">
+<div class="bg-primary-container h-2 rounded-full" style="width: 70%"></div>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Solid grasp of Mechanics. Optics requires review.</p>
+</div>
+<!-- Subject Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-tertiary-container"></div>
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Chemistry</span>
+<span class="font-data-mono text-data-mono text-primary">92%</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-sm">
+<div class="bg-tertiary-container h-2 rounded-full" style="width: 92%"></div>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Outstanding performance across all topics.</p>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-xl">
+<!-- Streak Calendar -->
+<section class="space-y-md">
+<h3 class="font-headline-md text-headline-md text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary-container" data-icon="local_fire_department">local_fire_department</span>
+                    Streak Calendar
+                </h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm">
+<div class="flex justify-between items-center mb-md">
+<span class="font-body-lg text-primary font-semibold">October 2023</span>
+<span class="font-label-sm bg-secondary-container/20 text-on-secondary-container px-2 py-1 rounded-full">12 Day Streak!</span>
+</div>
+<!-- Calendar Grid Mockup -->
+<div class="grid grid-cols-7 gap-xs text-center font-label-sm text-on-surface-variant mb-2">
+<div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+</div>
+<div class="grid grid-cols-7 gap-xs">
+<!-- Empty slots -->
+<div></div><div></div>
+<!-- Days -->
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-surface-container-highest text-on-surface-variant opacity-50">1</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">2</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">3</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">4</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-surface-container-highest text-on-surface-variant opacity-50">5</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">6</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">7</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">8</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">9</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary">10</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-tertiary-container text-on-tertiary border-2 border-secondary-container">11</div>
+<div class="aspect-square rounded-full flex items-center justify-center font-data-mono text-data-mono bg-surface-container text-on-surface-variant">12</div>
+</div>
+<p class="font-body-md text-on-surface-variant mt-md text-center text-sm">You studied for 10 days this month.</p>
+</div>
+</section>
+<!-- Badges Earned -->
+<section class="space-y-md">
+<h3 class="font-headline-md text-headline-md text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary-container" data-icon="military_tech">military_tech</span>
+                    Badges Earned
+                </h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm">
+<div class="grid grid-cols-3 gap-md">
+<!-- Badge 1 -->
+<div class="flex flex-col items-center text-center space-y-sm">
+<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center border-2 border-primary-container shadow-sm">
+<span class="material-symbols-outlined text-primary-container text-3xl" data-icon="wb_sunny">wb_sunny</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Early Bird</span>
+</div>
+<!-- Badge 2 -->
+<div class="flex flex-col items-center text-center space-y-sm">
+<div class="w-16 h-16 rounded-full bg-secondary-fixed flex items-center justify-center border-2 border-secondary-container shadow-sm">
+<span class="material-symbols-outlined text-secondary-container text-3xl" data-icon="repeat">repeat</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Consistency King</span>
+</div>
+<!-- Badge 3 -->
+<div class="flex flex-col items-center text-center space-y-sm">
+<div class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center border-2 border-tertiary-container shadow-sm">
+<span class="material-symbols-outlined text-tertiary-container text-3xl" data-icon="calculate">calculate</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Math Whiz</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe bg-surface border-t border-outline-variant h-20 shadow-lg rounded-t-xl">
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined fill" data-icon="home" data-weight="fill">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-sm text-label-sm mt-1">Timetable</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-sm text-label-sm mt-1">Assignments</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-label-sm text-label-sm mt-1">Tutor</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="grade">grade</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</button>
+</nav>
+</body></html>

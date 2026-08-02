@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Broadsheet View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "primary": "#002447",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-surface": "#1b1c1c",
+                    "tertiary-container": "#004320",
+                    "secondary-fixed-dim": "#ffb955",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "on-surface-variant": "#43474e",
+                    "on-primary-fixed": "#001c39",
+                    "secondary": "#835500",
+                    "inverse-primary": "#abc8f5",
+                    "on-tertiary-container": "#4bb771",
+                    "on-secondary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-secondary-container": "#6b4500",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#f0eded",
+                    "on-secondary-fixed": "#291800",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "surface-bright": "#fcf9f8",
+                    "primary-fixed-dim": "#abc8f5",
+                    "primary-fixed": "#d4e3ff",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#303030",
+                    "tertiary-fixed": "#8df9ac",
+                    "tertiary": "#002b12",
+                    "outline-variant": "#c3c6cf",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "inverse-on-surface": "#f3f0ef",
+                    "primary-container": "#1b3a5f",
+                    "on-tertiary-fixed": "#00210d",
+                    "background": "#fcf9f8",
+                    "surface-variant": "#e5e2e1",
+                    "surface-container-high": "#eae7e7",
+                    "on-primary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "secondary-container": "#feae2c",
+                    "outline": "#74777f",
+                    "surface": "#fcf9f8",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-tint": "#436087",
+                    "on-primary-container": "#88a4cf",
+                    "surface-dim": "#dcd9d9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "base": "8px",
+                    "margin-desktop": "48px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "margin-mobile": "16px",
+                    "xs": "4px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ],
+                    "data-mono": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Work Sans"
+                    ],
+                    "display-lg": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "22px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "data-mono": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "26px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f0eded; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c3c6cf; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #74777f; 
+        }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 10;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .sticky-col-header {
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 30;
+            background-color: #f6f3f2;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md text-on-background bg-surface min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-primary border-r border-outline-variant flex flex-col p-md gap-base z-50">
+<div class="mb-lg px-md">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold py-sm px-md rounded-lg flex items-center justify-center gap-xs mb-md hover:opacity-90 transition-opacity min-h-[48px]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            New Assessment
+        </button>
+<div class="flex-1 flex flex-col gap-xs overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold min-h-[48px] scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="grading" style="font-variation-settings: 'FILL' 1;">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="quiz">quiz</span>
+<span class="font-label-sm text-label-sm">CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors min-h-[48px]" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col ml-64 w-[calc(100%-16rem)] min-h-screen">
+<!-- TopNavBar -->
+<header class="docked full-width top-0 sticky bg-surface border-b border-outline-variant flex justify-between items-center h-16 px-lg z-40">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</span>
+<nav class="hidden md:flex gap-md">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm h-full flex items-center min-h-[48px]" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden md:block">
+<input class="pl-sm pr-lg py-xs rounded-full border border-outline-variant bg-surface-container-low text-on-surface focus:ring-2 focus:ring-primary focus:ring-offset-2 min-h-[48px] min-w-[200px] font-body-md text-body-md" placeholder="Search..." type="text"/>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+</div>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full min-h-[48px] min-w-[48px] flex items-center justify-center focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full min-h-[48px] min-w-[48px] flex items-center justify-center focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-sm text-label-sm font-bold min-h-[48px] min-w-[48px] focus:ring-2 focus:ring-primary focus:ring-offset-2 overflow-hidden border border-outline-variant">
+<img alt="Admin Profile" class="object-cover w-full h-full" data-alt="A small circular profile picture of an African male school administrator wearing a formal suit, set against a neutral corporate background. High quality, well-lit, professional portrait style fitting a modern light-mode educational platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe_KPHNFMgYcAiGUmRplyuruA5t1uZXof2WlZzILOW9QwkABBf8kNyUoJUVfaeMYYdo-uTgf-RlB_ysUMVKqHHjW0fs4951Ox5Pru5oVFK6ptqt082QGO-pR_E38BJs4H3t28HKjMvFS3T4mxv63Ftk2eTMzVngz9Z7FTb8nYVenbhixZ5y_Ict3_UjXsZxuarsQJ1sVHd8P6o6vElrABoSpycaWsRzCjLwvKQrdtI80Hnhv1WljssaQ"/>
+</button>
+</div>
+</header>
+<!-- Page Canvas -->
+<main class="flex-1 p-margin-desktop bg-surface flex flex-col gap-lg">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<div class="flex items-center gap-xs mb-xs">
+<span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-xs py-1 rounded">JSS 2A</span>
+<span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-xs py-1 rounded">Science Track</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-primary">Broadsheet</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Comprehensive termly results for Junior Secondary School 2A.</p>
+</div>
+<div class="flex gap-sm">
+<button class="border border-primary-container text-primary-container bg-surface hover:bg-surface-container-low font-label-sm text-label-sm font-bold py-xs px-md rounded-lg flex items-center justify-center gap-xs min-h-[48px] transition-colors">
+<span class="material-symbols-outlined">download</span>
+                        Export CSV
+                    </button>
+<button class="bg-primary text-on-primary font-label-sm text-label-sm font-bold py-xs px-md rounded-lg flex items-center justify-center gap-xs min-h-[48px] hover:opacity-90 transition-opacity shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined">publish</span>
+                        Publish Results
+                    </button>
+</div>
+</div>
+<!-- Broadsheet Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col flex-1 max-h-[calc(100vh-250px)]">
+<!-- Filters/Controls Bar -->
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex flex-wrap gap-md items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="relative">
+<input class="pl-sm pr-lg py-xs rounded-md border border-outline-variant bg-surface text-on-surface focus:ring-2 focus:ring-primary focus:ring-offset-0 min-h-[40px] w-[250px] font-body-md text-body-md" placeholder="Search student ID or name..." type="text"/>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+</div>
+</div>
+<div class="flex items-center gap-md font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-error-container border border-error"></div>
+<span>Below Average</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-tertiary-fixed border border-tertiary"></div>
+<span>Distinction</span>
+</div>
+</div>
+</div>
+<!-- Scrollable Table Area -->
+<div class="table-container flex-1 overflow-auto relative">
+<table class="w-full text-left border-collapse min-w-max">
+<thead class="sticky-header bg-surface-container-low font-label-sm text-label-sm text-on-surface">
+<!-- Top Header Row (Subjects) -->
+<tr>
+<th class="sticky-col-header p-sm border-b border-r border-outline-variant min-w-[250px] align-bottom bg-surface-container-low">
+<div class="font-bold text-on-surface">Student Information</div>
+</th>
+<!-- Mathematics -->
+<th class="p-sm border-b border-r border-outline-variant text-center bg-surface-container-low" colspan="3">
+<div class="font-bold text-primary">Mathematics</div>
+</th>
+<!-- English -->
+<th class="p-sm border-b border-r border-outline-variant text-center bg-surface-container-low" colspan="3">
+<div class="font-bold text-primary">English Lang.</div>
+</th>
+<!-- Basic Science -->
+<th class="p-sm border-b border-r border-outline-variant text-center bg-surface-container-low" colspan="3">
+<div class="font-bold text-primary">Basic Science</div>
+</th>
+<!-- Social Studies -->
+<th class="p-sm border-b border-r border-outline-variant text-center bg-surface-container-low" colspan="3">
+<div class="font-bold text-primary">Social Studies</div>
+</th>
+<th class="p-sm border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-high text-center align-bottom sticky right-0 z-10">
+<div class="font-bold text-primary">Total Score</div>
+</th>
+<th class="p-sm border-b border-r border-outline-variant bg-secondary-fixed text-on-secondary-fixed text-center align-bottom sticky right-0 z-10 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">
+<div class="font-bold">Position</div>
+</th>
+</tr>
+<!-- Sub Header Row (CA/Exam) -->
+<tr class="bg-surface-variant">
+<th class="sticky-col p-xs px-sm border-b border-r border-outline-variant bg-surface-variant z-20">
+<div class="flex justify-between text-[11px] text-on-surface-variant font-medium">
+<span>ID / Name</span>
+<span>Status</span>
+</div>
+</th>
+<!-- Math Subs -->
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">CA (40)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">EX (60)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-bold w-[60px] bg-surface-container-high">TOT</th>
+<!-- Eng Subs -->
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">CA (40)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">EX (60)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-bold w-[60px] bg-surface-container-high">TOT</th>
+<!-- Sci Subs -->
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">CA (40)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">EX (60)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-bold w-[60px] bg-surface-container-high">TOT</th>
+<!-- Soc Subs -->
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">CA (40)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-medium w-[60px]">EX (60)</th>
+<th class="p-xs border-b border-r border-outline-variant text-center text-[11px] font-bold w-[60px] bg-surface-container-high">TOT</th>
+<th class="p-xs border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-highest text-center text-[11px] font-bold w-[80px] sticky right-0 z-10">(400)</th>
+<th class="p-xs border-b border-r border-outline-variant bg-secondary-fixed-dim text-on-secondary-fixed text-center text-[11px] font-bold w-[60px] sticky right-0 z-10 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">Rank</th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono text-on-surface">
+<!-- Row 1: Top Student -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky-col p-xs px-sm border-b border-r border-outline-variant bg-surface group-hover:bg-surface-container-low">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant font-label-sm">SP/23/001</span>
+<span class="font-bold text-primary">Adebayo, Oluwaseun</span>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary-fixed"></div>
+</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">38</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">55</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-tertiary-fixed/20 text-tertiary">93</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">35</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">50</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-tertiary-fixed/20 text-tertiary">85</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">39</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">58</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-tertiary-fixed/20 text-tertiary">97</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">36</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">52</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-tertiary-fixed/20 text-tertiary">88</td>
+<td class="p-xs border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-high text-center font-bold text-primary sticky right-0">363</td>
+<td class="p-xs border-b border-r border-outline-variant bg-secondary-fixed/50 text-on-secondary-fixed text-center font-bold text-lg sticky right-0 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">1st</td>
+</tr>
+<!-- Row 2: Average Student -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky-col p-xs px-sm border-b border-r border-outline-variant bg-surface group-hover:bg-surface-container-low">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant font-label-sm">SP/23/045</span>
+<span class="font-bold text-primary">Ibrahim, Fatima</span>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant"></div>
+</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">25</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">40</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface">65</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">30</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">45</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface">75</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">28</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">42</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface">70</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">32</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">48</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-tertiary-fixed/20 text-tertiary">80</td>
+<td class="p-xs border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-high text-center font-bold text-primary sticky right-0">290</td>
+<td class="p-xs border-b border-r border-outline-variant bg-surface text-on-surface text-center font-bold sticky right-0 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">14th</td>
+</tr>
+<!-- Row 3: Struggling Student -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky-col p-xs px-sm border-b border-r border-outline-variant bg-surface group-hover:bg-surface-container-low">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant font-label-sm">SP/23/012</span>
+<span class="font-bold text-primary">Nwachukwu, Chidi</span>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">15</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-error">25</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-error-container/50 text-on-error-container">40</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">20</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">35</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface">55</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">18</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-error">22</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-error-container/50 text-on-error-container">40</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">22</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">38</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface">60</td>
+<td class="p-xs border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-high text-center font-bold text-error sticky right-0">195</td>
+<td class="p-xs border-b border-r border-outline-variant bg-surface text-on-surface text-center font-bold sticky right-0 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">42nd</td>
+</tr>
+<!-- Row 4: Empty/Incomplete -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky-col p-xs px-sm border-b border-r border-outline-variant bg-surface group-hover:bg-surface-container-low">
+<div class="flex flex-col">
+<span class="text-[11px] text-on-surface-variant font-label-sm">SP/23/088</span>
+<span class="font-bold text-primary">Okonkwo, Amara</span>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant"></div>
+</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">30</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-outline">-</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface-variant">30</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">32</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-outline">-</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface-variant">32</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">28</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-outline">-</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface-variant">28</td>
+<td class="p-xs border-b border-r border-outline-variant text-center">35</td>
+<td class="p-xs border-b border-r border-outline-variant text-center text-outline">-</td>
+<td class="p-xs border-b border-r border-outline-variant text-center font-bold bg-surface-container text-on-surface-variant">35</td>
+<td class="p-xs border-b border-l-2 border-l-primary-container border-r border-outline-variant bg-surface-container-high text-center font-bold text-on-surface-variant sticky right-0">125</td>
+<td class="p-xs border-b border-r border-outline-variant bg-surface text-on-surface-variant text-center font-bold sticky right-0 shadow-[-4px_0_12px_rgba(0,0,0,0.05)]">N/A</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination/Footer -->
+<div class="p-xs border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center text-[12px] text-on-surface-variant">
+<span>Showing 1 to 4 of 45 entries</span>
+<div class="flex gap-xs">
+<button class="px-sm py-1 border border-outline-variant rounded hover:bg-surface-container-low disabled:opacity-50" disabled="">&lt; Prev</button>
+<button class="px-sm py-1 border border-outline-variant rounded hover:bg-surface-container-low">Next &gt;</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

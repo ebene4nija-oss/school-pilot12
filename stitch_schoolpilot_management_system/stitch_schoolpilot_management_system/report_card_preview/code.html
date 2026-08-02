@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface-container-low text-on-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Report Card Preview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f6f3f2",
+                      "primary": "#002447",
+                      "surface-container-highest": "#e5e2e1",
+                      "on-surface": "#1b1c1c",
+                      "tertiary-container": "#004320",
+                      "secondary-fixed-dim": "#ffb955",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "on-surface-variant": "#43474e",
+                      "on-primary-fixed": "#001c39",
+                      "secondary": "#835500",
+                      "inverse-primary": "#abc8f5",
+                      "on-tertiary-container": "#4bb771",
+                      "on-secondary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#6b4500",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container": "#f0eded",
+                      "on-secondary-fixed": "#291800",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface-bright": "#fcf9f8",
+                      "primary-fixed-dim": "#abc8f5",
+                      "primary-fixed": "#d4e3ff",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#303030",
+                      "tertiary-fixed": "#8df9ac",
+                      "tertiary": "#002b12",
+                      "outline-variant": "#c3c6cf",
+                      "on-background": "#1b1c1c",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "inverse-on-surface": "#f3f0ef",
+                      "primary-container": "#1b3a5f",
+                      "on-tertiary-fixed": "#00210d",
+                      "background": "#fcf9f8",
+                      "surface-variant": "#e5e2e1",
+                      "surface-container-high": "#eae7e7",
+                      "on-primary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "secondary-container": "#feae2c",
+                      "outline": "#74777f",
+                      "surface": "#fcf9f8",
+                      "error-container": "#ffdad6",
+                      "error": "#ba1a1a",
+                      "secondary-fixed": "#ffddb4",
+                      "surface-tint": "#436087",
+                      "on-primary-container": "#88a4cf",
+                      "surface-dim": "#dcd9d9"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "gutter": "16px",
+                      "base": "8px",
+                      "margin-desktop": "48px",
+                      "sm": "12px",
+                      "md": "16px",
+                      "margin-mobile": "16px",
+                      "xs": "4px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "display-lg": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="h-full flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline z-20 flex flex-col h-full p-md gap-base">
+<div class="flex items-center gap-sm mb-lg px-xs">
+<div class="w-8 h-8 rounded-full bg-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container leading-none">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/80 mt-xs">Admin Portal</p>
+</div>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim transition-colors py-sm px-md rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-xs mb-md">
+<span class="material-symbols-outlined text-sm">add</span>
+            New Assessment
+        </button>
+<nav class="flex-1 flex flex-col gap-xs overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">group</span>
+                Students
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">badge</span>
+                Staff
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+                Timetable
+            </a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">grading</span>
+                Results
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">quiz</span>
+                CBT
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">payments</span>
+                Fees
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md hover:scale-95 duration-100 transition-transform mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</nav>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-64 min-w-0">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline docked full-width top-0 sticky z-10">
+<div class="flex justify-between items-center h-16 px-lg w-full">
+<div class="flex items-center gap-lg">
+<nav class="flex items-center gap-md">
+<a class="font-body-md text-body-md text-primary font-bold border-b-2 border-primary pb-1 focus:ring-2 focus:ring-primary focus:ring-offset-2" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-high rounded-full font-body-md text-body-md text-on-surface border-none focus:ring-2 focus:ring-primary w-48 transition-all hover:bg-surface-container-highest" placeholder="Search..." type="text"/>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-container shrink-0 border border-outline-variant cursor-pointer focus:ring-2 focus:ring-primary focus:ring-offset-2" tabindex="0">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A small, professional portrait photo of a school administrator in modern high-contrast lighting, used as a profile avatar in a digital dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyh32ryE9MJh0SKZqf_Zf5vrMDnqvitWK_ZpyK_Y2w44tg4YN0LbGi8WzBY_ibd37AQG89NmxewYBhc5SLT6sQZO1CAjTQaxgZ6kGdtBfnjeb50XozrkQPWc6z5OAp4uZm4Yw1XWsm8m0rHfMhn2cWDEBuztOMbmwZVmWfRrPG1ssgeiVH3AFeg5kgvkJoR6ElNbWy6Oo4a6lO9yrrprchPJwgXBBquERSpLgegss9dHox6UEH-z5eHQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-surface-container-low p-margin-mobile md:p-margin-desktop">
+<div class="max-w-4xl mx-auto flex flex-col gap-lg">
+<!-- Action Bar -->
+<div class="flex justify-between items-center bg-surface-container-lowest p-md rounded-lg border border-outline-variant shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Report Card Preview</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Reviewing result for Ayomide Adebayo (SS2 Science)</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm rounded border border-primary-container text-primary-container font-label-sm text-label-sm flex items-center gap-xs hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">print</span>
+                            Print
+                        </button>
+<button class="px-md py-sm rounded bg-primary-container text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-primary transition-colors shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                            Export PDF
+                        </button>
+</div>
+</div>
+<!-- Document Container -->
+<div class="bg-surface-container-lowest rounded-DEFAULT border border-outline-variant shadow-sm p-xl max-w-[210mm] mx-auto w-full flex flex-col gap-lg aspect-[1/1.414]">
+<!-- Document Header -->
+<div class="flex justify-between items-start border-b border-outline-variant pb-md">
+<div class="flex items-center gap-md">
+<div class="w-20 h-20 bg-surface-container flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-outline text-3xl">image</span>
+</div>
+<div>
+<h1 class="font-display-lg text-display-lg text-primary uppercase tracking-tight">Excellence Academy</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">123 Education Way, Lagos, Nigeria</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Motto: Knowledge is Power</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<div class="w-20 h-20 bg-surface-container border border-outline-variant p-xs flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-3xl">qr_code_2</span>
+</div>
+<p class="font-label-sm text-label-sm text-outline mt-xs uppercase">Verify Authenticity</p>
+</div>
+</div>
+<!-- Student Info -->
+<div class="grid grid-cols-2 gap-md font-body-md text-body-md text-on-surface">
+<div>
+<p><span class="font-semibold text-on-surface-variant">Name:</span> Ayomide Adebayo</p>
+<p><span class="font-semibold text-on-surface-variant">Admission No:</span> EA/2021/045</p>
+<p><span class="font-semibold text-on-surface-variant">Class:</span> SS2 Science</p>
+</div>
+<div class="text-right">
+<p><span class="font-semibold text-on-surface-variant">Term:</span> First Term</p>
+<p><span class="font-semibold text-on-surface-variant">Session:</span> 2023/2024</p>
+<p><span class="font-semibold text-on-surface-variant">Date Issued:</span> Dec 15, 2023</p>
+</div>
+</div>
+<!-- Main Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse font-data-mono text-data-mono">
+<thead>
+<tr class="bg-surface-container-high border-y border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase">
+<th class="py-sm px-xs w-1/3">Subject</th>
+<th class="py-sm px-xs text-center w-1/6">CA1 (20)</th>
+<th class="py-sm px-xs text-center w-1/6">CA2 (20)</th>
+<th class="py-sm px-xs text-center w-1/6">Exam (60)</th>
+<th class="py-sm px-xs text-center w-1/6">Total (100)</th>
+<th class="py-sm px-xs text-center w-1/6">Grade</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-on-surface">
+<tr>
+<td class="py-sm px-xs font-semibold">Mathematics</td>
+<td class="py-sm px-xs text-center">18</td>
+<td class="py-sm px-xs text-center">15</td>
+<td class="py-sm px-xs text-center">55</td>
+<td class="py-sm px-xs text-center font-bold">88</td>
+<td class="py-sm px-xs text-center"><span class="px-2 py-1 bg-tertiary-fixed-dim text-on-tertiary-fixed text-xs rounded">A</span></td>
+</tr>
+<tr>
+<td class="py-sm px-xs font-semibold">English Language</td>
+<td class="py-sm px-xs text-center">14</td>
+<td class="py-sm px-xs text-center">16</td>
+<td class="py-sm px-xs text-center">45</td>
+<td class="py-sm px-xs text-center font-bold">75</td>
+<td class="py-sm px-xs text-center"><span class="px-2 py-1 bg-secondary-fixed-dim text-on-secondary-fixed text-xs rounded">B</span></td>
+</tr>
+<tr>
+<td class="py-sm px-xs font-semibold">Physics</td>
+<td class="py-sm px-xs text-center">19</td>
+<td class="py-sm px-xs text-center">18</td>
+<td class="py-sm px-xs text-center">58</td>
+<td class="py-sm px-xs text-center font-bold">95</td>
+<td class="py-sm px-xs text-center"><span class="px-2 py-1 bg-tertiary-fixed-dim text-on-tertiary-fixed text-xs rounded">A</span></td>
+</tr>
+<tr>
+<td class="py-sm px-xs font-semibold">Chemistry</td>
+<td class="py-sm px-xs text-center">15</td>
+<td class="py-sm px-xs text-center">14</td>
+<td class="py-sm px-xs text-center">40</td>
+<td class="py-sm px-xs text-center font-bold">69</td>
+<td class="py-sm px-xs text-center"><span class="px-2 py-1 bg-secondary-fixed-dim text-on-secondary-fixed text-xs rounded">C</span></td>
+</tr>
+<tr>
+<td class="py-sm px-xs font-semibold">Biology</td>
+<td class="py-sm px-xs text-center">12</td>
+<td class="py-sm px-xs text-center">15</td>
+<td class="py-sm px-xs text-center">50</td>
+<td class="py-sm px-xs text-center font-bold">77</td>
+<td class="py-sm px-xs text-center"><span class="px-2 py-1 bg-secondary-fixed-dim text-on-secondary-fixed text-xs rounded">B</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- AI Comment Box -->
+<div class="mt-auto bg-surface-container-low border border-outline-variant p-md rounded flex flex-col gap-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wide">Performance Summary</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic text-on-surface-variant">
+                            Ayomide has demonstrated exceptional aptitude in the sciences this term, particularly in Physics and Mathematics, reflecting a strong analytical mindset. While English and Biology scores are solid, focused attention on Chemistry practicals could elevate overall performance further. A highly commendable effort overall.
+                        </p>
+</div>
+<!-- Signatures -->
+<div class="grid grid-cols-2 gap-lg mt-md pt-md border-t border-outline-variant font-body-md text-body-md text-on-surface-variant">
+<div class="text-center">
+<div class="h-16 flex items-end justify-center pb-2 border-b border-outline-variant mb-xs">
+<span class="font-data-mono italic">A. O. Johnson</span>
+</div>
+<p>Form Teacher's Signature</p>
+</div>
+<div class="text-center">
+<div class="h-16 flex items-end justify-center pb-2 border-b border-outline-variant mb-xs">
+<span class="font-data-mono italic">Dr. K. Smith</span>
+</div>
+<p>Principal's Signature</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

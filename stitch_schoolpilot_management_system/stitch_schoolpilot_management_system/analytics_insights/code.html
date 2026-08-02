@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Analytics &amp; Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "background": "#fcf9f8",
+                        "on-surface-variant": "#43474e",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-container": "#004320",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "outline": "#74777f",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0eded",
+                        "primary": "#002447",
+                        "secondary": "#835500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6b4500",
+                        "primary-fixed-dim": "#abc8f5",
+                        "inverse-surface": "#303030",
+                        "inverse-primary": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f8",
+                        "on-surface": "#1b1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased overflow-hidden flex h-screen">
+<!-- SideNavBar (Shared Component) -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-primary border-r border-outline-variant flex flex-col p-md gap-base z-50">
+<div class="flex items-center gap-sm px-md py-lg mb-lg">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold font-headline-md text-headline-md">S</div>
+<div>
+<div class="font-headline-md text-headline-md font-bold text-on-primary">SchoolPilot</div>
+<div class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</div>
+</div>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-lg py-sm px-md flex items-center justify-center gap-sm mb-lg shadow-[0px_4px_12px_rgba(0,0,0,0.05)] hover:bg-secondary-fixed transition-colors">
+<span class="material-symbols-outlined icon-fill">add</span>
+            New Assessment
+        </button>
+<div class="flex flex-col gap-base flex-1 overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">dashboard</span>Dashboard
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">group</span>Students
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">badge</span>Staff
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">calendar_month</span>Timetable
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">grading</span>Results
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">quiz</span>CBT
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">payments</span>Fees
+            </a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold font-body-md text-body-md scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined icon-fill">analytics</span>Analytics
+            </a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">settings</span>Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col h-screen relative bg-surface-container-low">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface docked full-width top-0 sticky border-b border-outline-variant flex justify-between items-center h-16 px-lg z-40">
+<div class="flex items-center gap-lg">
+<div class="text-primary font-bold border-b-2 border-primary pb-1 pt-1 font-label-sm text-label-sm uppercase tracking-wider">Term 1, 2023/2024</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container h-10 pl-10 pr-4 rounded-full border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-sm font-body-md text-body-md w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center overflow-hidden border border-outline-variant cursor-pointer">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A professional headshot of an African school principal in a modern office, wearing a sharp navy suit, soft high-key lighting, corporate modern aesthetic, confident expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDARV1myEB64bXMqux7o5zLnaWrhnOiHGek8iBNUilLJwGaeEB3s2ff8keQ6MEbDJWVPeSeYiFBCNKRMnYtqgA5StZMob9Yy0VJefNeo-y00s_I7tsiwWREKy-1VHWloL_3p_pW8RO2SLSkzC79m-yuDUrE_0sXdO4ixczUwubAurFTIMFCcwanYgK5ncTH50TxIB7Ycgu5RyDPzpDF-kb9gf784dq9_-YB4dfUb27-pC9vhuJhW34mMw"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-xl">
+<div class="flex justify-between items-end mb-xl">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-background m-0">Analytics &amp; Insights</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-xs">Real-time performance and operational overview.</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm border border-outline-variant rounded-lg font-label-sm text-label-sm bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">download</span> Export Report
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Quick Stats 1: Enrollment -->
+<div class="col-span-12 md:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col justify-between relative overflow-hidden group hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="flex justify-between items-start mb-lg">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined">school</span>
+</div>
+<span class="bg-tertiary-container/10 text-tertiary-container font-label-sm text-label-sm px-2 py-1 rounded flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +2.4%
+                        </span>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Total Enrollment</div>
+<div class="font-display-lg text-display-lg text-primary">1,248</div>
+</div>
+<!-- Decorative background element -->
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary-fixed/20 rounded-full blur-2xl group-hover:bg-primary-fixed/40 transition-colors"></div>
+</div>
+<!-- Quick Stats 2: Staff Attendance -->
+<div class="col-span-12 md:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col justify-between relative overflow-hidden group hover:shadow-[0px_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+<div class="flex justify-between items-start mb-lg">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary-container">
+<span class="material-symbols-outlined">how_to_reg</span>
+</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Staff Attendance (Today)</div>
+<div class="font-display-lg text-display-lg text-tertiary-container">96.5%</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">42 of 44 Staff Present</div>
+</div>
+</div>
+<!-- Revenue Forecast (Large span) -->
+<div class="col-span-12 md:col-span-6 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col relative">
+<div class="flex justify-between items-center mb-lg">
+<h2 class="font-headline-md text-headline-md text-on-background m-0">Revenue Forecast</h2>
+<select class="bg-surface-container h-8 rounded border-none text-sm font-data-mono focus:ring-0 cursor-pointer text-on-surface-variant">
+<option>Term 1</option>
+<option>Term 2</option>
+</select>
+</div>
+<div class="flex gap-lg mb-md">
+<div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projected</div>
+<div class="font-data-mono text-data-mono text-lg font-bold text-primary">₦45,000,000.00</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Collected</div>
+<div class="font-data-mono text-data-mono text-lg font-bold text-tertiary-container">₦38,250,000.00</div>
+</div>
+</div>
+<!-- SVG Chart Mockup -->
+<div class="flex-1 mt-auto relative min-h-[120px] border-b border-l border-outline-variant/50 pt-4">
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Grid lines -->
+<line class="text-outline-variant/30" stroke="currentColor" stroke-dasharray="2 2" stroke-width="0.5" x1="0" x2="100" y1="25" y2="25"></line>
+<line class="text-outline-variant/30" stroke="currentColor" stroke-dasharray="2 2" stroke-width="0.5" x1="0" x2="100" y1="50" y2="50"></line>
+<line class="text-outline-variant/30" stroke="currentColor" stroke-dasharray="2 2" stroke-width="0.5" x1="0" x2="100" y1="75" y2="75"></line>
+<!-- Projected Line (Dashed) -->
+<polyline fill="none" points="0,80 20,60 40,40 60,30 80,15 100,10" stroke="#abc8f5" stroke-dasharray="4 4" stroke-width="2"></polyline>
+<!-- Actual Line (Solid Navy) -->
+<polyline fill="none" points="0,85 20,70 40,55 60,50" stroke="#002447" stroke-linecap="round" stroke-width="3"></polyline>
+<!-- Current Point Marker -->
+<circle cx="60" cy="50" fill="#feae2c" r="3" stroke="#ffffff" stroke-width="1.5"></circle>
+<!-- Area fill under actual -->
+<polygon fill="url(#grad)" opacity="0.1" points="0,100 0,85 20,70 40,55 60,50 60,100"></polygon>
+<defs>
+<lineargradient id="grad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#002447"></stop>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+<!-- Academic Alert List -->
+<div class="col-span-12 md:col-span-5 bg-surface-container-lowest border border-outline-variant rounded-xl p-0 overflow-hidden flex flex-col">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">trending_down</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-background m-0">Academic Alert</h2>
+</div>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View All</button>
+</div>
+<div class="flex flex-col flex-1 p-sm gap-xs">
+<!-- Alert Item 1 -->
+<div class="flex items-center p-sm rounded-lg hover:bg-surface-container-low transition-colors group cursor-pointer border border-transparent hover:border-outline-variant/50">
+<img alt="Student" class="w-10 h-10 rounded-full object-cover mr-md bg-surface-dim" data-alt="Close up portrait of an African male high school student looking slightly concerned, modern classroom setting, natural light, high contrast corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI4QKRv77vAygqHfrCONJVIUMEaZJNWYXJgi2qxOBYBrtec23NNZc4JOmPzLdT2w_E5UjqdO6_HIwtnNLQDqz2xHblTaY7jJxCy2-XFSCWNI7_Imh2cBLN3mCEy8eZeqfzbAN9t4IKGzw_S1NBGqb0p4LCyn7e69tPCM6u79s7U75lcVC6KfqUswRWxFNq5aer4i0ItQtDaY2uFwWnWHerniaph5LlGb_Vt8OThtpRq_dPF76tu81pjA"/>
+<div class="flex-1">
+<div class="font-data-mono text-data-mono text-on-background font-bold">Oluwaseun Adebayo</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant flex gap-sm">
+<span class="bg-surface-dim px-1.5 rounded text-xs text-on-surface">SS2 Science</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono text-data-mono text-error font-bold flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span> 18%
+                                </div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Math, Physics</div>
+</div>
+</div>
+<!-- Alert Item 2 -->
+<div class="flex items-center p-sm rounded-lg hover:bg-surface-container-low transition-colors group cursor-pointer border border-transparent hover:border-outline-variant/50">
+<img alt="Student" class="w-10 h-10 rounded-full object-cover mr-md bg-surface-dim" data-alt="Close up portrait of an African female junior secondary student, focused expression, library background, soft bright lighting, modern education aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAhVHilU0OclBNF1izpO9YDDXXt4-xtlsAx_R1Vk0RA3J9iFnmm9qRYnghyIf_XGgI-iYvQyokxAc5vmS25VvCr1i4-jzm2mgklj4jN4qnIC6g9BcDs_QNISHRin20RhCuU6ukQ_JI3wdswJHaLTcGZmx6fGLQNFED7pIstLVnmGYjtFXXWMrCm77OxlMs861xt8UPGtqivFlIxNZrL_JTTRY9ClyvV_GveuN9GfSt5gR6IWbHdsEoMw"/>
+<div class="flex-1">
+<div class="font-data-mono text-data-mono text-on-background font-bold">Ngozi Okafor</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant flex gap-sm">
+<span class="bg-surface-dim px-1.5 rounded text-xs text-on-surface">JSS3 A</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono text-data-mono text-error font-bold flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span> 12%
+                                </div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">English Lit.</div>
+</div>
+</div>
+<!-- Alert Item 3 -->
+<div class="flex items-center p-sm rounded-lg hover:bg-surface-container-low transition-colors group cursor-pointer border border-transparent hover:border-outline-variant/50">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold mr-md">IE</div>
+<div class="flex-1">
+<div class="font-data-mono text-data-mono text-on-background font-bold">Ibrahim Eze</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant flex gap-sm">
+<span class="bg-surface-dim px-1.5 rounded text-xs text-on-surface">SS1 Arts</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-data-mono text-data-mono text-secondary font-bold flex items-center justify-end gap-xs">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span> 8%
+                                </div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">History</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Attrition Risk Table -->
+<div class="col-span-12 md:col-span-7 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-background m-0">Attrition Risk Profile</h2>
+</div>
+<div class="flex gap-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container"><span class="material-symbols-outlined text-[18px]">filter_list</span></button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface">
+<th class="py-sm px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Student</th>
+<th class="py-sm px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Risk Factor</th>
+<th class="py-sm px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Severity</th>
+<th class="py-sm px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide text-right">Action</th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono divide-y divide-outline-variant/30">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-sm px-lg">
+<div class="font-bold text-primary group-hover:underline cursor-pointer">Chinweoka, D.</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">SS3 | ₦150,000 Owed</div>
+</td>
+<td class="py-sm px-lg text-on-surface">Unpaid Fees (Term 1 &amp; 2)</td>
+<td class="py-sm px-lg">
+<span class="inline-flex items-center px-2 py-1 rounded bg-error-container text-on-error-container text-xs font-bold gap-1 border border-error/20">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> High Risk
+                                        </span>
+</td>
+<td class="py-sm px-lg text-right">
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined">mail</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-sm px-lg">
+<div class="font-bold text-primary group-hover:underline cursor-pointer">Abubakar, S.</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">JSS2 | 12 Days Absent</div>
+</td>
+<td class="py-sm px-lg text-on-surface">Low Attendance</td>
+<td class="py-sm px-lg">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-container text-on-secondary-container text-xs font-bold gap-1 border border-secondary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Medium Risk
+                                        </span>
+</td>
+<td class="py-sm px-lg text-right">
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined">mail</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-sm px-lg">
+<div class="font-bold text-primary group-hover:underline cursor-pointer">Ogunleye, F.</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">SS1 | ₦45,000 Owed</div>
+</td>
+<td class="py-sm px-lg text-on-surface">Partial Fee Default</td>
+<td class="py-sm px-lg">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-dim text-on-surface-variant text-xs font-bold gap-1 border border-outline-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Low Risk
+                                        </span>
+</td>
+<td class="py-sm px-lg text-right">
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined">mail</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-sm px-lg">
+<div class="font-bold text-primary group-hover:underline cursor-pointer">Bello, M.</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">JSS1 | 15 Days Absent</div>
+</td>
+<td class="py-sm px-lg text-on-surface">Consecutive Absence</td>
+<td class="py-sm px-lg">
+<span class="inline-flex items-center px-2 py-1 rounded bg-error-container text-on-error-container text-xs font-bold gap-1 border border-error/20">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> High Risk
+                                        </span>
+</td>
+<td class="py-sm px-lg text-right">
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined">mail</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

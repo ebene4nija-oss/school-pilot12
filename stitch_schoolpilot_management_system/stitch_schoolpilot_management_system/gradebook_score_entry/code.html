@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gradebook Entry - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#1b1c1c",
+                    "surface-dim": "#dcd9d9",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "surface-container-high": "#eae7e7",
+                    "primary-container": "#1b3a5f",
+                    "on-primary-fixed": "#001c39",
+                    "background": "#fcf9f8",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#6b4500",
+                    "surface-container-low": "#f6f3f2",
+                    "secondary-fixed-dim": "#ffb955",
+                    "secondary": "#835500",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#88a4cf",
+                    "on-tertiary-container": "#4bb771",
+                    "primary": "#002447",
+                    "secondary-fixed": "#ffddb4",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "surface-variant": "#e5e2e1",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed": "#291800",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c3c6cf",
+                    "primary-fixed-dim": "#abc8f5",
+                    "on-surface-variant": "#43474e",
+                    "on-tertiary-fixed": "#00210d",
+                    "inverse-surface": "#303030",
+                    "primary-fixed": "#d4e3ff",
+                    "secondary-container": "#feae2c",
+                    "tertiary-container": "#004320",
+                    "surface-tint": "#436087",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "tertiary": "#002b12",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "surface": "#fcf9f8",
+                    "outline": "#74777f",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f3f0ef",
+                    "error-container": "#ffdad6",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#8df9ac",
+                    "surface-container-highest": "#e5e2e1",
+                    "inverse-primary": "#abc8f5",
+                    "surface-container": "#f0eded",
+                    "surface-bright": "#fcf9f8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "base": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "48px",
+                    "gutter": "16px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "display-lg-mobile": ["Work Sans"],
+                    "body-md": ["Inter"],
+                    "display-lg": ["Work Sans"],
+                    "data-mono": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide arrows on number inputs for a cleaner spreadsheet look */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col antialiased">
+<header class="flex justify-between items-center px-margin-mobile py-xs w-full bg-background border-b border-outline-variant w-full top-0 sticky z-40">
+<div class="flex items-center gap-sm">
+<div class="w-[36px] h-[36px] rounded-full overflow-hidden bg-surface-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a professional Nigerian teacher wearing glasses, looking confident and calm, standing in a brightly lit modern school hallway, modern corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg8GQKwsU21QlmSTwcyujFesDVbO53zZlymQHmb8Clu0YgRhm05v8KfNLPqhMqZukvUjCHFpZO_IExnLUr5kRB9g_MFov8S_aytdbWonQlPeyAGgcQPpMIdZ6MXo2PIr3hmgqBs8KUstFMe3_tKmnETdnEA-MjmmpsUc_zNFE1EjXa2ebavYZjMU520FP8X2afV0kWMcsIepTuOCLwQc6Y_gmjWSbwHrDgFJjkfkg8se7HAZJ6CulUFA"/>
+</div>
+<h1 class="font-headline-md text-headline-md-mobile font-bold text-primary">SchoolPilot</h1>
+</div>
+<button class="text-primary hover:bg-surface-container-low active:opacity-80 transition-opacity w-[48px] h-[48px] rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="flex-1 overflow-x-hidden overflow-y-auto pb-[90px] flex flex-col md:px-margin-desktop md:py-lg">
+<div class="px-margin-mobile py-md md:px-0 w-full max-w-6xl mx-auto">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-md">
+<div>
+<span class="inline-flex items-center justify-center px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm mb-xs">JSS 2A</span>
+<h2 class="font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface">Mathematics</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">First Term 2023/2024</p>
+</div>
+<div class="flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm">
+<div class="flex flex-col border-r border-outline-variant pr-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Class Avg</span>
+<span class="font-headline-md text-headline-md-mobile text-primary font-bold">68.4%</span>
+</div>
+<div class="flex items-center gap-xs text-tertiary-container pl-xs">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+<span class="font-label-sm text-label-sm">All changes saved</span>
+</div>
+</div>
+</div>
+<div class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+<div class="p-sm border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<div class="flex gap-sm w-full md:w-auto">
+<div class="relative w-full md:w-[250px]">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full h-[40px] pl-[40px] pr-sm rounded-lg border border-outline-variant bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface" placeholder="Search student..." type="text"/>
+</div>
+<button class="h-[40px] px-sm border border-outline-variant rounded-lg bg-surface-bright text-on-surface hover:bg-surface-container flex items-center justify-center gap-xs min-w-[48px]">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span class="hidden md:inline font-label-sm text-label-sm">Filter</span>
+</button>
+</div>
+<button class="hidden md:flex h-[40px] px-md rounded-lg bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed font-label-sm text-label-sm items-center justify-center transition-colors">
+                        Export Sheet
+                    </button>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full min-w-[700px] border-collapse text-left">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant font-label-sm text-label-sm text-on-surface-variant">
+<th class="sticky left-0 bg-surface-container-low z-20 px-md py-sm font-semibold border-r border-outline-variant w-[280px]">Student Name</th>
+<th class="px-xs py-sm font-semibold text-center w-[100px]">CA1 (20)</th>
+<th class="px-xs py-sm font-semibold text-center w-[100px]">CA2 (20)</th>
+<th class="px-xs py-sm font-semibold text-center w-[100px]">Exam (60)</th>
+<th class="px-sm py-sm font-semibold text-center w-[80px]">Total</th>
+<th class="px-sm py-sm font-semibold text-center w-[60px]">Grd</th>
+</tr>
+</thead>
+<tbody class="font-data-mono text-data-mono bg-surface-container-lowest">
+<tr class="border-b border-outline-variant hover:bg-surface-container group h-[56px] transition-colors">
+<td class="sticky left-0 bg-surface-container-lowest group-hover:bg-surface-container z-10 p-0 border-r border-outline-variant transition-colors">
+<div class="flex items-center h-full border-l-[4px] border-tertiary-container pl-sm pr-md">
+<div class="w-[32px] h-[32px] rounded-full bg-surface-variant flex-shrink-0 flex items-center justify-center text-on-surface-variant font-label-sm mr-sm overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small passport photograph of a young Nigerian male student, wearing a neat school uniform, neutral expression, light background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS1yFGByKNrlI673p07lTDGjRDkEk6BrOIChLn5L3VjoFmsGMDQn03xWJ2mhGtFFdpFV2RjorI8n8hopZTU8I3ts9l9t6THOKydVZ5O-cUTooIAYLxWt31Sq9sFBZHNuWNIpTIVXUedQL9nfvwCJZnlCbaFTscfQ6p9EmXgzy0NNH7KCWvQmFjHk15wqMnH-TGZ5KYrQBGyxosMYXSIzgSw6mqygW6NBZBwUT-6garPbgd0YHy2rip4w"/>
+</div>
+<span class="truncate font-body-md text-body-md text-on-surface font-medium">Adebayo, Oluwaseun</span>
+</div>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="18"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="15"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="60" min="0" type="number" value="52"/>
+</td>
+<td class="p-xs text-center align-middle font-bold text-on-surface">85</td>
+<td class="p-xs text-center align-middle font-bold text-tertiary-container">A</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container group h-[56px] transition-colors">
+<td class="sticky left-0 bg-surface-container-lowest group-hover:bg-surface-container z-10 p-0 border-r border-outline-variant transition-colors">
+<div class="flex items-center h-full border-l-[4px] border-error pl-sm pr-md">
+<div class="w-[32px] h-[32px] rounded-full bg-surface-variant flex-shrink-0 flex items-center justify-center text-on-surface-variant font-label-sm mr-sm overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small passport photograph of a young Nigerian female student, wearing a neat school uniform, neutral expression, light background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJIZdDY0X29r7nM6El0SGmJkUDweP69VqpCGCwfA6KhCQty7GUTdCUyv6PtQa55pL0jnLj06eznsZv4kAm9wAzyEbPHyOqRc5LzFlNSSuB6dLiAukRfptU7lA1X_DFMP4A8umF2DJEWIj6JAdZsTj-KaKkyGnEuUtUhdICDdpsvGQ_rQWShb2IY4Rq4JqZQBDjA5w0AR9h_-xFuUovd9ITwpaKxqL0A-BcKqJd40lfIcbyR-ECIVYLAg"/>
+</div>
+<span class="truncate font-body-md text-body-md text-on-surface font-medium">Chukwu, Amaka</span>
+</div>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="12"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="10"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-error rounded bg-error-container text-on-error-container focus:border-error focus:ring-1 focus:ring-error m-0 p-xs font-data-mono shadow-sm" max="60" min="0" type="number" value="25"/>
+</td>
+<td class="p-xs text-center align-middle font-bold text-on-surface">47</td>
+<td class="p-xs text-center align-middle font-bold text-error">D</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container group h-[56px] transition-colors">
+<td class="sticky left-0 bg-surface-container-lowest group-hover:bg-surface-container z-10 p-0 border-r border-outline-variant transition-colors">
+<div class="flex items-center h-full border-l-[4px] border-surface-variant pl-sm pr-md">
+<div class="w-[32px] h-[32px] rounded-full bg-surface-variant flex-shrink-0 flex items-center justify-center text-on-surface-variant font-label-sm mr-sm overflow-hidden">
+<span class="material-symbols-outlined text-[16px]">person</span>
+</div>
+<span class="truncate font-body-md text-body-md text-on-surface font-medium">Ibrahim, Yusuf</span>
+</div>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" placeholder="-" type="number"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" placeholder="-" type="number"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="60" min="0" placeholder="-" type="number"/>
+</td>
+<td class="p-xs text-center align-middle font-bold text-on-surface-variant">-</td>
+<td class="p-xs text-center align-middle font-bold text-on-surface-variant">-</td>
+</tr>
+<tr class="hover:bg-surface-container group h-[56px] transition-colors">
+<td class="sticky left-0 bg-surface-container-lowest group-hover:bg-surface-container z-10 p-0 border-r border-outline-variant transition-colors">
+<div class="flex items-center h-full border-l-[4px] border-tertiary-container pl-sm pr-md">
+<div class="w-[32px] h-[32px] rounded-full bg-surface-variant flex-shrink-0 flex items-center justify-center text-on-surface-variant font-label-sm mr-sm overflow-hidden">
+<span class="material-symbols-outlined text-[16px]">person</span>
+</div>
+<span class="truncate font-body-md text-body-md text-on-surface font-medium">Okafor, Blessing</span>
+</div>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="16"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="20" min="0" type="number" value="18"/>
+</td>
+<td class="p-xs align-middle">
+<input class="w-full h-[40px] text-center border border-outline-variant rounded bg-surface-bright focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white m-0 p-xs font-data-mono text-on-surface shadow-sm" max="60" min="0" type="number" value="45"/>
+</td>
+<td class="p-xs text-center align-middle font-bold text-on-surface">79</td>
+<td class="p-xs text-center align-middle font-bold text-tertiary-container">B</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-sm bg-surface-container-low border-t border-outline-variant flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
+<span>Showing 4 of 32 students</span>
+<div class="flex gap-xs">
+<button class="h-[32px] px-sm rounded border border-outline-variant hover:bg-surface-container flex items-center">Prev</button>
+<button class="h-[32px] px-sm rounded border border-outline-variant hover:bg-surface-container flex items-center">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-xs py-base bg-surface-container-lowest border-t border-outline-variant z-50 shadow-sm md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 w-[64px] h-[56px] scale-95 active:scale-90 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-xs group-hover:text-primary transition-colors">home</span>
+<span class="font-label-sm text-label-sm group-hover:text-primary transition-colors">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 w-[64px] h-[56px] scale-95 active:scale-90 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-xs group-hover:text-primary transition-colors">school</span>
+<span class="font-label-sm text-label-sm group-hover:text-primary transition-colors">Classes</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl py-1 px-3 w-[64px] h-[56px] scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined mb-xs" style="font-variation-settings: 'FILL' 1;">assessment</span>
+<span class="font-label-sm text-label-sm">Grades</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 w-[64px] h-[56px] scale-95 active:scale-90 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-xs group-hover:text-primary transition-colors">auto_awesome</span>
+<span class="font-label-sm text-label-sm group-hover:text-primary transition-colors">AI Studio</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 w-[64px] h-[56px] scale-95 active:scale-90 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-xs group-hover:text-primary transition-colors">mail</span>
+<span class="font-label-sm text-label-sm group-hover:text-primary transition-colors">Messages</span>
+</button>
+</nav>
+</body></html>

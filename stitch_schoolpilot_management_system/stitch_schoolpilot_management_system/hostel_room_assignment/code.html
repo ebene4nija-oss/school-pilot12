@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduCore Nigeria - Hostel Room Assignment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#eae7e7",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "outline-variant": "#c3c6cf",
+                        "on-secondary-container": "#6b4500",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "on-surface": "#1b1c1c",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-container": "#88a4cf",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#abc8f5",
+                        "surface-variant": "#e5e2e1",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#436087",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-tertiary-container": "#4bb771",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary-fixed": "#00210d",
+                        "primary": "#002447",
+                        "surface-container": "#f0eded",
+                        "inverse-surface": "#303030",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "surface": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "outline": "#74777f",
+                        "tertiary-container": "#004320",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "primary-fixed-dim": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "secondary": "#835500",
+                        "tertiary-fixed": "#8df9ac",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "sm": "12px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .bed-empty { @apply text-primary bg-primary/10 hover:bg-primary/20 cursor-pointer; }
+        .bed-occupied { @apply text-outline bg-surface-container-highest cursor-not-allowed; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) -->
+<nav class="bg-surface-container text-secondary font-label-sm hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
+<div class="p-lg border-b border-outline-variant">
+<div class="flex items-center gap-sm mb-lg">
+<div class="w-10 h-10 rounded bg-primary text-on-primary flex items-center justify-center font-bold">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary m-0">Admin Portal</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant m-0">Academic Session 2023/24</p>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-sm">
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="directions_bus">directions_bus</span>
+                Bus Tracking
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="local_library">local_library</span>
+                Library
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="video_camera_front">video_camera_front</span>
+                Live Class
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors bg-secondary-container text-on-secondary-container font-bold rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="hotel">hotel</span>
+                Hostel
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+                Clinic
+            </a>
+</div>
+<div class="p-sm border-t border-outline-variant">
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 p-3 mx-2 my-1 transition-colors text-on-surface-variant hover:bg-surface-container-high rounded" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface text-primary font-headline-md sticky top-0 z-30 flex justify-between items-center px-4 md:px-margin-desktop h-16 w-full border-b border-outline-variant">
+<div class="flex items-center gap-sm">
+<button class="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-bold text-headline-md hidden md:block">EduCore Nigeria</span>
+<span class="font-bold text-headline-md md:hidden">Hostel Allocation</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-4 py-2 border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-64 p-0" placeholder="Search student or room..." type="text"/>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-4 md:p-margin-desktop flex flex-col lg:flex-row gap-lg">
+<!-- Filters Sidebar -->
+<aside class="w-full lg:w-64 shrink-0 space-y-6">
+<div>
+<h2 class="font-headline-md text-on-surface mb-sm">Hostel Filters</h2>
+<p class="font-body-md text-on-surface-variant mb-4">Manage room allocations across blocks.</p>
+</div>
+<div class="bg-surface border border-outline-variant rounded-lg p-md">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase tracking-wider">Gender</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input checked="" class="text-primary focus:ring-primary h-5 w-5 border-outline" name="gender" type="radio"/>
+<span class="font-body-md">Male Hostels</span>
+</label>
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input class="text-primary focus:ring-primary h-5 w-5 border-outline" name="gender" type="radio"/>
+<span class="font-body-md">Female Hostels</span>
+</label>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant rounded-lg p-md">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase tracking-wider">Block</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input checked="" class="text-primary focus:ring-primary h-5 w-5 border-outline rounded-sm" type="checkbox"/>
+<span class="font-body-md">Block A (Senior)</span>
+</label>
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input checked="" class="text-primary focus:ring-primary h-5 w-5 border-outline rounded-sm" type="checkbox"/>
+<span class="font-body-md">Block B (Junior)</span>
+</label>
+<label class="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input class="text-primary focus:ring-primary h-5 w-5 border-outline rounded-sm" type="checkbox"/>
+<span class="font-body-md">Block C (Annex)</span>
+</label>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant rounded-lg p-md">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase tracking-wider">Capacity Status</h3>
+<div class="flex gap-2 mb-2">
+<span class="h-4 w-4 rounded-sm bg-primary/10 border border-primary/20 flex-shrink-0 mt-1"></span>
+<span class="font-body-md text-sm">Available Bed</span>
+</div>
+<div class="flex gap-2">
+<span class="h-4 w-4 rounded-sm bg-surface-container-highest border border-outline-variant flex-shrink-0 mt-1"></span>
+<span class="font-body-md text-sm">Occupied Bed</span>
+</div>
+</div>
+</aside>
+<!-- Room Grid -->
+<div class="flex-1">
+<div class="flex justify-between items-center mb-lg">
+<h2 class="font-display-lg-mobile md:font-display-lg text-on-surface">Block A Overview</h2>
+<div class="flex gap-sm">
+<button class="bg-surface text-primary border border-primary px-4 py-2 rounded font-label-sm flex items-center gap-2 hover:bg-surface-container-low transition-colors min-h-[48px]">
+<span class="material-symbols-outlined text-sm">print</span>
+                            Print List
+                        </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-md">
+<!-- Room Card 1 -->
+<div class="bg-surface border border-outline-variant rounded-lg overflow-hidden flex flex-col">
+<div class="bg-surface-container-low px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface m-0">Room 101</h3>
+<span class="px-2 py-1 bg-tertiary-container/20 text-tertiary-container font-label-sm rounded text-xs">2/4 Full</span>
+</div>
+<div class="p-4 grid grid-cols-2 gap-4 flex-1">
+<!-- Occupied Bed -->
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">A. Ibrahim</span>
+</div>
+<!-- Occupied Bed -->
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">C. Okonkwo</span>
+</div>
+<!-- Empty Bed -->
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 101', 'Bed 3')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+<!-- Empty Bed -->
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 101', 'Bed 4')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+</div>
+</div>
+<!-- Room Card 2 -->
+<div class="bg-surface border border-outline-variant rounded-lg overflow-hidden flex flex-col">
+<div class="bg-surface-container-low px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface m-0">Room 102</h3>
+<span class="px-2 py-1 bg-error-container text-on-error-container font-label-sm rounded text-xs">4/4 Full</span>
+</div>
+<div class="p-4 grid grid-cols-2 gap-4 flex-1">
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">M. Bello</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">E. Eze</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">D. Danjuma</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-occupied">
+<span class="material-symbols-outlined text-3xl mb-1" data-weight="fill">bed</span>
+<span class="font-label-sm text-xs truncate w-full text-center">S. Adeyemi</span>
+</div>
+</div>
+</div>
+<!-- Room Card 3 -->
+<div class="bg-surface border border-outline-variant rounded-lg overflow-hidden flex flex-col">
+<div class="bg-surface-container-low px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface m-0">Room 103</h3>
+<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-sm rounded text-xs">0/4 Full</span>
+</div>
+<div class="p-4 grid grid-cols-2 gap-4 flex-1">
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 103', 'Bed 1')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 103', 'Bed 2')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 103', 'Bed 3')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+<div class="flex flex-col items-center justify-center p-3 rounded bed-empty" onclick="openAssignModal('Room 103', 'Bed 4')">
+<span class="material-symbols-outlined text-3xl mb-1">bed</span>
+<span class="font-label-sm text-xs">Available</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="bg-surface text-secondary font-label-sm-mobile docked full-width bottom-0 rounded-t-xl border-t border-outline-variant shadow-lg fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-2 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+<span>Tracking</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="book">book</span>
+<span>Library</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="hotel">hotel</span>
+<span>Hostel</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span>More</span>
+</a>
+</nav>
+<!-- Assign Student Modal -->
+<div class="fixed inset-0 bg-on-surface/50 z-50 hidden flex items-center justify-center p-4" id="assignModal">
+<div class="bg-surface rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div>
+<h2 class="font-headline-md text-on-surface m-0">Assign Student</h2>
+<p class="font-label-sm text-on-surface-variant m-0 mt-1" id="modalRoomTarget">Room 101 - Bed 3</p>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-variant transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center" onclick="closeAssignModal()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 space-y-4">
+<div class="relative">
+<label class="block font-label-sm text-on-surface-variant mb-1">Search Student (SS2 - SS3)</label>
+<div class="flex items-center border border-outline-variant rounded focus-within:border-primary focus-within:ring-1 focus-within:ring-primary px-3 py-2 bg-surface">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 p-0 text-body-md h-8 outline-none" placeholder="Enter admission number or name..." type="text"/>
+</div>
+</div>
+<div class="border border-outline-variant rounded p-3 bg-surface-container-lowest">
+<p class="font-label-sm text-on-surface-variant mb-2">Recent Unassigned</p>
+<div class="space-y-2">
+<div class="flex justify-between items-center p-2 hover:bg-surface-container-low rounded cursor-pointer border border-transparent hover:border-outline-variant">
+<div>
+<p class="font-body-md font-medium text-on-surface m-0">Fatimah Yusuf</p>
+<p class="font-label-sm text-on-surface-variant m-0">ADM/23/0042 • SS2 Science</p>
+</div>
+<button class="bg-primary text-on-primary px-3 py-1 rounded text-sm font-label-sm">Select</button>
+</div>
+<div class="flex justify-between items-center p-2 hover:bg-surface-container-low rounded cursor-pointer border border-transparent hover:border-outline-variant">
+<div>
+<p class="font-body-md font-medium text-on-surface m-0">Ngozi Chukwu</p>
+<p class="font-label-sm text-on-surface-variant m-0">ADM/23/0188 • SS3 Arts</p>
+</div>
+<button class="bg-primary text-on-primary px-3 py-1 rounded text-sm font-label-sm">Select</button>
+</div>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex justify-end gap-3">
+<button class="px-4 py-2 border border-primary text-primary rounded font-label-sm hover:bg-primary/5 transition-colors min-h-[48px]" onclick="closeAssignModal()">Cancel</button>
+<button class="px-4 py-2 bg-[#F5A623] text-[#222222] rounded font-label-sm hover:bg-[#e0961f] transition-colors min-h-[48px] font-bold">Confirm Assignment</button>
+</div>
+</div>
+</div>
+<script>
+        function openAssignModal(room, bed) {
+            document.getElementById('modalRoomTarget').innerText = `${room} - ${bed}`;
+            document.getElementById('assignModal').classList.remove('hidden');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignModal').classList.add('hidden');
+        }
+    </script>
+</body></html>

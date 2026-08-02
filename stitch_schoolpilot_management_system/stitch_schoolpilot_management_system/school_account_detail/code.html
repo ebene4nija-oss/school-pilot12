@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduOps Admin - School Account Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "secondary-fixed-dim": "#ffb955",
+                    "secondary": "#835500",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#88a4cf",
+                    "on-secondary-container": "#6b4500",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#002447",
+                    "on-tertiary-container": "#4bb771",
+                    "on-background": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#dcd9d9",
+                    "on-surface": "#1b1c1c",
+                    "background": "#fcf9f8",
+                    "surface-container-high": "#eae7e7",
+                    "primary-container": "#1b3a5f",
+                    "on-primary-fixed": "#001c39",
+                    "on-secondary-fixed": "#291800",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e5e2e1",
+                    "secondary-fixed": "#ffddb4",
+                    "on-tertiary-fixed-variant": "#005229",
+                    "tertiary-container": "#004320",
+                    "surface-tint": "#436087",
+                    "secondary-container": "#feae2c",
+                    "primary-fixed": "#d4e3ff",
+                    "tertiary": "#002b12",
+                    "on-primary-fixed-variant": "#2a486e",
+                    "primary-fixed-dim": "#abc8f5",
+                    "on-surface-variant": "#43474e",
+                    "outline-variant": "#c3c6cf",
+                    "inverse-surface": "#303030",
+                    "on-tertiary-fixed": "#00210d",
+                    "inverse-primary": "#abc8f5",
+                    "tertiary-fixed": "#8df9ac",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "tertiary-fixed-dim": "#71dc92",
+                    "error-container": "#ffdad6",
+                    "surface": "#fcf9f8",
+                    "outline": "#74777f",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f3f0ef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-desktop": "48px",
+                    "sm": "12px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Work Sans"],
+                    "data-mono": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "display-lg-mobile": ["Work Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- SideNavBar -->
+<aside class="bg-primary dark:bg-primary-container border-r border-outline-variant text-on-primary dark:text-on-primary-fixed h-screen w-64 fixed left-0 top-0 flex flex-col py-lg px-md z-50">
+<div class="mb-xl">
+<h1 class="font-display-lg text-display-lg font-bold text-on-primary dark:text-on-primary-container leading-tight">EduOps Admin</h1>
+<p class="font-body-md text-body-md text-primary-fixed-dim opacity-80">System Control</p>
+</div>
+<nav class="flex-1 space-y-base">
+<a class="text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-body-md text-body-md">Schools</span>
+</a>
+<a class="text-secondary-fixed-dim font-bold border-r-4 border-secondary-fixed-dim bg-on-primary-fixed-variant/10 opacity-90 transition-all duration-150 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">supervisor_account</span>
+<span class="font-body-md text-body-md">Accounts</span>
+</a>
+<a class="text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Platform Settings</span>
+</a>
+<a class="text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md text-body-md">Billing</span>
+</a>
+</nav>
+<div class="mt-auto space-y-base pt-lg border-t border-primary-container/30">
+<a class="text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+<a class="text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 flex items-center gap-md px-md py-sm rounded" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md text-body-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container-low border-b border-outline-variant flex justify-between items-center h-16 px-margin-desktop w-full sticky top-0 z-40">
+<div class="flex items-center gap-md w-1/3">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Operations Console</span>
+</div>
+<div class="flex-1 max-w-md mx-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-high border-none rounded-full py-2 pl-10 pr-4 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none font-body-md text-body-md" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-sm justify-end w-1/3">
+<button class="p-2 text-on-surface-variant dark:text-outline hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant dark:text-outline hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined">settings_suggest</span>
+</button>
+<button class="p-2 text-on-surface-variant dark:text-outline hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-desktop bg-surface-container-lowest">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-xl border-b border-outline-variant pb-md">
+<div>
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors text-sm">arrow_back</span>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Back to Accounts</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-primary flex items-center gap-md">
+                        Greenwood International Academy
+                        <span class="bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20 px-2 py-1 rounded font-label-sm text-label-sm uppercase tracking-wider">Active</span>
+</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">ID: SCH-8924 | Reg Date: 12 Aug 2021</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-2 border border-primary text-primary font-label-sm text-label-sm uppercase tracking-wider rounded hover:bg-primary/5 transition-colors">Suspend Account</button>
+<button class="px-md py-2 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider rounded hover:bg-secondary-fixed-dim transition-colors font-semibold">Save Changes</button>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Left Column (Profile & Settings) -->
+<div class="lg:col-span-4 space-y-lg">
+<!-- School Settings Card -->
+<section class="bg-surface border border-outline-variant rounded-lg p-lg shadow-[0px_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-center mb-md border-b border-outline-variant pb-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">School Settings</h3>
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined text-sm">edit</span></button>
+</div>
+<div class="space-y-md">
+<div class="relative pt-4">
+<label class="absolute top-0 left-2 bg-surface px-1 font-label-sm text-label-sm text-primary uppercase">School Name</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-transparent" readonly="" type="text" value="Greenwood International Academy"/>
+</div>
+<div class="relative pt-4">
+<label class="absolute top-0 left-2 bg-surface px-1 font-label-sm text-label-sm text-primary uppercase">Principal/Admin</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-transparent" type="text" value="Dr. Sarah Olatunji"/>
+</div>
+<div class="relative pt-4">
+<label class="absolute top-0 left-2 bg-surface px-1 font-label-sm text-label-sm text-primary uppercase">Contact Email</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-transparent" type="email" value="admin@greenwood.edu.ng"/>
+</div>
+<div class="relative pt-4">
+<label class="absolute top-0 left-2 bg-surface px-1 font-label-sm text-label-sm text-primary uppercase">Contact Phone</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-transparent" type="tel" value="+234 803 123 4567"/>
+</div>
+<div class="relative pt-4">
+<label class="absolute top-0 left-2 bg-surface px-1 font-label-sm text-label-sm text-primary uppercase">Address</label>
+<textarea class="w-full border border-outline-variant rounded px-md py-sm font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-transparent resize-none" rows="2">15 Awolowo Road, Ikoyi, Lagos</textarea>
+</div>
+</div>
+</section>
+<!-- Stats / Quick Info -->
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface border-l-4 border-primary rounded border border-outline-variant p-md">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Total Students</p>
+<p class="font-headline-md text-headline-md text-on-surface">1,240</p>
+</div>
+<div class="bg-surface border-l-4 border-secondary-container rounded border border-outline-variant p-md">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Active Staff</p>
+<p class="font-headline-md text-headline-md text-on-surface">85</p>
+</div>
+</div>
+</div>
+<!-- Right Column (Billing & Notes) -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- Subscription & Billing Table -->
+<section class="bg-surface border border-outline-variant rounded-lg flex flex-col shadow-[0px_4px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+                                Subscription &amp; Billing History
+                            </h3>
+<button class="text-primary font-label-sm text-label-sm uppercase tracking-wider hover:underline">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+<tr>
+<th class="py-sm px-md font-semibold">Date</th>
+<th class="py-sm px-md font-semibold">Description</th>
+<th class="py-sm px-md font-semibold text-right">Amount (₦)</th>
+<th class="py-sm px-md font-semibold text-center">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface divide-y divide-outline-variant">
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="py-sm px-md whitespace-nowrap font-data-mono text-data-mono">01 Sep 2023</td>
+<td class="py-sm px-md">Term 1 (2023/2024) License Renewal</td>
+<td class="py-sm px-md text-right font-data-mono text-data-mono">₦ 250,000.00</td>
+<td class="py-sm px-md text-center">
+<span class="bg-tertiary-container/10 text-tertiary-container px-2 py-0.5 rounded font-label-sm text-label-sm uppercase tracking-wider">Paid</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="py-sm px-md whitespace-nowrap font-data-mono text-data-mono">01 May 2023</td>
+<td class="py-sm px-md">Term 3 (2022/2023) License Renewal</td>
+<td class="py-sm px-md text-right font-data-mono text-data-mono">₦ 250,000.00</td>
+<td class="py-sm px-md text-center">
+<span class="bg-tertiary-container/10 text-tertiary-container px-2 py-0.5 rounded font-label-sm text-label-sm uppercase tracking-wider">Paid</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="py-sm px-md whitespace-nowrap font-data-mono text-data-mono">10 Jan 2023</td>
+<td class="py-sm px-md">Add-on: SMS Integration Bundle</td>
+<td class="py-sm px-md text-right font-data-mono text-data-mono">₦ 50,000.00</td>
+<td class="py-sm px-md text-center">
+<span class="bg-tertiary-container/10 text-tertiary-container px-2 py-0.5 rounded font-label-sm text-label-sm uppercase tracking-wider">Paid</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="py-sm px-md whitespace-nowrap font-data-mono text-data-mono">05 Jan 2023</td>
+<td class="py-sm px-md">Term 2 (2022/2023) License Renewal</td>
+<td class="py-sm px-md text-right font-data-mono text-data-mono">₦ 250,000.00</td>
+<td class="py-sm px-md text-center">
+<span class="bg-error/10 text-error px-2 py-0.5 rounded font-label-sm text-label-sm uppercase tracking-wider">Late</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Internal Support Notes -->
+<section class="bg-surface border border-outline-variant rounded-lg p-md shadow-[0px_4px_12px_rgba(0,0,0,0.02)] flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-sm border-b border-outline-variant pb-xs">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary">speaker_notes</span>
+                                Internal Support Notes
+                            </h3>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Admin Only</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md text-sm">Log communication, issues, or special arrangements here. These are not visible to the school.</p>
+<div class="flex-1 relative min-h-[200px]">
+<textarea class="w-full h-full border border-outline-variant rounded p-md font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:border-primary bg-surface-container-lowest resize-none" placeholder="Add a note... (e.g., Follow up regarding term 2 late payment on 15th Jan)"></textarea>
+</div>
+<div class="mt-sm flex justify-end">
+<button class="px-md py-2 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider rounded hover:bg-primary-container transition-colors font-semibold">Post Note</button>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</body></html>

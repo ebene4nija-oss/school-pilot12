@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Defaulter Dashboard - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "background": "#fcf9f8",
+                        "on-surface-variant": "#43474e",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-container": "#004320",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "outline": "#74777f",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0eded",
+                        "primary": "#002447",
+                        "secondary": "#835500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6b4500",
+                        "primary-fixed-dim": "#abc8f5",
+                        "inverse-surface": "#303030",
+                        "inverse-primary": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f8",
+                        "on-surface": "#1b1c1c",
+                        "coral": "#D64545",
+                        "amber": "#F5A623"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md text-body-md flex">
+<!-- SideNavBar -->
+<aside class="bg-primary dark:bg-primary-container h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col h-full p-md gap-base z-20 hidden md:flex">
+<div class="flex items-center gap-sm px-md py-sm mb-lg">
+<span class="material-symbols-outlined text-on-primary text-3xl">school</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container leading-tight">SchoolPilot</h1>
+<span class="font-label-sm text-label-sm text-on-primary/80">Admin Portal</span>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-label-sm text-label-sm">CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold scale-95 duration-100 transition-transform shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<button class="w-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-sm rounded-lg font-bold hover:bg-secondary-fixed-dim transition-colors mt-lg flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">add</span>
+            New Assessment
+        </button>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:ml-64 w-full md:w-[calc(100%-16rem)]">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 sticky border-b border-outline-variant dark:border-outline flex justify-between items-center h-16 px-lg z-10 hidden md:flex">
+<div class="flex items-center gap-lg">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SchoolPilot</h2>
+<nav class="flex gap-md">
+<a class="font-label-sm text-label-sm text-primary font-bold border-b-2 border-primary pb-1" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-xl pr-sm py-xs bg-surface-container-low border border-outline-variant rounded-full font-body-md text-body-md focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm ml-sm">
+                    A
+                </div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+<div>
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background mb-xs">Defaulter Dashboard</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage and recover outstanding student balances.</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-amber text-[#222222] font-label-sm text-label-sm font-bold py-sm px-lg rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:bg-[#e0961f] transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined">send</span>
+                        Send Reminder
+                    </button>
+</div>
+</div>
+<!-- Filters & Actions Bar -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md mb-lg flex flex-col md:flex-row justify-between items-center gap-md shadow-sm">
+<div class="flex items-center gap-md w-full md:w-auto">
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" id="selectAll" type="checkbox"/>
+<span class="font-label-sm text-label-sm text-on-surface">Select All</span>
+</label>
+<span class="text-outline-variant">|</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant"><span class="font-bold" id="selectedCount">0</span> Selected</span>
+</div>
+<div class="flex flex-wrap gap-sm w-full md:w-auto">
+<div class="relative">
+<select class="appearance-none bg-surface-container-low border border-outline-variant rounded-lg pl-sm pr-xl py-xs font-label-sm text-label-sm text-on-surface focus:ring-2 focus:ring-primary outline-none">
+<option value="">All Classes</option>
+<option value="JSS1">JSS1</option>
+<option value="JSS2">JSS2</option>
+<option value="JSS3">JSS3</option>
+<option value="SS1">SS1</option>
+<option value="SS2">SS2</option>
+<option value="SS3">SS3</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 pointer-events-none text-outline">arrow_drop_down</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low border border-outline-variant rounded-lg pl-sm pr-xl py-xs font-label-sm text-label-sm text-on-surface focus:ring-2 focus:ring-primary outline-none">
+<option value="">Duration</option>
+<option value="30">&gt; 30 Days</option>
+<option value="60">&gt; 60 Days</option>
+<option value="90">&gt; 90 Days</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 pointer-events-none text-outline">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Defaulter List (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Student Card 1 -->
+<div class="bg-surface-container-lowest border-l-4 border-coral border-y border-r border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden group">
+<div class="absolute top-md right-md">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary student-checkbox" type="checkbox"/>
+</div>
+<div class="flex items-center gap-md mb-md">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="Headshot of a Nigerian secondary school student in a neat uniform, neutral background, professional lighting, modern corporate school style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuwTZGOJC-2i-uoumyJKhVdJwHRcouGkUi4UrtWXQ2h5_TdK0Oqh7ydMzxGaLjSfB61Wsf12tl6h254_IWygZoh8lx_SkFtmwEXrD3B0B-2b7wYdoTaDDNorxjvpgAoxtB-Sg9bc4vEujsuE2YFQB_eurVEqCEvMk0zDOpcIsUsupzoZbRCpCDvigVfXGqy-oSCyEgR-sr0F6RX1IuElQIWKSQvFxfCt-bA-6YkaFcPz30OiwTz4bbRA"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Adeyemi, Tolu</h3>
+<div class="flex gap-xs mt-xs">
+<span class="bg-surface-container-high text-on-surface px-sm py-xs rounded-full font-label-sm text-label-sm">SS2 Science</span>
+<span class="bg-error-container text-on-error-container px-sm py-xs rounded-full font-label-sm text-label-sm">90+ Days</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container p-sm rounded-md mb-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Owed</span>
+<span class="font-data-mono text-data-mono text-coral font-bold text-lg">₦150,000.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"><span class="material-symbols-outlined text-sm">history</span> Last reminder: 2 days ago</span>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View Details</button>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="bg-surface-container-lowest border-l-4 border-coral border-y border-r border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden group">
+<div class="absolute top-md right-md">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary student-checkbox" type="checkbox"/>
+</div>
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full bg-primary-fixed-dim text-on-primary-fixed-variant flex items-center justify-center font-bold text-xl border border-outline-variant">CO</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Okafor, Chidi</h3>
+<div class="flex gap-xs mt-xs">
+<span class="bg-surface-container-high text-on-surface px-sm py-xs rounded-full font-label-sm text-label-sm">JSS3</span>
+<span class="bg-error-container text-on-error-container px-sm py-xs rounded-full font-label-sm text-label-sm">60+ Days</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container p-sm rounded-md mb-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Owed</span>
+<span class="font-data-mono text-data-mono text-coral font-bold text-lg">₦85,500.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"><span class="material-symbols-outlined text-sm">history</span> Last reminder: 1 week ago</span>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View Details</button>
+</div>
+</div>
+<!-- Student Card 3 -->
+<div class="bg-surface-container-lowest border-l-4 border-amber border-y border-r border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden group">
+<div class="absolute top-md right-md">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary student-checkbox" type="checkbox"/>
+</div>
+<div class="flex items-center gap-md mb-md">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="Portrait of a young Nigerian female student in school uniform, bright smile, well-lit modern classroom setting, high contrast, crisp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHdD-XJygJ_Bbldp5HUkn1Yup_6D2eHb-w4LxcLSt4OZXoDLxOLgxQqjrol3ssJo5WQHACDgBLTI4sLHqAA0XLA2O1R1eRFCaOMI0o_JCwSG0LNEdXJaFoXz2u3WJyOLFW90odmwM7sCSYEvUqT1zNyX13fOZWRdGIlsfoK_2R2DvOkw40CpfZgA5RLDL4tcQpfBqaj2Jmjt0_rqm1OKbjeWDi-NnKo94s-o5jwn9rZQBFqval-MRyGg"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Bello, Fatima</h3>
+<div class="flex gap-xs mt-xs">
+<span class="bg-surface-container-high text-on-surface px-sm py-xs rounded-full font-label-sm text-label-sm">SS1 Arts</span>
+<span class="bg-secondary-fixed text-on-secondary-fixed px-sm py-xs rounded-full font-label-sm text-label-sm">30+ Days</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container p-sm rounded-md mb-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Owed</span>
+<span class="font-data-mono text-data-mono text-amber font-bold text-lg">₦45,000.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"><span class="material-symbols-outlined text-sm">history</span> Last reminder: Never</span>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View Details</button>
+</div>
+</div>
+<!-- Student Card 4 -->
+<div class="bg-surface-container-lowest border-l-4 border-coral border-y border-r border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden group">
+<div class="absolute top-md right-md">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary student-checkbox" type="checkbox"/>
+</div>
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full bg-primary-fixed-dim text-on-primary-fixed-variant flex items-center justify-center font-bold text-xl border border-outline-variant">EN</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Nwachukwu, Emeka</h3>
+<div class="flex gap-xs mt-xs">
+<span class="bg-surface-container-high text-on-surface px-sm py-xs rounded-full font-label-sm text-label-sm">SS3 Com</span>
+<span class="bg-error-container text-on-error-container px-sm py-xs rounded-full font-label-sm text-label-sm">120+ Days</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container p-sm rounded-md mb-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Owed</span>
+<span class="font-data-mono text-data-mono text-coral font-bold text-lg">₦210,000.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"><span class="material-symbols-outlined text-sm">history</span> Last reminder: 1 month ago</span>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View Details</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            const countDisplay = document.getElementById('selectedCount');
+
+            function updateCount() {
+                const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
+                countDisplay.textContent = checkedCount;
+                selectAll.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+            }
+
+            selectAll.addEventListener('change', (e) => {
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                updateCount();
+            });
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateCount);
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CBT Exam View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface-variant": "#43474e",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#303030",
+                      "primary-fixed-dim": "#abc8f5",
+                      "on-tertiary-container": "#4bb771",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface": "#fcf9f8",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "on-secondary-fixed": "#291800",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed": "#00210d",
+                      "secondary-fixed": "#ffddb4",
+                      "primary-fixed": "#d4e3ff",
+                      "surface-container-high": "#eae7e7",
+                      "tertiary": "#002b12",
+                      "on-secondary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#e5e2e1",
+                      "on-surface": "#1b1c1c",
+                      "background": "#fcf9f8",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed": "#001c39",
+                      "on-primary-container": "#88a4cf",
+                      "surface-tint": "#436087",
+                      "outline": "#74777f",
+                      "tertiary-container": "#004320",
+                      "primary-container": "#1b3a5f",
+                      "secondary-fixed-dim": "#ffb955",
+                      "primary": "#002447",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "inverse-on-surface": "#f3f0ef",
+                      "surface-container-low": "#f6f3f2",
+                      "secondary-container": "#feae2c",
+                      "tertiary-fixed": "#8df9ac",
+                      "surface-container-highest": "#e5e2e1",
+                      "surface-bright": "#fcf9f8",
+                      "surface-container": "#f0eded",
+                      "on-secondary-container": "#6b4500",
+                      "inverse-primary": "#abc8f5",
+                      "outline-variant": "#c3c6cf",
+                      "secondary": "#835500",
+                      "surface-dim": "#dcd9d9",
+                      "on-background": "#1b1c1c",
+                      "on-primary-fixed-variant": "#2a486e",
+                      "on-error": "#ffffff",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "48px",
+                      "xl": "32px",
+                      "xs": "4px",
+                      "sm": "12px",
+                      "base": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "display-lg": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+      </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+<!-- Top App Bar -->
+<header class="bg-surface border-b border-outline-variant flex items-center justify-between px-margin-mobile h-16 w-full shrink-0">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" onclick="openModal()">close</span>
+<h1 class="font-headline-md text-headline-md text-primary font-bold truncate">Mathematics Mid-term</h1>
+</div>
+<div class="flex items-center gap-xs bg-error-container text-on-error-container px-sm py-xs rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 18px;">timer</span>
+<span class="font-data-mono text-data-mono font-bold" id="countdown">00:45:12</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto px-margin-mobile py-lg flex flex-col">
+<!-- Question Header -->
+<div class="mb-lg flex justify-between items-end">
+<div>
+<span class="inline-block bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm px-2 py-1 rounded-sm mb-xs">Question 12 of 40</span>
+</div>
+<div class="flex gap-xs">
+<button class="w-10 h-10 rounded-full border border-outline flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">flag</span>
+</button>
+</div>
+</div>
+<!-- Question Body -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md mb-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<p class="font-body-lg text-body-lg text-on-surface mb-lg font-medium">What is the square root of 144?</p>
+<!-- Options -->
+<div class="flex flex-col gap-sm">
+<!-- Option A -->
+<label class="flex items-center p-md border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors group has-[:checked]:bg-primary-fixed has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input class="sr-only" name="question12" type="radio" value="A"/>
+<div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center mr-md group-has-[:checked]:bg-primary group-has-[:checked]:border-primary group-has-[:checked]:text-on-primary font-label-sm text-label-sm">
+                        A
+                    </div>
+<span class="font-body-md text-body-md text-on-surface flex-1">10</span>
+</label>
+<!-- Option B -->
+<label class="flex items-center p-md border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors group has-[:checked]:bg-primary-fixed has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input class="sr-only" name="question12" type="radio" value="B"/>
+<div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center mr-md group-has-[:checked]:bg-primary group-has-[:checked]:border-primary group-has-[:checked]:text-on-primary font-label-sm text-label-sm">
+                        B
+                    </div>
+<span class="font-body-md text-body-md text-on-surface flex-1">12</span>
+</label>
+<!-- Option C -->
+<label class="flex items-center p-md border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors group has-[:checked]:bg-primary-fixed has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input class="sr-only" name="question12" type="radio" value="C"/>
+<div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center mr-md group-has-[:checked]:bg-primary group-has-[:checked]:border-primary group-has-[:checked]:text-on-primary font-label-sm text-label-sm">
+                        C
+                    </div>
+<span class="font-body-md text-body-md text-on-surface flex-1">14</span>
+</label>
+<!-- Option D -->
+<label class="flex items-center p-md border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors group has-[:checked]:bg-primary-fixed has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input class="sr-only" name="question12" type="radio" value="D"/>
+<div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center mr-md group-has-[:checked]:bg-primary group-has-[:checked]:border-primary group-has-[:checked]:text-on-primary font-label-sm text-label-sm">
+                        D
+                    </div>
+<span class="font-body-md text-body-md text-on-surface flex-1">144</span>
+</label>
+</div>
+</div>
+<div class="mt-auto flex justify-between gap-md mb-md">
+<button class="flex-1 py-sm border border-primary text-primary rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-xs hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span> Previous
+            </button>
+<button class="flex-1 py-sm bg-primary text-on-primary rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-xs hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors">
+                Next <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</main>
+<!-- Bottom Question Navigator & Submit -->
+<div class="bg-surface border-t border-outline-variant shrink-0 pb-safe">
+<!-- Question Strip -->
+<div class="overflow-x-auto no-scrollbar py-sm px-margin-mobile border-b border-outline-variant">
+<div class="flex gap-xs" style="width: max-content;">
+<!-- Generated dummy dots for visualization -->
+<script>
+                    for(let i=1; i<=40; i++) {
+                        let stateClass = "border-outline-variant text-on-surface-variant bg-surface-container-lowest"; // Unanswered
+                        if(i < 12) stateClass = "bg-surface-variant text-on-surface border-surface-variant"; // Answered
+                        if(i === 12) stateClass = "bg-secondary-container text-on-secondary-container border-secondary-container font-bold shadow-[0_4px_12px_rgba(0,0,0,0.05)]"; // Current
+                        
+                        document.write(`
+                            <button class="w-10 h-10 rounded-full border flex items-center justify-center font-data-mono text-[12px] shrink-0 ${stateClass}">
+                                ${i}
+                            </button>
+                        `);
+                    }
+                </script>
+</div>
+</div>
+<!-- Submit Action -->
+<div class="p-margin-mobile flex justify-center">
+<button class="w-full max-w-sm py-md bg-secondary text-on-secondary rounded-lg font-label-sm text-label-sm font-bold tracking-wide hover:bg-secondary-fixed hover:text-on-secondary-fixed transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.05)]" onclick="openModal()">
+                Submit Exam
+            </button>
+</div>
+</div>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-[#000000] bg-opacity-50 z-[100] hidden items-center justify-center p-margin-mobile" id="submitModal">
+<!-- Modal Content -->
+<div class="bg-surface-container-lowest rounded-xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 opacity-0 transition-all duration-200" id="modalCard">
+<div class="p-lg text-center">
+<div class="w-16 h-16 rounded-full bg-error-container text-on-error-container flex items-center justify-center mx-auto mb-md">
+<span class="material-symbols-outlined" style="font-size: 32px;">warning</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold mb-xs">Submit Exam?</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg">You have 28 unanswered questions. Once submitted, you cannot return to this exam.</p>
+<div class="flex flex-col gap-sm">
+<button class="w-full py-md bg-primary text-on-primary rounded-lg font-label-sm text-label-sm font-bold" onclick="closeModal()">
+                        Confirm Submission
+                    </button>
+<button class="w-full py-md border border-primary text-primary rounded-lg font-label-sm text-label-sm font-bold" onclick="closeModal()">
+                        Return to Exam
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        // Simple timer logic
+        let timeLeft = 45 * 60 + 12; // 45m 12s in seconds
+        const timerElement = document.getElementById('countdown');
+        
+        setInterval(() => {
+            if(timeLeft <= 0) return;
+            timeLeft--;
+            const h = Math.floor(timeLeft / 3600).toString().padStart(2, '0');
+            const m = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            timerElement.textContent = `${h}:${m}:${s}`;
+        }, 1000);
+
+        // Modal logic
+        const modal = document.getElementById('submitModal');
+        const modalCard = document.getElementById('modalCard');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Small delay to allow display flex to apply before animating
+            setTimeout(() => {
+                modalCard.classList.remove('scale-95', 'opacity-0');
+                modalCard.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            modalCard.classList.remove('scale-100', 'opacity-100');
+            modalCard.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+    </script>
+</body></html>

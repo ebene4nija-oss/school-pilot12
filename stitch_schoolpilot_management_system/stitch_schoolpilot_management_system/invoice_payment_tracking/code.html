@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Invoice &amp; Payment Tracking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "background": "#fcf9f8",
+                        "on-surface-variant": "#43474e",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-container": "#004320",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "outline": "#74777f",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0eded",
+                        "primary": "#002447",
+                        "secondary": "#835500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6b4500",
+                        "primary-fixed-dim": "#abc8f5",
+                        "inverse-surface": "#303030",
+                        "inverse-primary": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f8",
+                        "on-surface": "#1b1c1c",
+                        "coral": "#D64545"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline flat no shadows flex flex-col p-md gap-base z-50 hidden md:flex">
+<div class="mb-xl px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary-container">Admin Portal</p>
+</div>
+<ul class="flex flex-col gap-sm flex-1">
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> <span class="font-label-sm text-label-sm">Dashboard</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="group">group</span> <span class="font-label-sm text-label-sm">Students</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="badge">badge</span> <span class="font-label-sm text-label-sm">Staff</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span> <span class="font-label-sm text-label-sm">Timetable</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="grading">grading</span> <span class="font-label-sm text-label-sm">Results</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="quiz">quiz</span> <span class="font-label-sm text-label-sm">CBT</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#"><span class="material-symbols-outlined" data-icon="payments">payments</span> <span class="font-label-sm text-label-sm">Fees</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="analytics">analytics</span> <span class="font-label-sm text-label-sm">Analytics</span></a></li>
+<li><a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#"><span class="material-symbols-outlined" data-icon="settings">settings</span> <span class="font-label-sm text-label-sm">Settings</span></a></li>
+</ul>
+<div class="mt-auto">
+<button class="w-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-sm rounded-lg hover:bg-secondary-fixed-dim transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-sm">add</span> New Assessment
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="docked full-width top-0 sticky bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline flat no shadows flex justify-between items-center h-16 px-lg z-40 w-full hidden md:flex">
+<div class="flex items-center gap-lg">
+<nav class="flex gap-md">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-xl pr-sm py-xs bg-surface-container-low border border-outline-variant rounded-full text-body-md focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-xs rounded-full transition-colors"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-xs rounded-full transition-colors"><span class="material-symbols-outlined" data-icon="help">help</span></button>
+<div class="h-8 w-8 rounded-full bg-primary-container overflow-hidden border border-outline-variant ml-sm cursor-pointer">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a school administrator in a bright, modern office setting. The person is wearing business casual attire, smiling slightly. The lighting is soft and natural, emphasizing a calm, authoritative presence. Corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWDIuVRfowWm0qZlSRaLfxudLvgLKcUijW0kgfzd11_L4vPQo52ccdnt19I37jo1am__Ej6GiqpDQqe-rIfm09Qvh7o19PKg7ydVy4ZYMqh5n5nnQJfdwtOMpo3B-jsLAF1PGsBC6Q8bzNRyBuGN9MX6ZVbMIyGBF5fKoq_6sZr050pvVg9E1diUcYPgfW4ZELbwXxNyOsF6i2UKEGKNNiaEyhD6tgk_ecfDj74lv5ZYXpVx1UUVMt7A"/>
+</div>
+</div>
+</header>
+<!-- Mobile Header (Simplified) -->
+<header class="md:hidden flex justify-between items-center p-md bg-surface border-b border-outline-variant sticky top-0 z-40">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Fees Tracking</h1>
+<button class="p-xs"><span class="material-symbols-outlined">menu</span></button>
+</header>
+<!-- Page Content -->
+<main class="p-margin-mobile md:p-margin-desktop flex-1 overflow-auto bg-surface-container-lowest">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+<div>
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface">Invoice &amp; Payment Tracking</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Manage student fee payments and outstanding balances across all classes.</p>
+</div>
+<div class="flex gap-sm w-full md:w-auto">
+<button class="flex-1 md:flex-none px-md py-sm border border-outline-variant rounded-lg font-label-sm text-label-sm text-on-surface flex items-center justify-center gap-xs hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-sm">download</span> Export
+                    </button>
+<button class="flex-1 md:flex-none px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-xs hover:bg-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-sm">receipt_long</span> Generate Invoices
+                    </button>
+</div>
+</div>
+<!-- Filters & Search Bar -->
+<div class="bg-surface border border-outline-variant rounded-xl p-md mb-xl shadow-sm flex flex-col md:flex-row gap-md items-center justify-between">
+<div class="relative w-full md:max-w-md">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-shadow" placeholder="Search student name or ID..." type="text"/>
+</div>
+<div class="flex gap-sm w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+<select class="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-label-sm text-label-sm text-on-surface focus:ring-2 focus:ring-primary outline-none whitespace-nowrap min-w-[120px]">
+<option>All Classes</option>
+<option>JSS 1</option>
+<option>JSS 2</option>
+<option>SS 3</option>
+</select>
+<select class="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-label-sm text-label-sm text-on-surface focus:ring-2 focus:ring-primary outline-none whitespace-nowrap min-w-[140px]">
+<option>Status: All</option>
+<option>Paid</option>
+<option>Partial</option>
+<option>Overdue</option>
+</select>
+<button class="p-sm border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Student</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Class</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Total Invoice</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount Paid</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Outstanding</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Status</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-center">Channel</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1: Paid -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-md">
+<div class="flex items-center gap-sm">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-primary-fixed-dim shrink-0">
+<img alt="Student" class="w-full h-full object-cover" data-alt="Portrait of a young Nigerian student wearing a neat school uniform. Bright, soft lighting, professional corporate photography style against a neutral gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBojm81j_hezw9LMLrW-2mVhNqu-BumdIpwW9AR6iFeNukrWKoLcqqeQy3mWI4P3Sp4DioxtJy3E49p2azz1-HZzHlnjwQ_BHTMB7w1pc08XMzJiV9YEtqpGXqlc2HSaFVTFhC5wtq-tJB7uJ8Um1e79x0sQLJNK3iOMKIKpweOAtkWoTxgyWUUNSDLtfL814NNrQzzeL3ZHX_mAUi62cgX-DR-Kakfs22JhHVJZKjpfIzEYbnbfYDgDQ"/>
+</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface group-hover:text-primary transition-colors cursor-pointer">Adebayo, Oluwaseun</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">SP-2023-001</p>
+</div>
+</div>
+</td>
+<td class="p-md font-body-md text-body-md text-on-surface-variant">SS 3A</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦250,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦250,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface-variant text-right">₦0.00</td>
+<td class="p-md text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-xs font-medium bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary-fixed-dim">
+                                        Paid
+                                    </span>
+</td>
+<td class="p-md text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" title="Bank Transfer">account_balance</span>
+</td>
+</tr>
+<!-- Row 2: Partial -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-md">
+<div class="flex items-center gap-sm">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-primary-fixed-dim shrink-0">
+<img alt="Student" class="w-full h-full object-cover" data-alt="Portrait of a young Nigerian female student with braided hair, wearing a neat school uniform. Soft studio lighting, professional corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv7DEc3K4gD2gdJV2ptJqj_bcwI1HGNhWW2k6dfNtI5tAd8jEwYpl_4Ne1S39Pf2ZWO9PRSP-nAr8ZAfDSZPAhdwZhJSdDqeFiCev_fjzTeidTHkNSTapC-UJLoT12zgFgwAcnGkPNsbSxy1YudcsxcUF79qghBpPDSzFl4RpvGhm3xkUZ14IxjTFPu2v5OD7X_sjQ3J36gTJ5L5gaAqUUojy7jDl-uQyLDL-y0YXeiBeyVPNXzEnbPA"/>
+</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface group-hover:text-primary transition-colors cursor-pointer">Okafor, Chioma</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">SP-2023-042</p>
+</div>
+</div>
+</td>
+<td class="p-md font-body-md text-body-md text-on-surface-variant">JSS 2B</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦180,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦100,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-secondary text-right font-medium">₦80,000.00</td>
+<td class="p-md text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-xs font-medium bg-secondary-fixed text-on-secondary-fixed border border-secondary-fixed-dim">
+                                        Partial
+                                    </span>
+</td>
+<td class="p-md text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" title="Paystack">credit_card</span>
+</td>
+</tr>
+<!-- Row 3: Overdue -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-md">
+<div class="flex items-center gap-sm">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-primary-fixed-dim shrink-0 flex items-center justify-center text-primary-container font-bold text-lg">
+                                            MI
+                                        </div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface group-hover:text-primary transition-colors cursor-pointer">Ibrahim, Musa</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">SP-2023-105</p>
+</div>
+</div>
+</td>
+<td class="p-md font-body-md text-body-md text-on-surface-variant">SS 1C</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦220,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦0.00</td>
+<td class="p-md font-data-mono text-data-mono text-coral text-right font-medium">₦220,000.00</td>
+<td class="p-md text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-xs font-medium bg-error-container text-on-error-container border border-error-container/50">
+                                        Overdue
+                                    </span>
+</td>
+<td class="p-md text-center text-on-surface-variant">
+<span class="text-xs text-outline-variant">-</span>
+</td>
+</tr>
+<!-- Row 4: Paid (Cash) -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="p-md">
+<div class="flex items-center gap-sm">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-primary-fixed-dim shrink-0">
+<img alt="Student" class="w-full h-full object-cover" data-alt="Portrait of a young male student in glasses, wearing a pristine school uniform. Crisp lighting, corporate education branding style, shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhKr-x7VAPgxTETrOZTMGOMJC2Fj1Ki4ECuY0fVqwUNRD01S-N3KOQjgdsE4pM78SnlVRd3WOmWCYAoq6eVqeP5jsu2bnn5Yo8o5k5e3NCSqjpWQ7xrE1Q72462LmuIo388HFOClqeZDosXDqDNWmyOkgZl305daHUn3OBmUIBP4orN2BH1NaUWCXleVklan-UicbGYWi4dO4axN7EUhs9xMCRqn4S2SvS8gWVj3ZBxTmeWJ6I7SANaw"/>
+</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface group-hover:text-primary transition-colors cursor-pointer">Eze, Chinedu</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">SP-2023-018</p>
+</div>
+</div>
+</td>
+<td class="p-md font-body-md text-body-md text-on-surface-variant">JSS 3A</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦195,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface text-right">₦195,000.00</td>
+<td class="p-md font-data-mono text-data-mono text-on-surface-variant text-right">₦0.00</td>
+<td class="p-md text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-xs font-medium bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary-fixed-dim">
+                                        Paid
+                                    </span>
+</td>
+<td class="p-md text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" title="Cash">payments</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-container-low border-t border-outline-variant p-sm flex items-center justify-between">
+<p class="font-label-sm text-label-sm text-on-surface-variant pl-md">Showing 1-4 of 342 students</p>
+<div class="flex gap-xs pr-md">
+<button class="p-xs text-outline hover:text-on-surface transition-colors disabled:opacity-50" disabled=""><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-xs text-on-surface hover:bg-outline-variant/20 rounded transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Bottom Nav -->
+<div class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around p-sm z-50">
+<a class="flex flex-col items-center p-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px] mt-1 font-medium">Home</span></a>
+<a class="flex flex-col items-center p-sm text-primary" href="#"><span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">payments</span><span class="text-[10px] mt-1 font-bold">Fees</span></a>
+<a class="flex flex-col items-center p-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined">group</span><span class="text-[10px] mt-1 font-medium">Students</span></a>
+<a class="flex flex-col items-center p-sm text-on-surface-variant hover:text-primary" href="#"><span class="material-symbols-outlined">menu</span><span class="text-[10px] mt-1 font-medium">More</span></a>
+</div>
+</body></html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compose Notification - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "secondary-fixed-dim": "#ffb955",
+                            "on-background": "#1b1c1c",
+                            "tertiary-fixed-dim": "#71dc92",
+                            "tertiary": "#002b12",
+                            "background": "#fcf9f8",
+                            "on-surface-variant": "#43474e",
+                            "surface-dim": "#dcd9d9",
+                            "surface-bright": "#fcf9f8",
+                            "on-error-container": "#93000a",
+                            "on-secondary-fixed-variant": "#633f00",
+                            "outline-variant": "#c3c6cf",
+                            "on-primary": "#ffffff",
+                            "secondary-fixed": "#ffddb4",
+                            "on-secondary-fixed": "#291800",
+                            "on-primary-fixed-variant": "#2a486e",
+                            "tertiary-fixed": "#8df9ac",
+                            "surface-tint": "#436087",
+                            "secondary-container": "#feae2c",
+                            "error-container": "#ffdad6",
+                            "surface-container-high": "#eae7e7",
+                            "primary-container": "#1b3a5f",
+                            "on-tertiary-fixed": "#00210d",
+                            "on-tertiary-container": "#4bb771",
+                            "tertiary-container": "#004320",
+                            "surface-container-highest": "#e5e2e1",
+                            "on-primary-fixed": "#001c39",
+                            "on-primary-container": "#88a4cf",
+                            "outline": "#74777f",
+                            "surface-variant": "#e5e2e1",
+                            "surface-container-lowest": "#ffffff",
+                            "on-error": "#ffffff",
+                            "on-tertiary-fixed-variant": "#005229",
+                            "surface-container-low": "#f6f3f2",
+                            "on-secondary": "#ffffff",
+                            "on-tertiary": "#ffffff",
+                            "surface-container": "#f0eded",
+                            "primary": "#002447",
+                            "secondary": "#835500",
+                            "inverse-on-surface": "#f3f0ef",
+                            "on-secondary-container": "#6b4500",
+                            "primary-fixed-dim": "#abc8f5",
+                            "inverse-surface": "#303030",
+                            "inverse-primary": "#abc8f5",
+                            "primary-fixed": "#d4e3ff",
+                            "error": "#ba1a1a",
+                            "surface": "#fcf9f8",
+                            "on-surface": "#1b1c1c"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {
+                            "lg": "24px",
+                            "xl": "32px",
+                            "gutter": "16px",
+                            "md": "16px",
+                            "margin-mobile": "16px",
+                            "sm": "12px",
+                            "xs": "4px",
+                            "margin-desktop": "48px",
+                            "base": "8px"
+                    },
+                    "fontFamily": {
+                            "label-sm": [
+                                    "Inter"
+                            ],
+                            "display-lg-mobile": [
+                                    "Work Sans"
+                            ],
+                            "headline-md": [
+                                    "Work Sans"
+                            ],
+                            "data-mono": [
+                                    "Inter"
+                            ],
+                            "body-lg": [
+                                    "Inter"
+                            ],
+                            "display-lg": [
+                                    "Work Sans"
+                            ],
+                            "body-md": [
+                                    "Inter"
+                            ]
+                    },
+                    "fontSize": {
+                            "label-sm": [
+                                    "12px",
+                                    {
+                                            "lineHeight": "16px",
+                                            "letterSpacing": "0.05em",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "display-lg-mobile": [
+                                    "24px",
+                                    {
+                                            "lineHeight": "32px",
+                                            "fontWeight": "700"
+                                    }
+                            ],
+                            "headline-md": [
+                                    "20px",
+                                    {
+                                            "lineHeight": "28px",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "data-mono": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "20px",
+                                            "letterSpacing": "-0.01em",
+                                            "fontWeight": "500"
+                                    }
+                            ],
+                            "body-lg": [
+                                    "16px",
+                                    {
+                                            "lineHeight": "26px",
+                                            "fontWeight": "400"
+                                    }
+                            ],
+                            "display-lg": [
+                                    "32px",
+                                    {
+                                            "lineHeight": "40px",
+                                            "letterSpacing": "-0.02em",
+                                            "fontWeight": "700"
+                                    }
+                            ],
+                            "body-md": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "22px",
+                                            "fontWeight": "400"
+                                    }
+                            ]
+                    }
+            },
+                },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body-md text-body-md">
+<!-- SideNavBar -->
+<aside class="bg-primary dark:bg-primary-container h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col h-full p-md gap-base hidden md:flex z-20">
+<div class="mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-body-md text-body-md text-on-primary/70">Admin Portal</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-container w-full py-sm rounded-lg font-bold mb-md hover:opacity-90 transition-opacity">
+            New Assessment
+        </button>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span>Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">grading</span>
+<span>Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span>CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-64 w-full min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline flex justify-between items-center h-16 px-lg w-full sticky top-0 z-10 hidden md:flex">
+<div class="flex items-center gap-xl">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SchoolPilot</h2>
+<nav class="flex gap-lg">
+<a class="text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors py-2 px-1 rounded" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full text-body-md focus:ring-2 focus:ring-primary focus:outline-none w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="p-2 text-primary dark:text-primary-fixed hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-primary dark:text-primary-fixed hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<img alt="Admin Profile" class="w-8 h-8 rounded-full border border-outline-variant ml-2 object-cover" data-alt="A small circular avatar image showing a professional headshot of an African school administrator wearing a dark blue suit against a light background, conveying trust and authority in a modern light-mode setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEnpQL7bVW_wQfph7NOqBXAznHTmoQDZIkSC1d4p9pNqVTCt1c9VP4cY1D-c4vij7wguWq7wdP_ogm_tuIFsfYEHqDn6LzhruzYcIdQtt4rV-iKx9kC1DpkuES12w-5DpeUJY6kwmo2UzEx-1pKqwQlqyPKF4cANgvhDW6QOsUdG-n3_P45XkBqVVp7_Em53p0eLmnmhyKAd-A-CfjxdJXxS8BxlRl0xH7hAjLb7g-ANkNvtuS47bnEA"/>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-margin-mobile md:p-margin-desktop flex-1 max-w-4xl mx-auto w-full flex flex-col gap-xl">
+<!-- Page Header -->
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary">Compose Notification</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Send announcements and alerts to the school community.</p>
+</div>
+<!-- Composer Form -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-lg">
+<!-- Audience Selection -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase">Audience</label>
+<div class="flex flex-wrap gap-md">
+<label class="flex items-center gap-2 bg-surface-container-low border border-primary px-4 py-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="text-primary focus:ring-primary h-4 w-4" name="audience" type="radio" value="all"/>
+<span class="font-body-md text-body-md font-medium text-primary">All Parents</span>
+</label>
+<label class="flex items-center gap-2 bg-surface border border-outline-variant px-4 py-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors">
+<input class="text-primary focus:ring-primary h-4 w-4" name="audience" type="radio" value="class"/>
+<span class="font-body-md text-body-md font-medium text-on-surface">Specific Class</span>
+</label>
+<label class="flex items-center gap-2 bg-surface border border-outline-variant px-4 py-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors">
+<input class="text-primary focus:ring-primary h-4 w-4" name="audience" type="radio" value="student"/>
+<span class="font-body-md text-body-md font-medium text-on-surface">Specific Student</span>
+</label>
+</div>
+<!-- Conditional Select (Visible if Class is selected) -->
+<div class="mt-md hidden" id="classSelectDiv">
+<select class="w-full md:w-1/2 p-3 bg-surface-container-low border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary focus:outline-none">
+<option value="">Select a Class...</option>
+<option value="jss1a">JSS 1A</option>
+<option value="jss1b">JSS 1B</option>
+<option value="ss3sci">SS 3 Science</option>
+</select>
+</div>
+</div>
+<!-- Delivery Method -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase">Send Via</label>
+<div class="flex gap-md">
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="relative flex items-center justify-center w-5 h-5">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-primary rounded bg-primary peer-checked:bg-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Push Notification (App)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group ml-lg">
+<div class="relative flex items-center justify-center w-5 h-5">
+<input class="peer sr-only" id="smsToggle" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-outline-variant rounded bg-surface peer-checked:border-primary peer-checked:bg-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">SMS (₦2.50/msg)</span>
+</label>
+</div>
+</div>
+<!-- Message Composer -->
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-sm uppercase">Message Content</label>
+<textarea class="w-full h-48 p-4 bg-surface-container-low border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary focus:outline-none resize-y" id="messageContent" placeholder="Type your announcement here..."></textarea>
+<!-- SMS Character Count Indicator -->
+<div class="absolute bottom-4 right-4 bg-surface-container px-2 py-1 rounded text-xs font-data-mono text-on-surface-variant hidden border border-outline-variant" id="smsCounter">
+<span id="charCount">0</span>/160 chars
+                    </div>
+</div>
+<!-- Action Buttons -->
+<div class="flex justify-end gap-md mt-md pt-lg border-t border-outline-variant">
+<button class="px-xl py-3 border border-primary text-primary rounded-lg font-headline-md text-headline-md hover:bg-primary-fixed/20 transition-colors">
+                        Cancel
+                    </button>
+<button class="px-xl py-3 bg-secondary-container text-on-secondary-container rounded-lg font-headline-md text-headline-md hover:bg-[#e09b25] transition-colors flex items-center gap-2 min-w-[48px] min-h-[48px] justify-center">
+<span class="material-symbols-outlined">send</span>
+                        Send Message
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple interactions for the UI
+        document.addEventListener('DOMContentLoaded', () => {
+            const smsToggle = document.getElementById('smsToggle');
+            const smsCounter = document.getElementById('smsCounter');
+            const messageContent = document.getElementById('messageContent');
+            const charCount = document.getElementById('charCount');
+            const radioButtons = document.querySelectorAll('input[name="audience"]');
+            const classSelectDiv = document.getElementById('classSelectDiv');
+
+            // Audience selection styling logic
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    // Reset all
+                    document.querySelectorAll('input[name="audience"]').forEach(r => {
+                        const label = r.closest('label');
+                        label.className = "flex items-center gap-2 bg-surface border border-outline-variant px-4 py-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors";
+                        label.querySelector('span').className = "font-body-md text-body-md font-medium text-on-surface";
+                    });
+
+                    // Set active
+                    const activeLabel = e.target.closest('label');
+                    activeLabel.className = "flex items-center gap-2 bg-surface-container-low border border-primary px-4 py-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors";
+                    activeLabel.querySelector('span').className = "font-body-md text-body-md font-medium text-primary";
+
+                    // Show/hide specific select
+                    if(e.target.value === 'class') {
+                        classSelectDiv.classList.remove('hidden');
+                    } else {
+                        classSelectDiv.classList.add('hidden');
+                    }
+                });
+            });
+
+            // SMS toggle logic
+            smsToggle.addEventListener('change', (e) => {
+                if(e.target.checked) {
+                    smsCounter.classList.remove('hidden');
+                    updateCharCount();
+                } else {
+                    smsCounter.classList.add('hidden');
+                }
+            });
+
+            // Character count logic
+            messageContent.addEventListener('input', updateCharCount);
+
+            function updateCharCount() {
+                const len = messageContent.value.length;
+                charCount.textContent = len;
+                if(len > 160) {
+                    smsCounter.classList.add('text-error', 'border-error');
+                    smsCounter.classList.remove('text-on-surface-variant', 'border-outline-variant');
+                } else {
+                    smsCounter.classList.remove('text-error', 'border-error');
+                    smsCounter.classList.add('text-on-surface-variant', 'border-outline-variant');
+                }
+            }
+        });
+    </script>
+</body></html>

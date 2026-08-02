@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Assignment Creation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1b1c1c",
+                        "surface-dim": "#dcd9d9",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#6b4500",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#ffb955",
+                        "secondary": "#835500",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#88a4cf",
+                        "on-tertiary-container": "#4bb771",
+                        "primary": "#002447",
+                        "secondary-fixed": "#ffddb4",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-variant": "#e5e2e1",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c3c6cf",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary-fixed": "#00210d",
+                        "inverse-surface": "#303030",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "tertiary-container": "#004320",
+                        "surface-tint": "#436087",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary": "#002b12",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "surface": "#fcf9f8",
+                        "outline": "#74777f",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-container-highest": "#e5e2e1",
+                        "inverse-primary": "#abc8f5",
+                        "surface-container": "#f0eded",
+                        "surface-bright": "#fcf9f8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "48px",
+                        "gutter": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f8;
+            color: #1b1c1c;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .floating-label-input:focus-within label,
+        .floating-label-input input:not(:placeholder-shown) + label,
+        .floating-label-input textarea:not(:placeholder-shown) + label {
+            transform: translateY(-50%) scale(0.85);
+            top: 0;
+            background-color: white;
+            padding: 0 4px;
+            color: #1b3a5f;
+        }
+        
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #F5A623;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #F5A623;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky border-b border-outline-variant bg-background flex justify-between items-center px-margin-mobile py-xs z-40 hidden md:flex">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a Nigerian teacher wearing a neat blouse, smiling warmly in a well-lit modern classroom setting, high contrast lighting, neutral background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwc05JqMi9az-8Ssg_DHvOWQaA795GB5KJ9WDWjxegwYxlYZFvkpTe5iZpeXKuz7271u5IJBPsPNLK38WnO2GNyCvE44OhLyYLuBxu18SCWdVlbQhZx9aNn4oyj2-hm-p1VV6n2b1LpzyoZU3Mfk11z99Uh9mWBlDgFacR2bcji4vNxiHWEpTW_mU0V1pdE8Np17ifzQZZtIz0TYspztzk5ATU879V2_xC2qg_7C9VSMYD01HSTgM8eg"/>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</span>
+</div>
+<!-- Desktop Nav embedded in Top Bar for md+ -->
+<nav class="hidden md:flex gap-lg">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low px-3 py-2 rounded-lg transition-colors" href="#">Home</a>
+<a class="font-label-sm text-label-sm text-primary font-bold bg-secondary-container text-on-secondary-container px-3 py-2 rounded-lg transition-colors" href="#">Classes</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low px-3 py-2 rounded-lg transition-colors" href="#">Grades</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low px-3 py-2 rounded-lg transition-colors" href="#">AI Studio</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low px-3 py-2 rounded-lg transition-colors" href="#">Messages</a>
+</nav>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Mobile Header (simplified for mobile view) -->
+<header class="w-full top-0 sticky border-b border-outline-variant bg-background flex justify-between items-center px-margin-mobile py-xs z-40 md:hidden">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a Nigerian teacher wearing a neat blouse, smiling warmly in a well-lit modern classroom setting, high contrast lighting, neutral background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe1KVOkgh47ThIaLRPsVlQi7j74y4PPLzPdy39QooEyfv7IjDIVF4gNw3p8NHHdGzFnqaLgcOU0I7VV_nwv31UKox-XdVHEa2R0CNHFLCd2ChCPQEFK2hBdETFkLGj33PxdrcuZnkSC2tY55aoXdxAIgxcQYLVM3q07RQf4x5h3QiyBmxVMHlGtwpNTev6cfUlfYx1-gxeQbWSxLsF3PRAieiNSbpSaa3uHn8q0DmhFbrotw25LUm7DQ"/>
+</div>
+<span class="font-headline-md text-headline-md-mobile font-bold text-primary">SchoolPilot</span>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg">
+<!-- Header Section -->
+<div class="mb-lg">
+<div class="flex items-center gap-2 mb-xs">
+<a class="text-primary hover:underline font-label-sm text-label-sm flex items-center" href="#">
+<span class="material-symbols-outlined text-[16px] mr-1">arrow_back</span>
+                    Back to Classes
+                </a>
+</div>
+<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-primary">Create Assignment</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Set up a new task for your students. Fields marked with * are required.</p>
+</div>
+<!-- Form Canvas -->
+<form class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-md md:p-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md md:gap-lg mb-lg">
+<!-- Class Selection (Read-only context or dropdown) -->
+<div class="col-span-1 md:col-span-2 flex gap-2 mb-2">
+<span class="bg-surface-container-high text-primary px-3 py-1 rounded-full font-label-sm text-label-sm border border-outline-variant">SS2 Physics</span>
+<span class="bg-surface-container-high text-primary px-3 py-1 rounded-full font-label-sm text-label-sm border border-outline-variant">Term 2</span>
+</div>
+<!-- Assignment Title -->
+<div class="col-span-1 md:col-span-2 relative floating-label-input mt-sm">
+<input class="block w-full px-4 py-3 text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md transition-all peer" id="assignment_title" placeholder=" " required="" type="text"/>
+<label class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none bg-surface-container-lowest px-1" for="assignment_title">Assignment Title *</label>
+</div>
+<!-- Instructions Textarea -->
+<div class="col-span-1 md:col-span-2 relative floating-label-input mt-sm">
+<textarea class="block w-full px-4 py-3 text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md transition-all peer resize-y" id="instructions" placeholder=" " rows="4"></textarea>
+<label class="absolute left-4 top-6 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none bg-surface-container-lowest px-1" for="instructions">Instructions &amp; Guidelines</label>
+</div>
+<!-- Due Date -->
+<div class="col-span-1 relative floating-label-input mt-sm">
+<input class="block w-full px-4 py-3 text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md transition-all peer" id="due_date" placeholder=" " required="" type="date"/>
+<label class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none bg-surface-container-lowest px-1" for="due_date">Due Date *</label>
+</div>
+<!-- Total Points -->
+<div class="col-span-1 relative floating-label-input mt-sm">
+<input class="block w-full px-4 py-3 text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-data-mono text-data-mono transition-all peer" id="total_points" min="0" placeholder=" " type="number" value="100"/>
+<label class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all pointer-events-none bg-surface-container-lowest px-1" for="total_points">Total Points</label>
+</div>
+</div>
+<div class="border-t border-outline-variant py-md my-md"></div>
+<!-- Attachments & Settings -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- File Attachment Area -->
+<div>
+<h3 class="font-headline-md text-[16px] leading-[24px] font-semibold text-primary mb-sm">Attachments</h3>
+<div class="border-2 border-dashed border-outline-variant rounded-lg p-md text-center bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 min-h-[120px]">
+<span class="material-symbols-outlined text-outline text-[32px]">upload_file</span>
+<p class="font-body-md text-body-md text-on-surface-variant">Drag and drop files here, or <span class="text-primary font-semibold">browse</span></p>
+<p class="font-label-sm text-label-sm text-outline">Max size: 10MB (PDF, DOCX, JPG)</p>
+</div>
+</div>
+<!-- Grading Settings -->
+<div>
+<h3 class="font-headline-md text-[16px] leading-[24px] font-semibold text-primary mb-sm">Grading Options</h3>
+<div class="bg-surface-container-low rounded-lg p-md border border-outline-variant flex items-center justify-between">
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Use Rubric</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Attach a grading rubric for standardized assessment</p>
+</div>
+<!-- Custom Toggle -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-variant appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" id="rubric_toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer transition-colors duration-300" for="rubric_toggle"></label>
+</div>
+</div>
+<div class="mt-sm bg-surface-container-low rounded-lg p-md border border-outline-variant flex items-center justify-between opacity-50 cursor-not-allowed">
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Plagiarism Check</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Scan submissions for copied content</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="absolute block w-6 h-6 rounded-full bg-white border-4 border-surface-variant appearance-none top-0 left-0" disabled="" type="checkbox"/>
+<label class="block overflow-hidden h-6 rounded-full bg-surface-variant"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-xl flex flex-col sm:flex-row justify-end gap-sm">
+<button class="px-6 py-3 rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-surface-container-low transition-colors w-full sm:w-auto min-h-[48px] flex items-center justify-center" type="button">
+                    Save Draft
+                </button>
+<button class="px-6 py-3 rounded-lg bg-[#F5A623] text-[#222222] font-label-sm text-label-sm font-bold hover:brightness-95 transition-all shadow-sm w-full sm:w-auto min-h-[48px] flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined text-[18px]">send</span>
+                    Assign to Students
+                </button>
+</div>
+</form>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-xs py-base bg-surface-container-lowest border-t border-outline-variant shadow-sm z-50 md:hidden pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl py-1 px-3 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+<span class="font-label-sm text-label-sm mt-1">Classes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Grades</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_awesome</span>
+<span class="font-label-sm text-label-sm mt-1">AI Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant py-1 px-3 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90 rounded-xl" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">mail</span>
+<span class="font-label-sm text-label-sm mt-1">Messages</span>
+</a>
+</nav>
+<script>
+        // Simple script to handle floating label behavior if input is pre-filled
+        document.querySelectorAll('.floating-label-input input, .floating-label-input textarea').forEach(input => {
+            // trigger on load in case browser autofills
+            if(input.value) {
+                input.classList.add('not-empty');
+            }
+            input.addEventListener('input', function() {
+                if(this.value) {
+                    this.classList.add('not-empty');
+                } else {
+                    this.classList.remove('not-empty');
+                }
+            });
+        });
+    </script>
+</body></html>

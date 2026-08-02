@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduCore Academic - Timetable</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#43474e",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#303030",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-tertiary-container": "#4bb771",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#00210d",
+                        "secondary-fixed": "#ffddb4",
+                        "primary-fixed": "#d4e3ff",
+                        "surface-container-high": "#eae7e7",
+                        "tertiary": "#002b12",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e5e2e1",
+                        "on-surface": "#1b1c1c",
+                        "background": "#fcf9f8",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "surface-tint": "#436087",
+                        "outline": "#74777f",
+                        "tertiary-container": "#004320",
+                        "primary-container": "#1b3a5f",
+                        "secondary-fixed-dim": "#ffb955",
+                        "primary": "#002447",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-container": "#feae2c",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-bright": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "on-secondary-container": "#6b4500",
+                        "inverse-primary": "#abc8f5",
+                        "outline-variant": "#c3c6cf",
+                        "secondary": "#835500",
+                        "surface-dim": "#dcd9d9",
+                        "on-background": "#1b1c1c",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "48px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "sm": "12px",
+                        "base": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Scrollbar hiding for cleaner horizontal scroll on mobile */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg min-h-screen pt-16 pb-20 md:hidden">
+<!-- TopAppBar -->
+<header class="bg-surface text-primary font-headline-md text-headline-md fixed top-0 w-full z-50 border-b border-outline-variant flex items-center justify-between px-margin-mobile h-16 transition-colors duration-200">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm">
+                SA
+            </div>
+<span class="font-headline-md text-headline-md text-primary font-bold">EduCore Academic</span>
+</div>
+<button aria-label="Notifications" class="text-on-surface-variant hover:bg-surface-container rounded-full p-2 transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="p-margin-mobile flex flex-col h-[calc(100vh-8rem)]">
+<!-- Week Navigator -->
+<div class="flex items-center justify-between mb-md bg-surface-container-lowest rounded-lg p-sm shadow-sm border border-outline-variant">
+<button class="p-2 text-primary hover:bg-surface-container rounded-full transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
+<div class="text-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Oct 16 - Oct 20</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Term 1, Week 6</p>
+</div>
+<button class="p-2 text-primary hover:bg-surface-container rounded-full transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<!-- Timetable Grid Container (Scrollable) -->
+<div class="flex-grow overflow-hidden border border-outline-variant rounded-lg bg-surface-container-lowest shadow-sm flex flex-col relative">
+<!-- Days Header (Sticky Top) -->
+<div class="flex border-b border-outline-variant bg-surface sticky top-0 z-10">
+<div class="w-16 flex-shrink-0 border-r border-outline-variant bg-surface-container-low flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant">
+                    Time
+                </div>
+<!-- Scrollable Days Area -->
+<div class="flex flex-grow overflow-x-auto hide-scrollbar snap-x snap-mandatory" id="days-header-scroll">
+<div class="w-32 flex-shrink-0 text-center py-2 border-r border-outline-variant snap-center font-label-sm text-label-sm text-on-surface-variant">Mon</div>
+<div class="w-32 flex-shrink-0 text-center py-2 border-r border-outline-variant snap-center font-label-sm text-label-sm text-on-surface-variant">Tue</div>
+<div class="w-32 flex-shrink-0 text-center py-2 border-r border-outline-variant snap-center bg-primary-fixed-dim/20 font-label-sm text-label-sm text-primary font-bold">Wed</div>
+<div class="w-32 flex-shrink-0 text-center py-2 border-r border-outline-variant snap-center font-label-sm text-label-sm text-on-surface-variant">Thu</div>
+<div class="w-32 flex-shrink-0 text-center py-2 snap-center font-label-sm text-label-sm text-on-surface-variant">Fri</div>
+</div>
+</div>
+<!-- Time Grid Body -->
+<div class="flex flex-grow overflow-y-auto overflow-x-hidden relative" id="grid-body-scroll">
+<!-- Time Column (Sticky Left) -->
+<div class="w-16 flex-shrink-0 border-r border-outline-variant bg-surface-container-low flex flex-col z-10">
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">08:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">09:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">10:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">11:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">12:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">13:00</div>
+<div class="h-20 border-b border-outline-variant flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">14:00</div>
+<div class="h-20 flex items-start justify-end pr-2 pt-1 font-data-mono text-data-mono text-on-surface-variant">15:00</div>
+</div>
+<!-- Classes Grid -->
+<div class="flex-grow overflow-x-auto hide-scrollbar relative" id="classes-grid-scroll">
+<div class="flex w-[160px] md:w-full min-h-full">
+<!-- Monday Column -->
+<div class="w-32 flex-shrink-0 border-r border-outline-variant relative">
+<!-- Class Block -->
+<div class="absolute top-0 left-1 right-1 h-[72px] bg-primary-fixed text-on-primary-fixed rounded p-xs shadow-sm border border-primary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">Mathematics</span>
+<span class="font-body-md text-[10px] truncate text-on-primary-fixed-variant">Room 101</span>
+</div>
+<div class="absolute top-[80px] left-1 right-1 h-[72px] bg-secondary-fixed text-on-secondary-fixed rounded p-xs shadow-sm border border-secondary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">English Lit</span>
+<span class="font-body-md text-[10px] truncate text-on-secondary-fixed-variant">Room 205</span>
+</div>
+<!-- Break -->
+<div class="absolute top-[160px] left-0 right-0 h-[40px] bg-surface-variant flex items-center justify-center border-y border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Break</span>
+</div>
+</div>
+<!-- Tuesday Column -->
+<div class="w-32 flex-shrink-0 border-r border-outline-variant relative">
+<div class="absolute top-[80px] left-1 right-1 h-[72px] bg-tertiary-fixed text-on-tertiary-fixed rounded p-xs shadow-sm border border-tertiary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">Physics</span>
+<span class="font-body-md text-[10px] truncate text-on-tertiary-fixed-variant">Lab 3</span>
+</div>
+<!-- Break -->
+<div class="absolute top-[160px] left-0 right-0 h-[40px] bg-surface-variant flex items-center justify-center border-y border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Break</span>
+</div>
+<div class="absolute top-[200px] left-1 right-1 h-[152px] bg-primary-fixed text-on-primary-fixed rounded p-xs shadow-sm border border-primary-fixed-dim flex flex-col justify-start mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">Chemistry Prac</span>
+<span class="font-body-md text-[10px] truncate text-on-primary-fixed-variant">Lab 1</span>
+<span class="font-body-md text-[10px] mt-auto truncate text-on-primary-fixed-variant">10:30 - 12:30</span>
+</div>
+</div>
+<!-- Wednesday Column (Today) -->
+<div class="w-32 flex-shrink-0 border-r border-outline-variant bg-primary-fixed-dim/10 relative">
+<!-- Current Time Indicator -->
+<div class="absolute top-[120px] left-0 right-0 h-px bg-error z-20 flex items-center">
+<div class="w-2 h-2 rounded-full bg-error -ml-1"></div>
+</div>
+<div class="absolute top-0 left-1 right-1 h-[72px] bg-secondary-fixed text-on-secondary-fixed rounded p-xs shadow-sm border border-secondary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">History</span>
+<span class="font-body-md text-[10px] truncate text-on-secondary-fixed-variant">Room 302</span>
+</div>
+<div class="absolute top-[80px] left-1 right-1 h-[72px] bg-tertiary-fixed text-on-tertiary-fixed rounded p-xs shadow-sm border border-tertiary-fixed-dim flex flex-col justify-between mt-1 ring-2 ring-error/50">
+<span class="font-label-sm text-label-sm font-bold truncate">Biology</span>
+<span class="font-body-md text-[10px] truncate text-on-tertiary-fixed-variant">Lab 2</span>
+</div>
+<!-- Break -->
+<div class="absolute top-[160px] left-0 right-0 h-[40px] bg-surface-variant flex items-center justify-center border-y border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Break</span>
+</div>
+<div class="absolute top-[200px] left-1 right-1 h-[72px] bg-primary-fixed text-on-primary-fixed rounded p-xs shadow-sm border border-primary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">Mathematics</span>
+<span class="font-body-md text-[10px] truncate text-on-primary-fixed-variant">Room 101</span>
+</div>
+</div>
+<!-- Thursday Column -->
+<div class="w-32 flex-shrink-0 border-r border-outline-variant relative">
+<!-- Break -->
+<div class="absolute top-[160px] left-0 right-0 h-[40px] bg-surface-variant flex items-center justify-center border-y border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Break</span>
+</div>
+<div class="absolute top-[360px] left-1 right-1 h-[72px] bg-error-container text-on-error-container rounded p-xs shadow-sm border border-error flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">P.E.</span>
+<span class="font-body-md text-[10px] truncate text-on-error-container">Gymnasium</span>
+</div>
+</div>
+<!-- Friday Column -->
+<div class="w-32 flex-shrink-0 relative">
+<div class="absolute top-0 left-1 right-1 h-[72px] bg-secondary-fixed text-on-secondary-fixed rounded p-xs shadow-sm border border-secondary-fixed-dim flex flex-col justify-between mt-1">
+<span class="font-label-sm text-label-sm font-bold truncate">Geography</span>
+<span class="font-body-md text-[10px] truncate text-on-secondary-fixed-variant">Room 404</span>
+</div>
+<!-- Break -->
+<div class="absolute top-[160px] left-0 right-0 h-[40px] bg-surface-variant flex items-center justify-center border-y border-outline-variant">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Break</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Grid Lines Background Overlay (Visual only, behind blocks) -->
+<div class="absolute inset-0 pointer-events-none z-0 ml-16 mt-8">
+<!-- Horizontal Lines -->
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+<div class="w-full h-20 border-b border-outline-variant/30"></div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface text-primary font-label-sm text-label-sm fixed bottom-0 w-full z-50 rounded-t-xl shadow-md border-t border-outline-variant flex justify-around items-center h-20 pb-2 px-2">
+<a aria-label="Home" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a aria-label="Timetable" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:bg-surface-container-high transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_month" data-weight="fill" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span>Timetable</span>
+</a>
+<a aria-label="Assignments" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment">assignment</span>
+<span>Assignments</span>
+</a>
+<a aria-label="Tutor" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="school">school</span>
+<span>Tutor</span>
+</a>
+<a aria-label="Results" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="leaderboard">leaderboard</span>
+<span>Results</span>
+</a>
+</nav>
+<script>
+        // Sync horizontal scrolling between days header and classes grid
+        const headerScroll = document.getElementById('days-header-scroll');
+        const gridScroll = document.getElementById('classes-grid-scroll');
+
+        let isSyncingLeftScroll = false;
+        let isSyncingRightScroll = false;
+
+        headerScroll.addEventListener('scroll', function(e) {
+            if (!isSyncingLeftScroll) {
+                isSyncingRightScroll = true;
+                gridScroll.scrollLeft = this.scrollLeft;
+            }
+            isSyncingLeftScroll = false;
+        });
+
+        gridScroll.addEventListener('scroll', function(e) {
+            if (!isSyncingRightScroll) {
+                isSyncingLeftScroll = true;
+                headerScroll.scrollLeft = this.scrollLeft;
+            }
+            isSyncingRightScroll = false;
+        });
+        
+        // Initial scroll to Wednesday (Today) if possible
+        setTimeout(() => {
+            if(headerScroll && gridScroll) {
+                const wedOffset = 128 * 2; // Wed is 3rd column, 128px width
+                headerScroll.scrollLeft = wedOffset;
+                gridScroll.scrollLeft = wedOffset;
+                
+                // Scroll down to current time approx
+                const timeScroll = document.getElementById('grid-body-scroll');
+                if(timeScroll) timeScroll.scrollTop = 80;
+            }
+        }, 100);
+    </script>
+</body></html>

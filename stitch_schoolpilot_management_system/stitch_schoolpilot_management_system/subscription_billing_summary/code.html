@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduOps Admin - Billing Summary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#ffb955",
+                        "secondary": "#835500",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#88a4cf",
+                        "on-secondary-container": "#6b4500",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#002447",
+                        "on-tertiary-container": "#4bb771",
+                        "on-background": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dcd9d9",
+                        "on-surface": "#1b1c1c",
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-fixed": "#001c39",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e5e2e1",
+                        "secondary-fixed": "#ffddb4",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "tertiary-container": "#004320",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary": "#002b12",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-surface-variant": "#43474e",
+                        "outline-variant": "#c3c6cf",
+                        "inverse-surface": "#303030",
+                        "on-tertiary-fixed": "#00210d",
+                        "inverse-primary": "#abc8f5",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "error-container": "#ffdad6",
+                        "surface": "#fcf9f8",
+                        "outline": "#74777f",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "sm": "12px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "display-lg-mobile": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md font-body-md antialiased overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-primary dark:bg-primary-container text-secondary-fixed dark:text-secondary-fixed-dim font-body-md text-body-md h-screen w-64 fixed left-0 top-0 border-r border-outline-variant flex flex-col py-lg px-md z-20 hidden md:flex">
+<div class="mb-xl">
+<div class="flex items-center gap-sm mb-xs">
+<img alt="School Management Platform Logo" class="w-8 h-8 rounded bg-on-primary p-1" data-alt="A modern, high-contrast, minimalist blue and white school shield logo for an education platform. Clean vector style, sharp edges, flat design, light mode background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsJWAHMkmqSA2g0hXWn4x2-DbpRWM-f-YRUEK7hcHvRLfSTYRH91HGtvGQ1bsD_9BBDOkmWjHgpnnEoUr_215K_V-SqpDsYQ2q6WEaU7u6eWKSg1wPR4RUFgqwxTzYsN2HWcPs66T_QLMWqaLRd46iWU16COKtrB8CyzOm8RAGjlxxiuOFwR0p3bO1SLszCz_aXL2F3Vg7XW4pfoCTDGGsRbzd2qLORGeWBinapHEPP92XDxaHQYXcCA"/>
+<span class="font-display-lg text-display-lg font-bold text-on-primary dark:text-on-primary-container leading-none">EduOps Admin</span>
+</div>
+<p class="text-on-primary-container font-label-sm text-label-sm uppercase ml-10">System Control</p>
+</div>
+<div class="flex flex-col gap-base flex-grow">
+<a class="flex items-center gap-md px-sm py-sm rounded text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="domain">domain</span>
+<span>Schools</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm rounded text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="supervisor_account">supervisor_account</span>
+<span>Accounts</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm rounded text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Platform Settings</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-md px-sm py-sm rounded text-secondary-fixed-dim font-bold border-r-4 border-secondary-fixed-dim bg-on-primary-fixed-variant/10 hover:bg-primary-container/50 dark:hover:bg-on-primary-fixed-variant/20 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="payments" data-weight="fill" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span>Billing</span>
+</a>
+</div>
+<div class="flex flex-col gap-base mt-auto pt-lg border-t border-on-primary-fixed-variant/30">
+<a class="flex items-center gap-md px-sm py-sm rounded text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm rounded text-on-primary dark:text-on-primary-fixed hover:bg-on-primary-fixed-variant/5 transition-colors hover:bg-primary-container/50 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 md:ml-64 h-screen overflow-y-auto">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container-low text-primary dark:text-primary-fixed font-body-lg text-body-lg docked full-width top-0 sticky border-b border-outline-variant flex justify-between items-center h-16 px-margin-desktop w-full z-10">
+<div class="flex items-center gap-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Operations Console</h1>
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline-variant">search</span>
+<input class="bg-surface-container border border-outline-variant rounded-full pl-xl pr-md py-2 font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Search schools, accounts..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-variant text-on-surface-variant dark:text-outline hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant text-on-surface-variant dark:text-outline hover:text-secondary dark:hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant cursor-pointer ml-sm">
+<img alt="Administrator Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of an African school administrator wearing a navy blue suit, smiling slightly against a neutral light grey background. Sharp focus, corporate lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrCtmY0rTlaAlGdYsVrXpwIJluOFVELg56cMPOhAetYBsoVylx47_XbvWZX_ALsFgkuy-0b9eW-NVTonrVhosfbdyvc1-cqSbsKeo57YqspAouaN7NlQFbCY-zT1qvEgwa4tpFzjqLGn1xHLTX1liqH9c88TeDvBtWWaFTHtwIE5NTKycnpzwLXG3o0_jxP9k7lWLo-IZqrcJi4gCCk5mE-SJpYyBFgGA3eV4sTVfVGhzvTXZjb_BEVQ"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="p-margin-desktop flex-1 flex flex-col gap-xl">
+<!-- Dashboard Header -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary mb-xs">Billing Summary</h2>
+<p class="text-on-surface-variant font-body-lg text-body-lg">Monthly Recurring Revenue and upcoming renewals overview.</p>
+</div>
+<div class="flex gap-md">
+<button class="bg-surface border border-primary text-primary px-lg py-sm rounded font-label-sm text-label-sm uppercase hover:bg-surface-variant transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+                        Export Report
+                    </button>
+<button class="bg-secondary-container text-on-secondary-fixed px-lg py-sm rounded font-label-sm text-label-sm uppercase hover:brightness-105 transition-all shadow-[0px_4px_12px_rgba(0,0,0,0.05)]">
+                        Generate Invoices
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- KPI Cards -->
+<div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-4 gap-lg">
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-lg shadow-sm border-l-4 border-l-primary flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="text-on-surface-variant font-body-md text-body-md">Total MRR</span>
+<span class="material-symbols-outlined text-primary bg-primary-fixed p-1 rounded">account_balance_wallet</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-primary font-data-mono">₦12,450,000.00</div>
+<div class="flex items-center gap-xs mt-xs text-on-tertiary-container font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">trending_up</span>
+<span>+4.2% from last month</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-lg shadow-sm border-l-4 border-l-secondary-fixed-dim flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="text-on-surface-variant font-body-md text-body-md">Active Schools</span>
+<span class="material-symbols-outlined text-secondary-fixed-dim bg-secondary-fixed p-1 rounded">school</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-primary font-data-mono">142</div>
+<div class="flex items-center gap-xs mt-xs text-on-surface-variant font-label-sm text-label-sm">
+<span>3 new this month</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-lg shadow-sm border-l-4 border-l-error flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="text-on-surface-variant font-body-md text-body-md">Outstanding Invoices</span>
+<span class="material-symbols-outlined text-error bg-error-container p-1 rounded">receipt_long</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-primary font-data-mono">₦1,250,000.00</div>
+<div class="flex items-center gap-xs mt-xs text-error font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
+<span>12 invoices overdue</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-lg shadow-sm border-l-4 border-l-tertiary flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="text-on-surface-variant font-body-md text-body-md">Avg Revenue Per School</span>
+<span class="material-symbols-outlined text-tertiary bg-tertiary-fixed p-1 rounded">monetization_on</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-primary font-data-mono">₦87,676.00</div>
+<div class="flex items-center gap-xs mt-xs text-on-surface-variant font-label-sm text-label-sm">
+<span>Across all tiers</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Chart Section -->
+<div class="lg:col-span-8 bg-surface-container-lowest border border-outline-variant p-lg rounded-lg shadow-sm flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-md text-headline-md text-primary">MRR by Subscription Tier</h3>
+<div class="flex gap-sm">
+<button class="px-sm py-1 border border-outline-variant rounded bg-surface-variant text-on-surface-variant font-label-sm text-label-sm">Monthly</button>
+<button class="px-sm py-1 border border-outline-variant rounded bg-surface text-on-surface font-label-sm text-label-sm">Quarterly</button>
+</div>
+</div>
+<!-- Simulated Chart Canvas -->
+<div class="flex-1 relative border-b border-l border-outline-variant mt-md mx-md mb-xl">
+<!-- Y-Axis Labels -->
+<div class="absolute -left-12 top-0 bottom-0 flex flex-col justify-between text-on-surface-variant font-data-mono text-[10px] text-right w-10">
+<span>15M</span>
+<span>10M</span>
+<span>5M</span>
+<span>0</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full border-t border-outline-variant opacity-30"></div>
+<div class="w-full border-t border-outline-variant opacity-30"></div>
+<div class="w-full border-t border-outline-variant opacity-30"></div>
+<div class="w-full border-t border-transparent"></div>
+</div>
+<!-- Bar Data -->
+<div class="absolute inset-0 flex items-end justify-around px-md">
+<!-- Basic Tier -->
+<div class="w-16 flex flex-col justify-end h-full gap-1 group relative">
+<div class="bg-primary opacity-60 w-full h-[30%] rounded-t hover:opacity-80 transition-opacity"></div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">₦4.5M (Basic)</div>
+</div>
+<!-- Pro Tier -->
+<div class="w-16 flex flex-col justify-end h-full gap-1 group relative">
+<div class="bg-primary w-full h-[55%] rounded-t hover:opacity-80 transition-opacity"></div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">₦7.2M (Pro)</div>
+</div>
+<!-- Enterprise Tier -->
+<div class="w-16 flex flex-col justify-end h-full gap-1 group relative">
+<div class="bg-secondary-container w-full h-[15%] rounded-t hover:opacity-80 transition-opacity"></div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">₦0.75M (Enterprise)</div>
+</div>
+</div>
+<!-- X-Axis Labels -->
+<div class="absolute top-full left-0 right-0 flex justify-around mt-sm text-on-surface-variant font-label-sm text-[11px]">
+<span>Basic</span>
+<span>Pro</span>
+<span>Enterprise</span>
+</div>
+</div>
+</div>
+<!-- Upcoming Renewals Table -->
+<div class="lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm flex flex-col overflow-hidden">
+<div class="p-lg border-b border-outline-variant bg-surface flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-primary">Upcoming Renewals</h3>
+<span class="bg-secondary-fixed text-on-secondary-fixed px-2 py-1 rounded-full font-label-sm text-label-sm">This Month</span>
+</div>
+<div class="overflow-y-auto max-h-[400px]">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface border-b border-outline-variant shadow-sm z-10">
+<tr>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase">School Name</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase text-right">Students</th>
+<th class="p-md font-label-sm text-label-sm text-on-surface-variant uppercase text-right">Date</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-background">
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-md">
+<div class="font-medium text-primary">Lagos Heritage Academy</div>
+<div class="text-xs text-on-surface-variant mt-0.5"><span class="bg-primary-fixed text-on-primary-fixed px-1.5 py-0.5 rounded text-[10px] mr-1">PRO</span>₦150k/mo</div>
+</td>
+<td class="p-md text-right font-data-mono">850</td>
+<td class="p-md text-right text-error font-medium">Oct 12</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-md">
+<div class="font-medium text-primary">Kingsway International</div>
+<div class="text-xs text-on-surface-variant mt-0.5"><span class="bg-secondary-fixed text-on-secondary-fixed px-1.5 py-0.5 rounded text-[10px] mr-1">ENT</span>₦400k/mo</div>
+</td>
+<td class="p-md text-right font-data-mono">2,100</td>
+<td class="p-md text-right text-error font-medium">Oct 15</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-md">
+<div class="font-medium text-primary">Bright Futures Prep</div>
+<div class="text-xs text-on-surface-variant mt-0.5"><span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded text-[10px] mr-1">BASIC</span>₦50k/mo</div>
+</td>
+<td class="p-md text-right font-data-mono">320</td>
+<td class="p-md text-right text-secondary-fixed-dim font-medium">Oct 22</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-md">
+<div class="font-medium text-primary">Excel Science College</div>
+<div class="text-xs text-on-surface-variant mt-0.5"><span class="bg-primary-fixed text-on-primary-fixed px-1.5 py-0.5 rounded text-[10px] mr-1">PRO</span>₦150k/mo</div>
+</td>
+<td class="p-md text-right font-data-mono">600</td>
+<td class="p-md text-right text-on-surface-variant">Oct 28</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="p-md">
+<div class="font-medium text-primary">New Era High</div>
+<div class="text-xs text-on-surface-variant mt-0.5"><span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded text-[10px] mr-1">BASIC</span>₦50k/mo</div>
+</td>
+<td class="p-md text-right font-data-mono">280</td>
+<td class="p-md text-right text-on-surface-variant">Oct 30</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md border-t border-outline-variant bg-surface text-center">
+<button class="text-primary font-label-sm text-label-sm hover:underline">View All Renewals</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>SchoolPilot - AI Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#ffddb4",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "outline-variant": "#c3c6cf",
+                        "on-surface": "#1b1c1c",
+                        "surface-variant": "#e5e2e1",
+                        "outline": "#74777f",
+                        "primary": "#002447",
+                        "on-surface-variant": "#43474e",
+                        "surface-bright": "#fcf9f8",
+                        "background": "#fcf9f8",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "inverse-primary": "#abc8f5",
+                        "tertiary-fixed": "#8df9ac",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#feae2c",
+                        "on-secondary-container": "#6b4500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-tint": "#436087",
+                        "tertiary": "#002b12",
+                        "surface-dim": "#dcd9d9",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#00210d",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-container": "#88a4cf",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container": "#f0eded",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-container": "#004320",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#303030",
+                        "surface-container-high": "#eae7e7",
+                        "secondary-fixed-dim": "#ffb955",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary": "#835500",
+                        "on-secondary-fixed": "#291800"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Utility for safe area bottom (iOS) */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Subtle transition for cards */
+        .ai-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ai-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col pt-16 pb-20 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface-container-low border-b border-outline-variant dark:border-outline flat no shadows flex justify-between items-center h-16 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a Nigerian teacher wearing smart business casual attire, smiling warmly against a bright, well-lit academic background. The lighting is crisp and the mood is authoritative yet approachable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgpaE4uh61duTBKOnfztjzOqbX7vml-WgUD7zoheYXKTdtzC_7Yka_eUMiMDqxh0MZfTrj6AOrTZaENUFEP40-YZy2iSlHIaSaGzYNYWuNrfj-Hu9XX3PZDg7fA7zBI7z_XY3U_jgKm1p1pNQgcNRtJ7S9abms8h070bM543sBpX9R7RT8RZ9S7t0js6PuNemh7QidGr50Yd8XVE9hjVgaB3LSeuUbIvqPy8eDM7kTwGKzEdK_HGCXQQ"/>
+</div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-primary-fixed tracking-tight">AI Studio</h1>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-lg">
+<!-- Welcome Section -->
+<section class="mb-xl">
+<h2 class="font-headline-md text-headline-md text-primary mb-xs">Welcome back, Mr. Adebayo</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">What would you like to create today?</p>
+</section>
+<!-- AI Tools Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
+<!-- Lesson Plan Generator -->
+<button class="ai-card flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm hover:shadow-md text-left w-full relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="w-12 h-12 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center mb-md group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined" data-weight="fill">menu_book</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Lesson Plan Generator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Draft comprehensive lesson notes aligned with the NERDC curriculum in seconds.</p>
+</button>
+<!-- Worksheet Generator -->
+<button class="ai-card flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm hover:shadow-md text-left w-full relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="w-12 h-12 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center mb-md group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined" data-weight="fill">assignment</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Worksheet Generator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Create differentiated practice sheets with varying difficulty levels.</p>
+</button>
+<!-- Quiz Generator -->
+<button class="ai-card flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm hover:shadow-md text-left w-full relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="w-12 h-12 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center mb-md group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined" data-weight="fill">quiz</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Quiz Generator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Generate multiple-choice and short-answer assessments instantly.</p>
+</button>
+</section>
+<!-- Recent Generations -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Recent Generations</h2>
+<button class="font-label-sm text-label-sm text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col gap-sm">
+<!-- Item 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">quiz</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">JSS3 Math Quiz</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">2 hours ago</p>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<span class="px-2 py-1 bg-tertiary-container/10 text-tertiary-container rounded font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Ready
+                        </span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-outline hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">SS2 Physics Lesson Plan</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Yesterday</p>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<span class="px-2 py-1 bg-tertiary-container/10 text-tertiary-container rounded font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Ready
+                        </span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-outline hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer opacity-80">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined animate-spin" style="animation-duration: 3s;">sync</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">JSS1 English Worksheet</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Generating...</p>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<span class="px-2 py-1 bg-surface-variant text-on-surface-variant rounded font-label-sm text-label-sm flex items-center gap-1">
+                            In Progress
+                        </span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-outline hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-2 pb-safe bg-surface dark:bg-surface-container-high border-t border-outline-variant dark:border-outline shadow-md rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1">school</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1">grade</span>
+<span class="font-label-sm text-label-sm">Grades</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 h-14 mt-1" href="#">
+<span class="material-symbols-outlined mb-1" data-weight="fill">psychology</span>
+<span class="font-label-sm text-label-sm">AI Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-full" href="#">
+<span class="material-symbols-outlined mb-1">mail</span>
+<span class="font-label-sm text-label-sm">Messages</span>
+</a>
+</nav>
+</body></html>

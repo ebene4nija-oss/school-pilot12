@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1b1c1c",
+                        "on-primary-fixed": "#001c39",
+                        "primary": "#002447",
+                        "on-secondary-fixed": "#291800",
+                        "primary-fixed": "#d4e3ff",
+                        "on-error-container": "#93000a",
+                        "secondary": "#835500",
+                        "surface-container-highest": "#e5e2e1",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-container-high": "#eae7e7",
+                        "inverse-surface": "#303030",
+                        "on-secondary-container": "#6b4500",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-bright": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "tertiary-container": "#004320",
+                        "on-surface-variant": "#43474e",
+                        "primary-fixed-dim": "#abc8f5",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "secondary-fixed": "#ffddb4",
+                        "tertiary": "#002b12",
+                        "surface-container": "#f0eded",
+                        "outline": "#74777f",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ffb955",
+                        "outline-variant": "#c3c6cf",
+                        "background": "#fcf9f8",
+                        "inverse-primary": "#abc8f5",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "surface": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1b3a5f",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-primary-container": "#88a4cf",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#4bb771",
+                        "surface-dim": "#dcd9d9",
+                        "surface-container-low": "#f6f3f2",
+                        "on-primary-fixed-variant": "#2a486e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "display-lg": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md">
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline flex-col h-full p-md gap-base">
+<div class="mb-lg px-md pt-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold scale-95 duration-100 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-label-sm text-label-sm">CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim font-label-sm text-label-sm font-bold py-sm px-md rounded-lg flex items-center justify-center gap-xs transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Assessment
+            </button>
+</div>
+</aside>
+<!-- TopNavBar & Main Content Wrapper -->
+<div class="md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="hidden md:flex flex justify-between items-center h-16 px-lg w-[calc(100%-16rem)] docked full-width top-0 sticky bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline z-50">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed md:hidden">SchoolPilot</span>
+<nav class="flex items-center gap-md">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm focus:ring-2 ring-primary ring-offset-2" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative focus-within:ring-2 ring-primary ring-offset-2 rounded-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-high rounded-full pl-10 pr-4 py-2 text-sm border-none focus:ring-0 w-48 text-on-surface" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-fixed overflow-hidden border border-outline-variant ml-2">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a school administrator, wearing a dark navy blazer over a crisp white shirt, standing in a well-lit modern office space. The lighting is soft and natural, creating a trustworthy and authoritative corporate vibe suitable for a high-end educational software portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ_P_6q3rqLaiGkSsCo2WNP9lwVu-r3FcsUMyFJffjgBS1uP8Jp3SvsKbwi8Nm3ZHdraIw3rUE_XGoBNVHOZeGlDQWNvqjbYfUeTMMojyi0Xj6uqUoVUGhIuyY6xQPT5K0ARLyGRJSqWS1F4p2jKL2G5i-newCGnqelMrbgNejZ4u1iKz9twsRC_qme3WqtwuevJ0oKUQ4ubVx7QYJy2jmKTGyGDrIdhrwRiAfBU7JFgMBSRk5hohzOQ"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<!-- Mobile Header (Visible only on mobile) -->
+<div class="md:hidden flex justify-between items-center mb-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</h1>
+<button class="p-2 bg-surface-container-high rounded-full"><span class="material-symbols-outlined">menu</span></button>
+</div>
+<!-- Stats Grid -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-sm shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Student Population</span>
+<span class="font-display-lg-mobile md:font-display-lg text-primary font-bold">1,240</span>
+<div class="flex items-center gap-xs text-tertiary-container mt-auto">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="font-data-mono text-data-mono text-xs">+12 this term</span>
+</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-sm shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Revenue This Term</span>
+<span class="font-display-lg-mobile md:font-display-lg text-primary font-bold font-data-mono tracking-tight">₦42.5M</span>
+<div class="flex items-center gap-xs text-on-surface-variant mt-auto">
+<span class="font-data-mono text-data-mono text-xs">85% collected</span>
+</div>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-sm shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-tertiary-container"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Today's Attendance</span>
+<span class="font-display-lg-mobile md:font-display-lg text-primary font-bold">94%</span>
+<div class="flex items-center gap-xs text-tertiary-container mt-auto">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-data-mono text-data-mono text-xs">Above target</span>
+</div>
+</div>
+<!-- Stat Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-sm shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-error"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fee Defaulters</span>
+<span class="font-display-lg-mobile md:font-display-lg text-error font-bold">12</span>
+<div class="flex items-center gap-xs text-error mt-auto">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-data-mono text-data-mono text-xs">Action required</span>
+</div>
+</div>
+</section>
+<!-- AI Insight Banner -->
+<section class="mb-xl">
+<div class="bg-primary-container text-on-primary-container rounded-xl p-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-md relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<!-- Subtle background pattern suggestion -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, #ffffff 10px, #ffffff 12px);"></div>
+<div class="flex items-start md:items-center gap-md relative z-10">
+<div class="bg-secondary-container text-on-secondary-container p-2 rounded-full shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-bold mb-xs">AI Insight</h2>
+<p class="font-body-md text-body-md text-on-primary-container/90">3 students dropped a grade band this term — tap to review</p>
+</div>
+</div>
+<button class="relative z-10 shrink-0 bg-secondary-container hover:bg-secondary-fixed-dim text-on-secondary-container font-label-sm text-label-sm font-bold py-sm px-lg rounded-lg transition-colors shadow-sm">
+                        Review Now
+                    </button>
+</div>
+</section>
+<!-- Quick Links Bento Grid -->
+<section>
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-md">Quick Actions</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+<!-- Quick Link 1 -->
+<a class="group bg-surface-container-lowest border border-outline-variant hover:border-primary rounded-xl p-lg flex flex-col items-center justify-center gap-sm transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-1" href="#">
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-primary flex items-center justify-center mb-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">grading</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold text-center">Results</span>
+</a>
+<!-- Quick Link 2 -->
+<a class="group bg-surface-container-lowest border border-outline-variant hover:border-primary rounded-xl p-lg flex flex-col items-center justify-center gap-sm transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-1" href="#">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center mb-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold text-center">Fees</span>
+</a>
+<!-- Quick Link 3 -->
+<a class="group bg-surface-container-lowest border border-outline-variant hover:border-primary rounded-xl p-lg flex flex-col items-center justify-center gap-sm transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-1" href="#">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-tertiary flex items-center justify-center mb-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">quiz</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold text-center">CBT</span>
+</a>
+<!-- Quick Link 4 -->
+<a class="group bg-surface-container-lowest border border-outline-variant hover:border-primary rounded-xl p-lg flex flex-col items-center justify-center gap-sm transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-1" href="#">
+<div class="w-12 h-12 rounded-full bg-primary-fixed-dim text-primary flex items-center justify-center mb-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">calendar_month</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold text-center">Timetable</span>
+</a>
+</div>
+</section>
+</main>
+</div>
+</body></html>

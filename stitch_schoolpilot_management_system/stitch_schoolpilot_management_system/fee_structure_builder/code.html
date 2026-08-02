@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fee Structure Builder - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "tertiary": "#002b12",
+                        "background": "#fcf9f8",
+                        "on-surface-variant": "#43474e",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-tint": "#436087",
+                        "secondary-container": "#feae2c",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae7e7",
+                        "primary-container": "#1b3a5f",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-container": "#004320",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "on-primary-container": "#88a4cf",
+                        "outline": "#74777f",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0eded",
+                        "primary": "#002447",
+                        "secondary": "#835500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6b4500",
+                        "primary-fixed-dim": "#abc8f5",
+                        "inverse-surface": "#303030",
+                        "inverse-primary": "#abc8f5",
+                        "primary-fixed": "#d4e3ff",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f8",
+                        "on-surface": "#1b1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Work Sans"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased overflow-x-hidden min-h-screen">
+<!-- SideNavBar -->
+<nav class="hidden md:flex h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-primary dark:bg-primary-container flex-col p-md gap-base z-50">
+<div class="mb-lg px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</p>
+</div>
+<div class="flex-1 overflow-y-auto flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md font-medium">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">badge</span>
+<span class="font-body-md text-body-md font-medium">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">calendar_month</span>
+<span class="font-body-md text-body-md font-medium">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">grading</span>
+<span class="font-body-md text-body-md font-medium">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">quiz</span>
+<span class="font-body-md text-body-md font-medium">CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold scale-95 duration-100 transition-transform" href="#">
+<span aria-hidden="true" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-body-md text-body-md">Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md font-medium">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-md">
+<button class="w-full flex items-center justify-center gap-sm py-sm px-md bg-secondary-container text-on-secondary-container rounded-lg font-bold hover:brightness-110 transition-all min-h-[48px]">
+<span aria-hidden="true" class="material-symbols-outlined">add</span>
+                New Assessment
+            </button>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="hidden md:flex justify-between items-center h-16 px-lg ml-64 w-[calc(100%-16rem)] bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline docked full-width top-0 sticky z-40">
+<div class="flex items-center gap-md">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SchoolPilot</h2>
+<nav class="ml-lg flex gap-md">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors px-sm py-xs rounded-md" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative group">
+<span aria-hidden="true" class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors p-xs">search</span>
+</div>
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full focus:ring-2 focus:ring-primary focus:ring-offset-2 min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full focus:ring-2 focus:ring-primary focus:ring-offset-2 min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant cursor-pointer">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A professional headshot of an African school administrator wearing glasses and a neat corporate suit, soft neutral background, high resolution, well lit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjRxN_sd8bgKpbftxOAq_EpcfPKH5Hfo7Rc3ukn1D7J9P4VJZBwNdPT_rNbUtk5zz9xWdncOdPfIsalXt_DiX-APgCYSMPGWXsA_iVlxsN-PkBlWeA00iNp6_bnnug5I9m59ot9W65XU6DPkqkZymQ6JoSz0BCkE3Gq831GBUnY8fx6ipReK0xXqTW-fhbgnr5RCf1K1wxtSXJYqG-jaz7-s4k2Ri8kmwREinVF42Mzvs9o8PvHL-ziA"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="md:ml-64 p-margin-mobile md:p-margin-desktop mt-16 md:mt-0 min-h-screen pb-32">
+<!-- Header Section -->
+<div class="mb-xl flex flex-col md:flex-row justify-between items-start md:items-end gap-md border-b border-outline-variant pb-md">
+<div>
+<nav aria-label="Breadcrumb" class="flex items-center gap-xs text-on-surface-variant mb-sm">
+<a class="font-label-sm text-label-sm hover:text-primary transition-colors" href="#">Fees</a>
+<span aria-hidden="true" class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="font-label-sm text-label-sm text-on-surface">Fee Structure Builder</span>
+</nav>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background">Fee Structure Builder</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-xs">Define and manage fee components for academic classes.</p>
+</div>
+<div class="flex items-center gap-sm w-full md:w-auto">
+<div class="relative w-full md:w-64">
+<label class="sr-only" for="class-select">Select Class</label>
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-sm pl-md pr-xl font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px]" id="class-select">
+<option selected="" value="jss1">JSS 1</option>
+<option value="jss2">JSS 2</option>
+<option value="jss3">JSS 3</option>
+<option value="ss1">SS 1</option>
+<option value="ss2">SS 2</option>
+<option value="ss3">SS 3</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-sm text-on-surface-variant">
+<span aria-hidden="true" class="material-symbols-outlined">arrow_drop_down</span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-xl">
+<!-- Left Column: Line Items -->
+<div class="xl:col-span-8 flex flex-col gap-lg">
+<!-- Mandatory Fees Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="bg-surface-container-low px-lg py-sm border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+<span aria-hidden="true" class="material-symbols-outlined text-primary">account_balance</span>
+                            Mandatory Fees
+                        </h3>
+<span class="bg-primary-fixed text-on-primary-fixed px-sm py-xs rounded-full font-label-sm text-label-sm">4 Items</span>
+</div>
+<div class="p-lg flex flex-col gap-md">
+<!-- Item 1 -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-lg gap-md hover:bg-surface-container-lowest transition-colors relative pl-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container rounded-l-lg"></div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-medium text-on-surface">Tuition</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Base academic instruction fee per term.</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm font-data-mono text-on-surface-variant">₦</span>
+<input aria-label="Tuition Amount" class="pl-xl pr-sm py-sm border border-outline-variant rounded-md w-32 font-data-mono text-data-mono text-right focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px]" type="text" value="150,000.00"/>
+</div>
+<button aria-label="Remove item" class="p-xs text-outline hover:text-error transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-lg gap-md hover:bg-surface-container-lowest transition-colors relative pl-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container rounded-l-lg"></div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-medium text-on-surface">Development Levy</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Infrastructure and facility maintenance.</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm font-data-mono text-on-surface-variant">₦</span>
+<input aria-label="Development Levy Amount" class="pl-xl pr-sm py-sm border border-outline-variant rounded-md w-32 font-data-mono text-data-mono text-right focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px]" type="text" value="25,000.00"/>
+</div>
+<button aria-label="Remove item" class="p-xs text-outline hover:text-error transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-lg gap-md hover:bg-surface-container-lowest transition-colors relative pl-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container rounded-l-lg"></div>
+<div class="flex-1">
+<h4 class="font-body-lg text-body-lg font-medium text-on-surface">ICT/Computer Lab</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Access to computer facilities and internet.</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm font-data-mono text-on-surface-variant">₦</span>
+<input aria-label="ICT Amount" class="pl-xl pr-sm py-sm border border-outline-variant rounded-md w-32 font-data-mono text-data-mono text-right focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px]" type="text" value="10,000.00"/>
+</div>
+<button aria-label="Remove item" class="p-xs text-outline hover:text-error transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="px-lg py-sm border-t border-outline-variant bg-surface-container-lowest">
+<button class="flex items-center gap-xs text-primary font-body-md font-medium hover:text-primary-container transition-colors min-h-[48px]">
+<span aria-hidden="true" class="material-symbols-outlined">add_circle</span>
+                            Add Mandatory Item
+                        </button>
+</div>
+</section>
+<!-- Optional Fees Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="bg-surface-container-low px-lg py-sm border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+<span aria-hidden="true" class="material-symbols-outlined text-secondary">playlist_add_check</span>
+                            Optional Fees / Add-ons
+                        </h3>
+<span class="bg-secondary-fixed text-on-secondary-fixed px-sm py-xs rounded-full font-label-sm text-label-sm">3 Items</span>
+</div>
+<div class="p-lg flex flex-col gap-md">
+<!-- Optional Item 1 -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-lg gap-md hover:bg-surface-container-lowest transition-colors relative pl-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant rounded-l-lg"></div>
+<div class="flex-1 flex items-start gap-sm">
+<div class="mt-1">
+<input checked="" class="w-5 h-5 text-primary rounded border-outline focus:ring-primary min-h-[48px] min-w-[48px]" id="opt-transport" type="checkbox"/>
+</div>
+<div>
+<label class="font-body-lg text-body-lg font-medium text-on-surface cursor-pointer" for="opt-transport">Transportation</label>
+<p class="font-label-sm text-label-sm text-on-surface-variant">School bus service (Zone A).</p>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm font-data-mono text-on-surface-variant">₦</span>
+<input aria-label="Transportation Amount" class="pl-xl pr-sm py-sm border border-outline-variant rounded-md w-32 font-data-mono text-data-mono text-right focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px]" type="text" value="35,000.00"/>
+</div>
+<button aria-label="Remove item" class="p-xs text-outline hover:text-error transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Optional Item 2 -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-lg gap-md hover:bg-surface-container-lowest transition-colors relative pl-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant rounded-l-lg"></div>
+<div class="flex-1 flex items-start gap-sm">
+<div class="mt-1">
+<input class="w-5 h-5 text-primary rounded border-outline focus:ring-primary min-h-[48px] min-w-[48px]" id="opt-lunch" type="checkbox"/>
+</div>
+<div>
+<label class="font-body-lg text-body-lg font-medium text-on-surface cursor-pointer" for="opt-lunch">School Lunch Program</label>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Termly meal plan (Standard).</p>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm font-data-mono text-on-surface-variant">₦</span>
+<input aria-label="Lunch Amount" class="pl-xl pr-sm py-sm border border-outline-variant rounded-md w-32 font-data-mono text-data-mono text-right focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px] text-outline-variant" disabled="" type="text" value="40,000.00"/>
+</div>
+<button aria-label="Remove item" class="p-xs text-outline hover:text-error transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="px-lg py-sm border-t border-outline-variant bg-surface-container-lowest">
+<button class="flex items-center gap-xs text-primary font-body-md font-medium hover:text-primary-container transition-colors min-h-[48px]">
+<span aria-hidden="true" class="material-symbols-outlined">add_circle</span>
+                            Add Optional Item
+                        </button>
+</div>
+</section>
+</div>
+<!-- Right Column: Sticky Summary -->
+<div class="xl:col-span-4">
+<div class="sticky top-24 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.05)] overflow-hidden">
+<div class="bg-primary-container text-on-primary-container p-lg">
+<h3 class="font-headline-md text-headline-md font-bold mb-xs">Structure Summary</h3>
+<p class="font-label-sm text-label-sm opacity-80">JSS 1 • Term 1, 2023/2024</p>
+</div>
+<div class="p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Mandatory Subtotal</span>
+<span class="font-data-mono text-data-mono font-medium text-on-surface">₦185,000.00</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Optional Subtotal (Selected)</span>
+<span class="font-data-mono text-data-mono font-medium text-on-surface">₦35,000.00</span>
+</div>
+<hr class="border-outline-variant my-sm"/>
+<div class="flex justify-between items-center bg-surface-container-low p-sm rounded-lg border border-outline-variant">
+<span class="font-headline-md text-headline-md text-on-surface">Maximum Possible</span>
+<span class="font-display-lg-mobile text-display-lg-mobile font-bold text-primary">₦260,000.00</span>
+</div>
+<div class="mt-lg">
+<button class="w-full bg-secondary-container text-on-secondary-container hover:brightness-110 font-headline-md text-headline-md py-sm px-lg rounded-lg shadow-sm transition-all flex justify-center items-center gap-sm min-h-[48px]">
+<span aria-hidden="true" class="material-symbols-outlined">save</span>
+                                Save Structure
+                            </button>
+<button class="w-full mt-sm border border-primary text-primary hover:bg-primary/5 font-body-md text-body-md py-sm px-lg rounded-lg transition-all min-h-[48px]">
+                                Preview Invoice
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

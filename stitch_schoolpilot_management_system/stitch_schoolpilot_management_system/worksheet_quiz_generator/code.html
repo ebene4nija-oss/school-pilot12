@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - AI Studio: Worksheet Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#ffddb4",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "outline-variant": "#c3c6cf",
+                        "on-surface": "#1b1c1c",
+                        "surface-variant": "#e5e2e1",
+                        "outline": "#74777f",
+                        "primary": "#002447",
+                        "on-surface-variant": "#43474e",
+                        "surface-bright": "#fcf9f8",
+                        "background": "#fcf9f8",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "inverse-primary": "#abc8f5",
+                        "tertiary-fixed": "#8df9ac",
+                        "primary-fixed-dim": "#abc8f5",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#feae2c",
+                        "on-secondary-container": "#6b4500",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-tint": "#436087",
+                        "tertiary": "#002b12",
+                        "surface-dim": "#dcd9d9",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#00210d",
+                        "primary-container": "#1b3a5f",
+                        "on-primary-container": "#88a4cf",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container": "#f0eded",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-tertiary-container": "#4bb771",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-container": "#004320",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#303030",
+                        "surface-container-high": "#eae7e7",
+                        "secondary-fixed-dim": "#ffb955",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary": "#835500",
+                        "on-secondary-fixed": "#291800"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "display-lg": ["Work Sans"],
+                        "data-mono": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for better visual integration */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fcf9f8; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c3c6cf; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #74777f; 
+        }
+        
+        .worksheet-bg {
+            background-color: #ffffff;
+            background-image: linear-gradient(transparent 95%, #e5e2e1 95%);
+            background-size: 100% 32px;
+        }
+        
+        /* Floating Label CSS */
+        .floating-input:focus-within label,
+        .floating-input input:not(:placeholder-shown) + label,
+        .floating-input select:not(:empty) + label {
+            transform: translateY(-50%) scale(0.85);
+            top: 0;
+            background-color: #ffffff;
+            padding: 0 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pt-16 md:pb-0 pb-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface-container-low border-b border-outline-variant dark:border-outline flex justify-between items-center h-16 px-4 w-full">
+<div class="flex items-center gap-sm">
+<!-- Hidden on mobile, typically a menu button here, but using brand logo as anchor -->
+<span class="font-display-lg-mobile text-display-lg-mobile text-primary dark:text-primary-fixed">SchoolPilot</span>
+</div>
+<!-- Desktop Navigation (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-lg">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-DEFAULT active:scale-95 duration-150 flex items-center gap-xs" href="#">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">home</span> Home
+            </a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-DEFAULT active:scale-95 duration-150 flex items-center gap-xs" href="#">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">school</span> Classes
+            </a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-DEFAULT active:scale-95 duration-150 flex items-center gap-xs" href="#">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">grade</span> Grades
+            </a>
+<a class="font-label-sm text-label-sm text-primary font-bold hover:bg-surface-variant transition-colors px-3 py-2 rounded-DEFAULT active:scale-95 duration-150 flex items-center gap-xs bg-primary-container/10" href="#">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">psychology</span> AI Studio
+            </a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-variant transition-colors px-3 py-2 rounded-DEFAULT active:scale-95 duration-150 flex items-center gap-xs" href="#">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">mail</span> Messages
+            </a>
+</nav>
+<div class="flex items-center gap-md">
+<button aria-label="Notifications" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant active:scale-95 duration-150">
+<span aria-hidden="true" class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant overflow-hidden flex-shrink-0">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Professional headshot of a Nigerian school teacher or administrator, smiling softly, bright clear lighting, modern educational setting, formal attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdDUD4AQ7sNyGSYHEfynckGdZ98m0zv_pmCQi2vkZ4WePrPvrBdRntnjs0oLD-Z4aYVi1pSjVo0M6Ops5Y-71ss69NUhVT_qhsWwQmgt0YbloL8uUfkJ7gwVFrmv6CCHTuYxxnlMoLD4KhVd5gYfUqNB_Z-8S4PRUTt6acz-9gj_dky-1XKr69fQh01FRweVRaqFh-6BDTPoXazvMhKLganJjasnchToehqXg2oZoJfjxEQ84k02TNkw"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow flex flex-col md:flex-row w-full max-w-7xl mx-auto md:px-margin-desktop px-margin-mobile py-lg gap-lg">
+<!-- Left Panel: Configuration Form -->
+<aside class="w-full md:w-80 flex-shrink-0 flex flex-col gap-md">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-md">
+<div class="flex items-center gap-xs text-primary mb-xs">
+<span aria-hidden="true" class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h1 class="font-headline-md text-headline-md text-on-surface">Generator Setup</h1>
+</div>
+<!-- Form Area -->
+<form class="flex flex-col gap-sm">
+<!-- Subject Selection -->
+<div class="relative floating-input bg-surface-container-lowest rounded-DEFAULT border border-outline-variant px-sm py-xs focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<select class="w-full bg-transparent border-none p-0 pt-3 pb-1 text-on-surface focus:ring-0 appearance-none font-body-md z-10 relative cursor-pointer" id="subject" required="">
+<option disabled="" selected="" value=""></option>
+<option value="math">Mathematics</option>
+<option value="english">English Language</option>
+<option value="basic_sci">Basic Science</option>
+<option value="civic">Civic Education</option>
+</select>
+<label class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-label-sm text-label-sm transition-all pointer-events-none z-0" for="subject">Subject</label>
+<span aria-hidden="true" class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none z-10">arrow_drop_down</span>
+</div>
+<!-- Topic Input -->
+<div class="relative floating-input bg-surface-container-lowest rounded-DEFAULT border border-outline-variant px-sm py-xs focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<input class="w-full bg-transparent border-none p-0 pt-3 pb-1 text-on-surface focus:ring-0 font-body-md placeholder-transparent z-10 relative" id="topic" placeholder="e.g. Linear Equations" required="" type="text"/>
+<label class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-label-sm text-label-sm transition-all pointer-events-none z-0" for="topic">Topic Focus</label>
+</div>
+<!-- Question Type -->
+<div class="relative floating-input bg-surface-container-lowest rounded-DEFAULT border border-outline-variant px-sm py-xs focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<select class="w-full bg-transparent border-none p-0 pt-3 pb-1 text-on-surface focus:ring-0 appearance-none font-body-md z-10 relative cursor-pointer" id="type" required="">
+<option disabled="" selected="" value=""></option>
+<option value="mcq">Multiple Choice</option>
+<option value="short">Short Answer</option>
+<option value="mixed">Mixed Format</option>
+</select>
+<label class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-label-sm text-label-sm transition-all pointer-events-none z-0" for="type">Format</label>
+<span aria-hidden="true" class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none z-10">arrow_drop_down</span>
+</div>
+<!-- Question Count -->
+<div class="relative floating-input bg-surface-container-lowest rounded-DEFAULT border border-outline-variant px-sm py-xs focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<input class="w-full bg-transparent border-none p-0 pt-3 pb-1 text-on-surface focus:ring-0 font-body-md placeholder-transparent z-10 relative" id="count" max="50" min="1" placeholder="10" required="" type="number"/>
+<label class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-label-sm text-label-sm transition-all pointer-events-none z-0" for="count">Number of Questions</label>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span aria-hidden="true" class="material-symbols-outlined text-[16px] text-primary">info</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Generates syllabus-aligned content.</p>
+</div>
+<button class="mt-xs w-full bg-[#F5A623] text-[#222222] font-label-sm text-label-sm rounded-DEFAULT h-[48px] px-md flex items-center justify-center gap-xs hover:bg-[#e09820] active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#F5A623]" type="button">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">magic_button</span>
+                        Generate Worksheet
+                    </button>
+</form>
+</div>
+<!-- Quick Actions Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col gap-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface text-sm mb-xs">Export Options</h2>
+<button class="w-full bg-surface-container-lowest border border-primary text-primary font-label-sm text-label-sm rounded-DEFAULT h-[48px] px-md flex items-center justify-center gap-xs hover:bg-surface-variant active:scale-95 transition-all" type="button">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+                    Export as PDF
+                </button>
+<button class="w-full bg-primary-container text-on-primary font-label-sm text-label-sm rounded-DEFAULT h-[48px] px-md flex items-center justify-center gap-xs hover:bg-primary transition-all active:scale-95" type="button">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">save</span>
+                    Save to Studio
+                </button>
+</div>
+</aside>
+<!-- Right Panel: Worksheet Preview -->
+<section class="flex-grow flex flex-col min-h-0 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden">
+<!-- Preview Header Toolbar -->
+<div class="h-[64px] border-b border-outline-variant flex items-center justify-between px-md bg-surface flex-shrink-0">
+<div class="flex items-center gap-sm">
+<span aria-hidden="true" class="material-symbols-outlined text-on-surface-variant">visibility</span>
+<h2 class="font-headline-md text-headline-md text-on-surface text-base">Worksheet Preview</h2>
+</div>
+<!-- Toggle Answer Key -->
+<label class="flex items-center gap-xs cursor-pointer min-h-[48px] group">
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Show Answer Key</span>
+<div class="relative">
+<input class="sr-only peer" id="toggleAnswers" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-variant border border-outline-variant rounded-full peer peer-checked:bg-primary-container peer-checked:border-primary peer-focus:ring-2 peer-focus:ring-primary/50 transition-colors"></div>
+<div class="absolute left-[2px] top-[2px] bg-white border border-outline-variant w-4 h-4 rounded-full transition-transform peer-checked:translate-x-[20px] peer-checked:border-primary shadow-sm"></div>
+</div>
+</label>
+</div>
+<!-- Scrollable Preview Area (Academic Style) -->
+<div class="flex-grow overflow-y-auto p-lg bg-surface-bright relative">
+<!-- Simulated Printed Page -->
+<div class="max-w-[800px] mx-auto bg-white border border-outline-variant shadow-sm min-h-full p-xl font-body-lg text-on-surface">
+<!-- Worksheet Header -->
+<div class="border-b-2 border-on-surface pb-md mb-lg">
+<h1 class="font-display-lg text-display-lg text-center mb-sm uppercase tracking-wider">Mid-Term Assessment</h1>
+<div class="flex justify-between items-end font-label-sm text-label-sm text-on-surface-variant uppercase">
+<div>
+<p>Subject: Mathematics</p>
+<p>Topic: Linear Equations</p>
+</div>
+<div class="text-right">
+<p>Date: _______________</p>
+<p>Name: __________________________</p>
+</div>
+</div>
+</div>
+<!-- Questions Area -->
+<div class="space-y-lg">
+<!-- Question 1 -->
+<div class="flex gap-sm">
+<span class="font-label-sm text-label-sm mt-1">1.</span>
+<div class="flex-grow">
+<p class="mb-sm">Solve for x in the equation: 3x - 7 = 14</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-sm pl-sm">
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q1" type="radio"/>
+<span class="font-body-md text-body-md">A) x = 7</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors bg-green-50 answer-key hidden">
+<input checked="" class="text-green-600 focus:ring-green-600 border-green-300" name="q1" type="radio"/>
+<span class="font-body-md text-body-md font-medium text-green-800">B) x = 7</span>
+<span aria-hidden="true" class="material-symbols-outlined text-green-600 text-[16px] ml-auto">check_circle</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors answer-key-alt">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q1" type="radio"/>
+<span class="font-body-md text-body-md">B) x = 7</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q1" type="radio"/>
+<span class="font-body-md text-body-md">C) x = 21</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q1" type="radio"/>
+<span class="font-body-md text-body-md">D) x = 2.3</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Question 2 (Short Answer) -->
+<div class="flex gap-sm">
+<span class="font-label-sm text-label-sm mt-1">2.</span>
+<div class="flex-grow">
+<p class="mb-md">If 5(y + 2) = 30, what is the value of y? Show your working.</p>
+<!-- Working Space Lines -->
+<div class="space-y-4 mb-sm opacity-60">
+<div class="h-px w-full bg-outline-variant"></div>
+<div class="h-px w-full bg-outline-variant"></div>
+<div class="h-px w-full bg-outline-variant"></div>
+</div>
+<div class="bg-green-50 border border-green-200 rounded p-sm mt-sm hidden answer-key">
+<p class="font-label-sm text-label-sm text-green-800 mb-1 flex items-center gap-1">
+<span aria-hidden="true" class="material-symbols-outlined text-[16px]">key</span> Answer Key:
+                                    </p>
+<p class="font-data-mono text-data-mono text-green-900">
+                                        5(y + 2) = 30<br/>
+                                        y + 2 = 6<br/>
+                                        y = 4
+                                    </p>
+</div>
+</div>
+</div>
+<!-- Question 3 -->
+<div class="flex gap-sm">
+<span class="font-label-sm text-label-sm mt-1">3.</span>
+<div class="flex-grow">
+<p class="mb-sm">A student bought 3 pens and 2 pencils for ₦450. If a pencil costs ₦50, formulate a linear equation to find the cost of a pen (p).</p>
+<div class="grid grid-cols-1 gap-sm pl-sm">
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q3" type="radio"/>
+<span class="font-body-md text-body-md">A) 3p + 50 = 450</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors bg-green-50 answer-key hidden">
+<input checked="" class="text-green-600 focus:ring-green-600 border-green-300" name="q3" type="radio"/>
+<span class="font-body-md text-body-md font-medium text-green-800">B) 3p + 2(50) = 450</span>
+<span aria-hidden="true" class="material-symbols-outlined text-green-600 text-[16px] ml-auto">check_circle</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors answer-key-alt">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q3" type="radio"/>
+<span class="font-body-md text-body-md">B) 3p + 2(50) = 450</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group p-2 rounded hover:bg-surface-variant/50 transition-colors">
+<input class="text-primary focus:ring-primary border-outline-variant" name="q3" type="radio"/>
+<span class="font-body-md text-body-md">C) 3p - 100 = 450</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-xl pt-lg border-t border-outline-variant text-center opacity-50">
+<p class="font-label-sm text-label-sm text-on-surface-variant">Page 1 of 1 • Generated by SchoolPilot AI Studio</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-surface-container-high border-t border-outline-variant dark:border-outline shadow-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-16" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-16" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">school</span>
+<span class="font-label-sm text-label-sm text-[10px]">Classes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-16" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">grade</span>
+<span class="font-label-sm text-label-sm text-[10px]">Grades</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-20 h-16" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-sm text-label-sm text-[10px] whitespace-nowrap">AI Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest transition-all active:scale-90 duration-200 w-16 h-16" href="#">
+<span aria-hidden="true" class="material-symbols-outlined mb-1">mail</span>
+<span class="font-label-sm text-label-sm text-[10px]">Messages</span>
+</a>
+</nav>
+<script>
+        // Toggle Answer Key Logic
+        document.getElementById('toggleAnswers').addEventListener('change', function() {
+            const answerKeys = document.querySelectorAll('.answer-key');
+            const answerKeysAlt = document.querySelectorAll('.answer-key-alt');
+            
+            if (this.checked) {
+                answerKeys.forEach(el => el.classList.remove('hidden'));
+                answerKeysAlt.forEach(el => el.classList.add('hidden'));
+            } else {
+                answerKeys.forEach(el => el.classList.add('hidden'));
+                answerKeysAlt.forEach(el => el.classList.remove('hidden'));
+            }
+        });
+    </script>
+</body></html>

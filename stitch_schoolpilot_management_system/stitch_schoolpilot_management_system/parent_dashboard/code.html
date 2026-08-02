@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Parent Dashboard - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Hide scrollbar for child selector */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#f0eded",
+                        "tertiary": "#002b12",
+                        "tertiary-fixed-dim": "#71dc92",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#436087",
+                        "inverse-primary": "#abc8f5",
+                        "outline-variant": "#c3c6cf",
+                        "background": "#fcf9f8",
+                        "outline": "#74777f",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-tertiary-fixed-variant": "#005229",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1b3a5f",
+                        "on-background": "#1b1c1c",
+                        "secondary-container": "#feae2c",
+                        "surface": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-primary-fixed-variant": "#2a486e",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#4bb771",
+                        "on-tertiary-fixed": "#00210d",
+                        "on-primary-container": "#88a4cf",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d4e3ff",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#1b1c1c",
+                        "on-primary-fixed": "#001c39",
+                        "primary": "#002447",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-high": "#eae7e7",
+                        "inverse-surface": "#303030",
+                        "inverse-on-surface": "#f3f0ef",
+                        "secondary": "#835500",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-variant": "#e5e2e1",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#6b4500",
+                        "tertiary-fixed": "#8df9ac",
+                        "surface-bright": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-surface-variant": "#43474e",
+                        "primary-fixed-dim": "#abc8f5",
+                        "tertiary-container": "#004320"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sm": "12px"
+                    },
+                    fontFamily: {
+                        "headline-md": ["Work Sans"],
+                        "data-mono": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Work Sans"],
+                        "display-lg": ["Work Sans"]
+                    },
+                    fontSize: {
+                        "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "data-mono": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "26px", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "22px", fontWeight: "400" }],
+                        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "display-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant flex justify-between items-center px-margin-mobile h-16 transition-colors duration-200">
+<!-- Leading Avatar Placeholder -->
+<button aria-label="Parent Profile" class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary min-w-[48px] min-h-[48px] flex items-center justify-center p-0">
+<img class="w-full h-full object-cover" data-alt="A close-up headshot of a Nigerian parent in professional attire, lit by bright, natural daylight against a neutral gray background. The style is modern corporate, crisp, and conveys trust and authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvXsscrSdOL78AkBZBznZoavu1xaSeq6qNnDqdCVzoHJHY-R3KhGMseJQtbKR-oBdNABS4KJJmSV4urnNFTzlAXQ4bKDFWDXGMGlm41UE_45IjAyDn7WRTxR8y6JZAsYKsy5b8bhbXCfRxLcLsOeru75nBKiP_NzT4w1P98LzgvjoioMsUQI5yk5gw8QDj-fT5wptyTD79sN4HNylHropsxdLeSGssHUNZ6tD-Nj4DRkUrHhVoor0X9A"/>
+</button>
+<!-- Headline -->
+<h1 class="font-headline-md text-headline-md-mobile font-bold text-primary truncate mx-4">SchoolPilot</h1>
+<!-- Trailing Icon -->
+<button aria-label="notifications" class="text-primary hover:bg-surface-container-low rounded-full w-10 h-10 flex items-center justify-center transition-colors duration-200 min-w-[48px] min-h-[48px]">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[88px] pb-[104px] px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto flex flex-col gap-lg">
+<!-- Child Selector Row -->
+<section class="w-full overflow-x-auto no-scrollbar py-2">
+<div class="flex items-center gap-md">
+<!-- Active Child: Chidi -->
+<button class="flex flex-col items-center gap-xs min-w-[72px] focus:outline-none group">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-secondary-container p-[2px]">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a young Nigerian male student wearing a crisp white school uniform shirt and navy blue tie. The lighting is studio-quality, high-contrast, casting a professional and clean aesthetic over a light gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgxnBEs7YZRgCPVaEo0nnjkobiSGCbYYkSaVIU-v8HgYOy5fQfje-0rLO5OywH7Vm3sf1Y2DUPoK3k3Gdw_oMMf-qwsAkjZdaXWE_UOK5cUjga-uWd1yV--DMXwXTp79kz5HDZ_dKRlluE96l7pLe9gcaRGg1HdD0hLAih2uMQCh3ugStDB2XyuLNzZfZaCXhH2ZDeiQv6pJtOMiKLcYgt_mdshvK9bCiQfbgj_CmfbMecjWlHW1rfWg"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Chidi</span>
+</button>
+<!-- Inactive Child: Aisha -->
+<button class="flex flex-col items-center gap-xs min-w-[72px] focus:outline-none group opacity-70 hover:opacity-100 transition-opacity">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-outline-variant p-[2px] bg-surface-container-lowest">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a young Nigerian female student wearing a crisp white school uniform blouse and navy blue patterned hijab. The lighting is bright and evenly distributed, emphasizing clarity and approachability against a clean, minimal white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATG5CdQWKhR7oJ7Y53oXkl3tOWvCcfb7_Mm_34CEM-AQ3HxAZ-q9IHumHDs9n_KAsrz4_wr5C3odIc4vCshNFYR8OiZCPg7fNEqd-aTQWRLXiPpOA3Q1SzRvZSBqWHpHDgFIhfHh9W7tRTkZ8uuKg81ev2DNvsitSEl5V7HTH8u7VkhwX6WngAoJc6FayJPpcnGRlY57nP7OsDc41fAh3ZCx2tkhZ4G3_Znbq3AvS8KmaPpDxTZ-eNcQ"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Aisha</span>
+</button>
+</div>
+</section>
+<!-- Dashboard Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Today's Attendance Card -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md relative overflow-hidden flex flex-col gap-sm">
+<!-- Status Accent Border -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary-container"></div>
+<div class="flex justify-between items-start pl-xs">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Today's Attendance</h2>
+<span class="material-symbols-outlined text-outline">history</span>
+</div>
+<div class="flex items-center justify-between pl-xs mt-xs">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-tertiary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary">Present</span>
+</div>
+<div class="text-right">
+<span class="block font-label-sm text-label-sm text-on-surface-variant">Check-in</span>
+<span class="font-data-mono text-data-mono text-on-surface">07:45 AM</span>
+</div>
+</div>
+</article>
+<!-- Fees Due Card -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md relative overflow-hidden flex flex-col gap-sm shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<!-- Status Accent Border -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex justify-between items-start pl-xs">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fees Due</h2>
+<span class="material-symbols-outlined text-outline">payments</span>
+</div>
+<div class="pl-xs mt-xs flex flex-col gap-xs">
+<span class="block font-label-sm text-label-sm text-on-surface-variant">Outstanding Balance</span>
+<span class="font-display-lg-mobile text-display-lg-mobile text-error font-bold tracking-tight">₦150,000.00</span>
+</div>
+<div class="pl-xs mt-xs">
+<button class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm py-2 px-4 rounded-lg min-h-[48px] min-w-[48px] w-full md:w-auto hover:bg-secondary-fixed-dim transition-colors">
+                        Pay Now
+                    </button>
+</div>
+</article>
+<!-- Latest Result Card -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md relative overflow-hidden flex flex-col gap-sm">
+<!-- Status Accent Border -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex justify-between items-start pl-xs">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Latest Result</h2>
+<span class="material-symbols-outlined text-outline">assessment</span>
+</div>
+<div class="flex items-end justify-between pl-xs mt-xs">
+<div class="flex flex-col gap-xs">
+<span class="font-body-lg text-body-lg text-primary font-medium">Math Midterm</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2 py-1 rounded-md inline-block w-max">First Term</span>
+</div>
+<div class="text-right">
+<span class="font-display-lg-mobile text-display-lg-mobile text-primary-container font-bold">85%</span>
+</div>
+</div>
+</article>
+<!-- Recent Notifications Card -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md relative overflow-hidden flex flex-col gap-sm">
+<!-- Status Accent Border -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
+<div class="flex justify-between items-start pl-xs">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Recent Notifications</h2>
+<span class="material-symbols-outlined text-outline">campaign</span>
+</div>
+<div class="pl-xs mt-xs flex items-start gap-sm">
+<div class="mt-1 w-2 h-2 rounded-full bg-secondary-container flex-shrink-0"></div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">Upcoming PTA Meeting</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">Tomorrow, 10:00 AM • Main Hall</span>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface border-t border-outline-variant shadow-md flex justify-around items-center h-20 pb-safe px-xs transition-transform md:hidden">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 min-h-[48px] min-w-[48px] active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- Attendance -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg min-h-[48px] min-w-[48px] p-2 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-sm text-label-sm mt-1">Attendance</span>
+</a>
+<!-- Fees -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg min-h-[48px] min-w-[48px] p-2 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Fees</span>
+</a>
+<!-- Results -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg min-h-[48px] min-w-[48px] p-2 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</a>
+<!-- Messages -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-lg min-h-[48px] min-w-[48px] p-2 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-label-sm text-label-sm mt-1">Messages</span>
+</a>
+</nav>
+</body></html>

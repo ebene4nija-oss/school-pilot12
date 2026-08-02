@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Student Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface": "#1b1c1c",
+                      "on-primary-fixed": "#001c39",
+                      "primary": "#002447",
+                      "on-secondary-fixed": "#291800",
+                      "primary-fixed": "#d4e3ff",
+                      "on-error-container": "#93000a",
+                      "secondary": "#835500",
+                      "surface-container-highest": "#e5e2e1",
+                      "inverse-on-surface": "#f3f0ef",
+                      "surface-container-high": "#eae7e7",
+                      "inverse-surface": "#303030",
+                      "on-secondary-container": "#6b4500",
+                      "tertiary-fixed": "#8df9ac",
+                      "surface-bright": "#fcf9f8",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-error": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "surface-variant": "#e5e2e1",
+                      "tertiary-container": "#004320",
+                      "on-surface-variant": "#43474e",
+                      "primary-fixed-dim": "#abc8f5",
+                      "tertiary-fixed-dim": "#71dc92",
+                      "secondary-fixed": "#ffddb4",
+                      "tertiary": "#002b12",
+                      "surface-container": "#f0eded",
+                      "outline": "#74777f",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#ffb955",
+                      "outline-variant": "#c3c6cf",
+                      "background": "#fcf9f8",
+                      "inverse-primary": "#abc8f5",
+                      "surface-tint": "#436087",
+                      "secondary-container": "#feae2c",
+                      "surface": "#fcf9f8",
+                      "on-tertiary": "#ffffff",
+                      "on-background": "#1b1c1c",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#1b3a5f",
+                      "on-tertiary-fixed-variant": "#005229",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-fixed": "#00210d",
+                      "on-primary-container": "#88a4cf",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#4bb771",
+                      "surface-dim": "#dcd9d9",
+                      "surface-container-low": "#f6f3f2",
+                      "on-primary-fixed-variant": "#2a486e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "md": "16px",
+                      "xs": "4px",
+                      "base": "8px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "margin-desktop": "48px",
+                      "margin-mobile": "16px",
+                      "gutter": "16px",
+                      "sm": "12px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "display-lg": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline p-md gap-base z-20">
+<div class="mb-xl flex flex-col gap-xs">
+<span class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container">SchoolPilot</span>
+<span class="font-label-sm text-label-sm text-on-primary/70">Admin Portal</span>
+</div>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">calendar_month</span>
+<span class="font-label-sm text-label-sm">Timetable</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">grading</span>
+<span class="font-label-sm text-label-sm">Results</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">quiz</span>
+<span class="font-label-sm text-label-sm">CBT</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 rounded-lg transition-colors group mt-auto" href="#">
+<span class="material-symbols-outlined group-hover:scale-95 duration-100 transition-transform">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+<button class="w-full mt-sm py-sm bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-lg hover:bg-secondary-fixed-dim transition-colors flex justify-center items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Assessment
+        </button>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-0 md:ml-64 w-full md:w-[calc(100%-16rem)] min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-lg w-full sticky top-0 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline z-10">
+<div class="flex items-center gap-md">
+<span class="md:hidden font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SchoolPilot</span>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="font-label-sm text-label-sm text-primary font-bold border-b-2 border-primary pb-1" href="#">Term 1, 2023/2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-xl pr-sm py-xs bg-surface-container-high border-none rounded-full font-body-md text-body-md focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-shadow w-64 placeholder:text-on-surface-variant" placeholder="Search..." type="text"/>
+</div>
+<button class="p-sm rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">help</span>
+</button>
+<img alt="Admin Profile" class="w-8 h-8 rounded-full ml-sm object-cover border border-outline-variant" data-alt="A small circular profile picture of an administrative staff member, smiling softly. High-key lighting, modern corporate school aesthetic. Professional and approachable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcYPKIK5n3EMUec6OBTqeVrYRLXYKufhtBJpLfMwc7qUeCUoHDEvzpl-pBzUZMXYHbGTBgBe8mS7NgAjV4Jb86U3-yM1kTcZqLoCcXNy_Zv8acsAbsP_Vre0vmxHNjRZsjAQ8bv5po1RT9vpLBx561aJ3irgUFxjazIn7U4qnCsBbscNqWhJkRS51x6pkNQCtYpUIMinDSxGR5MPMPEFPPLO5rsqpHinBP7VxQmXyAtnxv7GKgIiqg2w"/>
+</div>
+</header>
+<!-- Page Content -->
+<main class="p-margin-mobile md:p-margin-desktop flex-1 flex flex-col gap-lg">
+<!-- Breadcrumbs / Back -->
+<div class="flex items-center gap-xs text-on-surface-variant">
+<a class="font-label-sm text-label-sm hover:text-primary transition-colors" href="#">Students</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-sm text-label-sm text-on-surface">Chinelo Obi</span>
+</div>
+<!-- Profile Header Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col sm:flex-row items-start sm:items-center gap-lg">
+<img alt="Chinelo Obi" class="w-24 h-24 rounded-lg object-cover border border-outline-variant shadow-sm" data-alt="A professional headshot of a female Nigerian secondary school student named Chinelo Obi. She is wearing a neat white shirt and a dark blue tie. Neutral light grey background, crisp lighting, high resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv556LDhEHNIyso3Oo8f2W-sHDFVElVmjRdXyH1IRKnJIejUsupPF5eUY4AHR_xlMSEc4V1P_-I8NdgMxXiXUmp2dELegtR32KpNQkTR-YyaEs3_8_x5XwxDmfVdllukOJ2OFwNtKOi9YMr6LNxyeQCGQayRO3leNIAZ4qkjBcg11ttZrndDZfw-XpMFNXa677JeCRDB0oaF_Qw0J-n0lw9aQDkpIxUzinGcKnQ2-205R6R6E3bKYQCw"/>
+<div class="flex-1 flex flex-col gap-xs">
+<div class="flex items-center gap-sm">
+<h1 class="font-display-lg-mobile md:font-display-lg text-primary">Chinelo Obi</h1>
+<span class="bg-tertiary-fixed text-on-tertiary-container font-label-sm text-label-sm px-sm py-xs rounded-full">SS2 Science</span>
+</div>
+<p class="font-data-mono text-data-mono text-on-surface-variant">ID: SP-2021-0042 • Enrolled: Sep 2021</p>
+</div>
+<div class="flex gap-sm w-full sm:w-auto mt-sm sm:mt-0">
+<button class="flex-1 sm:flex-none border border-primary text-primary px-lg py-sm rounded-lg font-label-sm text-label-sm font-bold hover:bg-primary-fixed/20 transition-colors">
+                        Edit Profile
+                    </button>
+<button class="flex-1 sm:flex-none bg-primary text-on-primary px-lg py-sm rounded-lg font-label-sm text-label-sm font-bold hover:bg-primary/90 transition-colors">
+                        Message Guardian
+                    </button>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="border-b border-outline-variant">
+<nav class="flex gap-lg overflow-x-auto">
+<a class="font-label-sm text-label-sm text-primary font-bold border-b-2 border-primary pb-sm px-xs whitespace-nowrap" href="#">Biodata</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface pb-sm px-xs whitespace-nowrap transition-colors" href="#">Academic</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface pb-sm px-xs whitespace-nowrap transition-colors" href="#">Fees</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface pb-sm px-xs whitespace-nowrap transition-colors" href="#">Attendance</a>
+</nav>
+</div>
+<!-- Biodata Content (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Personal Info -->
+<div class="md:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h2 class="font-headline-md text-headline-md text-primary mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">person</span>
+                        Personal Information
+                    </h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-y-lg gap-x-md">
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Date of Birth</span>
+<span class="font-body-lg text-body-lg text-on-surface">14 May 2008 (15 yrs)</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Gender</span>
+<span class="font-body-lg text-body-lg text-on-surface">Female</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">State of Origin</span>
+<span class="font-body-lg text-body-lg text-on-surface">Anambra</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">LGA</span>
+<span class="font-body-lg text-body-lg text-on-surface">Njikoka</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Religion</span>
+<span class="font-body-lg text-body-lg text-on-surface">Christianity</span>
+</div>
+</div>
+</div>
+<!-- Medical Info -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h2 class="font-headline-md text-headline-md text-primary mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">medical_services</span>
+                        Medical
+                    </h2>
+<div class="flex flex-col gap-lg">
+<div class="flex justify-between items-center border-b border-outline-variant pb-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Blood Group</span>
+<span class="font-data-mono text-data-mono bg-error-container text-on-error-container px-sm py-xs rounded">O+</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant pb-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Genotype</span>
+<span class="font-data-mono text-data-mono text-on-surface">AA</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Allergies</span>
+<span class="font-body-md text-body-md text-on-surface">None reported</span>
+</div>
+</div>
+</div>
+<!-- Guardian Info -->
+<div class="md:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h2 class="font-headline-md text-headline-md text-primary mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">family_home</span>
+                        Primary Guardian
+                    </h2>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-md">
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Guardian Name</span>
+<span class="font-body-lg text-body-lg text-on-surface">Mr. Chidi Obi</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Relationship</span>
+<span class="font-body-lg text-body-lg text-on-surface">Father</span>
+</div>
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Primary Phone</span>
+<span class="font-data-mono text-data-mono text-primary flex items-center gap-xs cursor-pointer hover:underline">
+                                +234 803 123 4567
+                                <span class="material-symbols-outlined text-[16px]">content_copy</span>
+</span>
+</div>
+<div class="sm:col-span-3 flex flex-col gap-xs mt-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Home Address</span>
+<span class="font-body-md text-body-md text-on-surface">14 Independence Layout, Enugu, Enugu State.</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
