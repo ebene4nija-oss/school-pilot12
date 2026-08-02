@@ -15,6 +15,13 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Always eager-load the tenant profile — it is accessed on every
+     * authenticated request by BelongsToTenant scope, RequireRole
+     * middleware, and controller getSchoolId() helpers.
+     */
+    protected $with = ['userProfile'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

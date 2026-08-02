@@ -50,7 +50,8 @@ class StudentSISTest extends TestCase
         UserProfile::create(['school_id' => $school->id, 'user_id' => $admin->id, 'role' => 'school_admin']);
 
         // Existing user to trigger duplicate error on row 2
-        User::create(['name' => 'Existing User', 'email' => 'existing@testschool.edu.ng', 'password' => 'pass']);
+        $existingUser = User::create(['name' => 'Existing User', 'email' => 'existing@testschool.edu.ng', 'password' => 'pass']);
+        UserProfile::create(['school_id' => $school->id, 'user_id' => $existingUser->id, 'role' => 'student']);
 
         $csvContent = "Name,Email,Gender\n" .
             "Fatima Bello,fatima@testschool.edu.ng,female\n" .

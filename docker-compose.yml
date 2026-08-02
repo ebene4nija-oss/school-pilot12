@@ -1,6 +1,59 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: schoolpilot_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./backend:/var/www/backend
+    depends_on:
+      - backend
+      - frontend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: schoolpilot_backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: schoolpilot
+      DB_USERNAME: schoolpilot_user
+      DB_PASSWORD: schoolpilot_password
+      REDIS_HOST: redis
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: schoolpilot_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+
+  horizon:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: schoolpilot_horizon
+    command: php artisan horizon
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - redis
+
   postgres:
     image: postgres:15-alpine
     container_name: schoolpilot_postgres

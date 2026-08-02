@@ -1,0 +1,50 @@
+name: SchoolPilot CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_sqlite, bcmath
+          coverage: none
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          php artisan test
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd web
+          npm ci || npm install
+
+      - name: Build Next.js
+        run: |
+          cd web
+          npm run build

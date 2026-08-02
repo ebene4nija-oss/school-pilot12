@@ -46,6 +46,7 @@ class AddedFeaturesTest extends TestCase
             'email' => 'john@testacademy.com',
             'password' => bcrypt('password123'),
         ]);
+        $studentUser->userProfile()->create(['school_id' => $this->school->id, 'role' => 'student']);
 
         $student = Student::create([
             'school_id' => $this->school->id,
@@ -58,6 +59,7 @@ class AddedFeaturesTest extends TestCase
             'email' => 'mary@testacademy.com',
             'password' => bcrypt('password123'),
         ]);
+        $guardianUser->userProfile()->create(['school_id' => $this->school->id, 'role' => 'parent']);
 
         $guardian = Guardian::create([
             'school_id' => $this->school->id,
@@ -100,6 +102,7 @@ class AddedFeaturesTest extends TestCase
             'email' => 'parent@testacademy.com',
             'password' => bcrypt('password123'),
         ]);
+        $parentUser->userProfile()->create(['school_id' => $this->school->id, 'role' => 'parent']);
 
         $sendResponse = $this->actingAs($this->admin, 'sanctum')
             ->postJson('/api/v1/messages/send', [
