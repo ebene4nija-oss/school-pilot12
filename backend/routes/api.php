@@ -25,6 +25,14 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/students/promote', [\App\Http\Controllers\Api\V1\StudentController::class, 'promote']);
         Route::post('/students/import', [\App\Http\Controllers\Api\V1\StudentController::class, 'bulkImport']);
 
+        // Attendance & Hardware-Free Clock-In
+        Route::post('/attendance/qr-token', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'generateQrToken']);
+        Route::post('/attendance/mark', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'markStudentAttendance']);
+        Route::post('/attendance/staff-gps', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'staffGpsClockIn']);
+
+        // Timetable Solver Engine
+        Route::post('/timetable/generate', [\App\Http\Controllers\Api\V1\TimetableController::class, 'generate']);
+
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return response()->json($request->user()->load('userProfile'));
         });
