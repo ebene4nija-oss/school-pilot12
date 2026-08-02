@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Middleware\TenantResolutionMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -12,8 +13,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware([TenantResolutionMiddleware::class, 'throttle:api'])->group(function () {
     
     // Auth endpoints
-    Route::post('/auth/login', function () {
-        return response()->json(['message' => 'SchoolPilot API v1 Online']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+
+    // Authenticated Protected Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/invite', [AuthController::class, 'inviteUser']);
+        
+        Route::get('/user', function (\Illuminate\Http\Request $request) {
+            return response()->json($request->user()->load('userProfile'));
+        });
     });
 
     // Health check
