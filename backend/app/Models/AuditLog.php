@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditLog extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'school_id',
         'user_id',

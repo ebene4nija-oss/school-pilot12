@@ -54,6 +54,11 @@ class StudentController extends Controller
             'blood_group' => 'nullable|string',
             'allergies' => 'nullable|array',
             'medical_notes' => 'nullable|string',
+            'birth_certificate_reference' => 'nullable|string',
+            'passport_photo_path' => 'nullable|string',
+            'emergency_contacts' => 'nullable|array',
+            'avatar' => 'nullable|file|image|max:2048',
+            'passport_photo' => 'nullable|file|image|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -66,6 +71,12 @@ class StudentController extends Controller
         return DB::transaction(function () use ($request, $admin, $schoolId) {
             $tempPassword = bin2hex(random_bytes(4));
 
+            $passportPhotoPath = $request->passport_photo_path;
+            if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
+                $file = $request->file('avatar') ?? $request->file('passport_photo');
+                $passportPhotoPath = $file->store('students/avatars', 'public');
+            }
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -77,6 +88,7 @@ class StudentController extends Controller
                 'user_id' => $user->id,
                 'role' => 'student',
                 'phone' => $request->phone,
+                'avatar_url' => $passportPhotoPath,
             ]);
 
             $student = Student::create([
@@ -92,6 +104,9 @@ class StudentController extends Controller
                 'blood_group' => $request->blood_group,
                 'allergies' => $request->allergies,
                 'medical_notes' => $request->medical_notes,
+                'birth_certificate_reference' => $request->birth_certificate_reference,
+                'passport_photo_path' => $passportPhotoPath,
+                'emergency_contacts' => $request->emergency_contacts,
             ]);
 
             AuditLog::create([
@@ -109,6 +124,102 @@ class StudentController extends Controller
                 'student' => $student->load('user'),
                 'temp_password' => $tempPassword,
             ], 201);
+        });
+    }
+
+    public function show(Request $request, $id)
+    {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
+        $student = Student::where('school_id', $schoolId)->with(['user', 'school'])->findOrFail($id);
+
+        return response()->json(['student' => $student]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
+        $student = Student::where('school_id', $schoolId)->findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|unique:users,email,' . $student->user_id,
+            'class_id' => 'nullable|exists:classes,id',
+            'arm_id' => 'nullable|exists:arms,id',
+            'admission_number' => 'nullable|string',
+            'gender' => 'nullable|in:male,female,other',
+            'date_of_birth' => 'nullable|date',
+            'state_of_origin' => 'nullable|string',
+            'lga' => 'nullable|string',
+            'blood_group' => 'nullable|string',
+            'allergies' => 'nullable|array',
+            'medical_notes' => 'nullable|string',
+            'birth_certificate_reference' => 'nullable|string',
+            'passport_photo_path' => 'nullable|string',
+            'emergency_contacts' => 'nullable|array',
+            'avatar' => 'nullable|file|image|max:2048',
+            'passport_photo' => 'nullable|file|image|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        return DB::transaction(function () use ($request, $admin, $schoolId, $student) {
+            $user = $student->user;
+            if ($user && $request->has('name')) {
+                $user->name = $request->name;
+            }
+            if ($user && $request->has('email')) {
+                $user->email = $request->email;
+            }
+            if ($user) {
+                $user->save();
+            }
+
+            $passportPhotoPath = $request->input('passport_photo_path', $student->passport_photo_path);
+            if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
+                $file = $request->file('avatar') ?? $request->file('passport_photo');
+                $passportPhotoPath = $file->store('students/avatars', 'public');
+
+                if ($user && $user->userProfile) {
+                    $user->userProfile->update(['avatar_url' => $passportPhotoPath]);
+                }
+            }
+
+            $student->update([
+                'class_id' => $request->get('class_id', $student->class_id),
+                'arm_id' => $request->get('arm_id', $student->arm_id),
+                'admission_number' => $request->get('admission_number', $student->admission_number),
+                'gender' => $request->get('gender', $student->gender),
+                'date_of_birth' => $request->get('date_of_birth', $student->date_of_birth),
+                'state_of_origin' => $request->get('state_of_origin', $student->state_of_origin),
+                'lga' => $request->get('lga', $student->lga),
+                'blood_group' => $request->get('blood_group', $student->blood_group),
+                'allergies' => $request->get('allergies', $student->allergies),
+                'medical_notes' => $request->get('medical_notes', $student->medical_notes),
+                'birth_certificate_reference' => $request->get('birth_certificate_reference', $student->birth_certificate_reference),
+                'passport_photo_path' => $passportPhotoPath,
+                'emergency_contacts' => $request->get('emergency_contacts', $student->emergency_contacts),
+            ]);
+
+            AuditLog::create([
+                'school_id' => $schoolId,
+                'user_id' => $admin->id,
+                'action' => 'student.updated',
+                'auditable_type' => Student::class,
+                'auditable_id' => $student->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return response()->json([
+                'message' => 'Student record updated successfully',
+                'student' => $student->load('user'),
+            ]);
         });
     }
 
@@ -197,10 +308,11 @@ class StudentController extends Controller
 
             try {
                 DB::transaction(function () use ($name, $email, $gender, $schoolId) {
+                    $tempPassword = bin2hex(random_bytes(4));
                     $user = User::create([
                         'name' => $name,
                         'email' => $email,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make($tempPassword),
                     ]);
 
                     UserProfile::create([

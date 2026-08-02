@@ -30,8 +30,8 @@ broadly, but not necessarily before your very first pilot.
 A school management platform for private K-12 schools in Nigeria. Multi-tenant
 (subdomain per school), four school-side roles (Admin, Teacher, Student,
 Parent) plus a Super Admin console. Full product spec:
-`/docs/SchoolPilot-Comprehensive-Documentation.md`. UI reference:
-`/docs/SchoolPilot-Stitch-Design-Prompts.md`.
+`/docs/SchoolPilot-Comprehensive-Documentation.md`. UI design files reference:
+`/stitch_schoolpilot_management_system/`.
 
 ## Stack
 - Backend: Laravel (PHP), Postgres, Redis (cache + queues)
@@ -54,6 +54,7 @@ Parent) plus a Super Admin console. Full product spec:
   (faculties, semesters) unless explicitly asked.
 - NDPA data-minimization on anything touching student data — don't add new
   personal-data fields without checking doc §12 first.
+- Explicit parental consent logging (timestamp, IP, guardian ID) required on student registration; include withdrawal handling.
 - Money is Naira (₦). Academic terms are Nigerian (CA, broadsheet, JSS/SS,
   WAEC) — not GPA/semester language.
 - Don't touch payment, auth, or deployment config without first explaining
@@ -83,13 +84,14 @@ Set up the SchoolPilot monorepo from scratch:
    folder and module naming matches the spec's terminology.
 2. Create three top-level folders: /backend (Laravel), /web (Next.js),
    /mobile (Flutter). Scaffold each with its framework's standard installer.
-3. Add a docker-compose.yml at the repo root with postgres and redis
-   services, so `docker compose up -d` gives a working local database and
-   cache.
+3. Add a docker-compose.yml at the repo root with postgres, redis, and
+   laravel queue worker services, so `docker compose up -d` gives a working
+   local database, cache, and queue listener.
 4. Create .env.example files for /backend and /web listing every
    environment variable this project will eventually need: DB connection,
    Redis connection, APP_KEY, PAYSTACK_SECRET_KEY, FLUTTERWAVE_SECRET_KEY,
-   ANTHROPIC_API_KEY, and a wildcard APP_DOMAIN for subdomain routing.
+   ANTHROPIC_API_KEY, AWS/MinIO S3 storage keys (for passports/PDF storage),
+   and a wildcard APP_DOMAIN for subdomain routing.
 5. Add a root README.md explaining the three-folder structure and how to
    run each part locally.
 6. Initialize git, add a .gitignore covering PHP/Node/Flutter/Docker, make
@@ -118,8 +120,11 @@ Implement the full Phase 0 database schema as Laravel migrations, based on
    simplicity at this stage.
 2. Users (role enum: super_admin/school_admin/teacher/student/parent),
    students (including state_of_origin, lga, religion, blood_group,
-   allergies as JSON, medical_notes, previous_school), guardians, a
-   student_guardian pivot (many-to-many, for split families), staff.
+   allergies as JSON, medical_notes, previous_school, birth_certificate_reference, passport_photo_path), guardians, a
+   student_guardian pivot (many-to-many, for split families), parental_consents
+   table (guardian_id, student_id, consent_given, ai_cross_border_consent_given, ip_address, timestamp, withdrawn_at)
+   for NDPA compliance (including explicit cross-border AI data transfer consent), and staff (including qualifications, employment_history,
+   salary_structure, leave_allocations).
 3. Academic structure: sessions, terms, classes, arms, subjects, a
    class_subject_teacher pivot.
 4. Assessment: ca_schemes (configurable weights per school), score_entries,
@@ -185,29 +190,37 @@ request exceeding the rate limit is rejected with a clear 429.
 ## Stage 4 — SIS + Academic Structure APIs
 
 ```
-Build the Student Information System and academic structure APIs on the
+Build the Student Information System, Staff HR, and academic structure APIs on the
 Stage 2 schema:
 
-1. CRUD for students, guardians, staff — full Nigeria-specific field set.
+1. CRUD for students, guardians, staff — full Nigeria-specific field set
+   including `birth_certificate_reference`, `passport_photo_path` (with MinIO/S3 avatar upload endpoint),
+   and structured emergency contacts.
+   Include staff qualifications, salary/payroll profile, and leave allocation endpoints.
    Validate allergies as a structured list, not free text, where possible.
-2. CRUD for sessions, terms, classes, arms, subjects, and assigning a
+2. NDPA Parental Consent endpoints: record guardian consent (with timestamp, IP, and explicit AI cross-border transfer consent for LLM features)
+   upon student registration and allow consent withdrawal/audit.
+3. CRUD for sessions, terms, classes, arms, subjects (with national curriculum tags: WAEC, NECO, JAMB/UTME), and assigning a
    teacher to a class-subject pair.
-3. A promotion/repeat/transfer endpoint that moves a student between
+4. A promotion/repeat/transfer endpoint that moves a student between
    class/arm while preserving historical records rather than overwriting
    them.
-4. Search/filter on the student list endpoint (by class, arm, fee status)
+5. Search/filter on the student list endpoint (by class, arm, fee status)
    to back the admin web screens.
-5. A bulk-import endpoint: accept an Excel/CSV upload of students, validate
+6. A bulk-import endpoint: accept an Excel/CSV upload of students, validate
    rows with plain-English error messages rather than raw exceptions, and
    report exactly which rows succeeded or failed instead of failing the
    whole batch on one bad row. Admins migrating off Excel will use this
    far more than the single-student form.
+7. Full school data export endpoint (`POST /api/v1/admin/export-data`): generate
+   a downloadable zip/Excel archive containing all student records, academic history,
+   and financial logs for data portability trust.
 
 Definition of done: feature tests for create/update/list/filter on
-students and staff; a test confirming a promoted student's prior-term
-records are still queryable; a test confirming a batch import with one
-deliberately bad row still imports the valid rows and reports the bad one
-clearly.
+students and staff; tests for passport photo S3 upload; tests for parental consent & AI cross-border transfer recording/withdrawal; a test
+confirming a promoted student's prior-term records are still queryable; a test
+confirming a batch import with one deliberately bad row still imports valid rows;
+a test verifying data export output.
 ```
 
 ---
@@ -272,12 +285,13 @@ Prioritize correctness over speed here:
    table, the approved AI comment, a QR code encoding a signed
    verification token. Refuse to generate a report card for any student
    whose comment is still in `pending_approval`. Build a public (no-auth)
-   verification endpoint that looks up a token.
+   verification endpoint (`GET /api/v1/verify-result/{token}`) that looks up a token.
+   Enforce rate limiting and anti-scraping measures on this unauthenticated route.
 6. Broadsheet endpoint: whole-class, all-subjects, exportable to CSV/Excel.
 
 Definition of done: an end-to-end test seeding a full class's scores,
 triggering compilation, and confirming correct ranking math; a test that a
-valid QR token verifies and a tampered one is rejected; a test confirming
+valid QR token verifies and a tampered one is rejected; a test confirming rate limiting on public verification; a test confirming
 a report card cannot be generated while its AI comment is still
 `pending_approval`.
 ```
@@ -326,11 +340,13 @@ merging — this is real money:
    their REST APIs if nothing current and well-maintained exists. Handle
    payment-confirmation webhooks, not just the client-side redirect —
    verify webhook signatures, don't trust an unsigned callback.
-4. A defaulter-list endpoint (outstanding balance, sorted descending).
-5. Expense tracking CRUD (categorized entries, not linked to payments).
+4. Printable PDF payment receipts and invoice downloads for both cash/transfer and automated gateway payments.
+5. A defaulter-list endpoint (outstanding balance, sorted descending).
+6. Expense tracking CRUD (categorized entries, not linked to payments).
 
 Definition of done: a test simulating a full webhook round-trip (invoice
 created → payment initiated → webhook received → invoice marked paid); a
+test that a payment receipt PDF generates cleanly; a
 test that a malformed/unsigned webhook is rejected.
 ```
 
@@ -388,22 +404,25 @@ note documenting where the rate limits and spend caps live.
 ## Stage 10 — Notifications + Analytics
 
 ```
-Build notifications and the admin insights engine:
+Build notifications, messaging, and the admin insights engine:
 
 1. Push notification delivery (Firebase Cloud Messaging is the natural fit
    for the Flutter app) for attendance, fee, and result events.
 2. SMS integration for high-volume notifications (paid feature per the
    product spec) — pick a Nigeria-capable SMS gateway and implement it
    behind a simple interface so the provider can be swapped later.
-3. Rule-based (not ML) insight generation: a scheduled job flagging
+3. In-app Teacher-Parent messaging endpoints (threads, message sending, read receipts)
+   so parents and teachers can communicate directly per the Stitch design specs.
+4. Rule-based (not ML) insight generation: a scheduled job flagging
    students whose average dropped past a threshold term-over-term,
    computing a simple revenue forecast from payment patterns, flagging
    schools with rising fee-default rates. Surface as a feed the admin
    dashboard queries.
 
 Definition of done: a test that a seeded grade drop correctly triggers an
-insight record; push and SMS sending sit behind an interface with a fake/
-test implementation so tests don't hit real providers.
+insight record; teacher-parent message threads store and deliver correctly;
+push and SMS sending sit behind an interface with a fake/test implementation so
+tests don't hit real providers.
 ```
 
 ---
@@ -599,16 +618,56 @@ LAUNCH.md or issue tracker, not memory.
 
 ---
 
+---
+
 ## Extending to Phase 1 / Phase 2
 
-Once Phase 0 is live and at least one real school is using it, the same
-pattern extends forward: one stage per module group, referencing the
-matching Stitch batch and the relevant section of
-`SchoolPilot-Comprehensive-Documentation.md` (§8 for Phase 1, §9 for Phase
-2). Don't write these out in detail before Phase 0 has real users — what
-Phase 1 actually needs to prioritize will be clearer once real schools are
-using the core product than it is right now.
+Below are the detailed agentic prompts for building out Phase 1 (Retention & Polish) and Phase 2 (Segment Expansion — Boarding & Hardware-Free Operations) after Phase 0 goes live:
 
 ---
 
-*This is the whole path from empty repo to a school actually using it. If you want, I can also draft the LAUNCH.md and TESTING.md templates referenced above, or write the actual Paystack/Flutterwave webhook-verification code for Stage 8 directly, rather than leaving it to the agent.*
+## Stage 19 — Phase 1: Assessment Polish, CBT Expansion & Gamification
+
+```
+Build Phase 1 retention and academic expansion features:
+
+1. Assessment: Rubric-based grading builder and peer-review assignment workflow.
+2. CBT Question Types Expansion: schema and UI support for drag-and-drop, diagram labeling, math equations (LaTeX), coding questions, and configurable negative marking.
+3. Curriculum Tagging: extend subject and question tagging to support NABTEB, Cambridge, and Montessori frameworks.
+4. Multilingual AI Tutor: update AI Learning Hub prompts to support Yoruba, Hausa, Igbo, and French explanations with strict domain accuracy.
+5. Fee Enhancements: support scholarships, student discounts, and customizable installment payment plans in fee structures.
+6. Gamification: points, streaks, student leaderboards, and certificate generation engine.
+
+Definition of done: tests confirming rubric score calculations; tests validating multi-language tutor responses; tests confirming installment plan breakdown and partial payment tracking.
+```
+
+---
+
+## Stage 20 — Phase 2: Hardware-Free Transport & Library Modules
+
+```
+Build hardware-free transportation and library modules:
+
+1. Transport (Hardware-Free): driver phone GPS location broadcasting during active routes (`POST /api/v1/transport/location`), active route mapping, and real-time parent tracking view. No dedicated vehicle hardware.
+2. Library (Hardware-Free): catalog management, loan/return tracking, and mobile camera barcode lookup integration for book checkout/checkin.
+3. Live / Virtual Classrooms: Zoom and Google Meet OAuth integration for scheduled online classes, meeting link creation, and attendance auto-sync.
+
+Definition of done: tests simulating phone GPS broadcast and route location streaming; test verifying barcode search resolution; test validating Zoom meeting creation webhook sync.
+```
+
+---
+
+## Stage 21 — Phase 2: Hostel & Health Modules
+
+```
+Build hostel/boarding and school clinic modules:
+
+1. Hostel / Boarding: building, room, and bed allocation management; visitor logging; hostel-specific fee attachments; maintenance request tracking.
+2. Health / Clinic: student medical profile lookup, clinic visit logging, treatment logs, vaccination tracking, and emergency contact dispatch.
+
+Definition of done: tests verifying bed assignment constraint checks (no double-booking beds); tests confirming sensitive medical log encryption and role access restrictions.
+```
+
+---
+
+*This is the complete path from empty repo to full production deployment and multi-phase expansion.*

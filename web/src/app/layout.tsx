@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" class="light">
+    <html lang="en" className="light">
       <head>
         <link
           rel="stylesheet"

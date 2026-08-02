@@ -21,9 +21,12 @@ class Student extends Model
         'state_of_origin',
         'lga',
         'religion',
+        'birth_certificate_reference',
+        'passport_photo_path',
         'blood_group',
         'allergies',
         'medical_notes',
+        'emergency_contacts',
         'previous_school',
         'status',
     ];
@@ -35,6 +38,7 @@ class Student extends Model
         'blood_group' => 'encrypted',
         'allergies' => 'encrypted:array',
         'medical_notes' => 'encrypted',
+        'emergency_contacts' => 'encrypted:array',
         'date_of_birth' => 'date',
     ];
 

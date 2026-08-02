@@ -48,6 +48,7 @@ class AttendanceController extends Controller
             'term_id' => 'required|exists:terms,id',
             'date' => 'required|date',
             'status' => 'required|in:present,absent,late,excused',
+            'qr_token' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -56,6 +57,24 @@ class AttendanceController extends Controller
 
         $user = $request->user();
         $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        // Decode and verify QR token
+        $decoded = json_decode(base64_decode($request->qr_token), true);
+        if (!$decoded || !is_array($decoded)) {
+            return response()->json(['error' => 'Invalid QR token provided.'], 400);
+        }
+
+        if (empty($decoded['expires_at']) || $decoded['expires_at'] < now()->timestamp) {
+            return response()->json(['error' => 'QR token has expired.'], 400);
+        }
+
+        if (isset($decoded['school_id']) && $decoded['school_id'] != $schoolId) {
+            return response()->json(['error' => 'QR token does not belong to your school.'], 403);
+        }
+
+        if (isset($decoded['term_id']) && $decoded['term_id'] != $request->term_id) {
+            return response()->json(['error' => 'QR token term mismatch.'], 400);
+        }
 
         $record = AttendanceRecord::updateOrCreate(
             [

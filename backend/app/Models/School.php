@@ -19,5 +19,14 @@ class School extends Model
         'address',
         'logo_url',
         'status',
+        'ai_enabled',
+        'ai_feature_flags',
+        'ai_api_settings',
+    ];
+
+    protected $casts = [
+        'ai_enabled' => 'boolean',
+        'ai_feature_flags' => 'array',
+        'ai_api_settings' => 'array',
     ];
 }

@@ -1,0 +1,75 @@
+name: SchoolPilot CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-tests:
+    name: Backend Tests (Laravel)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: schoolpilot_test
+          POSTGRES_PASSWORD: secretpassword
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_pgsql, bcmath, ctype, json
+
+      - name: Install Composer Dependencies
+        run: |
+          cd backend
+          composer install --no-progress --no-suggest --prefer-dist
+
+      - name: Run Backend Migration & Tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: schoolpilot_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: secretpassword
+        run: |
+          cd backend
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan test
+
+  web-build:
+    name: Web Admin Portal Build (Next.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd web
+          npm ci
+
+      - name: Build Next.js Web App
+        run: |
+          cd web
+          npm run build

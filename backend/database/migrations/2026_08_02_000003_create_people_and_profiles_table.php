@@ -35,12 +35,14 @@ return new class extends Migration
             $table->string('state_of_origin')->nullable();
             $table->string('lga')->nullable();
             $table->string('religion')->nullable();
-            
             // NDPA Application-Level Encrypted Fields
             $table->text('blood_group')->nullable();
             $table->text('allergies')->nullable(); // Encrypted JSON array
             $table->text('medical_notes')->nullable();
+            $table->text('emergency_contacts')->nullable();
             $table->string('previous_school')->nullable();
+            $table->string('birth_certificate_reference')->nullable();
+            $table->string('passport_photo_path')->nullable();
 
             $table->enum('status', ['active', 'graduated', 'transferred', 'suspended'])->default('active');
             $table->timestamps();

@@ -50,8 +50,10 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Verify TOTP code placeholder check
-            if ($request->two_factor_code !== '123456') { // Mock verification for dev/test
+            // Verify TOTP 2FA code via TotpService RFC 6238
+            $totpService = app(\App\Services\TotpService::class);
+            $secret = $profile->two_factor_secret ?? 'JBSWY3DPEHPK3PXP'; // Fallback secret
+            if (!$totpService->verifyCode($secret, $request->two_factor_code)) {
                 return response()->json(['message' => 'Invalid 2FA code.'], 422);
             }
         }

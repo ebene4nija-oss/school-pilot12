@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Domain;
 use App\Models\School;
 use Closure;
 use Illuminate\Http\Request;

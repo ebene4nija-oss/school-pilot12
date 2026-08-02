@@ -5,7 +5,7 @@
 ## How to Use This
 
 1. Create a repo (monorepo is simplest for a small team: `/backend`, `/web`, `/mobile`).
-2. Drop the earlier docs into a `/docs` folder in that repo: `SchoolPilot-Comprehensive-Documentation.md` and `SchoolPilot-Stitch-Design-Prompts.md`. Claude Code reads these for grounding — don't skip this step.
+2. Drop the earlier docs into a `/docs` folder in that repo: `SchoolPilot-Comprehensive-Documentation.md` and reference the UI design mockups under `/stitch_schoolpilot_management_system/`. Claude Code reads these for grounding — don't skip this step.
 3. Install Claude Code and run it from the repo root. Run `/init` once, then replace the generated CLAUDE.md with the version below — it's written to reference `/docs` rather than duplicate it, which is the actual current best practice for keeping project memory small and accurate.
 4. Run each **Stage** below as a separate Claude Code session, in order. Review the diff and run the tests before moving to the next stage — 18 stages chained unattended is how you end up debugging stage 14 while not knowing which earlier stage actually broke.
 5. Commit at the end of each stage.
@@ -30,8 +30,8 @@ broadly, but not necessarily before your very first pilot.
 A school management platform for private K-12 schools in Nigeria. Multi-tenant
 (subdomain per school), four school-side roles (Admin, Teacher, Student,
 Parent) plus a Super Admin console. Full product spec:
-`/docs/SchoolPilot-Comprehensive-Documentation.md`. UI reference:
-`/docs/SchoolPilot-Stitch-Design-Prompts.md`.
+`/docs/SchoolPilot-Comprehensive-Documentation.md`. UI design files reference:
+`/stitch_schoolpilot_management_system/`.
 
 ## Stack
 - Backend: Laravel (PHP), Postgres, Redis (cache + queues)
@@ -54,6 +54,7 @@ Parent) plus a Super Admin console. Full product spec:
   (faculties, semesters) unless explicitly asked.
 - NDPA data-minimization on anything touching student data — don't add new
   personal-data fields without checking doc §12 first.
+- Explicit parental consent logging (timestamp, IP, guardian ID) required on student registration; include withdrawal handling.
 - Money is Naira (₦). Academic terms are Nigerian (CA, broadsheet, JSS/SS,
   WAEC) — not GPA/semester language.
 - Don't touch payment, auth, or deployment config without first explaining
@@ -83,13 +84,14 @@ Set up the SchoolPilot monorepo from scratch:
    folder and module naming matches the spec's terminology.
 2. Create three top-level folders: /backend (Laravel), /web (Next.js),
    /mobile (Flutter). Scaffold each with its framework's standard installer.
-3. Add a docker-compose.yml at the repo root with postgres and redis
-   services, so `docker compose up -d` gives a working local database and
-   cache.
+3. Add a docker-compose.yml at the repo root with postgres, redis, and
+   laravel queue worker services, so `docker compose up -d` gives a working
+   local database, cache, and queue listener.
 4. Create .env.example files for /backend and /web listing every
    environment variable this project will eventually need: DB connection,
    Redis connection, APP_KEY, PAYSTACK_SECRET_KEY, FLUTTERWAVE_SECRET_KEY,
-   ANTHROPIC_API_KEY, and a wildcard APP_DOMAIN for subdomain routing.
+   ANTHROPIC_API_KEY, AWS/MinIO S3 storage keys (for passports/PDF storage),
+   and a wildcard APP_DOMAIN for subdomain routing.
 5. Add a root README.md explaining the three-folder structure and how to
    run each part locally.
 6. Initialize git, add a .gitignore covering PHP/Node/Flutter/Docker, make
@@ -119,7 +121,10 @@ Implement the full Phase 0 database schema as Laravel migrations, based on
 2. Users (role enum: super_admin/school_admin/teacher/student/parent),
    students (including state_of_origin, lga, religion, blood_group,
    allergies as JSON, medical_notes, previous_school), guardians, a
-   student_guardian pivot (many-to-many, for split families), staff.
+   student_guardian pivot (many-to-many, for split families), parental_consents
+   table (guardian_id, student_id, consent_given, ip_address, timestamp, withdrawn_at)
+   for NDPA compliance, and staff (including qualifications, employment_history,
+   salary_structure, leave_allocations).
 3. Academic structure: sessions, terms, classes, arms, subjects, a
    class_subject_teacher pivot.
 4. Assessment: ca_schemes (configurable weights per school), score_entries,
@@ -185,29 +190,35 @@ request exceeding the rate limit is rejected with a clear 429.
 ## Stage 4 — SIS + Academic Structure APIs
 
 ```
-Build the Student Information System and academic structure APIs on the
+Build the Student Information System, Staff HR, and academic structure APIs on the
 Stage 2 schema:
 
 1. CRUD for students, guardians, staff — full Nigeria-specific field set.
+   Include staff qualifications, salary/payroll profile, and leave allocation endpoints.
    Validate allergies as a structured list, not free text, where possible.
-2. CRUD for sessions, terms, classes, arms, subjects, and assigning a
+2. NDPA Parental Consent endpoints: record guardian consent (with timestamp & IP)
+   upon student registration and allow consent withdrawal/audit.
+3. CRUD for sessions, terms, classes, arms, subjects, and assigning a
    teacher to a class-subject pair.
-3. A promotion/repeat/transfer endpoint that moves a student between
+4. A promotion/repeat/transfer endpoint that moves a student between
    class/arm while preserving historical records rather than overwriting
    them.
-4. Search/filter on the student list endpoint (by class, arm, fee status)
+5. Search/filter on the student list endpoint (by class, arm, fee status)
    to back the admin web screens.
-5. A bulk-import endpoint: accept an Excel/CSV upload of students, validate
+6. A bulk-import endpoint: accept an Excel/CSV upload of students, validate
    rows with plain-English error messages rather than raw exceptions, and
    report exactly which rows succeeded or failed instead of failing the
    whole batch on one bad row. Admins migrating off Excel will use this
    far more than the single-student form.
+7. Full school data export endpoint (`POST /api/v1/admin/export-data`): generate
+   a downloadable zip/Excel archive containing all student records, academic history,
+   and financial logs for data portability trust.
 
 Definition of done: feature tests for create/update/list/filter on
-students and staff; a test confirming a promoted student's prior-term
-records are still queryable; a test confirming a batch import with one
-deliberately bad row still imports the valid rows and reports the bad one
-clearly.
+students and staff; tests for parental consent recording & withdrawal; a test
+confirming a promoted student's prior-term records are still queryable; a test
+confirming a batch import with one deliberately bad row still imports valid rows;
+a test verifying data export output.
 ```
 
 ---
@@ -388,22 +399,25 @@ note documenting where the rate limits and spend caps live.
 ## Stage 10 — Notifications + Analytics
 
 ```
-Build notifications and the admin insights engine:
+Build notifications, messaging, and the admin insights engine:
 
 1. Push notification delivery (Firebase Cloud Messaging is the natural fit
    for the Flutter app) for attendance, fee, and result events.
 2. SMS integration for high-volume notifications (paid feature per the
    product spec) — pick a Nigeria-capable SMS gateway and implement it
    behind a simple interface so the provider can be swapped later.
-3. Rule-based (not ML) insight generation: a scheduled job flagging
+3. In-app Teacher-Parent messaging endpoints (threads, message sending, read receipts)
+   so parents and teachers can communicate directly per the Stitch design specs.
+4. Rule-based (not ML) insight generation: a scheduled job flagging
    students whose average dropped past a threshold term-over-term,
    computing a simple revenue forecast from payment patterns, flagging
    schools with rising fee-default rates. Surface as a feed the admin
    dashboard queries.
 
 Definition of done: a test that a seeded grade drop correctly triggers an
-insight record; push and SMS sending sit behind an interface with a fake/
-test implementation so tests don't hit real providers.
+insight record; teacher-parent message threads store and deliver correctly;
+push and SMS sending sit behind an interface with a fake/test implementation so
+tests don't hit real providers.
 ```
 
 ---

@@ -23,4 +23,18 @@ class ScoreEntry extends Model
         'teacher_comment',
         'ai_comment_status',
     ];
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function term()
+    {
+        return $this->belongsTo(Term::class);
+    }
 }

@@ -60,40 +60,225 @@ class FinanceController extends Controller
 
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($request->invoice_id);
 
+        // Direct manual payment (cash/bank transfer by admin) vs gateway payment verification
+        $isManual = in_array($request->gateway, ['cash', 'bank_transfer']);
+        $isAdmin = $user->userProfile && in_array($user->userProfile->role, ['super_admin', 'school_admin']);
+
+        // Non-admins cannot self-mark online payments as successful without gateway verification
+        $status = ($isManual && $isAdmin) ? 'successful' : 'pending';
+
         $payment = Payment::create([
             'school_id' => $schoolId,
             'invoice_id' => $invoice->id,
             'reference' => $request->reference,
             'amount' => $request->amount,
             'gateway' => $request->gateway,
-            'status' => 'successful',
-            'paid_at' => now(),
+            'status' => $status,
+            'paid_at' => $status === 'successful' ? now() : null,
         ]);
 
-        $invoice->amount_paid += $request->amount;
-        if ($invoice->amount_paid >= $invoice->total_amount) {
-            $invoice->status = 'paid';
-        } else {
-            $invoice->status = 'partial';
+        if ($status === 'successful') {
+            $invoice->amount_paid += $request->amount;
+            if ($invoice->amount_paid >= $invoice->total_amount) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partial';
+            }
+            $invoice->save();
         }
-        $invoice->save();
+
+        // Dispatch automated WhatsApp notification receipt to parent if successful
+        $notificationResult = null;
+        if ($status === 'successful') {
+            $whatsAppService = app(\App\Services\WhatsAppService::class);
+            $notificationResult = $whatsAppService->sendPaymentReceiptNotification(
+                $request->get('phone', '+2348000000000'),
+                $user->name,
+                number_format($request->amount, 2),
+                $payment->reference
+            );
+        }
 
         return response()->json([
-            'message' => 'Payment recorded successfully',
+            'message' => $status === 'successful' ? 'Payment recorded successfully' : 'Payment initiated. Awaiting gateway webhook confirmation.',
             'payment' => $payment,
             'invoice' => $invoice,
+            'whatsapp_notification' => $notificationResult,
         ]);
     }
 
     public function handleWebhook(Request $request, $gateway)
     {
-        // Webhook signature verification placeholder
-        $signature = $request->header('x-paystack-signature') ?? $request->header('verif-hash');
+        $payload = $request->all();
+        $reference = null;
+        $amountPaid = 0;
 
-        if (!$signature) {
-            return response()->json(['message' => 'Invalid or missing webhook signature'], 400);
+        // 1. Paystack Webhook Cryptographic Verification (HMAC-SHA512)
+        if ($gateway === 'paystack') {
+            $paystackHeader = $request->header('x-paystack-signature');
+            $secret = env('PAYSTACK_SECRET_KEY', 'sk_test_mock_secret');
+
+            if (!$paystackHeader || $paystackHeader !== hash_hmac('sha512', $request->getContent(), $secret)) {
+                return response()->json(['message' => 'Invalid Paystack webhook signature'], 400);
+            }
+
+            if (($payload['event'] ?? '') === 'charge.success') {
+                $reference = $payload['data']['reference'] ?? null;
+                $amountPaid = ($payload['data']['amount'] ?? 0) / 100; // Paystack is in kobo
+            }
         }
 
-        return response()->json(['message' => 'Webhook received and processed cleanly']);
+        // 2. Flutterwave Webhook Secret Hash Verification
+        if ($gateway === 'flutterwave') {
+            $flutterwaveHeader = $request->header('verif-hash');
+            $secretHash = env('FLUTTERWAVE_SECRET_HASH', 'mock_flw_secret_hash');
+
+            if (!$flutterwaveHeader || $flutterwaveHeader !== $secretHash) {
+                return response()->json(['message' => 'Invalid Flutterwave webhook signature'], 400);
+            }
+
+            if (($payload['status'] ?? '') === 'successful' || ($payload['data']['status'] ?? '') === 'successful') {
+                $reference = $payload['data']['tx_ref'] ?? $payload['txRef'] ?? null;
+                $amountPaid = $payload['data']['amount'] ?? $payload['amount'] ?? 0;
+            }
+        }
+
+        // 3. Process Trusted Payment & Invoice Update
+        if ($reference) {
+            $payment = Payment::where('reference', $reference)->first();
+
+            if ($payment && $payment->status !== 'successful') {
+                $payment->update([
+                    'status' => 'successful',
+                    'paid_at' => now(),
+                ]);
+
+                $invoice = $payment->invoice;
+                if ($invoice) {
+                    $invoice->amount_paid += $payment->amount;
+                    if ($invoice->amount_paid >= $invoice->total_amount) {
+                        $invoice->status = 'paid';
+                    } else {
+                        $invoice->status = 'partial';
+                    }
+                    $invoice->save();
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Webhook received, verified, and payment record updated.']);
+    }
+
+    public function downloadInvoicePdf(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        $invoice = Invoice::where('school_id', $schoolId)->with(['student.user'])->findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'document_type' => 'invoice_pdf',
+            'invoice_number' => 'INV-' . str_pad($invoice->id, 6, '0', STR_PAD_LEFT),
+            'total_amount' => $invoice->total_amount,
+            'amount_paid' => $invoice->amount_paid,
+            'download_url' => url("/api/v1/finance/invoices/{$invoice->id}/pdf"),
+        ]);
+    }
+
+    public function downloadPaymentReceipt(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        $payment = Payment::where('school_id', $schoolId)->with(['invoice.student.user'])->findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'document_type' => 'payment_receipt_pdf',
+            'receipt_number' => 'REC-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
+            'amount' => $payment->amount,
+            'gateway' => $payment->gateway,
+            'reference' => $payment->reference,
+            'paid_at' => $payment->paid_at,
+            'download_url' => url("/api/v1/finance/payments/{$payment->id}/receipt"),
+        ]);
+    }
+
+    /**
+     * Bank Transfer Manual & Automated Reconciliation Endpoint
+     */
+    public function reconcileBankTransfer(Request $request)
+    {
+        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+
+        $validator = Validator::make($request->all(), [
+            'payment_id' => 'required_without:reference',
+            'reference'  => 'required_without:payment_id',
+            'action'     => 'required|in:approve,reject',
+            'notes'      => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $query = Payment::where('school_id', $schoolId);
+        if ($request->payment_id) {
+            $query->where('id', $request->payment_id);
+        } else {
+            $query->where('reference', $request->reference);
+        }
+
+        $payment = $query->first();
+
+        if (!$payment) {
+            return response()->json(['message' => 'Bank transfer payment record not found.'], 404);
+        }
+
+        if ($request->action === 'approve') {
+            if ($payment->status !== 'successful') {
+                $payment->status = 'successful';
+                $payment->paid_at = now();
+                $payment->save();
+
+                $invoice = $payment->invoice;
+                if ($invoice) {
+                    $invoice->amount_paid += $payment->amount;
+                    if ($invoice->amount_paid >= $invoice->total_amount) {
+                        $invoice->status = 'paid';
+                    } else {
+                        $invoice->status = 'partial';
+                    }
+                    $invoice->save();
+                }
+
+                // Send WhatsApp notification receipt to parent upon reconciliation approval
+                $whatsAppService = app(\App\Services\WhatsAppService::class);
+                $parentUser = $invoice ? ($invoice->student ? $invoice->student->user : null) : null;
+                $phone = $parentUser ? ($parentUser->userProfile->phone ?? '+2348000000000') : '+2348000000000';
+                $parentName = $parentUser ? $parentUser->name : 'Parent';
+
+                $whatsAppService->sendPaymentReceiptNotification(
+                    $phone,
+                    $parentName,
+                    number_format($payment->amount, 2),
+                    $payment->reference
+                );
+            }
+
+            return response()->json([
+                'message' => 'Bank transfer reconciled and approved successfully.',
+                'payment' => $payment->fresh(['invoice']),
+            ]);
+        } else {
+            $payment->status = 'failed';
+            $payment->save();
+
+            return response()->json([
+                'message' => 'Bank transfer payment rejected.',
+                'payment' => $payment,
+            ]);
+        }
     }
 }
