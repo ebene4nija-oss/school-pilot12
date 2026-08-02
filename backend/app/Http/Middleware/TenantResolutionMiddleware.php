@@ -12,19 +12,19 @@ class TenantResolutionMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $host = $request->getHost();
-        $appDomain = config('app.app_domain', 'localhost');
-
-        if ($host !== $appDomain && str_ends_with($host, '.' . $appDomain)) {
+        $host = explode(':', $request->getHost())[0];
+        
+        if (str_contains($host, '.')) {
             $subdomain = explode('.', $host)[0];
-            $school = School::where('subdomain', $subdomain)->first();
+            if ($subdomain !== 'localhost' && $subdomain !== '127') {
+                $school = School::where('subdomain', $subdomain)->first();
 
-            if (!$school) {
-                return response()->json(['message' => 'School tenant subdomain not found.'], 404);
+                if (!$school) {
+                    return response()->json(['message' => 'School tenant subdomain not found.'], 404);
+                }
+
+                $request->attributes->set('tenant_school', $school);
             }
-
-            // Bind current tenant school into request
-            $request->attributes->set('tenant_school', $school);
         }
 
         return $next($request);

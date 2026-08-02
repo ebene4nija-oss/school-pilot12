@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware([TenantResolutionMiddleware::class, 'throttle:api'])->group(function () {
+Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(function () {
     
     // Auth endpoints
     Route::post('/auth/login', [AuthController::class, 'login']);
