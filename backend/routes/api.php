@@ -19,6 +19,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/invite', [AuthController::class, 'inviteUser']);
         
+        // Student Information System (SIS) Routes
+        Route::get('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'index']);
+        Route::post('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'store']);
+        Route::post('/students/promote', [\App\Http\Controllers\Api\V1\StudentController::class, 'promote']);
+        Route::post('/students/import', [\App\Http\Controllers\Api\V1\StudentController::class, 'bulkImport']);
+
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return response()->json($request->user()->load('userProfile'));
         });
