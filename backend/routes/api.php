@@ -33,6 +33,20 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // Timetable Solver Engine
         Route::post('/timetable/generate', [\App\Http\Controllers\Api\V1\TimetableController::class, 'generate']);
 
+        // Assessment & Broadsheet Routes
+        Route::post('/assessment/score', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'enterScores']);
+        Route::post('/assessment/score/{id}/ai-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'generateAiComment']);
+        Route::post('/assessment/score/{id}/review-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'reviewAiComment']);
+        Route::get('/assessment/broadsheet', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'getBroadsheet']);
+
+        // Fees & Finance Routes
+        Route::post('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FinanceController::class, 'storeFeeStructure']);
+        Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment']);
+
+        // AI Studio & Tutor Routes
+        Route::post('/ai/lesson-plan', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'generateLessonPlan']);
+        Route::post('/ai/tutor-chat', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorChat']);
+
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return response()->json($request->user()->load('userProfile'));
         });
@@ -46,4 +60,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             'timestamp' => now()->toIso8601String()
         ]);
     });
+
+    // Unauthenticated Webhooks
+    Route::post('/webhooks/{gateway}', [\App\Http\Controllers\Api\V1\FinanceController::class, 'handleWebhook']);
 });
