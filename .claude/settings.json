@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan test*)",
+      "Bash(php artisan migrate*)",
+      "Bash(php artisan route:list*)",
+      "Bash(composer dump-autoload*)"
+    ]
+  }
+}
