@@ -7,8 +7,10 @@ use App\Models\AuditLog;
 use App\Models\School;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\TotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -33,15 +35,40 @@ class AuthController extends Controller
 
         $profile = $user->userProfile;
 
-        // Ensure user belongs to requested tenant subdomain if provided
-        if ($request->subdomain && $profile && $profile->role !== 'super_admin') {
-            $school = School::where('subdomain', $request->subdomain)->first();
-            if (!$school || $profile->school_id !== $school->id) {
-                return response()->json(['message' => 'User does not belong to this school tenant.'], 403);
+        /*
+         * Tenant binding.
+         *
+         * The tenant is taken from the resolved host first (set by
+         * TenantResolutionMiddleware) and only then from the request body.
+         * Previously the body was the sole source and was optional, so a user
+         * from one school could authenticate against another school's
+         * subdomain — the middleware resolved a tenant that nothing enforced.
+         */
+        $tenant = $request->attributes->get('tenant_school');
+
+        if (!$tenant && $request->subdomain) {
+            $tenant = School::where('subdomain', $request->subdomain)->first();
+
+            if (!$tenant) {
+                return response()->json(['message' => 'School tenant subdomain not found.'], 404);
             }
         }
 
-        // Check if TOTP 2FA is required for School Admin / Super Admin
+        if ($tenant && $profile && $profile->role !== 'super_admin' && $profile->school_id !== $tenant->id) {
+            AuditLog::create([
+                'school_id' => $tenant->id,
+                'user_id' => $user->id,
+                'action' => 'user.login_wrong_tenant',
+                'auditable_type' => User::class,
+                'auditable_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return response()->json(['message' => 'User does not belong to this school tenant.'], 403);
+        }
+
+        // Two-factor for privileged roles.
         if ($profile && in_array($profile->role, ['school_admin', 'super_admin']) && $profile->two_factor_enabled) {
             if (!$request->two_factor_code) {
                 return response()->json([
@@ -50,18 +77,28 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Verify TOTP 2FA code via TotpService RFC 6238
-            $totpService = app(\App\Services\TotpService::class);
-            $secret = $profile->two_factor_secret ?? 'JBSWY3DPEHPK3PXP'; // Fallback secret
-            if (!$totpService->verifyCode($secret, $request->two_factor_code)) {
+            $secret = (string) ($profile->two_factor_secret ?? '');
+
+            // Fail closed. An account flagged for 2FA without a stored secret is
+            // misconfigured, not exempt — there is no fallback secret.
+            if (trim($secret) === '') {
+                Log::warning('2FA is enabled without a stored secret.', [
+                    'user_id' => $user->id,
+                    'school_id' => $profile->school_id,
+                ]);
+
+                return response()->json([
+                    'message' => 'Two-factor authentication is not fully set up on this account. Contact your administrator.',
+                ], 422);
+            }
+
+            if (!app(TotpService::class)->verifyCode($secret, (string) $request->two_factor_code)) {
                 return response()->json(['message' => 'Invalid 2FA code.'], 422);
             }
         }
 
-        // Issue Sanctum Token
         $token = $user->createToken('schoolpilot-auth-token')->plainTextToken;
 
-        // Log audit entry
         AuditLog::create([
             'school_id' => $profile ? $profile->school_id : null,
             'user_id' => $user->id,
@@ -105,8 +142,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Temporary default password for invited user
-        $tempPassword = bin2hex(random_bytes(4));
+        $tempPassword = bin2hex(random_bytes(16));
 
         $user = User::create([
             'name' => $request->name,
@@ -121,7 +157,6 @@ class AuthController extends Controller
             'phone' => $request->phone,
         ]);
 
-        // Audit Log
         AuditLog::create([
             'school_id' => $profile->school_id,
             'user_id' => $admin->id,
@@ -133,10 +168,19 @@ class AuthController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+        /*
+         * The temporary password is deliberately not returned. It used to come
+         * back in this response body, which put a working credential into
+         * request logs, browser history and any client-side error reporting.
+         *
+         * TODO(delivery): send the credential over the school's configured
+         * channel (email/SMS) as a single-use, expiring setup link. Until that
+         * job exists, an admin triggers /users/{id}/reset-password to hand the
+         * user a fresh one out of band.
+         */
         return response()->json([
-            'message' => 'User invited successfully',
+            'message' => 'User invited successfully. Send them a password-setup link to complete onboarding.',
             'user_id' => $user->id,
-            'temp_password' => $tempPassword,
         ], 201);
     }
 }

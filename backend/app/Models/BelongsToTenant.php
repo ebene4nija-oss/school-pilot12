@@ -12,7 +12,20 @@ trait BelongsToTenant
     {
         static::addGlobalScope('school_id', function (Builder $builder) {
             if (Auth::check() && Auth::user()->userProfile && Auth::user()->userProfile->role !== 'super_admin') {
-                $builder->where('school_id', Auth::user()->userProfile->school_id);
+                /*
+                 * Table-qualified deliberately.
+                 *
+                 * A bare `where('school_id', ...)` is ambiguous the moment the
+                 * query joins another tenant-scoped table — `students`,
+                 * `classes` and `homework` all carry the column — and SQL
+                 * rejects it outright. That made any joined aggregate a 500:
+                 * the principal dashboard's "best performing classes" query
+                 * was one, and it shipped that way because nothing tested it.
+                 */
+                $builder->where(
+                    $builder->getModel()->qualifyColumn('school_id'),
+                    Auth::user()->userProfile->school_id
+                );
             }
         });
 

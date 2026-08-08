@@ -17,6 +17,9 @@ class School extends Model
         'email',
         'phone',
         'address',
+        'latitude',
+        'longitude',
+        'geofence_radius_meters',
         'logo_url',
         'status',
         'ai_enabled',
@@ -28,5 +31,8 @@ class School extends Model
         'ai_enabled' => 'boolean',
         'ai_feature_flags' => 'array',
         'ai_api_settings' => 'array',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'geofence_radius_meters' => 'integer',
     ];
 }

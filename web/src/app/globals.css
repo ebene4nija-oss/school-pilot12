@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* KaTeX stylesheet for LaTeX maths in CBT questions and worksheets.
+   Bundled locally, not from a CDN — an exam hall may have no internet, and a
+   paper whose equations render as raw TeX is not a paper anyone can sit. */
+@import "katex/dist/katex.min.css";
+
 @layer base {
   :root {
     --primary: #002447;

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StudentGamification;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class GamificationController extends Controller
@@ -54,16 +55,56 @@ class GamificationController extends Controller
     /**
      * Record academic/CBT activity to earn points & streaks
      */
+    /**
+     * Points a given activity is worth. The server decides — not the client.
+     *
+     * `points_earned` used to be taken straight from the request body, and
+     * `student_id` was unrestricted, so any student could POST themselves (or
+     * anyone else) a million points and top the leaderboard. A leaderboard
+     * anyone can write to is worse than no leaderboard: it actively
+     * misinforms, and children notice immediately.
+     */
+    private const ACTIVITY_POINTS = [
+        'daily_login' => 2,
+        'assignment_submitted' => 10,
+        'cbt_completion' => 25,
+        'homework_graded_full_marks' => 15,
+        'perfect_attendance_week' => 20,
+    ];
+
+    /** Once-per-day activities, so a refresh loop cannot farm points. */
+    private const DAILY_ONCE = ['daily_login'];
+
     public function recordActivity(Request $request)
     {
         $validated = $request->validate([
-            'student_id'    => 'required|exists:students,id',
-            'activity_type' => 'required|string', // e.g. 'cbt_completion', 'assignment_submitted', 'daily_login'
-            'points_earned' => 'required|integer|min:1',
+            'activity_type' => ['required', 'string', Rule::in(array_keys(self::ACTIVITY_POINTS))],
+            'student_id'    => 'nullable|integer',
         ]);
 
         $schoolId = $this->getSchoolId($request);
-        $studentId = $validated['student_id'];
+        $user = $request->user();
+        $role = $user->userProfile?->role;
+        $isStaff = in_array($role, ['super_admin', 'school_admin', 'teacher'], true);
+
+        // A student may only ever record activity against themselves. Staff may
+        // record on a pupil's behalf (an offline achievement, say).
+        if ($isStaff) {
+            if (! $validated['student_id']) {
+                return response()->json(['errors' => ['student_id' => ['Staff must name the student.']]], 422);
+            }
+
+            $student = Student::where('school_id', $schoolId)->find($validated['student_id']);
+        } else {
+            $student = Student::where('user_id', $user->id)->first();
+        }
+
+        if (! $student) {
+            return response()->json(['error' => 'Student record not found.'], 404);
+        }
+
+        $studentId = $student->id;
+        $points = self::ACTIVITY_POINTS[$validated['activity_type']];
 
         $gamification = StudentGamification::firstOrCreate(
             ['school_id' => $schoolId, 'student_id' => $studentId],
@@ -84,7 +125,16 @@ class GamificationController extends Controller
             $streak = 1; // Broken streak reset to 1
         }
 
-        $newPoints = $gamification->points + $validated['points_earned'];
+        // Daily-once activities cannot be farmed by re-posting.
+        if (in_array($validated['activity_type'], self::DAILY_ONCE, true)
+            && $lastActivity && $lastActivity->isToday()) {
+            return response()->json([
+                'message' => 'Already recorded for today.',
+                'data' => $gamification,
+            ]);
+        }
+
+        $newPoints = $gamification->points + $points;
         $badges = $gamification->badges ?? [];
 
         // Check & unlock badge achievements
@@ -107,6 +157,7 @@ class GamificationController extends Controller
 
         return response()->json([
             'message' => 'Activity recorded successfully. Points and streak updated!',
+            'points_awarded' => $points,
             'data'    => $gamification->fresh()
         ]);
     }

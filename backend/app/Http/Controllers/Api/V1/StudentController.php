@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StudentMedicalResource;
+use App\Http\Resources\StudentResource;
 use App\Models\AuditLog;
 use App\Models\Student;
+use App\Models\StudentClassHistory;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
@@ -16,7 +19,10 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Student::with(['user', 'school']);
+        // `school` was eager-loaded onto every row and never used — the same
+        // tenant repeated 20 times per page, on connections parents pay for by
+        // the megabyte.
+        $query = Student::with(['user:id,name,email', 'currentClass:id,name', 'currentArm:id,name']);
 
         if ($request->has('class_id')) {
             $query->where('class_id', $request->class_id);
@@ -34,9 +40,9 @@ class StudentController extends Controller
             })->orWhere('admission_number', 'like', "%{$search}%");
         }
 
-        $students = $query->paginate($request->get('per_page', 20));
+        $students = $query->paginate(min((int) $request->input('per_page', 20), 100));
 
-        return response()->json($students);
+        return StudentResource::collection($students)->response();
     }
 
     public function store(Request $request)
@@ -121,7 +127,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Student record created successfully',
-                'student' => $student->load('user'),
+                'student' => new StudentResource($student->load('user:id,name,email')),
                 'temp_password' => $tempPassword,
             ], 201);
         });
@@ -132,9 +138,48 @@ class StudentController extends Controller
         $admin = $request->user();
         $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
 
-        $student = Student::where('school_id', $schoolId)->with(['user', 'school'])->findOrFail($id);
+        $student = Student::where('school_id', $schoolId)
+            ->with(['user:id,name,email', 'currentClass:id,name', 'currentArm:id,name'])
+            ->findOrFail($id);
 
-        return response()->json(['student' => $student]);
+        $this->authorize('view', $student);
+
+        return response()->json(['student' => new StudentResource($student)]);
+    }
+
+    /**
+     * A child's health record.
+     *
+     * Separated from `show()` deliberately. Blood group, allergies, medical
+     * notes and emergency contacts are special-category data under NDPA (doc
+     * §12), and they were previously returned to anyone who could list the
+     * roster — which includes every teacher in the school.
+     *
+     * Three constraints here that the roster does not have: a narrower role
+     * list, an object-level policy check, and an audit row. "Who read this
+     * child's medical notes, and when" is a question a school will eventually
+     * be asked, and it is only answerable if there is one way in.
+     */
+    public function medical(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        $student = Student::where('school_id', $schoolId)->with('user:id,name')->findOrFail($id);
+
+        $this->authorize('view', $student);
+
+        AuditLog::create([
+            'school_id' => $schoolId,
+            'user_id' => $user->id,
+            'action' => 'student.medical_accessed',
+            'auditable_type' => Student::class,
+            'auditable_id' => $student->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json(['medical' => new StudentMedicalResource($student)]);
     }
 
     public function update(Request $request, $id)
@@ -218,7 +263,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Student record updated successfully',
-                'student' => $student->load('user'),
+                'student' => new StudentResource($student->load('user:id,name,email')),
             ]);
         });
     }
@@ -226,10 +271,13 @@ class StudentController extends Controller
     public function promote(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'student_ids' => 'required|array',
+            'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
             'target_class_id' => 'required|exists:classes,id',
             'target_arm_id' => 'nullable|exists:arms,id',
+            'session_id' => 'required|exists:academic_sessions,id',
+            'action' => 'required|in:promote,repeat,transfer',
+            'remarks' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -239,29 +287,103 @@ class StudentController extends Controller
         $admin = $request->user();
         $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
 
-        $updatedCount = Student::whereIn('id', $request->student_ids)
-            ->update([
-                'class_id' => $request->target_class_id,
-                'arm_id' => $request->target_arm_id,
+        return DB::transaction(function () use ($request, $admin, $schoolId) {
+            // Load only students that belong to the admin's school
+            $students = Student::where('school_id', $schoolId)
+                ->whereIn('id', $request->student_ids)
+                ->get();
+
+            if ($students->isEmpty()) {
+                return response()->json([
+                    'message' => 'No matching students found in your school.',
+                ], 404);
+            }
+
+            $historyRecords = [];
+            $movedStudentIds = [];
+
+            foreach ($students as $student) {
+                // Create a history record preserving the before/after snapshot
+                $historyRecords[] = StudentClassHistory::create([
+                    'school_id' => $schoolId,
+                    'student_id' => $student->id,
+                    'from_class_id' => $student->class_id,
+                    'from_arm_id' => $student->arm_id,
+                    'to_class_id' => $request->target_class_id,
+                    'to_arm_id' => $request->target_arm_id,
+                    'session_id' => $request->session_id,
+                    'action' => $request->action,
+                    'remarks' => $request->remarks,
+                    'performed_by' => $admin->id,
+                ]);
+
+                // Update the student's current placement
+                $updateData = [
+                    'class_id' => $request->target_class_id,
+                    'arm_id' => $request->target_arm_id,
+                ];
+
+                // If transferring out of the school, mark student as transferred
+                if ($request->action === 'transfer' && $request->boolean('is_leaving_school', false)) {
+                    $updateData['status'] = 'transferred';
+                }
+
+                $student->update($updateData);
+                $movedStudentIds[] = $student->id;
+            }
+
+            $actionLabel = match ($request->action) {
+                'promote' => 'promoted',
+                'repeat' => 'retained (repeat)',
+                'transfer' => 'transferred',
+            };
+
+            AuditLog::create([
+                'school_id' => $schoolId,
+                'user_id' => $admin->id,
+                'action' => "students.{$request->action}",
+                'auditable_type' => Student::class,
+                'auditable_id' => $request->target_class_id,
+                'old_values' => [
+                    'student_ids' => $movedStudentIds,
+                ],
+                'new_values' => [
+                    'count' => count($movedStudentIds),
+                    'target_class_id' => $request->target_class_id,
+                    'target_arm_id' => $request->target_arm_id,
+                    'session_id' => $request->session_id,
+                    'action' => $request->action,
+                ],
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
             ]);
 
-        AuditLog::create([
-            'school_id' => $schoolId,
-            'user_id' => $admin->id,
-            'action' => 'students.promoted',
-            'auditable_type' => Student::class,
-            'auditable_id' => $request->target_class_id,
-            'new_values' => [
-                'count' => $updatedCount,
-                'student_ids' => $request->student_ids,
-                'target_class_id' => $request->target_class_id,
-            ],
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+            $count = count($movedStudentIds);
+
+            return response()->json([
+                'message' => "Successfully {$actionLabel} {$count} student(s).",
+                'count' => $count,
+                'student_ids' => $movedStudentIds,
+            ]);
+        });
+    }
+
+    public function classHistory(Request $request, $id)
+    {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
+        $student = Student::where('school_id', $schoolId)->findOrFail($id);
+
+        $history = StudentClassHistory::where('student_id', $student->id)
+            ->where('school_id', $schoolId)
+            ->with(['fromClass', 'toClass', 'fromArm', 'toArm', 'session', 'performedBy:id,name'])
+            ->orderByDesc('created_at')
+            ->get();
 
         return response()->json([
-            'message' => "Successfully promoted {$updatedCount} students to target class.",
+            'student_id' => $student->id,
+            'history' => $history,
         ]);
     }
 

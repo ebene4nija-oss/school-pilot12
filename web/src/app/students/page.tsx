@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi } from '@/lib/api';
+import type { Student } from '@/types/api';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -27,8 +28,10 @@ export default function StudentsPage() {
   const loadStudents = async () => {
     try {
       setLoading(true);
-      const data = await fetchApi('/students');
-      setStudents(data.data || data || []);
+      // The endpoint paginates, so the rows are under `data`; older
+      // deployments returned a bare array.
+      const data = await fetchApi<{ data?: Student[] } | Student[]>('/students');
+      setStudents(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       console.error('Failed to load live students:', err);
     } finally {

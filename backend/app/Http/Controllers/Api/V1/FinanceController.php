@@ -7,6 +7,7 @@ use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class FinanceController extends Controller
@@ -116,9 +117,19 @@ class FinanceController extends Controller
         // 1. Paystack Webhook Cryptographic Verification (HMAC-SHA512)
         if ($gateway === 'paystack') {
             $paystackHeader = $request->header('x-paystack-signature');
-            $secret = env('PAYSTACK_SECRET_KEY', 'sk_test_mock_secret');
 
-            if (!$paystackHeader || $paystackHeader !== hash_hmac('sha512', $request->getContent(), $secret)) {
+            // Read through config() — env() returns null once config is cached,
+            // and the previous fallback value was committed to this repo, which
+            // meant a cached-config deploy verified against a public string.
+            $secret = config('services.paystack.secret');
+
+            if (!is_string($secret) || trim($secret) === '') {
+                Log::error('Paystack webhook rejected: PAYSTACK_SECRET_KEY is not configured.');
+
+                return response()->json(['message' => 'Payment gateway is not configured.'], 503);
+            }
+
+            if (!$paystackHeader || !hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $paystackHeader)) {
                 return response()->json(['message' => 'Invalid Paystack webhook signature'], 400);
             }
 
@@ -131,9 +142,15 @@ class FinanceController extends Controller
         // 2. Flutterwave Webhook Secret Hash Verification
         if ($gateway === 'flutterwave') {
             $flutterwaveHeader = $request->header('verif-hash');
-            $secretHash = env('FLUTTERWAVE_SECRET_HASH', 'mock_flw_secret_hash');
+            $secretHash = config('services.flutterwave.secret_hash');
 
-            if (!$flutterwaveHeader || $flutterwaveHeader !== $secretHash) {
+            if (!is_string($secretHash) || trim($secretHash) === '') {
+                Log::error('Flutterwave webhook rejected: FLUTTERWAVE_SECRET_HASH is not configured.');
+
+                return response()->json(['message' => 'Payment gateway is not configured.'], 503);
+            }
+
+            if (!$flutterwaveHeader || !hash_equals($secretHash, $flutterwaveHeader)) {
                 return response()->json(['message' => 'Invalid Flutterwave webhook signature'], 400);
             }
 

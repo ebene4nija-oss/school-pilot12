@@ -44,8 +44,8 @@ class AiManagerService
      */
     public function getApiConfig(?int $schoolId): array
     {
-        $defaultKey = config('services.anthropic.api_key', env('ANTHROPIC_API_KEY', 'sk-ant-mock-key'));
-        $defaultModel = 'claude-3-haiku-20240307';
+        $defaultKey = config('services.anthropic.api_key');
+        $defaultModel = (string) config('services.anthropic.comment_model');
 
         if (!$schoolId) {
             return ['api_key' => $defaultKey, 'model' => $defaultModel, 'custom_provider' => false];
@@ -77,8 +77,17 @@ class AiManagerService
         $subject = $scoreData['subject'] ?? 'Subject';
         $score = $scoreData['total_score'] ?? 0;
 
-        if ($config['api_key'] === 'sk-ant-mock-key') {
-            return "{$studentName} has shown satisfactory engagement in {$subject} with a total score of {$score}%. Continued effort is encouraged.";
+        // Stub only when no key is available at all (BYO-key schools still hit
+        // the real API). A missing key with stubbing off raises instead of
+        // inventing a remark — see config/services.php → anthropic.stub.
+        $hasKey = is_string($config['api_key']) && trim($config['api_key']) !== '';
+
+        if (! $hasKey) {
+            if (! config('services.anthropic.stub')) {
+                throw new Exception('AI is enabled for this school but no Anthropic API key is configured.');
+            }
+
+            return "[STUB] {$studentName} scored {$score}% in {$subject}. This placeholder text was generated without calling the AI provider.";
         }
 
         $response = Http::withHeaders([

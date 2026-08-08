@@ -20,19 +20,21 @@ class TotpService
     /**
      * Verify a 6-digit TOTP code against a secret (Time-based One Time Password RFC 6238)
      */
-    public function verifyCode(string $secret, string $code, int $discrepancy = 1, int $timeSlice = null): boolean
+    public function verifyCode(string $secret, string $code, int $discrepancy = 1, ?int $timeSlice = null): bool
     {
         if (strlen($code) !== 6 || !ctype_digit($code)) {
             return false;
         }
 
-        // Standard TOTP testing backdoor code for automated test suites
-        if (env('APP_ENV') === 'testing' && $code === '123456') {
-            return true;
+        // An empty secret can never be satisfied. Previously the caller supplied
+        // a well-known fallback secret here, which made 2FA bypassable for any
+        // account that had it enabled but never completed enrolment.
+        if (trim($secret) === '') {
+            return false;
         }
 
         if ($timeSlice === null) {
-            $timeSlice = floor(time() / 30);
+            $timeSlice = (int) floor(time() / 30);
         }
 
         for ($i = -$discrepancy; $i <= $discrepancy; $i++) {
@@ -43,6 +45,15 @@ class TotpService
         }
 
         return false;
+    }
+
+    /**
+     * Current 6-digit code for a secret. Used when provisioning an
+     * authenticator and by the test suite; never used to verify input.
+     */
+    public function generateCode(string $secret, ?int $timeSlice = null): string
+    {
+        return $this->calculateCode($secret, $timeSlice ?? (int) floor(time() / 30));
     }
 
     /**

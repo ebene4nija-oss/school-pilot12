@@ -30,6 +30,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
+        'failed_login_attempts',
+        'locked_until',
+        'last_login_at',
+        'password_changed_at',
+        'must_change_password',
     ];
 
     /**
@@ -52,6 +58,10 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'locked_until' => 'datetime',
+            'last_login_at' => 'datetime',
+            'password_changed_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -59,4 +69,40 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserProfile::class);
     }
+
+    public function customRoles()
+    {
+        return $this->belongsToMany(CustomRole::class, 'user_roles', 'user_id', 'custom_role_id')
+                    ->withPivot('assigned_by', 'assigned_at')
+                    ->withTimestamps();
+    }
+
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class);
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(UserActivityLog::class);
+    }
+
+    public function teacherProfile()
+    {
+        return $this->hasOne(TeacherProfile::class);
+    }
+
+    public function parentProfile()
+    {
+        return $this->hasOne(ParentProfile::class);
+    }
+
+    /**
+     * Check if the account is currently locked.
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
+    }
 }
+

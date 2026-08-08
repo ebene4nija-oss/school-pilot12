@@ -26,12 +26,17 @@ class ParentPortalController extends Controller
 
         $student = Student::where('school_id', $schoolId)->with(['user'])->findOrFail($studentId);
 
+        // School membership is not authorization: without this a parent could
+        // read any child's records by changing the id in the URL.
+        $this->authorize('view', $student);
+
         // 1. Homework & Assignments
         $homework = Homework::where('school_id', $schoolId)
             ->where('class_id', $student->class_id)
             ->where('due_date', '>=', now()->toDateString())
-            ->with(['subject', 'teacher'])
+            ->with(['subject:id,name', 'teacher:id,name'])
             ->orderBy('due_date', 'asc')
+            ->limit(20)
             ->get();
 
         // 2. Latest Academic Scores & Teacher Comments
@@ -49,17 +54,27 @@ class ParentPortalController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        // 4. Behavior & Conduct Log
+        /*
+         * 4. Behaviour & conduct log.
+         *
+         * Was unbounded — every behaviour report ever written about this child,
+         * on the parent app's home screen, on every open. For a child in SS3
+         * that is nine years of rows, re-downloaded over a metered connection
+         * each time the app opens. Capped like the other panels; the full
+         * history is a separate, paginated view.
+         */
         $behaviorReports = BehaviorReport::where('school_id', $schoolId)
             ->where('student_id', $student->id)
-            ->with(['recorder'])
+            ->with(['recorder:id,name'])
             ->orderBy('incident_date', 'desc')
+            ->limit(10)
             ->get();
 
         // 5. Authorized Child Pickup Guardians
         $pickupAuthorizations = PickupAuthorization::where('school_id', $schoolId)
             ->where('student_id', $student->id)
             ->where('is_active', true)
+            ->limit(20)
             ->get();
 
         // 6. Upcoming School Calendar Events & Exams
@@ -83,6 +98,31 @@ class ParentPortalController extends Controller
             'pickup_authorizations' => $pickupAuthorizations,
             'calendar_events' => $calendarEvents,
         ]);
+    }
+
+    /**
+     * The full behaviour history, paginated.
+     *
+     * The feed above now shows the ten most recent rather than every report
+     * ever filed. This is where the rest lives, fetched only when a parent
+     * actually asks for it instead of on every app open.
+     */
+    public function behaviorHistory(Request $request, $studentId)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
+
+        $this->authorize('view', $student);
+
+        return response()->json(
+            BehaviorReport::where('school_id', $schoolId)
+                ->where('student_id', $student->id)
+                ->with('recorder:id,name')
+                ->orderByDesc('incident_date')
+                ->paginate(min((int) $request->input('per_page', 25), 100))
+        );
     }
 
     /**

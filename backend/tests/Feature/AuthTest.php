@@ -82,7 +82,11 @@ class AuthTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['message', 'user_id', 'temp_password']);
+            ->assertJsonStructure(['message', 'user_id']);
+
+        // The temporary credential is deliberately not returned over the API —
+        // it used to land in request logs and browser history.
+        $response->assertJsonMissingPath('temp_password');
 
         $this->assertDatabaseHas('users', ['email' => 'grace@springvalley.edu.ng']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.invited']);

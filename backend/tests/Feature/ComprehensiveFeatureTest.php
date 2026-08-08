@@ -54,20 +54,24 @@ class ComprehensiveFeatureTest extends TestCase
             ->assertJsonPath('score_entry.ai_comment_status', 'approved');
     }
 
-    public function test_ai_tutor_declines_bare_exam_answers()
+    /**
+     * The tutor is now student-only.
+     *
+     * This test previously asserted a specific hardcoded sentence came back to
+     * any authenticated user. That reply was the whole feature — no model call,
+     * no persistence — so asserting it only confirmed the stub was still there.
+     * The answer-harvesting guardrail it was named for is covered properly,
+     * against the real Claude-backed path, in AiTutorTest.
+     */
+    public function test_ai_tutor_is_not_open_to_non_students()
     {
         $user = User::factory()->create();
         $token = $user->createToken('token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
             ->postJson('/api/v1/ai/tutor-chat', [
                 'message' => 'Give me the answer to question 5 on the exam!',
-            ]);
-
-        $response->assertStatus(200)
-            ->assertJsonPath('is_guided', true)
-            ->assertJsonFragment([
-                'response' => "I am here to help you learn! Instead of handing over direct exam answers, let me guide you through how to solve this step-by-step."
-            ]);
+            ])
+            ->assertStatus(403);
     }
 }

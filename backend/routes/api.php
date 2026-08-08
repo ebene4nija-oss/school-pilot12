@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(function () {
-    
-    // Auth endpoints
-    Route::post('/auth/login', [AuthController::class, 'login']);
+
+    // Auth endpoints — login carries its own stricter limiter (5/min per
+    // email+IP, see AppServiceProvider) so the shared 60/min bucket cannot be
+    // used to brute-force credentials.
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // Authenticated Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -23,15 +25,37 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'store'])->middleware('role:super_admin,school_admin');
         Route::post('/students/promote', [\App\Http\Controllers\Api\V1\StudentController::class, 'promote'])->middleware('role:super_admin,school_admin');
+        Route::get('/students/{student}/class-history', [\App\Http\Controllers\Api\V1\StudentController::class, 'classHistory'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
+         * Health data is a separate, narrower route from the student record.
+         * It used to ride along on every roster listing, which is open to
+         * every teacher in the school. Admins and guardians only, policy-checked
+         * per child, and every read writes an audit row (NDPA, doc §12).
+         */
+        Route::get('/students/{id}/medical', [\App\Http\Controllers\Api\V1\StudentController::class, 'medical'])
+            ->middleware('role:super_admin,school_admin,parent');
+
+        // `show()` existed on the controller but had no route — a single
+        // student's record was not fetchable at all.
+        Route::get('/students/{id}', [\App\Http\Controllers\Api\V1\StudentController::class, 'show'])
+            ->middleware('role:super_admin,school_admin,teacher,parent,student');
         Route::post('/students/import', [\App\Http\Controllers\Api\V1\StudentController::class, 'bulkImport'])->middleware('role:super_admin,school_admin');
 
         // Attendance & Hardware-Free Clock-In
         Route::post('/attendance/qr-token', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'generateQrToken'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/attendance/mark', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'markStudentAttendance'])->middleware('role:super_admin,school_admin,teacher');
+        // Roll call: one request for the whole register instead of one per
+        // child. Idempotent, so a retry on a dropped connection is safe.
+        Route::post('/attendance/bulk', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'markBulkAttendance'])->middleware('role:super_admin,school_admin,teacher');
+        Route::get('/attendance/register', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'classRegister'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/attendance/staff-gps', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'staffGpsClockIn'])->middleware('role:super_admin,school_admin,teacher');
 
-        // Timetable Solver Engine
+        // Timetable Solver Engine & Management
         Route::post('/timetable/generate', [\App\Http\Controllers\Api\V1\TimetableController::class, 'generate'])->middleware('role:super_admin,school_admin');
+        Route::get('/timetable/versions', [\App\Http\Controllers\Api\V1\TimetableController::class, 'versions'])->middleware('role:super_admin,school_admin');
+        Route::post('/timetable/versions/{id}/publish', [\App\Http\Controllers\Api\V1\TimetableController::class, 'publish'])->middleware('role:super_admin,school_admin');
+        Route::get('/timetable/view', [\App\Http\Controllers\Api\V1\TimetableController::class, 'view']);
 
         // Assessment & Broadsheet Routes
         Route::post('/assessment/score', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'enterScores'])->middleware('role:super_admin,school_admin,teacher');
@@ -39,12 +63,53 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/assessment/score/{id}/review-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'reviewAiComment'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/assessment/broadsheet', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'getBroadsheet'])->middleware('role:super_admin,school_admin,teacher');
 
+        // Configurable CA weighting (§7.7) — schools each split CA vs exam
+        // differently, so this cannot be hardcoded.
+        Route::get('/assessment/ca-schemes', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'listCaSchemes'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/assessment/ca-schemes', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'storeCaScheme'])->middleware('role:super_admin,school_admin');
+        Route::post('/assessment/ca-schemes/{id}/activate', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'activateCaScheme'])->middleware('role:super_admin,school_admin');
+
         // Fees & Finance Routes
         Route::post('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FinanceController::class, 'storeFeeStructure'])->middleware('role:super_admin,school_admin');
         Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment'])->middleware('role:super_admin,school_admin,parent,student');
         Route::post('/finance/payments/reconcile-bank-transfer', [\App\Http\Controllers\Api\V1\FinanceController::class, 'reconcileBankTransfer'])->middleware('role:super_admin,school_admin');
         Route::get('/finance/invoices/{id}/pdf', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadInvoicePdf']);
         Route::get('/finance/payments/{id}/receipt', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadPaymentReceipt']);
+
+        /*
+         * Fee collection (§7.12): the defaulter dashboard, instalment plans and
+         * discounts. The module could take money but could not report who had
+         * not paid — the question a bursar asks weekly.
+         */
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/finance/defaulters', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'defaulters']);
+            Route::post('/finance/invoices/{invoiceId}/installment-plan', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'createInstallmentPlan']);
+            Route::get('/finance/scholarships', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'listScholarships']);
+            Route::post('/finance/invoices/{invoiceId}/apply-discount', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'applyDiscount']);
+        });
+
+        Route::get('/finance/invoices/{invoiceId}/installment-plan', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'installmentPlan']);
+        // Guardians read their own child's statement; StudentPolicy enforces which child.
+        Route::get('/finance/students/{studentId}/statement', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'studentStatement'])
+            ->middleware('role:super_admin,school_admin,parent,student');
+
+        /*
+         * Staff / HR (§7.3) — the people-management half. Payroll already
+         * existed; leave and employment history were JSON columns nothing read.
+         */
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            Route::post('/hr/leave', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'requestLeave']);
+            Route::get('/hr/leave', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'listLeave']);
+            Route::post('/hr/leave/{id}/cancel', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'cancelLeave']);
+            Route::get('/hr/leave-calendar', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'leaveCalendar']);
+            Route::get('/hr/staff/{staffId}/employment-record', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'employmentRecord']);
+        });
+
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::post('/hr/leave/{id}/decision', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'decideLeave']);
+            Route::put('/hr/staff/{staffId}/leave-allocation', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'setLeaveAllocation']);
+            Route::post('/hr/staff/{staffId}/employment-history', [\App\Http\Controllers\Api\V1\StaffHrController::class, 'addEmploymentHistory']);
+        });
 
         // Advanced School Accounting Routes (Beyond Fee Collection)
         Route::post('/accounting/payroll', [\App\Http\Controllers\Api\V1\AccountingController::class, 'processPayroll'])->middleware('role:super_admin,school_admin');
@@ -57,9 +122,75 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // Advanced Parent Engagement Portal Routes
         Route::get('/parent/feed/{studentId}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'getStudentFeed'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/parent/pickup-authorization', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storePickupAuthorization'])->middleware('role:super_admin,school_admin,parent');
+        // Full behaviour history, paginated. The feed carries only the ten most
+        // recent so the parent home screen is not re-downloading nine years of
+        // rows on every open.
+        Route::get('/students/{studentId}/behavior-reports', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'behaviorHistory'])
+            ->middleware('role:super_admin,school_admin,teacher,parent');
         Route::post('/academics/homework', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeHomework'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
+         * Homework submissions — the return half, which did not exist. A
+         * teacher could set work and never receive it back.
+         */
+        Route::middleware('role:student')->group(function () {
+            Route::post('/academics/homework/{homeworkId}/submit', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'store']);
+            Route::get('/academics/homework/{homeworkId}/my-submission', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'mine']);
+        });
+
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            Route::get('/academics/homework/{homeworkId}/submissions', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'index']);
+            Route::post('/academics/homework/{homeworkId}/bulk-grade', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'bulkGrade']);
+            Route::post('/academics/submissions/{submissionId}/grade', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'grade']);
+        });
         Route::post('/students/behavior-report', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeBehaviorReport'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/calendar/events', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeCalendarEvent'])->middleware('role:super_admin,school_admin');
+
+        // User Management & Administration Routes (bulk/static BEFORE parameterized)
+        Route::post('/users/bulk-status', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'bulkUpdateStatus'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/bulk-import', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'bulkImportUsers'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/export', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'exportUsers'])->middleware('role:super_admin,school_admin');
+        Route::get('/users', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'listUsers'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/{id}', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'showUser'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/{id}/status', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'updateUserStatus'])->middleware('role:super_admin,school_admin');
+        Route::put('/users/{id}/profile', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'updateProfile'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/{id}/profile-completion', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getProfileCompletion'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/{id}/timeline', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getUserTimeline'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/{id}/login-history', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getLoginHistory'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/{id}/reset-password', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'resetPassword'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/{id}/unlock', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'unlockAccount'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/{id}/revoke-sessions', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'revokeAllSessions'])->middleware('role:super_admin,school_admin');
+        Route::get('/users/{id}/security', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getSecurityOverview'])->middleware('role:super_admin,school_admin');
+
+        // Custom Roles Management
+        Route::get('/roles', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'listRoles'])->middleware('role:super_admin,school_admin');
+        Route::post('/roles', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'createRole'])->middleware('role:super_admin,school_admin');
+        Route::put('/roles/{id}', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'updateRole'])->middleware('role:super_admin,school_admin');
+        Route::delete('/roles/{id}', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'deleteRole'])->middleware('role:super_admin,school_admin');
+        Route::post('/users/{userId}/roles', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'assignRole'])->middleware('role:super_admin,school_admin');
+        Route::delete('/users/{userId}/roles/{roleId}', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'revokeRole'])->middleware('role:super_admin,school_admin');
+
+        // Extended Profile Routes (Teacher, Parent, Student Portfolio)
+        Route::get('/teachers/{userId}/profile', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getTeacherProfile'])->middleware('role:super_admin,school_admin,teacher');
+        Route::put('/teachers/{userId}/profile', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'updateTeacherProfile'])->middleware('role:super_admin,school_admin,teacher');
+        Route::get('/parents/{userId}/profile', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getParentProfile'])->middleware('role:super_admin,school_admin,parent');
+        Route::put('/parents/{userId}/profile', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'updateParentProfile'])->middleware('role:super_admin,school_admin,parent');
+        Route::get('/students/{studentId}/portfolio', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'getPortfolio'])->middleware('role:super_admin,school_admin,teacher,student,parent');
+        Route::post('/students/{studentId}/portfolio', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'addPortfolioEntry'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/portfolio/{id}/verify', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'verifyPortfolioEntry'])->middleware('role:super_admin,school_admin');
+
+        // Subject Management & Enrollment Routes
+        Route::get('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'listSubjects']);
+        Route::post('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'storeSubject'])->middleware('role:super_admin,school_admin');
+        Route::post('/subjects/assign-teacher', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'assignTeacher'])->middleware('role:super_admin,school_admin');
+        Route::post('/subjects/remove-teacher', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'removeTeacher'])->middleware('role:super_admin,school_admin');
+        Route::get('/teachers/{teacherId}/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'getTeacherSubjects'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/classes/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'setClassSubjects'])->middleware('role:super_admin,school_admin');
+        Route::get('/classes/{classId}/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'getClassSubjects']);
+        Route::post('/students/{studentId}/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'enrollStudentSubjects'])->middleware('role:super_admin,school_admin,student');
+        Route::get('/students/{studentId}/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'getStudentSubjects']);
+        Route::delete('/students/{studentId}/subjects/{subjectId}', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'dropSubject'])->middleware('role:super_admin,school_admin,student');
+        Route::post('/subjects/bulk-auto-enroll', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'bulkAutoEnroll'])->middleware('role:super_admin,school_admin');
 
         // Teacher Productivity Routes
         Route::post('/teacher/bulk-grading', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'bulkGrading'])->middleware('role:super_admin,school_admin,teacher');
@@ -82,23 +213,132 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/ai/homework-ideas', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'generateHomework'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/ai/translate', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'translate'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/ai/performance-summary/{studentId}', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'summarizePerformance'])->middleware('role:super_admin,school_admin,teacher');
-        Route::post('/ai/tutor-chat', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorChat']);
+        // AI Learning Hub — student tutor (§7.11). Student-only: this used to
+        // carry no role middleware at all, unlike every sibling AI route.
+        Route::middleware('role:student')->group(function () {
+            Route::post('/ai/tutor-chat', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorChat']);
+            Route::get('/ai/tutor/conversations', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorConversations']);
+            Route::get('/ai/tutor/conversations/{id}', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorConversation']);
+            Route::get('/ai/tutor/mastery', [\App\Http\Controllers\Api\V1\AiStudioController::class, 'tutorMastery']);
+        });
 
         // NDPA Parental Consent & Data Export Routes
         Route::post('/compliance/parental-consent', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'recordParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/compliance/parental-consent/{id}/withdraw', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'withdrawParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/admin/export-data', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'exportSchoolData'])->middleware('role:super_admin,school_admin');
 
+        /*
+         * Notifications (§7.13). NotificationController was the only controller
+         * in the codebase with no routes at all, so push/SMS/WhatsApp were
+         * unreachable except as inline calls buried in two other controllers.
+         */
+        Route::post('/notifications/devices', [\App\Http\Controllers\Api\V1\NotificationController::class, 'registerDevice']);
+        Route::delete('/notifications/devices', [\App\Http\Controllers\Api\V1\NotificationController::class, 'unregisterDevice']);
+
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            Route::post('/notifications/broadcast', [\App\Http\Controllers\Api\V1\NotificationController::class, 'broadcast']);
+            Route::post('/notifications/whatsapp', [\App\Http\Controllers\Api\V1\NotificationController::class, 'sendWhatsAppNotification']);
+            Route::post('/notifications/whatsapp/structured', [\App\Http\Controllers\Api\V1\NotificationController::class, 'sendStructuredWhatsApp']);
+        });
+
+        Route::get('/notifications/history', [\App\Http\Controllers\Api\V1\NotificationController::class, 'history'])
+            ->middleware('role:super_admin,school_admin');
+
+        /*
+         * Queued work and its status. Report-card runs and broadcasts return a
+         * batch id immediately; clients poll here rather than holding a request
+         * open past a shared-hosting PHP timeout.
+         */
+        Route::get('/jobs/{batchId}', [\App\Http\Controllers\Api\V1\JobStatusController::class, 'show']);
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::post('/jobs/{batchId}/cancel', [\App\Http\Controllers\Api\V1\JobStatusController::class, 'cancel']);
+            Route::post('/report-cards/generate', [\App\Http\Controllers\Api\V1\JobStatusController::class, 'generateReportCards']);
+        });
+
         // Teacher-Parent In-App Messaging Routes
         Route::get('/messages/threads', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'getThreads']);
+        // Reading a thread marks the other side's messages seen. Participation
+        // is checked in the controller — a thread id is guessable.
+        Route::get('/messages/threads/{id}', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'showThread']);
         Route::post('/messages/send', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'sendMessage']);
 
         // Phase 1 & Phase 2 Module Routes
         Route::get('/gamification/profile/{studentId?}', [\App\Http\Controllers\Api\V1\GamificationController::class, 'getProfile']);
-        Route::post('/gamification/activity', [\App\Http\Controllers\Api\V1\GamificationController::class, 'recordActivity']);
+        // Point values are server-side (see ACTIVITY_POINTS); a student may only
+        // record activity against themselves.
+        Route::post('/gamification/activity', [\App\Http\Controllers\Api\V1\GamificationController::class, 'recordActivity'])
+            ->middleware('role:super_admin,school_admin,teacher,student');
         Route::get('/gamification/leaderboard', [\App\Http\Controllers\Api\V1\GamificationController::class, 'getLeaderboard']);
 
-        Route::post('/cbt/offline-sync', [\App\Http\Controllers\Api\V1\CbtController::class, 'syncOfflineAnswers'])->middleware('role:super_admin,school_admin,teacher,student');
+        /*
+        |------------------------------------------------------------------
+        | CBT / Testing Engine (§7.8) and Question Bank (§7.9)
+        |------------------------------------------------------------------
+        | Split three ways: staff author papers, candidates sit them, staff
+        | mark and analyse them. Object-level checks live in CbtExamPolicy and
+        | CbtAttemptPolicy — the role middleware below only answers "is this a
+        | teacher?", never "is this *that* candidate's paper?".
+        */
+
+        // Question bank — staff only.
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            // Image library. Questions reference assets by id, so an image is
+            // uploaded once and reused across a whole bank.
+            Route::get('/cbt/media', [\App\Http\Controllers\Api\V1\CbtController::class, 'listMedia']);
+            Route::post('/cbt/media', [\App\Http\Controllers\Api\V1\CbtController::class, 'uploadMedia']);
+            Route::delete('/cbt/media/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'destroyMedia']);
+
+            Route::get('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'listQuestions']);
+            Route::post('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'storeQuestion']);
+            Route::post('/cbt/questions/import', [\App\Http\Controllers\Api\V1\CbtController::class, 'importQuestions']);
+            Route::put('/cbt/questions/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'updateQuestion']);
+            Route::delete('/cbt/questions/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'destroyQuestion']);
+
+            // Exam authoring.
+            Route::get('/cbt/exams', [\App\Http\Controllers\Api\V1\CbtController::class, 'listExams']);
+            Route::post('/cbt/exams', [\App\Http\Controllers\Api\V1\CbtController::class, 'storeExam']);
+            Route::get('/cbt/exams/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'showExam']);
+            Route::put('/cbt/exams/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'updateExam']);
+            Route::post('/cbt/exams/{id}/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'attachQuestions']);
+            Route::delete('/cbt/exams/{id}/questions/{questionId}', [\App\Http\Controllers\Api\V1\CbtController::class, 'detachQuestion']);
+            Route::post('/cbt/exams/{id}/publish', [\App\Http\Controllers\Api\V1\CbtController::class, 'publishExam']);
+            Route::post('/cbt/exams/{id}/close', [\App\Http\Controllers\Api\V1\CbtController::class, 'closeExam']);
+            Route::get('/cbt/exams/{id}/results', [\App\Http\Controllers\Api\V1\CbtController::class, 'examResults']);
+            Route::get('/cbt/exams/{examId}/offline-package', [\App\Http\Controllers\Api\V1\CbtController::class, 'offlinePackage']);
+            Route::post('/cbt/attempts/{attemptId}/grade', [\App\Http\Controllers\Api\V1\CbtController::class, 'gradeAttempt']);
+        });
+
+        // Sitting a paper — candidates only. CbtAttemptPolicy::sit is what
+        // actually binds an attempt to the student who owns it.
+        Route::middleware('role:student')->group(function () {
+            Route::get('/cbt/available', [\App\Http\Controllers\Api\V1\CbtController::class, 'availableExams']);
+            Route::post('/cbt/exams/{examId}/start', [\App\Http\Controllers\Api\V1\CbtController::class, 'startAttempt']);
+            Route::get('/cbt/attempts/{attemptId}', [\App\Http\Controllers\Api\V1\CbtController::class, 'showAttempt']);
+            Route::post('/cbt/attempts/{attemptId}/answers', [\App\Http\Controllers\Api\V1\CbtController::class, 'saveAnswers']);
+            Route::post('/cbt/attempts/{attemptId}/submit', [\App\Http\Controllers\Api\V1\CbtController::class, 'submitAttempt']);
+            Route::post('/cbt/attempts/{attemptId}/events', [\App\Http\Controllers\Api\V1\CbtController::class, 'logAttemptEvent']);
+        });
+
+        // Results: candidate, guardian and staff paths all land here and are
+        // separated by CbtAttemptPolicy::view plus the exam's release setting.
+        Route::get('/cbt/attempts/{attemptId}/result', [\App\Http\Controllers\Api\V1\CbtController::class, 'attemptResult']);
+
+        Route::post('/cbt/offline-sync', [\App\Http\Controllers\Api\V1\CbtController::class, 'syncOfflineAnswers'])->middleware('role:student');
+
+        /*
+        |------------------------------------------------------------------
+        | Report card design templates (per school, imported)
+        |------------------------------------------------------------------
+        */
+        Route::get('/report-cards/template-contract', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'contract'])->middleware('role:super_admin,school_admin');
+        Route::get('/report-cards/templates', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'index'])->middleware('role:super_admin,school_admin');
+        Route::post('/report-cards/templates', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'import'])->middleware('role:super_admin,school_admin');
+        Route::get('/report-cards/templates/{id}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'show'])->middleware('role:super_admin,school_admin');
+        Route::get('/report-cards/templates/{id}/preview', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'preview'])->middleware('role:super_admin,school_admin');
+        Route::post('/report-cards/templates/{id}/activate', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'activate'])->middleware('role:super_admin,school_admin');
+        Route::delete('/report-cards/templates/{id}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'destroy'])->middleware('role:super_admin,school_admin');
+        Route::get('/report-cards/{studentId}/{termId}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'renderReportCard'])->middleware('role:super_admin,school_admin,teacher');
+
         Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin');
         Route::post('/transport/bus/{busId}/gps-ping', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'updateBusLocation'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/library/scan-barcode', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'scanBookBarcode'])->middleware('role:super_admin,school_admin,teacher,student');
@@ -125,6 +365,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         ]);
     });
 
-    // Unauthenticated Webhooks
-    Route::post('/webhooks/{gateway}', [\App\Http\Controllers\Api\V1\FinanceController::class, 'handleWebhook']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Payment Gateway Webhooks
+|--------------------------------------------------------------------------
+|
+| Deliberately outside the shared throttle group. A 429 on a gateway callback
+| silently drops a payment confirmation, and gateway retries arrive in bursts
+| during peak fee-collection windows. Authenticity comes from the HMAC
+| signature check in the controller, not from rate limiting.
+|
+*/
+Route::middleware([TenantResolutionMiddleware::class, 'throttle:webhooks'])
+    ->post('/webhooks/{gateway}', [\App\Http\Controllers\Api\V1\FinanceController::class, 'handleWebhook']);

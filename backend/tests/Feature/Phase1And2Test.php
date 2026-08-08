@@ -106,6 +106,6 @@ class Phase1And2Test extends TestCase
             ], ['Host' => 'testacademy.schoolpilot.test']);
 
         $response->assertStatus(201)
-            ->assertJsonPath('message', 'Clinic visit recorded successfully');
+            ->assertJsonPath('message', 'Clinic visit recorded successfully under NDPA encrypted storage');
     }
 }

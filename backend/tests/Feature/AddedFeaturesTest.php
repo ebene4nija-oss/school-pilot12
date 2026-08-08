@@ -121,11 +121,103 @@ class AddedFeaturesTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
-    public function test_can_verify_public_result_token()
+    /**
+     * A token that was actually issued verifies, and reports the school that
+     * issued it.
+     */
+    public function test_issued_report_card_token_verifies()
     {
-        $response = $this->getJson('/api/v1/verify-result/SAMPLE_TOKEN_1234567890', ['Host' => 'testacademy.schoolpilot.test']);
+        [$student, $term] = $this->makeStudentAndTerm();
 
-        $response->assertStatus(200)
-            ->assertJsonPath('valid', true);
+        $token = \App\Models\ReportCardToken::issueFor($this->school->id, $student->id, $term->id);
+
+        $this->getJson("http://testacademy.schoolpilot.test/api/v1/verify-result/{$token->qr_token}")
+            ->assertStatus(200)
+            ->assertJsonPath('valid', true)
+            ->assertJsonPath('school_name', 'Test Academy')
+            ->assertJsonPath('student_name', 'Verifiable Student');
+    }
+
+    /**
+     * The old implementation answered `valid: true` with an invented student
+     * and school for *any* string while APP_ENV was 'testing'. An unissued
+     * token must be a flat 404.
+     */
+    public function test_unissued_token_is_rejected_rather_than_fabricated()
+    {
+        $this->getJson('http://testacademy.schoolpilot.test/api/v1/verify-result/SAMPLE_TOKEN_1234567890')
+            ->assertStatus(404)
+            ->assertJsonPath('valid', false);
+    }
+
+    /**
+     * The enumeration hole: `SP_VERIFY_5` used to be rewritten to
+     * `score_entries.id = 5` with no tenant scope, so results were walkable by
+     * integer from an unauthenticated endpoint.
+     */
+    public function test_score_entry_ids_are_not_enumerable_through_the_verifier()
+    {
+        [$student, $term] = $this->makeStudentAndTerm();
+        $subject = \App\Models\Subject::create(['school_id' => $this->school->id, 'name' => 'Mathematics']);
+
+        $entry = \App\Models\ScoreEntry::create([
+            'school_id' => $this->school->id,
+            'term_id' => $term->id,
+            'student_id' => $student->id,
+            'subject_id' => $subject->id,
+            'first_ca' => 18, 'second_ca' => 17, 'exam' => 50,
+            'total_score' => 85, 'grade' => 'A1',
+        ]);
+
+        foreach (["SP_VERIFY_{$entry->id}", "TOKEN_{$entry->id}", (string) $entry->id] as $probe) {
+            $this->getJson("http://testacademy.schoolpilot.test/api/v1/verify-result/{$probe}")
+                ->assertStatus(404);
+        }
+    }
+
+    /** A withdrawn card stops verifying. */
+    public function test_revoked_token_no_longer_verifies()
+    {
+        [$student, $term] = $this->makeStudentAndTerm();
+
+        $token = \App\Models\ReportCardToken::issueFor($this->school->id, $student->id, $term->id);
+        $token->update(['is_valid' => false]);
+
+        $this->getJson("http://testacademy.schoolpilot.test/api/v1/verify-result/{$token->qr_token}")
+            ->assertStatus(404);
+    }
+
+    /** @return array{0: Student, 1: \App\Models\Term} */
+    private function makeStudentAndTerm(): array
+    {
+        $studentUser = User::create([
+            'name' => 'Verifiable Student',
+            'email' => 'verify@testacademy.com',
+            'password' => bcrypt('password123'),
+        ]);
+        $studentUser->userProfile()->create(['school_id' => $this->school->id, 'role' => 'student']);
+
+        $student = Student::create([
+            'school_id' => $this->school->id,
+            'user_id' => $studentUser->id,
+            'admission_number' => 'ADM-VER-1',
+        ]);
+
+        $session = \App\Models\AcademicSession::create([
+            'school_id' => $this->school->id,
+            'name' => '2025/2026',
+            'start_date' => now(),
+            'end_date' => now()->addYear(),
+        ]);
+
+        $term = \App\Models\Term::create([
+            'school_id' => $this->school->id,
+            'session_id' => $session->id,
+            'name' => 'First Term',
+            'start_date' => now(),
+            'end_date' => now()->addMonths(3),
+        ]);
+
+        return [$student, $term];
     }
 }
