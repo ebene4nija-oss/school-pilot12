@@ -18,7 +18,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // Authenticated Protected Routes
-    Route::middleware('auth:sanctum')->group(function () {
+    //
+    // BindTenantFromUser runs after authentication because the tenant
+    // middleware executes before it and can only see the host — which is a
+    // bare `localhost` on any deployment not using subdomains.
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class])->group(function () {
         Route::post('/auth/invite', [AuthController::class, 'inviteUser'])->middleware('role:super_admin,school_admin');
         
         // Student Information System (SIS) Routes

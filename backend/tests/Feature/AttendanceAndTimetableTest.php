@@ -26,8 +26,8 @@ class AttendanceAndTimetableTest extends TestCase
         $token = $admin->createToken('token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->postJson('/api/v1/attendance/qr-token', [
+            
+            ->postJson('http://hilltop.localhost/api/v1/attendance/qr-token', [
                 'class_id' => $class->id,
                 'term_id' => $term->id,
             ]);
@@ -55,8 +55,8 @@ class AttendanceAndTimetableTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->postJson('/api/v1/timetable/generate', [
+            
+            ->postJson('http://hilltop.localhost/api/v1/timetable/generate', [
                 'class_ids' => $classIds,
                 'assignments' => $assignments,
                 'slots' => $slots,
@@ -85,8 +85,8 @@ class AttendanceAndTimetableTest extends TestCase
         ];
 
         $generateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->postJson('/api/v1/timetable/generate', [
+            
+            ->postJson('http://hilltop.localhost/api/v1/timetable/generate', [
                 'class_ids' => $classIds,
                 'assignments' => $assignments,
                 'slots' => $slots,
@@ -100,24 +100,24 @@ class AttendanceAndTimetableTest extends TestCase
 
         // Verify draft listing
         $versionsResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->getJson('/api/v1/timetable/versions');
+            
+            ->getJson('http://hilltop.localhost/api/v1/timetable/versions');
 
         $versionsResponse->assertStatus(200)
             ->assertJsonFragment(['name' => 'First Term Timetable v1', 'status' => 'draft']);
 
         // Publish version
         $publishResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->postJson("/api/v1/timetable/versions/{$versionId}/publish");
+            
+            ->postJson("http://hilltop.localhost/api/v1/timetable/versions/{$versionId}/publish");
 
         $publishResponse->assertStatus(200)
             ->assertJsonFragment(['status' => 'published']);
 
         // View published entries
         $viewResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'hilltop.localhost'])
-            ->getJson('/api/v1/timetable/view?class_id=1');
+            
+            ->getJson('http://hilltop.localhost/api/v1/timetable/view?class_id=1');
 
         $viewResponse->assertStatus(200)
             ->assertJsonStructure(['entries']);

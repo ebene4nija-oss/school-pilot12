@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Services\ReportCardPdfService;
+use App\Support\TenantContext;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,17 +40,21 @@ class GenerateReportCardJob implements ShouldQueue
     ) {
     }
 
-    public function handle(ReportCardPdfService $service): void
+    public function handle(ReportCardPdfService $service, TenantContext $tenant): void
     {
         if ($this->batch()?->cancelled()) {
             return;
         }
 
-        $pdf = $service->renderPdf($this->studentId, $this->termId);
+        // A worker has no authenticated user; without an explicit tenant this
+        // job would query across every school on the platform.
+        $tenant->forSchool($this->schoolId, function () use ($service) {
+            $pdf = $service->renderPdf($this->studentId, $this->termId);
 
-        // Tenant-prefixed so one school's cards can never be served from
-        // another's path, and so a term's output can be swept in one go.
-        Storage::disk('local')->put($this->path(), $pdf);
+            // Tenant-prefixed so one school's cards can never be served from
+            // another's path, and so a term's output can be swept in one go.
+            Storage::disk('local')->put($this->path(), $pdf);
+        });
     }
 
     public function path(): string

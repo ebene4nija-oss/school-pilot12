@@ -20,6 +20,7 @@ use App\Services\MathContentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class CbtEngineTest extends TestCase
@@ -36,6 +37,21 @@ class CbtEngineTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        /*
+         * Make the relative URIs below resolve to this school's subdomain.
+         *
+         * `withServerVariables(['HTTP_HOST' => ...])` does nothing: Laravel
+         * builds the URL from the UrlGenerator root and Symfony then overwrites
+         * HTTP_HOST from it, so the server variable is discarded and tenant
+         * resolution never ran in this file.
+         *
+         * `forceRootUrl` rather than `config(['app.url' => ...])` — the
+         * UrlGenerator takes its root at boot, so changing the config
+         * afterwards has no effect (verified: a bogus subdomain set that way
+         * still returned 200 instead of 404).
+         */
+        URL::forceRootUrl('http://graceland.localhost');
 
         Storage::fake('public');
 

@@ -110,7 +110,8 @@ class NotificationController extends Controller
                 $recipient->id,
                 $validated['body'],
                 $validated['channels'],
-                $context
+                $context,
+                $schoolId
             ))->all()
         )
             // School id in the name is what lets the status endpoint scope

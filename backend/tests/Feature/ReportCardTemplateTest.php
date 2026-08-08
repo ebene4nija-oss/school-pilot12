@@ -19,6 +19,7 @@ use App\Services\ReportCard\TemplateRenderer;
 use App\Services\ReportCardPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class ReportCardTemplateTest extends TestCase
@@ -31,6 +32,14 @@ class ReportCardTemplateTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        /*
+         * Make relative URIs resolve to this school's subdomain, so tenant
+         * resolution actually engages. `withServerVariables(['HTTP_HOST' =>
+         * ...])` is discarded, and `config(['app.url' => ...])` is too late —
+         * the UrlGenerator root is fixed at boot.
+         */
+        URL::forceRootUrl('http://graceland.localhost');
 
         // Report card generation must make no outbound request whatsoever —
         // QR codes are encoded locally so a school with no internet can still

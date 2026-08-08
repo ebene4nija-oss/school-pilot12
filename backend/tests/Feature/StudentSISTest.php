@@ -25,8 +25,8 @@ class StudentSISTest extends TestCase
         $token = $admin->createToken('token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'testschool.localhost'])
-            ->postJson('/api/v1/students', [
+            
+            ->postJson('http://testschool.localhost/api/v1/students', [
                 'name' => 'Emeka Okafor',
                 'email' => 'emeka@testschool.edu.ng',
                 'gender' => 'male',
@@ -65,8 +65,8 @@ class StudentSISTest extends TestCase
         $token = $admin->createToken('token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'testschool.localhost'])
-            ->postJson('/api/v1/students/import', [
+            
+            ->postJson('http://testschool.localhost/api/v1/students/import', [
                 'file' => $file,
             ]);
 
@@ -122,8 +122,8 @@ class StudentSISTest extends TestCase
         $s = $this->seedPromotionScenario();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$s['student']->id],
                 'target_class_id' => $s['jss2']->id,
                 'session_id' => $s['session']->id,
@@ -152,8 +152,8 @@ class StudentSISTest extends TestCase
 
         // Promote the student from JSS 1 → JSS 2
         $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$s['student']->id],
                 'target_class_id' => $s['jss2']->id,
                 'session_id' => $s['session']->id,
@@ -162,8 +162,8 @@ class StudentSISTest extends TestCase
 
         // Query the class-history endpoint
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->getJson('/api/v1/students/' . $s['student']->id . '/class-history');
+            
+            ->getJson('http://pilotacademy.localhost/api/v1/students/' . $s['student']->id . '/class-history');
 
         $response->assertStatus(200);
 
@@ -179,8 +179,8 @@ class StudentSISTest extends TestCase
         $s = $this->seedPromotionScenario();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$s['student']->id],
                 'target_class_id' => $s['jss1']->id, // same class
                 'session_id' => $s['session']->id,
@@ -206,8 +206,8 @@ class StudentSISTest extends TestCase
         $s = $this->seedPromotionScenario();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$s['student']->id],
                 'target_class_id' => $s['jss2']->id,
                 'session_id' => $s['session']->id,
@@ -234,8 +234,8 @@ class StudentSISTest extends TestCase
         $s = $this->seedPromotionScenario();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$s['student']->id],
                 'target_class_id' => $s['jss2']->id,
                 'action' => 'promote',
@@ -264,8 +264,8 @@ class StudentSISTest extends TestCase
 
         // Admin of Pilot Academy tries to promote the other school's student
         $response = $this->withHeader('Authorization', 'Bearer ' . $s['token'])
-            ->withServerVariables(['HTTP_HOST' => 'pilotacademy.localhost'])
-            ->postJson('/api/v1/students/promote', [
+            
+            ->postJson('http://pilotacademy.localhost/api/v1/students/promote', [
                 'student_ids' => [$otherStudent->id],
                 'target_class_id' => $s['jss2']->id,
                 'session_id' => $s['session']->id,

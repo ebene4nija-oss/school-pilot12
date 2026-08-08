@@ -37,16 +37,16 @@ class ComprehensiveFeatureTest extends TestCase
 
         // 1. Trigger AI comment generation
         $res1 = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'royal.localhost'])
-            ->postJson("/api/v1/assessment/score/{$score->id}/ai-comment");
+            
+            ->postJson("http://royal.localhost/api/v1/assessment/score/{$score->id}/ai-comment");
 
         $res1->assertStatus(200)
             ->assertJsonPath('score_entry.ai_comment_status', 'pending_approval');
 
         // 2. Approve AI comment
         $res2 = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->withServerVariables(['HTTP_HOST' => 'royal.localhost'])
-            ->postJson("/api/v1/assessment/score/{$score->id}/review-comment", [
+            
+            ->postJson("http://royal.localhost/api/v1/assessment/score/{$score->id}/review-comment", [
                 'action' => 'approve',
             ]);
 

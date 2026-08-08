@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Support\TenantContext;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,26 +35,36 @@ class SendNotificationJob implements ShouldQueue
         private int $userId,
         private string $body,
         private array $channels,
-        private array $context = []
+        private array $context = [],
+        private ?int $schoolId = null
     ) {
     }
 
-    public function handle(NotificationService $notifications): void
+    public function handle(NotificationService $notifications, TenantContext $tenant): void
     {
         // Cancelled batch: the admin stopped a broadcast that was mid-flight.
         if ($this->batch()?->cancelled()) {
             return;
         }
 
-        $user = User::with('userProfile')->find($this->userId);
+        /*
+         * A queue worker has no authenticated user, so without this the job
+         * would run with no tenant scope at all — across every school on the
+         * platform. `forSchool` also restores the previous value afterwards,
+         * which matters because one worker process handles many schools' jobs
+         * in sequence.
+         */
+        $tenant->forSchool($this->schoolId, function () use ($notifications) {
+            $user = User::with('userProfile')->find($this->userId);
 
-        if (! $user) {
-            // The account was deleted between queueing and sending. Nothing to
-            // retry — failing here would just churn the queue.
-            return;
-        }
+            if (! $user) {
+                // The account was deleted between queueing and sending.
+                // Nothing to retry — failing would just churn the queue.
+                return;
+            }
 
-        $notifications->notify($user, $this->body, $this->channels, $this->context);
+            $notifications->notify($user, $this->body, $this->channels, $this->context);
+        });
     }
 
     public function failed(\Throwable $e): void

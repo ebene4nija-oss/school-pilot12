@@ -21,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One tenant per request/job, resolved once. The global scope in
+        // BelongsToTenant reads this instead of re-resolving the acting user's
+        // profile on every model boot.
+        $this->app->singleton(\App\Support\TenantContext::class);
     }
 
     /**

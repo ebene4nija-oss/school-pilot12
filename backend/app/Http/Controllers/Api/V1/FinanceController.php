@@ -162,7 +162,17 @@ class FinanceController extends Controller
 
         // 3. Process Trusted Payment & Invoice Update
         if ($reference) {
-            $payment = Payment::where('reference', $reference)->first();
+            /*
+             * Deliberately cross-tenant, and now says so.
+             *
+             * A gateway callback carries only its own reference — the school is
+             * what we are trying to discover, so this lookup cannot be scoped.
+             * It used to work by accident, because the webhook is
+             * unauthenticated and the old scope simply did not apply without a
+             * logged-in user. `allTenants()` makes the boundary crossing
+             * visible at the call site instead of implied by its absence.
+             */
+            $payment = Payment::allTenants()->where('reference', $reference)->first();
 
             if ($payment && $payment->status !== 'successful') {
                 $payment->update([

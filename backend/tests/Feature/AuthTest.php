@@ -34,8 +34,8 @@ class AuthTest extends TestCase
             'role' => 'school_admin',
         ]);
 
-        $response = $this->withServerVariables(['HTTP_HOST' => 'springvalley.localhost'])
-            ->postJson('/api/v1/auth/login', [
+        $response = $this
+            ->postJson('http://springvalley.localhost/api/v1/auth/login', [
                 'email' => 'david@springvalley.edu.ng',
                 'password' => 'secret123',
                 'subdomain' => 'springvalley',
