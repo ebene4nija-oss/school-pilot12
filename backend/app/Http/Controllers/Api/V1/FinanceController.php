@@ -191,6 +191,19 @@ class FinanceController extends Controller
                     $invoice->save();
                 }
             }
+
+            /*
+             * Result-checker PINs settle on this same verified webhook.
+             *
+             * Only reached when the reference is not a fee payment, so the
+             * invoice path above is untouched. Both branches are idempotent:
+             * gateways retry deliveries, and a second delivery must not mint a
+             * second batch of PINs or allocate a second PIN to one sale.
+             */
+            if (! $payment) {
+                app(\App\Services\ResultPinCheckoutService::class)
+                    ->settle($reference, (float) $amountPaid);
+            }
         }
 
         return response()->json(['message' => 'Webhook received, verified, and payment record updated.']);

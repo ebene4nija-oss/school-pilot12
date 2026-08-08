@@ -343,6 +343,57 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::delete('/report-cards/templates/{id}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'destroy'])->middleware('role:super_admin,school_admin');
         Route::get('/report-cards/{studentId}/{termId}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'renderReportCard'])->middleware('role:super_admin,school_admin,teacher');
 
+        /*
+        |------------------------------------------------------------------
+        | Result checker (PIN-gated results)
+        |------------------------------------------------------------------
+        |
+        | Two money flows, deliberately separate:
+        |   school -> SchoolPilot  buys PIN stock at the platform rate card
+        |   guardian -> school     spends one PIN to open a child's result
+        |
+        | Staff report-card access (/report-cards/{student}/{term} above) is
+        | never metered — the people who produce the results do not pay to
+        | read them.
+        */
+
+        // Guardians and students.
+        Route::middleware('role:super_admin,school_admin,parent,student')->group(function () {
+            Route::get('/result-checker/{studentId}/{termId}/summary', [\App\Http\Controllers\Api\V1\ResultCheckerController::class, 'summary']);
+            Route::get('/result-checker/{studentId}/{termId}', [\App\Http\Controllers\Api\V1\ResultCheckerController::class, 'show']);
+            Route::get('/result-checker/my-pins', [\App\Http\Controllers\Api\V1\ResultCheckerController::class, 'myPins']);
+            Route::post('/result-checker/purchase', [\App\Http\Controllers\Api\V1\ResultCheckerController::class, 'purchase']);
+            // Tighter limiter than the shared 60/min bucket: redeem is the one
+            // endpoint where guessing a code is worth something.
+            Route::post('/result-checker/redeem', [\App\Http\Controllers\Api\V1\ResultCheckerController::class, 'redeem'])
+                ->middleware('throttle:10,1');
+        });
+
+        // School admins and directors.
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'priceTiers']);
+            Route::get('/result-pins/inventory', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'inventory']);
+            Route::get('/result-pins/batches', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'batches']);
+            Route::post('/result-pins/batches', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'purchaseBatch']);
+            Route::get('/result-pins/batches/{id}/reveal', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'revealBatch']);
+            Route::post('/result-pins/counter-sale', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'sellOverCounter']);
+            Route::put('/result-pins/settings', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'updateSettings']);
+            Route::post('/result-pins/waive', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'waive']);
+            Route::get('/result-pins/sales-report', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'salesReport']);
+            Route::get('/results/releases', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'releases']);
+            Route::post('/results/release', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'release']);
+        });
+
+        // SchoolPilot platform operators only.
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'listPriceTiers']);
+            Route::post('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'storePriceTier']);
+            Route::get('/platform/result-pins/batches', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'batches']);
+            // Issues sellable stock with no gateway involved — for schools that
+            // paid by bank transfer or arranged it directly with SchoolPilot.
+            Route::post('/platform/result-pins/grant', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'grantBatch']);
+        });
+
         Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin');
         Route::post('/transport/bus/{busId}/gps-ping', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'updateBusLocation'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/library/scan-barcode', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'scanBookBarcode'])->middleware('role:super_admin,school_admin,teacher,student');
