@@ -31,6 +31,11 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function items()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
     /** What is still owed on this invoice, in naira. */
     public function balance(): float
     {

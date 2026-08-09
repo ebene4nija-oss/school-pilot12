@@ -73,8 +73,25 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/assessment/ca-schemes', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'storeCaScheme'])->middleware('role:super_admin,school_admin');
         Route::post('/assessment/ca-schemes/{id}/activate', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'activateCaScheme'])->middleware('role:super_admin,school_admin');
 
+        /*
+         * The fee-structure builder (§7.12).
+         *
+         * The POST path is unchanged from when this lived on FinanceController —
+         * it is published under /api/v1 and mobile clients may already call it.
+         * Only the handler moved.
+         */
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'index']);
+            Route::post('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'store']);
+            Route::put('/finance/fee-structure/{id}', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'update']);
+            Route::delete('/finance/fee-structure/{id}', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'destroy']);
+
+            // Fee structures -> actual bills. Nothing created an invoice before
+            // this: fees were defined and no parent was ever charged.
+            Route::post('/finance/invoices/generate', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'generateInvoices']);
+        });
+
         // Fees & Finance Routes
-        Route::post('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FinanceController::class, 'storeFeeStructure'])->middleware('role:super_admin,school_admin');
         Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment'])->middleware('role:super_admin,school_admin,parent,student');
         Route::post('/finance/payments/reconcile-bank-transfer', [\App\Http\Controllers\Api\V1\FinanceController::class, 'reconcileBankTransfer'])->middleware('role:super_admin,school_admin');
         Route::get('/finance/invoices/{id}/pdf', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadInvoicePdf']);

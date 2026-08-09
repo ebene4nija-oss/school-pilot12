@@ -19,4 +19,26 @@ class FeeStructure extends Model
     {
         return $this->belongsTo(Term::class);
     }
+
+    /** Null means the fee applies school-wide rather than to one class. */
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function invoiceItems()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * Whether this fee falls on a student sitting in `$classId`.
+     *
+     * School-wide fees (null `class_id`) catch everyone, including students not
+     * yet assigned to a class.
+     */
+    public function appliesToClass(?int $classId): bool
+    {
+        return $this->class_id === null || (int) $this->class_id === $classId;
+    }
 }

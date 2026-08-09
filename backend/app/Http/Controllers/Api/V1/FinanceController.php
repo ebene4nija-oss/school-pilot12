@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -12,36 +11,11 @@ use Illuminate\Support\Facades\Validator;
 
 class FinanceController extends Controller
 {
-    public function storeFeeStructure(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'term_id' => 'required|exists:terms,id',
-            'class_id' => 'nullable|exists:classes,id',
-            'title' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
-
-        $fee = FeeStructure::create([
-            'school_id' => $schoolId,
-            'term_id' => $request->term_id,
-            'class_id' => $request->class_id,
-            'title' => $request->title,
-            'amount' => $request->amount,
-            'is_mandatory' => $request->get('is_mandatory', true),
-        ]);
-
-        return response()->json([
-            'message' => 'Fee structure created successfully',
-            'fee_structure' => $fee,
-        ], 201);
-    }
+    /*
+     * Fee-structure CRUD moved to FeeStructureController — this class was only
+     * ever able to create one, with unscoped `exists:terms,id` validation that
+     * let a school hang a fee off another tenant's term.
+     */
 
     public function recordPayment(Request $request)
     {
