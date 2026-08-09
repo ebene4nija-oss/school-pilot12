@@ -380,6 +380,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::put('/result-pins/settings', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'updateSettings']);
             Route::post('/result-pins/waive', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'waive']);
             Route::get('/result-pins/sales-report', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'salesReport']);
+        });
+
+        /*
+         * Releasing results is the school's own academic decision.
+         *
+         * Deliberately school_admin only, with no super_admin fallback. A
+         * SchoolPilot operator sells the school software; they do not get to
+         * declare another organisation's marking finished and its report cards
+         * fit to publish to parents. Platform staff who need a result released
+         * ask the school to do it.
+         */
+        Route::middleware('role:school_admin')->group(function () {
             Route::get('/results/releases', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'releases']);
             Route::post('/results/release', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'release']);
         });

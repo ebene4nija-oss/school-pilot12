@@ -795,6 +795,62 @@ class ResultCheckerPinTest extends TestCase
             ->assertStatus(404);
     }
 
+    // ==================================================================
+    // Who may declare results published
+    // ==================================================================
+
+    public function test_a_school_admin_releases_results_and_opens_the_checker()
+    {
+        $this->enableChecker();
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/results/release', ['term_id' => $this->term->id])
+            ->assertOk();
+
+        $this->assertDatabaseHas('result_releases', [
+            'school_id' => $this->school->id,
+            'term_id' => $this->term->id,
+            'is_released' => true,
+            'released_by' => $this->admin->id,
+        ]);
+
+        $this->as($this->parent)
+            ->getJson("/api/v1/result-checker/{$this->student->id}/{$this->term->id}/summary")
+            ->assertOk()
+            ->assertJsonPath('status', 'released');
+    }
+
+    public function test_schoolpilot_staff_cannot_release_a_schools_results()
+    {
+        // Selling a school its software is not the same as deciding that its
+        // marking is finished. Releasing stays with the school.
+        $this->as($this->platformAdmin)
+            ->postJson('/api/v1/results/release', ['term_id' => $this->term->id])
+            ->assertStatus(403);
+
+        $this->assertDatabaseCount('result_releases', 0);
+    }
+
+    public function test_schoolpilot_staff_cannot_read_a_schools_release_history()
+    {
+        $this->releaseResults();
+
+        $this->as($this->platformAdmin)
+            ->getJson('/api/v1/results/releases')
+            ->assertStatus(403);
+    }
+
+    public function test_a_teacher_cannot_release_results()
+    {
+        $teacher = $this->makeUser('okafor@graceland.test', 'teacher', $this->school->id);
+
+        $this->as($teacher)
+            ->postJson('/api/v1/results/release', ['term_id' => $this->term->id])
+            ->assertStatus(403);
+
+        $this->assertDatabaseCount('result_releases', 0);
+    }
+
     public function test_pin_material_never_appears_in_a_listing()
     {
         $this->grantStock(2);
