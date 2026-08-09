@@ -18,6 +18,8 @@ import type {
   FeeStructure,
   FeeStructureIndex,
   InvoiceGenerationResult,
+  NotificationChannel,
+  ReminderResult,
 } from '@/types/api';
 
 const naira = (value: number) =>
@@ -56,6 +58,14 @@ export default function FeesPage() {
   const [dueDate, setDueDate] = useState('');
   const [generateClassId, setGenerateClassId] = useState('');
   const [generating, setGenerating] = useState(false);
+
+  // Reminder state. Channels start empty on purpose: SMS is billed per message,
+  // so the bursar picks rather than inherits a default.
+  const [selected, setSelected] = useState<number[]>([]);
+  const [channels, setChannels] = useState<NotificationChannel[]>([]);
+  const [reminderNote, setReminderNote] = useState('');
+  const [reminding, setReminding] = useState(false);
+  const [unreachable, setUnreachable] = useState<ReminderResult['unreachable']>([]);
 
   /**
    * The two reads this page needs. Kept free of state updates so the mount
@@ -259,6 +269,66 @@ export default function FeesPage() {
       setError(err instanceof ApiError ? err.message : 'Could not raise invoices.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const toggleChannel = (channel: NotificationChannel) =>
+    setChannels((current) =>
+      current.includes(channel) ? current.filter((c) => c !== channel) : [...current, channel],
+    );
+
+  const toggleRow = (invoiceId: number) =>
+    setSelected((current) =>
+      current.includes(invoiceId)
+        ? current.filter((id) => id !== invoiceId)
+        : [...current, invoiceId],
+    );
+
+  const allSelected =
+    (debtors?.defaulters.length ?? 0) > 0 && selected.length === debtors?.defaulters.length;
+
+  const toggleAll = () =>
+    setSelected(allSelected ? [] : (debtors?.defaulters ?? []).map((row) => row.invoice_id));
+
+  const handleRemind = async () => {
+    if (!debtors || channels.length === 0) return;
+
+    // No ticks means "everyone on this list" — the common case is the whole
+    // sweep, and forcing 200 checkbox clicks to get there would be silly.
+    const targets = selected.length > 0 ? selected : debtors.defaulters.map((r) => r.invoice_id);
+
+    const costs = channels.filter((c) => c === 'sms');
+    const warning =
+      costs.length > 0
+        ? `Send a reminder to ${targets.length} family/families by SMS? SMS is billed per message.`
+        : `Send a reminder covering ${targets.length} invoice(s)?`;
+
+    if (!window.confirm(warning)) return;
+
+    setReminding(true);
+    setNotice(null);
+    setError(null);
+    setUnreachable([]);
+
+    try {
+      const result = await fetchApi<ReminderResult>('/finance/defaulters/remind', {
+        method: 'POST',
+        body: JSON.stringify({
+          invoice_ids: targets,
+          term_id: termId,
+          channels,
+          note: reminderNote || null,
+        }),
+      });
+
+      setNotice(result.message);
+      setUnreachable(result.unreachable ?? []);
+      setSelected([]);
+      setReminderNote('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not send the reminders.');
+    } finally {
+      setReminding(false);
     }
   };
 
@@ -609,49 +679,149 @@ export default function FeesPage() {
               Nobody is owing. Either every bill is settled, or invoices have not been raised yet.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
-                  <tr>
-                    <th className="p-3.5">Student Name</th>
-                    <th className="p-3.5">Class</th>
-                    <th className="p-3.5">Invoice</th>
-                    <th className="p-3.5">Outstanding</th>
-                    <th className="p-3.5">Ageing</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {debtors.defaulters.map((row) => (
-                    <tr key={row.invoice_id} className="hover:bg-slate-800/50 transition">
-                      <td className="p-3.5 font-medium text-white">
-                        {row.student_name}
-                        <span className="block text-xs text-slate-500 font-mono">
-                          {row.admission_number}
-                        </span>
-                      </td>
-                      <td className="p-3.5">{row.class ?? '—'}</td>
-                      <td className="p-3.5 font-mono text-xs text-slate-400">
-                        {row.invoice_number}
-                      </td>
-                      <td className="p-3.5 font-bold text-rose-400">{naira(row.balance)}</td>
-                      <td className="p-3.5">
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
-                            row.days_overdue > 60
-                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                              : row.days_overdue > 0
-                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          {AGEING_LABELS[row.ageing_bucket] ?? row.ageing_bucket}
-                        </span>
-                      </td>
-                    </tr>
+            <>
+              {/* Reminder controls */}
+              <div className="p-4 border-b border-slate-800 flex flex-wrap gap-4 items-end">
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Send by
+                  </span>
+                  <div className="flex gap-2">
+                    {(['push', 'whatsapp', 'sms'] as NotificationChannel[]).map((channel) => (
+                      <button
+                        key={channel}
+                        type="button"
+                        onClick={() => toggleChannel(channel)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition border ${
+                          channels.includes(channel)
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-500'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800'
+                        }`}
+                      >
+                        {channel}
+                        {channel === 'sms' && (
+                          <span className="ml-1 font-normal opacity-70">(billed)</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-[220px]">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Add a note (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reminderNote}
+                    onChange={(e) => setReminderNote(e.target.value)}
+                    maxLength={300}
+                    placeholder="e.g. Kindly see the bursar before Friday."
+                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleRemind}
+                  disabled={reminding || channels.length === 0}
+                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition"
+                  title={channels.length === 0 ? 'Choose at least one channel' : undefined}
+                >
+                  {reminding
+                    ? 'Queueing…'
+                    : `Send Reminder${selected.length > 0 ? ` (${selected.length})` : ' to All'}`}
+                </button>
+              </div>
+
+              {unreachable.length > 0 && (
+                <div className="p-4 bg-amber-500/10 border-b border-amber-500/30 text-xs text-amber-300">
+                  <strong className="block mb-1">
+                    {unreachable.length} family/families could not be messaged — chase these by
+                    phone:
+                  </strong>
+                  {unreachable.map((row) => (
+                    <span key={row.student_id} className="block">
+                      {row.student_name} ({row.admission_number}) — {naira(row.balance)} · {row.reason}
+                    </span>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
+                    <tr>
+                      <th className="p-3.5 w-10">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleAll}
+                          aria-label="Select all defaulters"
+                          className="accent-emerald-500 w-4 h-4"
+                        />
+                      </th>
+                      <th className="p-3.5">Student Name</th>
+                      <th className="p-3.5">Class</th>
+                      <th className="p-3.5">Invoice</th>
+                      <th className="p-3.5">Outstanding</th>
+                      <th className="p-3.5">Ageing</th>
+                      <th className="p-3.5">Contact</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {debtors.defaulters.map((row) => (
+                      <tr key={row.invoice_id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-3.5">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(row.invoice_id)}
+                            onChange={() => toggleRow(row.invoice_id)}
+                            aria-label={`Select ${row.student_name ?? 'student'}`}
+                            className="accent-emerald-500 w-4 h-4"
+                          />
+                        </td>
+                        <td className="p-3.5 font-medium text-white">
+                          {row.student_name}
+                          <span className="block text-xs text-slate-500 font-mono">
+                            {row.admission_number}
+                          </span>
+                        </td>
+                        <td className="p-3.5">{row.class ?? '—'}</td>
+                        <td className="p-3.5 font-mono text-xs text-slate-400">
+                          {row.invoice_number}
+                        </td>
+                        <td className="p-3.5 font-bold text-rose-400">{naira(row.balance)}</td>
+                        <td className="p-3.5">
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
+                              row.days_overdue > 60
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                : row.days_overdue > 0
+                                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                  : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}
+                          >
+                            {AGEING_LABELS[row.ageing_bucket] ?? row.ageing_bucket}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-xs">
+                          {row.contacts.length === 0 ? (
+                            <span className="text-slate-500">No contact on file</span>
+                          ) : (
+                            <>
+                              <span className="text-slate-300">{row.contacts.join(', ')}</span>
+                              {!row.contactable && (
+                                <span className="block text-amber-400">No phone number</span>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </main>

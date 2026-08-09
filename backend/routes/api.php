@@ -104,6 +104,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::middleware('role:super_admin,school_admin')->group(function () {
             Route::get('/finance/defaulters', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'defaulters']);
+            // Chasing them. The finance page's reminder button was wired to
+            // nothing until this existed.
+            Route::post('/finance/defaulters/remind', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'remindDefaulters']);
             Route::post('/finance/invoices/{invoiceId}/installment-plan', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'createInstallmentPlan']);
             Route::get('/finance/scholarships', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'listScholarships']);
             Route::post('/finance/invoices/{invoiceId}/apply-discount', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'applyDiscount']);

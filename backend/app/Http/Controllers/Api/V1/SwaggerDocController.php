@@ -115,6 +115,41 @@ class SwaggerDocController extends Controller
                         ],
                     ],
                 ],
+                '/finance/defaulters/remind' => [
+                    'post' => [
+                        'summary' => 'Queue fee reminders to the guardians behind outstanding invoices',
+                        'description' => 'Grouped by recipient — a parent with several children owing gets one message. Channels are required, never defaulted, because SMS is billed per message.',
+                        'requestBody' => [
+                            'content' => [
+                                'application/json' => [
+                                    'schema' => [
+                                        'type' => 'object',
+                                        'required' => ['channels'],
+                                        'properties' => [
+                                            'channels' => [
+                                                'type' => 'array',
+                                                'items' => ['type' => 'string', 'enum' => ['push', 'sms', 'whatsapp']],
+                                            ],
+                                            'invoice_ids' => [
+                                                'type' => 'array',
+                                                'items' => ['type' => 'integer'],
+                                                'description' => 'Specific invoices; omit to sweep the filters below',
+                                            ],
+                                            'term_id' => ['type' => 'integer', 'nullable' => true],
+                                            'class_id' => ['type' => 'integer', 'nullable' => true],
+                                            'min_balance' => ['type' => 'number', 'nullable' => true],
+                                            'note' => ['type' => 'string', 'nullable' => true, 'maxLength' => 300],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'responses' => [
+                            '202' => ['description' => 'Reminders queued, with the families that could not be reached'],
+                            '422' => ['description' => 'No outstanding invoices matched, or no channel chosen'],
+                        ],
+                    ],
+                ],
                 '/finance/payments' => [
                     'post' => [
                         'summary' => 'Record student fee payment and trigger automated WhatsApp receipt',

@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\PaymentInstallment;
 use App\Models\Scholarship;
 use App\Models\Student;
+use App\Services\FeeReminderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -47,17 +48,7 @@ class FeeCollectionController extends Controller
             'min_balance' => 'nullable|numeric|min:0',
         ]);
 
-        $invoices = Invoice::where('school_id', $schoolId)
-            ->whereIn('status', ['unpaid', 'partial'])
-            ->when($request->filled('term_id'), fn ($q) => $q->where('term_id', $request->integer('term_id')))
-            ->whereRaw('total_amount > amount_paid')
-            ->with(['student.user:id,name', 'student.currentClass:id,name', 'term:id,name'])
-            ->get();
-
-        if ($request->filled('class_id')) {
-            $classId = $request->integer('class_id');
-            $invoices = $invoices->filter(fn (Invoice $i) => (int) $i->student?->class_id === $classId);
-        }
+        $invoices = $this->outstandingInvoices($request, $schoolId);
 
         $minBalance = (float) $request->input('min_balance', 0);
         $today = now();
@@ -69,6 +60,23 @@ class FeeCollectionController extends Controller
                 $daysOverdue = $invoice->due_date
                     ? max(0, $invoice->due_date->diffInDays($today, false))
                     : 0;
+
+                /*
+                 * Who a reminder would reach — names only, never phone numbers.
+                 *
+                 * The bursar's workflow is "chase this family", and the reminder
+                 * endpoint does the contacting server-side, so the numbers have
+                 * no reason to be shipped to every browser session that opens
+                 * the debtor list. NDPA data minimisation (§12): an admin who
+                 * genuinely needs to dial can open the guardian's profile.
+                 */
+                $guardians = $invoice->student
+                    ? $invoice->student->guardians->pluck('user')->filter()
+                    : collect();
+
+                $contacts = $guardians->isNotEmpty()
+                    ? $guardians
+                    : collect([$invoice->student?->user])->filter();
 
                 return [
                     'invoice_id' => $invoice->id,
@@ -84,6 +92,8 @@ class FeeCollectionController extends Controller
                     'due_date' => $invoice->due_date?->toDateString(),
                     'days_overdue' => (int) $daysOverdue,
                     'ageing_bucket' => $this->ageingBucket((int) $daysOverdue),
+                    'contacts' => $contacts->map(fn ($user) => $user->name)->values(),
+                    'contactable' => $contacts->contains(fn ($user) => filled($user->userProfile?->phone)),
                 ];
             })
             ->filter(fn ($row) => $row['balance'] > $minBalance)
@@ -103,6 +113,115 @@ class FeeCollectionController extends Controller
             ],
             'defaulters' => $rows,
         ]);
+    }
+
+    /**
+     * The outstanding-invoice query behind both the dashboard and the reminder
+     * sweep, so the bursar cannot be shown one set of debtors and message
+     * another.
+     *
+     * @return \Illuminate\Support\Collection<int,Invoice>
+     */
+    private function outstandingInvoices(Request $request, ?int $schoolId)
+    {
+        $invoices = Invoice::where('school_id', $schoolId)
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->when($request->filled('term_id'), fn ($q) => $q->where('term_id', $request->integer('term_id')))
+            ->whereRaw('total_amount > amount_paid')
+            ->with([
+                'student.user:id,name',
+                'student.currentClass:id,name',
+                // Guardian contacts, for "who would this reminder reach".
+                'student.guardians.user.userProfile',
+                'term:id,name',
+            ])
+            ->get();
+
+        if ($request->filled('class_id')) {
+            $classId = $request->integer('class_id');
+            $invoices = $invoices->filter(fn (Invoice $i) => (int) $i->student?->class_id === $classId);
+        }
+
+        return $invoices;
+    }
+
+    /**
+     * Send the debtor list a reminder.
+     *
+     * The web UI has had a "Send SMS Reminder" button since the finance page was
+     * built; it was wired to nothing. This is what it calls.
+     *
+     * Either tick specific invoices (`invoice_ids`) or sweep the same filters
+     * the dashboard uses. Grouping and message composition live in
+     * FeeReminderService — notably, one parent with three children owing gets a
+     * single message, because SMS is billed per message.
+     */
+    public function remindDefaulters(Request $request, FeeReminderService $reminders)
+    {
+        $schoolId = $this->schoolId($request);
+
+        $validated = $request->validate([
+            'invoice_ids' => 'nullable|array|min:1|max:1000',
+            'invoice_ids.*' => 'integer',
+            'term_id' => ['nullable', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'min_balance' => 'nullable|numeric|min:0',
+            // Never defaulted: push is free, SMS is not.
+            'channels' => 'required|array|min:1',
+            'channels.*' => 'in:push,sms,whatsapp',
+            'note' => 'nullable|string|max:300',
+        ]);
+
+        $invoices = $this->outstandingInvoices($request, $schoolId);
+
+        if (! empty($validated['invoice_ids'])) {
+            $wanted = array_map('intval', $validated['invoice_ids']);
+            // Intersected against the scoped query rather than fetched by id —
+            // a bursar cannot chase another school's invoice, or one already
+            // settled between loading the page and pressing send.
+            $invoices = $invoices->filter(fn (Invoice $i) => in_array((int) $i->id, $wanted, true));
+        }
+
+        $minBalance = (float) $request->input('min_balance', 0);
+        $invoices = $invoices->filter(fn (Invoice $i) => $i->balance() > $minBalance)->values();
+
+        if ($invoices->isEmpty()) {
+            return response()->json([
+                'message' => 'No outstanding invoices match that selection. Nothing was sent.',
+                'reminders_queued' => 0,
+            ], 422);
+        }
+
+        $result = $reminders->remind(
+            $invoices,
+            $validated['channels'],
+            $schoolId,
+            $request->user(),
+            $validated['note'] ?? null
+        );
+
+        /*
+         * Anchored to the school, not to an invoice: a sweep spans many bills,
+         * and `auditable_id` is NOT NULL. The invoice ids go in the payload so
+         * the trail still answers "who did we chase, on what, and how".
+         */
+        \App\Models\AuditLog::create([
+            'school_id' => $schoolId,
+            'user_id' => $request->user()->id,
+            'action' => 'finance.reminders_sent',
+            'auditable_type' => \App\Models\School::class,
+            'auditable_id' => $schoolId,
+            'old_values' => null,
+            'new_values' => [
+                'invoices' => $invoices->count(),
+                'invoice_ids' => $invoices->pluck('id')->all(),
+                'recipients' => $result['reminders_queued'],
+                'channels' => $validated['channels'],
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json($result, 202);
     }
 
     private function ageingBucket(int $daysOverdue): string

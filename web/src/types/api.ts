@@ -89,6 +89,24 @@ export interface Defaulter {
   due_date: string | null;
   days_overdue: number;
   ageing_bucket: string;
+  /** Guardian names only — phone numbers stay server-side (NDPA §12). */
+  contacts: string[];
+  contactable: boolean;
+}
+
+export type NotificationChannel = 'push' | 'sms' | 'whatsapp';
+
+export interface ReminderResult {
+  message: string;
+  reminders_queued: number;
+  batch_id: string | null;
+  unreachable: {
+    student_id: number;
+    student_name: string | null;
+    admission_number: string | null;
+    balance: number;
+    reason: string;
+  }[];
 }
 
 export interface DefaulterReport {
