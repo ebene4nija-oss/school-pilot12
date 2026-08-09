@@ -89,8 +89,12 @@ export interface Defaulter {
   due_date: string | null;
   days_overdue: number;
   ageing_bucket: string;
-  /** Guardian names only — phone numbers stay server-side (NDPA §12). */
-  contacts: string[];
+  /** Who to ring about this bill, and on what number. */
+  contacts: {
+    name: string;
+    phone: string | null;
+    relationship: 'guardian' | 'student';
+  }[];
   contactable: boolean;
 }
 

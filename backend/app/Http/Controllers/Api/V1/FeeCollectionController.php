@@ -62,13 +62,16 @@ class FeeCollectionController extends Controller
                     : 0;
 
                 /*
-                 * Who a reminder would reach — names only, never phone numbers.
+                 * Who a reminder would reach, with the number to call.
                  *
-                 * The bursar's workflow is "chase this family", and the reminder
-                 * endpoint does the contacting server-side, so the numbers have
-                 * no reason to be shipped to every browser session that opens
-                 * the debtor list. NDPA data minimisation (§12): an admin who
-                 * genuinely needs to dial can open the guardian's profile.
+                 * Automated reminders go out server-side, but a bursar chasing a
+                 * ₦200,000 debt picks up the phone, and making them open each
+                 * guardian's profile one at a time to get the number is the kind
+                 * of friction that sends them back to a paper call sheet.
+                 *
+                 * Restricted to school_admin by the route, and the same numbers
+                 * are already on the guardian profiles those admins can open.
+                 * The access is audited below.
                  */
                 $guardians = $invoice->student
                     ? $invoice->student->guardians->pluck('user')->filter()
@@ -92,13 +95,40 @@ class FeeCollectionController extends Controller
                     'due_date' => $invoice->due_date?->toDateString(),
                     'days_overdue' => (int) $daysOverdue,
                     'ageing_bucket' => $this->ageingBucket((int) $daysOverdue),
-                    'contacts' => $contacts->map(fn ($user) => $user->name)->values(),
+                    'contacts' => $contacts->map(fn ($user) => [
+                        'name' => $user->name,
+                        'phone' => $user->userProfile?->phone,
+                        'relationship' => $user->id === $invoice->student?->user_id ? 'student' : 'guardian',
+                    ])->values(),
                     'contactable' => $contacts->contains(fn ($user) => filled($user->userProfile?->phone)),
                 ];
             })
             ->filter(fn ($row) => $row['balance'] > $minBalance)
             ->sortByDesc('days_overdue')
             ->values();
+
+        /*
+         * This listing hands out guardian phone numbers in bulk, so who pulled
+         * it is worth recording — the same reasoning as the medical-record
+         * endpoint. Only the counts are logged, not the numbers themselves;
+         * writing contact details into the audit trail would just copy the
+         * personal data into a second table.
+         */
+        if ($rows->isNotEmpty()) {
+            \App\Models\AuditLog::create([
+                'school_id' => $schoolId,
+                'user_id' => $request->user()->id,
+                'action' => 'finance.defaulters_viewed',
+                'auditable_type' => \App\Models\School::class,
+                'auditable_id' => $schoolId,
+                'old_values' => null,
+                'new_values' => [
+                    'invoices_listed' => $rows->count(),
+                    'contacts_disclosed' => $rows->sum(fn ($row) => count($row['contacts'])),
+                ],
+                'ip_address' => $request->ip(),
+            ]);
+        }
 
         return response()->json([
             'summary' => [

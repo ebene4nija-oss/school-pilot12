@@ -808,12 +808,26 @@ export default function FeesPage() {
                           {row.contacts.length === 0 ? (
                             <span className="text-slate-500">No contact on file</span>
                           ) : (
-                            <>
-                              <span className="text-slate-300">{row.contacts.join(', ')}</span>
-                              {!row.contactable && (
-                                <span className="block text-amber-400">No phone number</span>
-                              )}
-                            </>
+                            row.contacts.map((contact, index) => (
+                              <span key={index} className="block mb-1 last:mb-0">
+                                <span className="text-slate-300">{contact.name}</span>
+                                {contact.relationship === 'student' && (
+                                  <span className="text-slate-500"> (student)</span>
+                                )}
+                                {contact.phone ? (
+                                  // Tappable: the bursar's next action after
+                                  // reading this row is usually to dial it.
+                                  <a
+                                    href={`tel:${contact.phone}`}
+                                    className="block font-mono text-emerald-400 hover:text-emerald-300"
+                                  >
+                                    {contact.phone}
+                                  </a>
+                                ) : (
+                                  <span className="block text-amber-400">No phone number</span>
+                                )}
+                              </span>
+                            ))
                           )}
                         </td>
                       </tr>

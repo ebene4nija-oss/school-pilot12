@@ -357,23 +357,55 @@ class FeeReminderTest extends TestCase
             ->assertStatus(403);
     }
 
-    /**
-     * The debtor list says who could be reached, but not on what number —
-     * the reminder is sent server-side, so the numbers have no reason to be in
-     * every browser session (NDPA data minimisation, doc §12).
-     */
-    public function test_the_debtor_list_names_contacts_without_exposing_phone_numbers()
+    /** The bursar's call sheet: who to ring, and on what number. */
+    public function test_the_debtor_list_carries_guardian_contact_details()
     {
         $parent = $this->user('Mrs Adeyemi', 'adeyemi@greenfield.test', 'parent', '+2348030000014');
         $this->invoice($this->student('Tunde Adeyemi', $parent), 45000);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $this->actingAs($this->admin, 'sanctum')
             ->getJson($this->url('/finance/defaulters'))
             ->assertStatus(200)
-            ->assertJsonPath('defaulters.0.contacts.0', 'Mrs Adeyemi')
+            ->assertJsonPath('defaulters.0.contacts.0.name', 'Mrs Adeyemi')
+            ->assertJsonPath('defaulters.0.contacts.0.phone', '+2348030000014')
+            ->assertJsonPath('defaulters.0.contacts.0.relationship', 'guardian')
             ->assertJsonPath('defaulters.0.contactable', true);
+    }
 
-        $this->assertStringNotContainsString('+2348030000014', $response->getContent());
+    /** Where no guardian is on record the student's own number is the contact. */
+    public function test_a_student_without_a_guardian_is_listed_as_their_own_contact()
+    {
+        $student = $this->student('Independent Student');
+        $student->user->userProfile->update(['phone' => '+2348030000015']);
+        $this->invoice($student, 45000);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->getJson($this->url('/finance/defaulters'))
+            ->assertStatus(200)
+            ->assertJsonPath('defaulters.0.contacts.0.relationship', 'student')
+            ->assertJsonPath('defaulters.0.contacts.0.phone', '+2348030000015');
+    }
+
+    /**
+     * Handing out parent numbers in bulk is worth a trail, for the same reason
+     * the medical-record endpoint has one (doc §12). The numbers themselves are
+     * not copied into the log.
+     */
+    public function test_pulling_the_debtor_list_is_audited()
+    {
+        $parent = $this->user('Mrs Adeyemi', 'adeyemi@greenfield.test', 'parent', '+2348030000016');
+        $this->invoice($this->student('Tunde Adeyemi', $parent), 45000);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->getJson($this->url('/finance/defaulters'))
+            ->assertStatus(200);
+
+        $log = \App\Models\AuditLog::where('action', 'finance.defaulters_viewed')->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame($this->admin->id, $log->user_id);
+        $this->assertSame(1, $log->new_values['contacts_disclosed']);
+        $this->assertStringNotContainsString('+2348030000016', json_encode($log->new_values));
     }
 
     public function test_a_family_with_no_number_is_flagged_as_not_contactable()
