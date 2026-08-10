@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Login Error</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#fcf9f8",
+                      "outline-variant": "#c3c6cf",
+                      "primary-container": "#002447",
+                      "error": "#ba1a1a",
+                      "on-surface": "#1b1c1b",
+                      "inverse-surface": "#303030",
+                      "on-tertiary-container": "#6a9472",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "surface-dim": "#dcd9d8",
+                      "primary": "#000e22",
+                      "surface-container": "#f0edec",
+                      "primary-fixed-dim": "#acc8f4",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#f3f0ef",
+                      "tertiary-fixed": "#c0eec7",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "secondary-container": "#ffc16a",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "tertiary": "#001105",
+                      "tertiary-container": "#002a11",
+                      "on-primary-fixed": "#001c39",
+                      "on-tertiary-fixed": "#00210c",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#784d00",
+                      "secondary": "#835500",
+                      "surface-container-high": "#eae7e7",
+                      "on-secondary": "#ffffff",
+                      "surface": "#fcf9f8",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "primary-fixed": "#d4e3ff",
+                      "surface-container-low": "#f6f3f2",
+                      "on-secondary-fixed": "#291800",
+                      "surface-tint": "#446086",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "on-surface-variant": "#43474e",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed": "#ffddb4",
+                      "surface-container-highest": "#e4e2e1",
+                      "on-error": "#ffffff",
+                      "on-background": "#1b1c1b",
+                      "on-primary-container": "#718cb5",
+                      "outline": "#74777f",
+                      "inverse-primary": "#acc8f4",
+                      "background": "#fcf9f8",
+                      "surface-variant": "#e4e2e1",
+                      "surface-container-lowest": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "screen-margin": "16px",
+                      "unit": "8px",
+                      "stack-lg": "24px",
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "headline-lg": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface-bright min-h-screen flex items-center justify-center p-screen-margin font-body-lg text-body-lg text-on-surface">
+<main class="w-full max-w-[400px] flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<header class="text-center flex flex-col items-center gap-stack-sm mb-stack-lg">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">SchoolPilot</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Administrative Portal</p>
+</header>
+<!-- Login Card -->
+<div class="bg-on-primary border border-outline-variant rounded-xl p-stack-lg flex flex-col gap-stack-md">
+<!-- Institution Chip -->
+<div class="flex justify-center mb-stack-sm">
+<div class="inline-flex items-center gap-unit px-3 py-1.5 bg-surface-container rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">school</span>
+<span class="font-label-sm text-label-sm text-on-surface">Graceland College</span>
+</div>
+</div>
+<div class="font-headline-sm text-headline-sm text-center text-primary mb-stack-sm">
+                Sign In
+            </div>
+<form class="flex flex-col gap-stack-md" onsubmit="event.preventDefault();">
+<!-- Email Input -->
+<div class="relative">
+<input class="block px-4 pb-2 pt-6 w-full text-on-surface bg-surface-bright rounded-DEFAULT border border-outline-variant appearance-none focus:outline-none focus:ring-0 focus:border-primary-container focus:border-2 peer" id="email" placeholder=" " required="" type="email" value="admin@graceland.edu"/>
+<label class="absolute font-body-md text-body-md text-on-surface-variant duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-focus:text-primary-container peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3" for="email">Email Address</label>
+</div>
+<!-- Password Input -->
+<div class="relative">
+<input class="block px-4 pb-2 pt-6 w-full text-on-surface bg-surface-bright rounded-DEFAULT border border-error appearance-none focus:outline-none focus:ring-0 focus:border-error focus:border-2 peer" id="password" placeholder=" " required="" type="password" value="********"/>
+<label class="absolute font-body-md text-body-md text-error duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-focus:text-error peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3" for="password">Password</label>
+<button class="absolute right-4 top-4 text-on-surface-variant hover:text-on-surface" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">visibility_off</span>
+</button>
+</div>
+<!-- Error Message -->
+<div class="flex items-center gap-unit text-error font-body-md text-body-md mt-1">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">error</span>
+<span>Invalid email or password</span>
+</div>
+<div class="flex items-center justify-between mt-stack-sm">
+<label class="flex items-center gap-unit cursor-pointer">
+<input class="w-4 h-4 rounded border-outline-variant text-primary-container focus:ring-primary-container" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface-variant">Remember me</span>
+</label>
+<a class="font-label-sm text-label-sm text-primary-container hover:underline" href="#">Forgot password?</a>
+</div>
+<!-- Primary Action -->
+<button class="mt-stack-sm w-full h-[48px] bg-secondary-container text-on-surface font-label-lg text-label-lg rounded-full flex items-center justify-center hover:bg-secondary-fixed-dim transition-colors" type="submit">
+                    Sign in
+                </button>
+</form>
+</div>
+<!-- Footer -->
+<footer class="text-center font-body-md text-body-md text-on-surface-variant mt-stack-md">
+<p>© 2024 SchoolPilot Systems</p>
+</footer>
+</main>
+</body></html>

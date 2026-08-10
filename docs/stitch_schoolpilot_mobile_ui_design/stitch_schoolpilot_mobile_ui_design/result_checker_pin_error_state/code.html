@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolNexus - Result Unlock Error</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#446086",
+                        "on-surface-variant": "#43474e",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary-fixed": "#001c39",
+                        "background": "#fcf9f8",
+                        "on-secondary-fixed": "#291800",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#303030",
+                        "surface-container-highest": "#e4e2e1",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#718cb5",
+                        "on-tertiary-container": "#6a9472",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "primary": "#000e22",
+                        "surface-dim": "#dcd9d8",
+                        "tertiary": "#001105",
+                        "secondary-container": "#ffc16a",
+                        "secondary": "#835500",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "primary-container": "#002447",
+                        "surface": "#fcf9f8",
+                        "tertiary-fixed": "#c0eec7",
+                        "on-background": "#1b1c1b",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "tertiary-container": "#002a11",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-surface": "#1b1c1b",
+                        "outline": "#74777f",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "secondary-fixed": "#ffddb4",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fcf9f8",
+                        "surface-variant": "#e4e2e1",
+                        "surface-container-high": "#eae7e7",
+                        "surface-container": "#f0edec",
+                        "on-secondary-container": "#784d00",
+                        "inverse-primary": "#acc8f4",
+                        "inverse-on-surface": "#f3f0ef",
+                        "primary-fixed-dim": "#acc8f4",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed": "#d4e3ff",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "screen-margin": "16px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Work Sans"],
+                        "headline-sm": ["Work Sans"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "headline-md": ["Work Sans"],
+                        "label-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f8;
+            color: #1b1c1b;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Strict functionalism styling for inputs */
+        .input-error {
+            border: 2px solid #ba1a1a !important; /* Tailwind error color */
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex flex-col font-body-md text-on-background selection:bg-primary-fixed selection:text-on-primary-fixed antialiased">
+<!-- TopAppBar (Transactional - Nav shell omitted, specialized header) -->
+<header class="bg-surface sticky top-0 border-b border-outline-variant flat no shadows flex items-center justify-between px-screen-margin h-16 w-full z-50">
+<div class="flex items-center gap-unit">
+<button class="text-on-surface-variant hover:bg-surface-container rounded-full p-2 transition-opacity active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-label-lg text-label-lg text-primary">Second Term Result</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Chidinma Okeke</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas (Transactional flow - Nav shell suppressed) -->
+<main class="flex-grow flex flex-col items-center justify-center p-screen-margin max-w-md mx-auto w-full">
+<div class="w-full bg-surface-container-lowest border border-outline-variant rounded p-stack-lg flex flex-col items-center text-center">
+<!-- Lock Icon Element -->
+<div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center mb-stack-md">
+<span class="material-symbols-outlined text-[32px] text-error" style="font-variation-settings: 'FILL' 0;">lock</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-background mb-stack-sm">Unlock this result</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-stack-lg">
+                Please enter the 12-digit scratch card PIN to view Chidinma's Second Term Result.
+            </p>
+<form class="w-full" onsubmit="event.preventDefault();">
+<div class="relative mb-unit w-full">
+<input class="block px-4 pb-2.5 pt-6 w-full font-body-lg text-body-lg text-on-background bg-transparent rounded border appearance-none focus:outline-none focus:ring-0 peer input-error" id="pin-input" placeholder=" " type="text" value="3829 4810 5592"/>
+<label class="absolute font-label-md text-label-md text-error duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3" for="pin-input">
+                        Scratch Card PIN
+                    </label>
+<div class="absolute right-4 top-4 text-error">
+<span class="material-symbols-outlined">error</span>
+</div>
+</div>
+<!-- Error Helper Text -->
+<p class="font-label-sm text-label-sm text-error text-left mb-stack-lg ml-1">
+                    This PIN is not valid or has already been used.
+                </p>
+<button class="w-full h-[48px] bg-[#feae2c] text-[#1b1c1c] font-label-lg text-label-lg rounded-full flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all" type="button">
+<span>Unlock Result</span>
+</button>
+</form>
+<div class="mt-stack-lg pt-stack-md border-t border-outline-variant w-full">
+<p class="font-label-sm text-label-sm text-on-surface-variant">
+                    Need a new PIN? <a class="text-primary font-bold underline underline-offset-2" href="#">Contact Admin</a>
+</p>
+</div>
+</div>
+</main>
+</body></html>

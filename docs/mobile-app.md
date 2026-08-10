@@ -1,6 +1,7 @@
 # SchoolPilot Mobile — Build Instructions & App Documentation
 
-**Status:** plan, not yet built. `mobile/` is empty.
+**Status:** built. The app lives in `mobile/` — see `mobile/README.md` to run it.
+`flutter analyze` is clean and `flutter test` passes.
 **Target:** one Flutter codebase, role-based navigation, Android-first.
 **Backend:** the existing Laravel API at `/api/v1/...` (see `backend/routes/api.php`).
 
@@ -78,8 +79,8 @@ This file has two parts:
 | State | `flutter_riverpod` | Testable without a widget tree; compile-safe overrides for fakes. |
 | Routing | `go_router` | Declarative role-based redirect at the router level, one place to gate auth. |
 | HTTP | `dio` + interceptors | Interceptor chain is where tenancy, auth, retry and 401 handling live. |
-| Models | `freezed` + `json_serializable` | Backend returns plain JSON; hand-written parsing rots. |
-| Local DB | `drift` (SQLite) | Typed queries, migrations, and it is what the outbox needs. |
+| Models | hand-written, tolerant parsing | See the note below. |
+| Local DB | `sqflite` | See the note below. |
 | Token storage | `flutter_secure_storage` | Keystore/Keychain, never SharedPreferences. |
 | Push | `firebase_messaging` + `flutter_local_notifications` | Matches `DeviceToken.platform` (`android`/`ios`). See gap **G7**. |
 | QR scan | `mobile_scanner` | Attendance clock-in, phone camera only. |
@@ -92,6 +93,83 @@ This file has two parts:
 
 Config by `--dart-define`: `API_BASE_URL`, `ENV`, `SENTRY_DSN`. No `.env` in the
 bundle.
+
+**Three decisions taken during the build that differ from this plan as first
+written**, recorded here rather than left as a surprise in the code:
+
+1. **`sqflite`, not `drift`.** Drift's typed queries are nicer, but they cost a
+   `build_runner` step on every schema change. There are three tables — cache,
+   outbox, CBT answers — and the outbox has about six queries. That does not
+   earn a codegen pipeline in CI. `AppDatabase` is 90 lines of plain SQL.
+2. **Hand-written parsing, not `freezed`/`json_serializable`.** The backend is
+   not uniform about response envelopes: some endpoints return a bare array,
+   some wrap in `data`, some in a named key, and field names vary between
+   `name`, `full_name` and `user.name` for the same thing. Generated strict
+   models would throw on the variance. `core/data/cached.dart` has four
+   tolerant readers (`listOf`, `mapOf`, `numOf`, `stringOf`) that every screen
+   uses instead. Revisit once the API is consistent — the parsing is confined
+   to the data layer precisely so it can be swapped.
+3. **No `firebase_messaging` yet.** Push cannot work at all until gap **G7** is
+   fixed on the backend, and adding Firebase means a `google-services.json` and
+   a signing story for a feature that would be dead on arrival. The device
+   registration endpoint is wired; the transport is not.
+
+## A4.1 Theme — from the mobile design system
+
+Source of truth:
+`docs/stitch_schoolpilot_mobile_ui_design/stitch_schoolpilot_mobile_ui_design/high_contrast_functionalism/DESIGN.md`.
+That is the *mobile* system ("High-Contrast Functionalism") and it is **not
+identical** to the web one in `stitch_schoolpilot_management_system/`
+("Academic Credibility System"). Where they differ, mobile wins on mobile.
+The whole palette goes into one `ColorScheme` in `app/theme.dart`; no feature
+declares a hex value.
+
+**Colours that changed from the web system** — the ones that will trip you up if
+you copy the web values:
+
+| Token | Mobile | Web | Note |
+|---|---|---|---|
+| `primary` | `#000e22` | `#002447` | Mobile went a shade darker for sunlight contrast. |
+| `primary-container` | `#002447` | `#1b3a5f` | The old primary is now the container. |
+| `on-primary-container` | `#718cb5` | `#88a4cf` | |
+| `secondary-container` | `#ffc16a` | `#feae2c` | See the amber note below. |
+| `tertiary` | `#001105` | `#002b12` | |
+| `surface-container` | `#f0edec` | `#f0eded` | |
+
+Unchanged and load-bearing: `surface`/`background` `#fcf9f8`, cards
+`#ffffff`, `outline-variant` `#c3c6cf`, `error` `#ba1a1a`.
+Semantic status colours are not in the token block but are used throughout the
+screens: present/paid `#2e7d32`, absent/overdue `#c62828`, late/pending
+`#f5a623`.
+
+**Two internal conflicts in that DESIGN.md — resolve them this way:**
+
+1. **Action amber.** The token block says `secondary-container: #ffc16a`; the
+   prose and every generated screen use `#feae2c`. Use **`#feae2c`** for the
+   primary action button, with `#1b1c1b` text. Ship one amber, not two.
+2. **Corner radii.** The `rounded` token scale is tight (`lg: 0.5rem`,
+   `xl: 0.75rem`) but the prose specifies cards 8px, major sections 16px, and
+   fully-rounded buttons and chips. Follow the **prose** — that is what the
+   screens show. In Flutter: `cardRadius = 8`, `sectionRadius = 16`,
+   `StadiumBorder()` on buttons and chips.
+
+**Typography** is renamed from the web system — `headline-lg/md/sm`,
+`body-lg/md`, `label-lg/sm`. There is no `data-mono` token any more, but the
+screens still set numbers apart. Define a `numeric` text style: Inter, 14/20,
+w500, with `FontFeature.tabularFigures()`, and use it for every score, tally,
+countdown and Naira amount. Columns of figures that do not align are the single
+most common way a results screen looks broken.
+
+**Elevation is zero.** The mobile system rejects shadows outright — depth is a
+1px `#c3c6cf` outline on white over a `#fcf9f8` ground, and tonal stacking for
+nested rows. Set `elevation: 0` on the card, app-bar, dialog, bottom-sheet and
+FAB themes globally. The one shadow allowed by the *web* system does not carry
+over.
+
+**Avatars.** The generated screens use photographic student headshots from
+remote URLs. In the app, default to **initials on a tonal circle**. A photo
+renders only when the school has actually uploaded one, and never on a list
+that a data-saver user is scrolling. This is data cost and §B6 both.
 
 ## A5. Project layout
 
@@ -159,19 +237,24 @@ A stage is done when all of the following are true:
 
 Each stage is independently useful, and each ends in a commit.
 
-| # | Stage | Contents |
-|---|---|---|
-| 0 | Skeleton | `flutter create`, layout, theme from the Stitch tokens, router, dio client + interceptors, drift schema, CI job. |
-| 1 | Auth & tenancy | School-code entry, login, 2FA step, secure token, role-based redirect, session expiry. Gap **G1** filed. |
-| 2 | Shell & dashboards | Bottom nav per role, four dashboards from `/analytics/*`, profile screen, sign-out. |
-| 3 | Attendance | Teacher register (bulk, idempotent, offline-queued), QR clock-in, staff GPS clock-in, history. First real use of the outbox. |
-| 4 | Timetable & academics | `/timetable/view` with cache, subjects, class lists, student/parent read paths. |
-| 5 | Homework | Teacher set/grade, student submit, parent visibility. Gap **G5**. |
-| 6 | Results | Student/parent results, report-card view, result checker + PIN redeem, purchase via webview. Gaps **G8**, **G9**. |
-| 7 | CBT | Available exams, sitting a paper (timer, image/LaTeX rendering, local answer buffer), submit, result. |
-| 8 | Finance | Invoices, statement, payment history, receipts, gateway checkout, admin defaulter view. |
-| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat, teacher AI studio with the `pending_approval` review flow. Gaps **G6**, **G7**. |
-| 10 | Hardening | Offline soak, low-end device profiling, accessibility pass, crash reporting, release signing, store listings. |
+| # | Stage | Contents | State |
+|---|---|---|---|
+| 0 | Skeleton | `flutter create`, layout, theme per §A4.1, router, dio client + interceptors, SQLite schema. | done |
+| 1 | Auth & tenancy | School-code entry, login, 2FA step, secure token, role-based redirect, session expiry. | done |
+| 2 | Shell & dashboards | Bottom nav per role, four dashboards from `/analytics/*`, profile, sign-out, offline-queue screen. | done |
+| 3 | Attendance | Teacher register (bulk, idempotent, offline-queued), staff GPS clock-in. | done |
+| 4 | Timetable & academics | `/timetable/view` with cache, roster, admin academics hub, result release, PIN inventory. | done |
+| 5 | Homework | Teacher set/grade, student submit, parent visibility. | **blocked on G5** — no student-facing homework list exists |
+| 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done except gateway checkout (**G8**) |
+| 7 | CBT | Available exams, sitting a paper (timer, image/LaTeX rendering, local answer buffer, question navigator), submit. | done |
+| 8 | Finance | Statement, defaulters, payment history. | done except online payment (**G8**, **G9**) |
+| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done except push transport (**G7**) and the per-user inbox (**G6**) |
+| 10 | Hardening | Offline soak on a real handset, low-end profiling, accessibility pass, crash reporting, release signing, store listing. | not started |
+
+Stage 10 is the remaining work, plus whatever the gap fixes unblock. QR
+attendance scanning is scaffolded (`mobile_scanner` is a dependency and the
+permission is declared) but the scanner screen itself is not built — the roll
+call covers the same job without it, so it was not the best use of the time.
 
 ---
 
@@ -221,11 +304,17 @@ server-side — see gap **G1**.
 Five tabs maximum, because a fifth is already the practical limit on a 5-inch
 screen.
 
-**Admin** — Home · People · Finance · Academics · More
-Home is `/analytics/principal`. People covers students, staff and users.
-Finance covers invoices, defaulters, payments. Academics covers results,
-timetable and CBT oversight. More holds calendar, notifications, result PINs and
-settings.
+**Admin** — Home · Students · Fees · Academics · More
+Home is `/analytics/principal`. Students covers the roster, records and user
+management. Fees covers invoices, defaulters and payments. Academics covers
+results, release, timetable and CBT oversight. More holds staff, calendar,
+notifications, result PINs and settings.
+
+> The generated designs use **Home · Fees · Students · Staff · More**, which
+> puts Staff in the nav and leaves results, timetable and CBT with no
+> destination at all — for a principal, results are not a "More" item. Adopting
+> Academics in that slot and moving Staff under More is the one deliberate
+> departure from the design set. It is a one-line router change if you disagree.
 
 **Teacher** — Home · Register · Gradebook · Classes · More
 Home is `/analytics/teacher`. Register is the day's roll call, and it is the
@@ -460,17 +549,66 @@ should be worked around by hacking the client.
 | **G8** | No endpoint exposes a school's gateway **public** key, and `School` stores none. `ResultCheckerController::purchase` explicitly expects checkout to be driven client-side "with the school's own public key". | The app has no way to learn which key to open checkout with, in a product where each school holds its own merchant account. | Either add the public key to the school settings payload, or add a server-side `initialize` returning a hosted `authorization_url`. The second is safer. |
 | **G9** | `POST /finance/payments` requires a client-supplied unique `reference`. | A client minting its own payment reference is fragile — a retry with a fresh reference creates a duplicate pending row. | Have the server mint the reference, as `result-checker/purchase` already does with `generateReference('SPRP')`. |
 | **G10** | No paginated envelope on several list endpoints. | Roster and history screens can pull the whole table on a metered connection. | Confirm per endpoint during Stage 2; add cursor pagination where missing. |
+| **G11** | **Nothing lists a guardian's own children.** `student_guardian` exists as a pivot, but `GET /students` is staff-only and no route exposes the pivot to the guardian. | The parent role cannot function at all: every parent endpoint takes a `studentId` the app has no way to learn. This is the single largest gap. | Add `GET /api/v1/parent/children` returning the caller's linked students. The app already calls exactly that path and degrades to a "no children linked" state until it exists. |
+| **G12** | **No `GET /classes` and no `GET /terms`.** Only `GET /classes/{id}/subjects` exists, and nothing publishes terms or the current session. | Every staff screen needs a class and a term before it can ask the server anything — register, score entry, broadsheet, result release. The app falls back to deriving classes from `GET /teachers/{id}/subjects`, which works for teachers only; terms have no fallback at all. | Add both, with `is_current` on the term. |
 
-**Handling:** G1, G2 and G7 are filed before Stage 1 starts, since Stage 1
-(auth) and Stage 9 (push) sit directly on top of them. G8/G9 are decided before
-Stage 8 — I will not ship a payment flow that invents its own reference without
-the change being agreed first, per the payment-config rule in `CLAUDE.md`.
+**Handling.** None of these were worked around in the client. Where a gap blocks
+a control, the app shows what to do instead of offering a button that cannot
+work, and the code says which gap it is waiting on. Priority order if you are
+fixing them: **G11 and G12 first** — they block whole roles and screens, not
+single controls. Then G1 and G2, which are security and support cost. Then G7,
+without which push cannot work at all. G8 and G9 are a decision, not a bug fix:
+per the payment-config rule in `CLAUDE.md`, the app will not invent its own
+payment reference or guess at a gateway key.
 
-## B13. Related documents
+## B13. Design set — coverage and known defects
+
+The generated screens live in
+`docs/stitch_schoolpilot_mobile_ui_design/stitch_schoolpilot_mobile_ui_design/`,
+one folder per screen with `code.html` and `screen.png`. 35 screens plus the
+design system. They are a **visual specification, not a source to port** — the
+HTML is Tailwind-on-CDN mockup markup with remote image URLs.
+
+**Coverage.** Every screen in the Stitch prompt was generated. Enough to build
+Stages 0–9 without further design work, with the exceptions below.
+
+**Defects to fix before the screen is built.** Each is a real problem in the
+output, not a stylistic preference:
+
+| Screen | Defect | Resolution |
+|---|---|---|
+| `gradebook_score_entry` | The table overflows the 360dp viewport: `Exam` is clipped mid-word and **`Total` is off-screen entirely**. The whole point of the compact 4px density was to fit CA1/CA2/CA3/Exam/Total without horizontal scroll. Also renders only 3 rows over a half-empty screen. | Regenerate. In Flutter, pin the name column, make the four score columns flex, and keep Total visible at all costs — it is the column teachers check. |
+| `class_register_offline_state`, `teacher_attendance_register` | The P/A/L/E segmented control is `h-[36px]`, below the 48dp minimum, and renders as an unusable hairline strip with ~2px glyphs. | Build at 48dp with a full-width control beneath the student name. The rest of the screen — offline banner, tallies, sticky submit with "31 of 34 marked" — is right and should be kept. |
+| `cbt_exam_question_view` | LaTeX is printed as **raw source** (`\(\frac{a}{\sin \alpha}\)`). Stitch has no math renderer. | Cosmetic in the mockup only — `flutter_math_fork` renders it properly. Do not copy the escaping. |
+| `cbt_exam_question_view` | The geometry diagram is a screenshot **of a phone screenshot** — an Android status bar, clock and nav buttons are baked into the image asset. | Replace the asset. Real diagrams come from the CBT media library via `CbtMediaService`. |
+| `notifications` | Shows **`$1,250`**. A dollar amount, in a Naira product. | Hard rule violation. Regenerate; verify with the §4 checklist. |
+| `notifications`, `result_checker_pin_gate` | "Term 2" instead of "Second Term". | Nigerian term naming, no exceptions. |
+| `gradebook_score_entry` | Session reads `2023/2024`; other screens use `2025/2026`. | One session across the set. |
+| 6 screens | Product name drifts to **SchoolPath** and **SchoolNexus** (`ai_tutor_chat`, `student_home_dashboard`, `student_results`, `parent_dashboard`, `attendance_behaviour`, `result_checker_pin_gate`). | Cosmetic — the app bar carries the school name, not the product name. Ignore, do not propagate. |
+| `class_register_offline_state`, `gradebook_score_entry` | Teacher bottom nav drifts to `Students` / `Staff`. Three other teacher screens have it right. | Use the canonical set in §B3. |
+| `school_admin_dashboard` | Duplicate of `principal_dashboard` for a different school, with no bottom nav. | Redundant. Build from `principal_dashboard`. |
+| — | **Missing:** the student-side "results not yet released" locked variant, and the CBT question-navigator grid sheet. Both were requested; neither came back. | Regeneration prompts are in `docs/mobile-stitch-prompt.md` §6. |
+
+**What came out well and should be followed closely:** `ai_comment_review` —
+the amber left-bordered draft block, the "Pending Approval" sparkle chip and the
+Edit/Approve pair make the approval gate unmistakable, which is exactly what the
+hard rule needs. Also `parent_dashboard` (the child switcher and the red-bordered
+fee card), `student_results`, and the offline banner treatment on the register.
+
+**Audit result on the content rules:** no GPA, semester, credit or faculty
+language anywhere in the set; no biometric, card-reader or barcode-scanner
+iconography anywhere; names and schools are Nigerian throughout. The only
+currency violation is the one row in `notifications`.
+
+## B14. Related documents
 
 - Product spec: `docs/SchoolPilot-Comprehensive-Documentation.md` (§3 hardware,
   §7.16 mobile, §11 architecture, §12 NDPA)
-- UI reference: `stitch_schoolpilot_management_system/` and its `DESIGN.md`
-- Stitch prompt for the mobile screens: `docs/mobile-stitch-prompt.md`
+- **Mobile design set (35 screens + tokens):**
+  `docs/stitch_schoolpilot_mobile_ui_design/stitch_schoolpilot_mobile_ui_design/`
+  — system in `high_contrast_functionalism/DESIGN.md`
+- Web UI reference, for cross-client consistency:
+  `stitch_schoolpilot_management_system/`
+- Stitch prompts and regeneration prompts: `docs/mobile-stitch-prompt.md`
 - CBT content rules: `docs/cbt-authoring-guide.md`
 - Report-card rendering: `docs/report-card-template-contract.md`

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>SchoolNexus - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#446086",
+                      "on-surface-variant": "#43474e",
+                      "outline-variant": "#c3c6cf",
+                      "on-primary-fixed": "#001c39",
+                      "background": "#fcf9f8",
+                      "on-secondary-fixed": "#291800",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#303030",
+                      "surface-container-highest": "#e4e2e1",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#718cb5",
+                      "on-tertiary-container": "#6a9472",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "primary": "#000e22",
+                      "surface-dim": "#dcd9d8",
+                      "tertiary": "#001105",
+                      "secondary-container": "#ffc16a",
+                      "secondary": "#835500",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "primary-container": "#002447",
+                      "surface": "#fcf9f8",
+                      "tertiary-fixed": "#c0eec7",
+                      "on-background": "#1b1c1b",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "tertiary-container": "#002a11",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "on-tertiary-fixed": "#00210c",
+                      "on-surface": "#1b1c1b",
+                      "outline": "#74777f",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "secondary-fixed": "#ffddb4",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#fcf9f8",
+                      "surface-variant": "#e4e2e1",
+                      "surface-container-high": "#eae7e7",
+                      "surface-container": "#f0edec",
+                      "on-secondary-container": "#784d00",
+                      "inverse-primary": "#acc8f4",
+                      "inverse-on-surface": "#f3f0ef",
+                      "primary-fixed-dim": "#acc8f4",
+                      "error": "#ba1a1a",
+                      "surface-container-low": "#f6f3f2",
+                      "primary-fixed": "#d4e3ff",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "gutter": "16px",
+                      "stack-lg": "24px",
+                      "stack-sm": "8px",
+                      "screen-margin": "16px",
+                      "stack-md": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg": ["Work Sans"],
+                      "headline-sm": ["Work Sans"],
+                      "headline-lg-mobile": ["Work Sans"],
+                      "headline-md": ["Work Sans"],
+                      "label-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface w-full sticky top-0 border-b border-outline-variant flat no shadows z-50 flex items-center justify-between px-screen-margin h-[64px]">
+<!-- Child Switcher Pill -->
+<button class="flex items-center gap-unit bg-surface-container-low border border-outline-variant rounded-full p-1 pr-3 hover:bg-surface-container transition-colors focus:outline-none focus:ring-2 focus:ring-primary-container" id="childSwitcherBtn">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A small, professional headshot photo of a Nigerian secondary school girl named Chidinma, wearing a neat school uniform, smiling gently against a plain light gray background. High quality, clear, well-lit portrait." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeqG-zplKGIch_qavCHD1TDuYYAnX5ejpWYny6OhWMcquEiJq-5YCd79QuiZ_NcHm8qipTpf7HeigvMeA1e0ZpOhVbEuJAOzuk60f3ZyT5JlQeDLZqEDFO3BJ9pa71v3qujvWDr_ZhkbJYFxpakPYRy6IIBA00oCSeCLIdvswDkJ86_r8HGCiBT22hEGIYxoJnGZaUnrKjzF4_RyvGzMuwTux3FzZ9eNIkFyq6KI1ZSyseVb7CdPAM"/>
+<div class="flex flex-col items-start leading-tight">
+<span class="font-label-lg text-label-lg text-on-surface">Chidinma</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">JSS2A</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] ml-1">expand_more</span>
+</button>
+<!-- Trailing Icon -->
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors text-on-surface-variant relative">
+<span class="material-symbols-outlined icon-fill">notifications</span>
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="px-screen-margin py-stack-md flex flex-col gap-stack-lg">
+<!-- Urgent Action Cards -->
+<section class="flex flex-col gap-stack-sm">
+<!-- Fees Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT border-l-4 border-l-error p-gutter flex flex-col gap-stack-sm relative overflow-hidden">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">School fees</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Due Fri 13 Aug</p>
+</div>
+<span class="material-symbols-outlined text-error">payments</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-error mt-stack-sm">
+                    ₦45,000.00 <span class="font-body-md text-body-md text-on-surface-variant align-middle">outstanding</span>
+</div>
+<button class="mt-stack-sm w-full h-[48px] bg-secondary-container text-on-secondary-container font-label-lg text-label-lg rounded-full flex items-center justify-center hover:bg-secondary-fixed-dim transition-colors">
+                    Pay now
+                </button>
+</div>
+<!-- Attendance Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT border-l-4 border-l-tertiary-fixed p-gutter flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Today</span>
+<div class="flex items-center gap-unit mt-1">
+<span class="font-headline-sm text-headline-sm text-on-surface">Present</span>
+<div class="px-2 py-0.5 bg-tertiary-fixed/20 text-on-tertiary-fixed rounded-DEFAULT font-label-sm text-label-sm border border-tertiary-fixed/30">
+                            arrived 07:42
+                        </div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-tertiary-fixed text-[32px]">directions_run</span>
+</div>
+</section>
+<!-- Results Card -->
+<section>
+<div class="bg-surface-container-low border border-outline-variant rounded-DEFAULT p-gutter flex flex-col gap-stack-sm">
+<div class="flex items-center gap-unit text-on-surface">
+<span class="material-symbols-outlined icon-fill text-secondary">assessment</span>
+<h3 class="font-headline-sm text-headline-sm">Results</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Second Term results are available.</p>
+<button class="w-full h-[48px] bg-secondary-container text-on-secondary-container font-label-lg text-label-lg rounded-full flex items-center justify-center hover:bg-secondary-fixed-dim transition-colors mt-unit">
+                    Check result
+                </button>
+</div>
+</section>
+<!-- Recent Updates Feed -->
+<section class="flex flex-col gap-stack-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Recent updates</h2>
+<div class="flex flex-col border border-outline-variant rounded-DEFAULT bg-surface-container-lowest overflow-hidden">
+<!-- Update Item 1: Behaviour -->
+<div class="p-gutter border-b border-outline-variant last:border-0 flex gap-gutter">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">psychology</span>
+</div>
+<div class="flex flex-col gap-unit">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 bg-tertiary-fixed/20 text-on-tertiary-fixed rounded-DEFAULT font-label-sm text-label-sm border border-tertiary-fixed/30">Behaviour</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fri 6 Aug</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Commended for helping in the lab — <span class="text-on-surface-variant">Mrs Adeyemi</span></p>
+</div>
+</div>
+<!-- Update Item 2: Homework -->
+<div class="p-gutter border-b border-outline-variant last:border-0 flex gap-gutter">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">menu_book</span>
+</div>
+<div class="flex flex-col gap-unit w-full">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Homework</span>
+<span class="font-label-sm text-label-sm text-error font-semibold">Due tomorrow</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">Mathematics assignment</p>
+</div>
+</div>
+<!-- Update Item 3: Notice -->
+<div class="p-gutter border-b border-outline-variant last:border-0 flex gap-gutter bg-surface-container-low">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined icon-fill">campaign</span>
+</div>
+<div class="flex flex-col gap-unit">
+<span class="font-label-sm text-label-sm text-primary-container uppercase tracking-wider font-semibold">School Notice</span>
+<p class="font-body-md text-body-md text-on-surface">Mid-term break begins 20 Aug</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant flat no shadows flex justify-around items-center h-[64px] px-4 bg-surface pb-safe">
+<button class="flex flex-col items-center justify-center text-primary border-t-2 border-primary pt-2 w-16 hover:bg-surface-container-low active:scale-95 transition-all">
+<span class="material-symbols-outlined icon-fill">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 hover:bg-surface-container-low active:scale-95 transition-all border-t-2 border-transparent">
+<span class="material-symbols-outlined">child_care</span>
+<span class="font-label-sm text-label-sm mt-1">Child</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 hover:bg-surface-container-low active:scale-95 transition-all border-t-2 border-transparent">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Fees</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 hover:bg-surface-container-low active:scale-95 transition-all border-t-2 border-transparent">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 hover:bg-surface-container-low active:scale-95 transition-all border-t-2 border-transparent">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</button>
+</nav>
+<!-- Child Switcher Bottom Sheet (Hidden by default) -->
+<div class="fixed inset-0 z-[100] hidden" id="childSwitcherSheet">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-on-background/40 transition-opacity opacity-0" id="sheetBackdrop"></div>
+<!-- Sheet Content -->
+<div class="absolute bottom-0 w-full bg-surface rounded-t-xl transform translate-y-full transition-transform duration-300 flex flex-col" id="sheetContent">
+<div class="flex justify-center p-unit">
+<div class="w-12 h-1 bg-outline-variant rounded-full"></div>
+</div>
+<div class="px-screen-margin pb-stack-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-stack-md">Switch child profile</h3>
+<div class="flex flex-col gap-unit">
+<!-- Current Child -->
+<button class="flex items-center gap-gutter p-gutter w-full rounded-DEFAULT border-2 border-primary-container bg-surface-container-lowest text-left relative">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A small, professional headshot photo of a Nigerian secondary school girl named Chidinma, wearing a neat school uniform, smiling gently against a plain light gray background. High quality, clear, well-lit portrait." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNJ9O4f9Ll5EPQnExxxiCOfboTvsDkP1ZV-8LyLcywYVW_QKQYC_fZvX86kCGLpOF5a0v_WURBoQJKtQM7bX9BniyUntoerASPipDYwcC61HOJJjHXsU-srhYataNldtE2VhV6PnYy0cXCRR5r2jgMJ6fzXdkNFLlPFXYabMgzF8gIOQp_CRhD6SAOez267bcRV6X0F9QORjzylgZnOqPMwIObrqyxgKzwZFVy5KklgvCql-X5Ow99"/>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Chidinma</span>
+<span class="font-body-md text-body-md text-on-surface-variant">JSS2A</span>
+</div>
+<span class="material-symbols-outlined text-primary-container absolute right-gutter icon-fill">check_circle</span>
+</button>
+<!-- Other Child -->
+<button class="flex items-center gap-gutter p-gutter w-full rounded-DEFAULT border border-outline-variant hover:bg-surface-container-low transition-colors text-left">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-headline-sm text-headline-sm">
+                            O
+                        </div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Obinna</span>
+<span class="font-body-md text-body-md text-on-surface-variant">SS1C</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        // Simple logic for the bottom sheet
+        const switcherBtn = document.getElementById('childSwitcherBtn');
+        const sheet = document.getElementById('childSwitcherSheet');
+        const backdrop = document.getElementById('sheetBackdrop');
+        const content = document.getElementById('sheetContent');
+
+        function openSheet() {
+            sheet.classList.remove('hidden');
+            // Small delay to allow display:block to apply before animating
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                content.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        function closeSheet() {
+            backdrop.classList.add('opacity-0');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                sheet.classList.add('hidden');
+            }, 300);
+        }
+
+        switcherBtn.addEventListener('click', openSheet);
+        backdrop.addEventListener('click', closeSheet);
+    </script>
+</body></html>

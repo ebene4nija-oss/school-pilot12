@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Students List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "surface": "#fcf9f8",
+                    "tertiary-fixed": "#c0eec7",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#6a9472",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e4e2e1",
+                    "on-primary-fixed": "#001c39",
+                    "outline-variant": "#c3c6cf",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#446086",
+                    "error-container": "#ffdad6",
+                    "inverse-surface": "#303030",
+                    "inverse-primary": "#acc8f4",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "surface-container": "#f0edec",
+                    "on-tertiary-fixed": "#00210c",
+                    "primary-fixed-dim": "#acc8f4",
+                    "tertiary": "#001105",
+                    "surface-bright": "#fcf9f8",
+                    "tertiary-container": "#002a11",
+                    "primary": "#000e22",
+                    "secondary": "#835500",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-container-high": "#eae7e7",
+                    "surface-dim": "#dcd9d8",
+                    "inverse-on-surface": "#f3f0ef",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "primary-fixed": "#d4e3ff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1b1c1b",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "on-primary-container": "#718cb5",
+                    "on-surface": "#1b1c1b",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "on-surface-variant": "#43474e",
+                    "on-secondary-container": "#784d00",
+                    "on-secondary-fixed": "#291800",
+                    "primary-container": "#002447",
+                    "outline": "#74777f",
+                    "background": "#fcf9f8",
+                    "secondary-container": "#ffc16a",
+                    "surface-variant": "#e4e2e1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "unit": "8px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px",
+                    "stack-md": "16px",
+                    "screen-margin": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Work Sans"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Work Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Work Sans"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        /* Hide scrollbar for horizontal scrolling but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        body {
+            background-color: #fcf9f8;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[100px] md:hidden">
+<!-- TopAppBar -->
+<header class="bg-surface h-[56px] w-full sticky top-0 z-50 flex items-center justify-between px-screen-margin border-b border-outline-variant">
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+<h1 class="font-headline-md text-headline-md font-bold">Students</h1>
+</div>
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined text-[24px] cursor-pointer">search</span>
+<span class="material-symbols-outlined text-[24px] cursor-pointer">filter_list</span>
+</div>
+</header>
+<!-- Horizontal Scroll Filter Chips -->
+<div class="px-screen-margin py-stack-sm bg-surface sticky top-[56px] z-40 border-b border-outline-variant overflow-x-auto no-scrollbar flex gap-unit">
+<button class="px-4 py-1 rounded-full border border-primary-container text-primary-container font-label-lg text-label-lg whitespace-nowrap bg-surface-container-low focus:bg-primary focus:text-on-primary">All</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">JSS1</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">JSS2</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">JSS3</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">SS1</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">SS2</button>
+<button class="px-4 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap bg-surface focus:bg-primary focus:text-on-primary">SS3</button>
+</div>
+<!-- Sticky Count -->
+<div class="px-screen-margin py-unit bg-surface-container-lowest sticky top-[104px] z-30 flex items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">842 students · JSS2A shown</span>
+</div>
+<!-- Main Content List -->
+<main class="px-screen-margin py-stack-md flex flex-col gap-stack-sm">
+<!-- Data Card 1: Paid -->
+<article class="bg-surface border border-outline-variant flex items-center p-unit relative">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-[#6a9472]"></div> <!-- Green Status Border -->
+<div class="flex-1 flex items-center gap-4 pl-unit">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container font-headline-sm text-headline-sm">
+                    AO
+                </div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-on-background font-medium">Adeola Ojo</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">JSS2A · Adm. No. GC/2023/0184</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="bg-[#c0eec7] text-[#00210c] px-2 py-1 rounded-[4px] font-label-sm text-label-sm">Paid</span>
+</div>
+</article>
+<!-- Data Card 2: Owing -->
+<article class="bg-surface border border-outline-variant flex items-center p-unit relative">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-error"></div> <!-- Red Status Border -->
+<div class="flex-1 flex items-center gap-4 pl-unit">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container font-headline-sm text-headline-sm">
+                    CO
+                </div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-on-background font-medium">Chinedu Okeke</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">JSS2A · Adm. No. GC/2023/0185</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="bg-error-container text-on-error-container px-2 py-1 rounded-[4px] font-label-sm text-label-sm">Owing ₦45,000.00</span>
+</div>
+</article>
+<!-- Data Card 3: Paid -->
+<article class="bg-surface border border-outline-variant flex items-center p-unit relative">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-[#6a9472]"></div>
+<div class="flex-1 flex items-center gap-4 pl-unit">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container font-headline-sm text-headline-sm">
+                    ZB
+                </div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-on-background font-medium">Zainab Bello</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">JSS2A · Adm. No. GC/2023/0186</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="bg-[#c0eec7] text-[#00210c] px-2 py-1 rounded-[4px] font-label-sm text-label-sm">Paid</span>
+</div>
+</article>
+<!-- Data Card 4: Owing Small -->
+<article class="bg-surface border border-outline-variant flex items-center p-unit relative">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-error"></div>
+<div class="flex-1 flex items-center gap-4 pl-unit">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary-container font-headline-sm text-headline-sm">
+                    EJ
+                </div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-on-background font-medium">Emmanuel James</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">JSS2A · Adm. No. GC/2023/0187</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="bg-error-container text-on-error-container px-2 py-1 rounded-[4px] font-label-sm text-label-sm">Owing ₦5,000.00</span>
+</div>
+</article>
+</main>
+<!-- FAB -->
+<button class="fixed right-screen-margin bottom-[96px] z-50 w-[56px] h-[56px] bg-[#feae2c] rounded-full flex items-center justify-center shadow-none active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[#1b1c1c] text-[24px]">person_add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center bg-surface px-unit pb-safe h-[80px] border-t border-outline-variant">
+<div class="flex flex-col items-center justify-center gap-1 text-on-surface-variant cursor-pointer p-2 rounded-lg hover:bg-surface-container-low">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center gap-1 text-on-surface-variant cursor-pointer p-2 rounded-lg hover:bg-surface-container-low">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</div>
+<!-- Active Tab -->
+<div class="flex flex-col items-center justify-center gap-1 text-primary-container bg-secondary-container rounded-full px-4 py-1 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-sm text-label-sm font-semibold">Students</span>
+</div>
+<div class="flex flex-col items-center justify-center gap-1 text-on-surface-variant cursor-pointer p-2 rounded-lg hover:bg-surface-container-low">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</div>
+<div class="flex flex-col items-center justify-center gap-1 text-on-surface-variant cursor-pointer p-2 rounded-lg hover:bg-surface-container-low">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</div>
+</nav>
+</body></html>

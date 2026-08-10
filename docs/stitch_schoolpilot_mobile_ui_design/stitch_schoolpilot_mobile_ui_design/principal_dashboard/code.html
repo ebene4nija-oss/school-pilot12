@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>School Administrator Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f6f3f2",
+                        "surface": "#fcf9f8",
+                        "tertiary-fixed": "#c0eec7",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#6a9472",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e4e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "outline-variant": "#c3c6cf",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#446086",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#303030",
+                        "inverse-primary": "#acc8f4",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "surface-container": "#f0edec",
+                        "on-tertiary-fixed": "#00210c",
+                        "primary-fixed-dim": "#acc8f4",
+                        "tertiary": "#001105",
+                        "surface-bright": "#fcf9f8",
+                        "tertiary-container": "#002a11",
+                        "primary": "#000e22",
+                        "secondary": "#835500",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-container-high": "#eae7e7",
+                        "surface-dim": "#dcd9d8",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "primary-fixed": "#d4e3ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1b1c1b",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "on-primary-container": "#718cb5",
+                        "on-surface": "#1b1c1b",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "on-surface-variant": "#43474e",
+                        "on-secondary-container": "#784d00",
+                        "on-secondary-fixed": "#291800",
+                        "primary-container": "#002447",
+                        "outline": "#74777f",
+                        "background": "#fcf9f8",
+                        "secondary-container": "#ffc16a",
+                        "surface-variant": "#e4e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "screen-margin": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-sm": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-lg": ["Work Sans"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); }
+        .crisp-border { border: 1px solid theme('colors.outline-variant'); }
+        .data-card { background-color: theme('colors.surface-container-lowest'); border: 1px solid theme('colors.outline-variant'); border-radius: theme('borderRadius.lg'); }
+    </style>
+</head>
+<body class="text-on-background font-body-md pb-[80px]"> <!-- pb to account for bottom nav -->
+<!-- TopAppBar -->
+<header class="h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant bg-surface flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-unit">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Graceland College</span>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<img class="w-8 h-8 rounded-full object-cover crisp-border" data-alt="A small circular avatar of a professional school administrator, realistic portrait style, high resolution, soft lighting, neutral background, modern corporate aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7zmzaQ1OSsFQB70dWFzMSKveDIiwLjbD4eAPHospgXTWIO4tDweOsN4AK38DCp54a2w_st6mtivhF-p8K4c7-9hTNyI5W-ACtPUL6j_vhUXvmWEtSBrfPrEGlSbah2QwEJIBgkxm0mDbjhkN0d-hWAs92Wc005xg3KQx_w2IOZokTae_QiXlFMfFzWtj-QiLsnCoOL9AzwSbnbHme7WvumQffir8LzhJsuXYiL28A0f5xXXEAGtKi"/>
+</div>
+</header>
+<!-- Main Content -->
+<main class="p-screen-margin space-y-stack-lg max-w-7xl mx-auto">
+<!-- Row 1: KPI Grid -->
+<div class="grid grid-cols-2 gap-unit md:gap-stack-md">
+<div class="data-card p-stack-md">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-unit">Enrolment</p>
+<p class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary">842</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">students</p>
+</div>
+<div class="data-card p-stack-md">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-unit">Attendance Today</p>
+<p class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary">91.4%</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">avg. across grades</p>
+</div>
+</div>
+<!-- Row 2: Financials -->
+<div class="data-card p-stack-md">
+<div class="flex justify-between items-start mb-unit">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fees Collected</p>
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="payments">payments</span>
+</div>
+<p class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-stack-sm">₦18,420,000.00</p>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container-high h-2 rounded-full mb-unit overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 62%;"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant flex justify-between">
+<span>62% of ₦29,700,000.00</span>
+<span class="text-error font-medium">₦11,280,000.00 outstanding</span>
+</p>
+</div>
+<!-- Needs Attention Section -->
+<section>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-stack-md">Needs attention</h2>
+<div class="space-y-unit">
+<div class="data-card p-stack-md flex items-center justify-between border-l-4 border-l-error">
+<div class="flex items-center gap-stack-md">
+<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-background">37 fee defaulters</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Action required</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="data-card p-stack-md flex items-center justify-between border-l-4 border-l-secondary-container">
+<div class="flex items-center gap-stack-md">
+<span class="material-symbols-outlined text-secondary-container" data-icon="pending_actions">pending_actions</span>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-background">Second Term results awaiting release</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Review needed</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="data-card p-stack-md flex items-center justify-between border-l-4 border-l-secondary-container">
+<div class="flex items-center gap-stack-md">
+<span class="material-symbols-outlined text-secondary-container" data-icon="event_busy">event_busy</span>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-background">4 leave requests pending</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Staff requests</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Term at a glance (Chart Placeholder) -->
+<section class="mb-stack-lg">
+<h2 class="font-headline-sm text-headline-sm text-primary mb-stack-md">Term at a glance</h2>
+<div class="data-card p-stack-md h-48 flex items-end justify-between gap-2 px-stack-lg">
+<!-- Simple CSS Bar Chart -->
+<div class="flex flex-col items-center justify-end h-full w-full gap-1">
+<div class="w-full bg-primary-container opacity-80 h-[85%] rounded-t-sm"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mon</span>
+</div>
+<div class="flex flex-col items-center justify-end h-full w-full gap-1">
+<div class="w-full bg-primary-container opacity-90 h-[92%] rounded-t-sm"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tue</span>
+</div>
+<div class="flex flex-col items-center justify-end h-full w-full gap-1">
+<div class="w-full bg-primary-container h-[95%] rounded-t-sm"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Wed</span>
+</div>
+<div class="flex flex-col items-center justify-end h-full w-full gap-1">
+<div class="w-full bg-primary-container opacity-70 h-[75%] rounded-t-sm"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Thu</span>
+</div>
+<div class="flex flex-col items-center justify-end h-full w-full gap-1">
+<div class="w-full bg-primary-container opacity-85 h-[88%] rounded-t-sm"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fri</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-[80px] bg-surface flex justify-around items-center px-unit pb-safe md:hidden border-t-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<!-- Home (Active) -->
+<button class="flex flex-col items-center justify-center gap-1 text-primary-container bg-secondary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<!-- Finance -->
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</button>
+<!-- Students -->
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</button>
+<!-- Staff -->
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</button>
+<!-- More -->
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</button>
+</nav>
+</body></html>

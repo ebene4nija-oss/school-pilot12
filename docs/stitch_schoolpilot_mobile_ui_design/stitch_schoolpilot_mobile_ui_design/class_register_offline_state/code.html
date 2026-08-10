@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>SchoolPilot - Register</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#c0eec7",
+                        "on-secondary-fixed": "#291800",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#000e22",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "inverse-primary": "#acc8f4",
+                        "surface-tint": "#446086",
+                        "primary-container": "#002447",
+                        "surface-container-highest": "#e4e2e1",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#d4e3ff",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed-dim": "#acc8f4",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dcd9d8",
+                        "error-container": "#ffdad6",
+                        "on-surface-variant": "#43474e",
+                        "surface-container-high": "#eae7e7",
+                        "tertiary-container": "#002a11",
+                        "on-surface": "#1b1c1b",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#784d00",
+                        "inverse-on-surface": "#f3f0ef",
+                        "secondary-fixed": "#ffddb4",
+                        "on-primary-container": "#718cb5",
+                        "on-tertiary-fixed": "#00210c",
+                        "background": "#fcf9f8",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "surface-variant": "#e4e2e1",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container": "#f0edec",
+                        "surface-bright": "#fcf9f8",
+                        "secondary-container": "#ffc16a",
+                        "on-background": "#1b1c1b",
+                        "inverse-surface": "#303030",
+                        "outline": "#74777f",
+                        "surface": "#fcf9f8",
+                        "secondary": "#835500",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "on-tertiary-container": "#6a9472",
+                        "tertiary": "#001105",
+                        "outline-variant": "#c3c6cf",
+                        
+                        // Semantic status colors not in standard token set but required for standard UI
+                        "status-present": "#2e7d32",
+                        "status-absent": "#c62828",
+                        "status-late": "#f9a825",
+                        "status-excused": "#546e7a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "screen-margin": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-sm": ["Work Sans"],
+                        "label-lg": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "headline-lg": ["Work Sans"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #fcf9f8; }
+        h1, h2, h3, h4, h5, h6, .font-headline-md, .font-headline-sm, .font-headline-lg, .font-headline-lg-mobile { font-family: 'Work Sans', sans-serif; }
+        
+        /* Non-optical depth, crisp boundaries */
+        .crisp-card {
+            background-color: #ffffff;
+            border: 1px solid #c3c6cf;
+        }
+        
+        /* Hide scrollbar for cleaner UI */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Segmented control styles */
+        .segment-btn {
+            border-right: 1px solid #c3c6cf;
+        }
+        .segment-btn:last-child {
+            border-right: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background flex flex-col min-h-screen">
+<!-- TopAppBar from JSON -->
+<header class="h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant bg-surface flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-100 p-2 -ml-2 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</h1>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-100 p-2 -mr-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 pb-[160px] md:pb-[100px]"> <!-- Extra padding for fixed bottom elements -->
+<!-- Offline Banner -->
+<div class="bg-secondary-container text-on-secondary-container px-screen-margin py-2 flex items-center gap-2 border-b border-outline-variant text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[16px]">cloud_off</span>
+<span>Offline — 3 changes will sync when you're back online</span>
+</div>
+<!-- Page Header: Class Context -->
+<div class="px-screen-margin pt-stack-lg pb-stack-md bg-surface">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary">JSS2A</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                Mon 9 Aug · Class Register
+            </p>
+</div>
+<!-- Summary Strip & Action -->
+<div class="px-screen-margin pb-stack-md bg-surface border-b border-outline-variant sticky top-[56px] z-40 shadow-sm shadow-black/5">
+<!-- Tallies -->
+<div class="flex flex-wrap gap-2 mb-4">
+<div class="flex items-center gap-1 bg-[#2e7d32]/10 text-[#1b5e20] px-2 py-1 rounded border border-[#2e7d32]/20 font-label-lg text-label-lg">
+<span class="w-2 h-2 rounded-full bg-[#2e7d32]"></span>
+                    Present: 28
+                </div>
+<div class="flex items-center gap-1 bg-[#c62828]/10 text-[#b71c1c] px-2 py-1 rounded border border-[#c62828]/20 font-label-lg text-label-lg">
+<span class="w-2 h-2 rounded-full bg-[#c62828]"></span>
+                    Absent: 3
+                </div>
+<div class="flex items-center gap-1 bg-[#f9a825]/10 text-[#f57f17] px-2 py-1 rounded border border-[#f9a825]/20 font-label-lg text-label-lg">
+<span class="w-2 h-2 rounded-full bg-[#f9a825]"></span>
+                    Late: 2
+                </div>
+<div class="flex items-center gap-1 bg-surface-container-high text-on-surface-variant px-2 py-1 rounded border border-outline-variant font-label-lg text-label-lg">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+                    Excused: 1
+                </div>
+</div>
+<!-- Global Action -->
+<button class="w-full flex items-center justify-center gap-2 py-2 px-4 border border-primary-container text-primary-container rounded-full font-label-lg text-label-lg hover:bg-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[18px]">done_all</span>
+                Mark all present
+            </button>
+</div>
+<!-- Student List Container -->
+<div class="bg-surface">
+<!-- Student Row 1 (Present) -->
+<div class="h-[72px] px-screen-margin flex flex-col md:flex-row md:items-center justify-center border-b border-outline-variant py-2 md:py-0 gap-2 md:gap-4 md:justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="A professional headshot of a female middle school student wearing a standard navy blue blazer uniform, brightly lit against a neutral grey studio background, conveying an academic atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdeDAk66wzAd8e_8Zk9gXLA3QwfGmPvOamK7FvYHa8R6jQCPJ1SZaGksw3QUbhk7rZ5FrYt--EIxzqpa9XJt20xI5Wjneihedgiu0Xja1IPMPZmGZLPTAA9Hxa5cLJdanvVVjhUXX_plBiKU7vGWZmK6idz1qRtm3p6rXMNffDrY9KZsxYY4rBdbD1Pw_6gg5Hzkc8DBayeHfX_K3TgPE_XGaGftYSuI7aqe_asL--vgkMaZ-JyNwf"/>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Adebayo, Folake</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">ID: 2021-042</p>
+</div>
+</div>
+<!-- 4-way segmented control -->
+<div class="flex border border-outline-variant rounded-full overflow-hidden h-[36px] w-full md:w-auto">
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-[#2e7d32] text-white font-label-lg text-label-lg">P</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">A</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">L</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">E</button>
+</div>
+</div>
+<!-- Student Row 2 (Absent) -->
+<div class="h-[72px] px-screen-margin flex flex-col md:flex-row md:items-center justify-center border-b border-outline-variant border-l-4 border-l-[#c62828] py-2 md:py-0 gap-2 md:gap-4 md:justify-between bg-error-container/20">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="A professional headshot of a male middle school student wearing a light blue dress shirt and school tie, softly lit against a plain white background, capturing a focused and tidy school portrait aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6TGqjApor73i9y1RODAb1a79W45RmEa0Wyon-HEiNE3eVztV4mtS5Wvvg-9-z1PUONgErZBruXgZHtiHoxq6gWvhV9KNO1ywFAXjZVOQUWCTGaqOsmMvEXiK4tNRejmk9g2kiKnNkN-K7f90h_Eo-qABTgkGyi_g3dylwTMJ3gxqbbpeyMf39-svB_Z-yREi1mmRekTR8RPejFtJBFuqrGkOBe9vOgiN3sTEz-ePH0c1mp3xfKi4j"/>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Chukwu, Emeka</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">ID: 2021-089</p>
+</div>
+</div>
+<!-- 4-way segmented control -->
+<div class="flex border border-[#c62828]/30 rounded-full overflow-hidden h-[36px] w-full md:w-auto">
+<button class="flex-1 md:w-12 flex items-center justify-center border-r border-[#c62828]/30 bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">P</button>
+<button class="flex-1 md:w-12 flex items-center justify-center border-r border-[#c62828]/30 bg-[#c62828] text-white font-label-lg text-label-lg">A</button>
+<button class="flex-1 md:w-12 flex items-center justify-center border-r border-[#c62828]/30 bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">L</button>
+<button class="flex-1 md:w-12 flex items-center justify-center bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">E</button>
+</div>
+</div>
+<!-- Student Row 3 (Late) -->
+<div class="h-[72px] px-screen-margin flex flex-col md:flex-row md:items-center justify-center border-b border-outline-variant border-l-4 border-l-[#f9a825] py-2 md:py-0 gap-2 md:gap-4 md:justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant flex-shrink-0 flex items-center justify-center font-headline-sm text-on-surface-variant">
+                        DO
+                    </div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Danladi, Olu</h3>
+<p class="font-label-sm text-label-sm text-[#f57f17] flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                            Arrived 08:15 AM
+                        </p>
+</div>
+</div>
+<div class="flex border border-outline-variant rounded-full overflow-hidden h-[36px] w-full md:w-auto">
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">P</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">A</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-[#f9a825] text-on-secondary-fixed-variant font-label-lg text-label-lg">L</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">E</button>
+</div>
+</div>
+<!-- Student Row 4 (Unmarked) -->
+<div class="h-[72px] px-screen-margin flex flex-col md:flex-row md:items-center justify-center border-b border-outline-variant py-2 md:py-0 gap-2 md:gap-4 md:justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="A professional headshot of a female high school student with braided hair, wearing a white collared shirt, set against a light grey background, looking directly at the camera with a neutral expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7-NF5wca6J9i44hdWJewKiuZvoNw-jqHtd2kGJv_NWwGfbFxY2uIgOfiahA2zruf2aT1gLhy7nfkuI6oiuR3yPqDmSpu9MztjkVJRmVi2K4m8kbU0goTXa7dA7xnXvscRuo1yuEh3QDjmGl9CU6u36R1jPXZPHPU19H0CWzuGbYSreYDIPlPODu_t5g21kpau0zwfUvQSrsUZzQ-H9623_ghry-26A0MwbcVnhKlPzxqzE3Bl5gcI"/>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Eze, Chika</h3>
+<p class="font-label-sm text-label-sm text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">error</span>
+                            Unmarked
+                        </p>
+</div>
+</div>
+<div class="flex border border-outline-variant rounded-full overflow-hidden h-[36px] w-full md:w-auto shadow-sm shadow-[#002447]/10">
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">P</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">A</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">L</button>
+<button class="flex-1 md:w-12 flex items-center justify-center segment-btn bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface-variant">E</button>
+</div>
+</div>
+<!-- Dummy rows to show list continues -->
+<div class="h-[56px] px-screen-margin flex items-center border-b border-outline-variant/50 opacity-50">
+<div class="w-10 h-10 rounded-full bg-surface-variant mr-3"></div>
+<div class="h-4 w-32 bg-surface-variant rounded"></div>
+</div>
+<div class="h-[56px] px-screen-margin flex items-center border-b border-outline-variant/50 opacity-30">
+<div class="w-10 h-10 rounded-full bg-surface-variant mr-3"></div>
+<div class="h-4 w-24 bg-surface-variant rounded"></div>
+</div>
+</div>
+</main>
+<!-- Floating Action Bottom Bar (Submission) -->
+<div class="fixed bottom-[80px] w-full px-screen-margin py-3 bg-surface border-t border-outline-variant z-40 md:bottom-0">
+<div class="max-w-3xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+<div class="text-center md:text-left">
+<p class="font-label-lg text-label-lg text-on-surface font-semibold">31 of 34 marked</p>
+<p class="font-label-sm text-label-sm text-error">3 students pending</p>
+</div>
+<button class="h-[48px] bg-secondary-container text-[#1b1c1c] font-bold rounded-full w-full md:w-auto md:px-8 flex flex-col items-center justify-center hover:bg-[#f8b449] transition-colors">
+<span class="font-label-lg text-label-lg">Submit register</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar from JSON -->
+<nav class="fixed bottom-0 w-full z-50 h-[80px] flex justify-around items-center bg-surface px-unit pb-safe border-t border-outline-variant md:hidden">
+<!-- Inactive: Home -->
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Active: Fees (using JSON active style pattern, but conceptually 'Register' based on prompt) -->
+<a class="flex flex-col items-center justify-center gap-1 text-primary-container bg-secondary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">assignment_turned_in</span>
+<span class="font-label-sm text-label-sm font-bold">Register</span>
+</a>
+<!-- Inactive: Students -->
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<!-- Inactive: Staff -->
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</a>
+<!-- Inactive: More -->
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+</body></html>

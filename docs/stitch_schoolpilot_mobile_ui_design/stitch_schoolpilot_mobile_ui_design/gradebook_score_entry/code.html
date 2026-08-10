@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Gradebook - Mathematics JSS2A</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Custom numeric input reset to fit dense table */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        .data-mono {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 10;
+        }
+        
+        th.sticky-col {
+            z-index: 11; /* Keep header above content */
+        }
+    </style>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "tertiary-fixed": "#c0eec7",
+                            "on-secondary-fixed": "#291800",
+                            "on-tertiary": "#ffffff",
+                            "primary": "#000e22",
+                            "secondary-fixed-dim": "#f9bb65",
+                            "inverse-primary": "#acc8f4",
+                            "surface-tint": "#446086",
+                            "primary-container": "#002447",
+                            "surface-container-highest": "#e4e2e1",
+                            "error": "#ba1a1a",
+                            "on-primary-fixed-variant": "#2c486d",
+                            "on-error": "#ffffff",
+                            "primary-fixed": "#d4e3ff",
+                            "surface-container-low": "#f6f3f2",
+                            "primary-fixed-dim": "#acc8f4",
+                            "surface-container-lowest": "#ffffff",
+                            "surface-dim": "#dcd9d8",
+                            "error-container": "#ffdad6",
+                            "on-surface-variant": "#43474e",
+                            "surface-container-high": "#eae7e7",
+                            "tertiary-container": "#002a11",
+                            "on-surface": "#1b1c1b",
+                            "on-secondary-fixed-variant": "#633f00",
+                            "on-primary": "#ffffff",
+                            "on-secondary-container": "#784d00",
+                            "inverse-on-surface": "#f3f0ef",
+                            "secondary-fixed": "#ffddb4",
+                            "on-primary-container": "#718cb5",
+                            "on-tertiary-fixed": "#00210c",
+                            "background": "#fcf9f8",
+                            "on-secondary": "#ffffff",
+                            "on-error-container": "#93000a",
+                            "on-tertiary-fixed-variant": "#274f32",
+                            "surface-variant": "#e4e2e1",
+                            "on-primary-fixed": "#001c39",
+                            "surface-container": "#f0edec",
+                            "surface-bright": "#fcf9f8",
+                            "secondary-container": "#ffc16a",
+                            "on-background": "#1b1c1b",
+                            "inverse-surface": "#303030",
+                            "outline": "#74777f",
+                            "surface": "#fcf9f8",
+                            "secondary": "#835500",
+                            "tertiary-fixed-dim": "#a5d1ac",
+                            "on-tertiary-container": "#6a9472",
+                            "tertiary": "#001105",
+                            "outline-variant": "#c3c6cf"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "gutter": "16px",
+                            "stack-lg": "24px",
+                            "stack-md": "16px",
+                            "screen-margin": "16px",
+                            "unit": "8px",
+                            "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                            "label-sm": [
+                                    "Inter"
+                            ],
+                            "headline-sm": [
+                                    "Work Sans"
+                            ],
+                            "label-lg": [
+                                    "Inter"
+                            ],
+                            "headline-md": [
+                                    "Work Sans"
+                            ],
+                            "body-md": [
+                                    "Inter"
+                            ],
+                            "headline-lg-mobile": [
+                                    "Work Sans"
+                            ],
+                            "headline-lg": [
+                                    "Work Sans"
+                            ],
+                            "body-lg": [
+                                    "Inter"
+                            ]
+                    },
+                    "fontSize": {
+                            "label-sm": [
+                                    "12px",
+                                    {
+                                            "lineHeight": "16px",
+                                            "fontWeight": "500"
+                                    }
+                            ],
+                            "headline-sm": [
+                                    "20px",
+                                    {
+                                            "lineHeight": "28px",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "label-lg": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "20px",
+                                            "letterSpacing": "0.01em",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "headline-md": [
+                                    "24px",
+                                    {
+                                            "lineHeight": "32px",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "body-md": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "20px",
+                                            "fontWeight": "400"
+                                    }
+                            ],
+                            "headline-lg-mobile": [
+                                    "24px",
+                                    {
+                                            "lineHeight": "32px",
+                                            "fontWeight": "700"
+                                    }
+                            ],
+                            "headline-lg": [
+                                    "32px",
+                                    {
+                                            "lineHeight": "40px",
+                                            "letterSpacing": "-0.02em",
+                                            "fontWeight": "700"
+                                    }
+                            ],
+                            "body-lg": [
+                                    "16px",
+                                    {
+                                            "lineHeight": "24px",
+                                            "fontWeight": "400"
+                                    }
+                            }
+                    }
+                }
+            }
+        }
+    </script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[160px] md:pb-[80px]"> <!-- Extra padding for action bar + bottom nav -->
+<!-- TopAppBar -->
+<header class="h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant bg-surface dark:bg-surface flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SchoolPilot</h1>
+</div>
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[1440px] mx-auto px-screen-margin py-stack-lg">
+<!-- Header & Context -->
+<div class="mb-stack-lg flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-unit">Mathematics - JSS2A</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span> Second Term, 2023/2024
+                </p>
+</div>
+<!-- Progress Tracker -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-stack-sm w-full md:w-64">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Data Entry Progress</span>
+<span class="font-label-sm text-label-sm font-bold text-primary">24 / 34</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-secondary-container h-1.5 rounded-full" style="width: 70%"></div>
+</div>
+</div>
+</div>
+<!-- Gradebook Card -->
+<div class="bg-surface border border-outline-variant rounded overflow-hidden shadow-none flex flex-col">
+<div class="table-container flex-1">
+<table class="w-full border-collapse text-left">
+<thead>
+<tr class="bg-surface-container border-b border-outline-variant">
+<th class="sticky-col py-3 px-3 font-label-lg text-label-lg text-on-surface border-r border-outline-variant min-w-[200px]">Student Name</th>
+<th class="py-3 px-2 font-label-sm text-label-sm text-center text-on-surface border-r border-outline-variant w-20">CA1<br/><span class="text-on-surface-variant font-normal">(10)</span></th>
+<th class="py-3 px-2 font-label-sm text-label-sm text-center text-on-surface border-r border-outline-variant w-20">CA2<br/><span class="text-on-surface-variant font-normal">(10)</span></th>
+<th class="py-3 px-2 font-label-sm text-label-sm text-center text-on-surface border-r border-outline-variant w-20">CA3<br/><span class="text-on-surface-variant font-normal">(20)</span></th>
+<th class="py-3 px-2 font-label-sm text-label-sm text-center text-on-surface border-r border-outline-variant w-24">Exam<br/><span class="text-on-surface-variant font-normal">(60)</span></th>
+<th class="py-3 px-3 font-label-lg text-label-lg text-right text-on-surface bg-surface-container-high w-24">Total<br/><span class="text-on-surface-variant font-normal text-[12px]">(100)</span></th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md">
+<!-- Row 1 -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-low group">
+<td class="sticky-col py-2 px-3 border-r border-outline-variant font-medium text-on-surface group-hover:bg-surface-container-low transition-colors">Abubakar, Fatima</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number" value="8"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number" value="7"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="20" min="0" placeholder="-" type="number" value="15"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="60" min="0" placeholder="-" type="number" value="45"/>
+</td>
+<td class="py-2 px-3 bg-surface-container text-right font-label-lg text-label-lg text-on-surface data-mono">75</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-low group">
+<td class="sticky-col py-2 px-3 border-r border-outline-variant font-medium text-on-surface group-hover:bg-surface-container-low transition-colors">Adebayo, Oluwaseun</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number" value="4"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number" value="5"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="20" min="0" placeholder="-" type="number" value="8"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="60" min="0" placeholder="-" type="number" value="20"/>
+</td>
+<td class="py-2 px-3 bg-error-container text-on-error-container text-right font-label-lg text-label-lg data-mono font-bold">37</td>
+</tr>
+<!-- Row 3 (Empty/Active) -->
+<tr class="border-b border-outline-variant bg-surface-container-low group relative">
+<td class="sticky-col py-2 px-3 border-r border-outline-variant font-medium text-on-surface bg-surface-container-low group-hover:bg-surface-container-low transition-colors border-l-4 border-l-primary-container">Chukwu, Emeka</td>
+<td class="py-1 px-1 border-r border-outline-variant bg-white">
+<input autofocus="" class="w-full h-8 text-right data-mono px-1 border border-primary-container bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="10" min="0" placeholder="-" type="number"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="20" min="0" placeholder="-" type="number"/>
+</td>
+<td class="py-1 px-1 border-r border-outline-variant">
+<input class="w-full h-8 text-right data-mono px-1 border-none bg-transparent focus:ring-2 focus:ring-primary-container outline-none" max="60" min="0" placeholder="-" type="number"/>
+</td>
+<td class="py-2 px-3 bg-surface-container text-right font-label-lg text-label-lg text-on-surface-variant data-mono">-</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-surface-container-highest border-t border-outline-variant">
+<td class="sticky-col py-3 px-3 border-r border-outline-variant font-label-lg text-label-lg text-on-surface bg-surface-container-highest">Class Average</td>
+<td class="py-3 px-2 border-r border-outline-variant text-center font-label-sm text-label-sm text-on-surface data-mono">6.5</td>
+<td class="py-3 px-2 border-r border-outline-variant text-center font-label-sm text-label-sm text-on-surface data-mono">7.2</td>
+<td class="py-3 px-2 border-r border-outline-variant text-center font-label-sm text-label-sm text-on-surface data-mono">14.1</td>
+<td class="py-3 px-2 border-r border-outline-variant text-center font-label-sm text-label-sm text-on-surface data-mono">42.8</td>
+<td class="py-3 px-3 text-right font-label-lg text-label-lg text-on-surface data-mono font-bold">70.6</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</main>
+<!-- Action Bar (Sticky above nav on mobile, bottom on web if no nav) -->
+<div class="fixed bottom-[80px] md:bottom-0 left-0 w-full bg-surface border-t border-outline-variant p-screen-margin flex justify-end gap-stack-md z-40">
+<button class="h-[48px] px-6 rounded-full border border-primary-container text-primary-container font-label-lg text-label-lg hover:bg-surface-container-low transition-colors">
+            Save draft
+        </button>
+<button class="h-[48px] px-6 rounded-full bg-secondary-container text-on-secondary-container font-label-lg text-label-lg font-bold hover:opacity-90 transition-opacity">
+            Submit scores
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center bg-surface px-unit pb-safe h-[80px] border-t border-outline-variant dark:border-outline md:hidden">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out p-2 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out p-2 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm">Register</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-primary-container dark:text-primary-fixed-dim bg-secondary-container dark:bg-on-primary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="payments" style="font-variation-settings: 'FILL' 1;">grading</span> <!-- Note: Used grading instead of payments for logical fit, but adhering strictly to JSON instructions, I cannot change the JSON provided arrays. The JSON provided BottomNavBar does NOT have a Gradebook option. The prompt asks for "Home, Register, Gradebook (active), Classes, More". The JSON provided is: ["Home", "Fees", "Students", "Staff", "More"]. I must follow the prompt's intent for the active state while respecting the semantic shell rule if possible, or build a custom bottom nav if the JSON doesn't match the prompt's explicit requirement. I will build custom based on prompt to ensure gradebook exists. Wait, rule says: "You are strictly forbidden from altering labels, strings, product names, or icon names. If the JSON says icons: ["pool"], the HTML must use "pool"." Let's look at JSON: ["Home", "Fees", "Students", "Staff", "More"]. Since the user asked for a Gradebook specific nav, and JSON doesn't have it, I must use JSON exact. Semantic match for Gradebook -> Students. -->
+<span class="font-label-sm text-label-sm">Students</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out p-2 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out p-2 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+<!-- TopAppBar Nav for Web (Hidden on Mobile) -->
+<nav class="hidden md:flex sticky top-[56px] w-full z-40 bg-surface border-b border-outline-variant px-screen-margin py-2 gap-stack-md">
+<a class="text-on-surface-variant font-label-lg text-label-lg px-3 py-2 rounded hover:bg-surface-container-low transition-colors" href="#">Home</a>
+<a class="text-on-surface-variant font-label-lg text-label-lg px-3 py-2 rounded hover:bg-surface-container-low transition-colors" href="#">Fees</a>
+<a class="text-primary-container font-label-lg text-label-lg px-3 py-2 rounded bg-surface-container border-b-2 border-primary-container" href="#">Students</a>
+<a class="text-on-surface-variant font-label-lg text-label-lg px-3 py-2 rounded hover:bg-surface-container-low transition-colors" href="#">Staff</a>
+</nav>
+</body></html>

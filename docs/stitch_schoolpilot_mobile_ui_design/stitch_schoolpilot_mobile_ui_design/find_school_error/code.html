@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>SchoolPilot - School Identification</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter & Work Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#fcf9f8",
+                        "outline-variant": "#c3c6cf",
+                        "primary-container": "#002447",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1b1c1b",
+                        "inverse-surface": "#303030",
+                        "on-tertiary-container": "#6a9472",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "surface-dim": "#dcd9d8",
+                        "primary": "#000e22",
+                        "surface-container": "#f0edec",
+                        "primary-fixed-dim": "#acc8f4",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f3f0ef",
+                        "tertiary-fixed": "#c0eec7",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "secondary-container": "#ffc16a",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "tertiary": "#001105",
+                        "tertiary-container": "#002a11",
+                        "on-primary-fixed": "#001c39",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#784d00",
+                        "secondary": "#835500",
+                        "surface-container-high": "#eae7e7",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "primary-fixed": "#d4e3ff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed": "#291800",
+                        "surface-tint": "#446086",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "on-surface-variant": "#43474e",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-container-highest": "#e4e2e1",
+                        "on-error": "#ffffff",
+                        "on-background": "#1b1c1b",
+                        "on-primary-container": "#718cb5",
+                        "outline": "#74777f",
+                        "inverse-primary": "#acc8f4",
+                        "background": "#fcf9f8",
+                        "surface-variant": "#e4e2e1",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "screen-margin": "16px",
+                        "unit": "8px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-md": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "headline-lg": ["Work Sans"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Modern Corporate Functionalism Styles */
+        body {
+            background-color: #fcf9f8; /* background */
+            color: #1b1c1b; /* on-background */
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Floating Label Input Logic */
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .floating-input {
+            width: 100%;
+            height: 56px;
+            padding: 24px 16px 8px 16px; /* Space for floating label */
+            border: 1px solid #c3c6cf; /* outline-variant */
+            background-color: #ffffff; /* on-primary */
+            border-radius: 0.125rem; /* DEFAULT radius */
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            line-height: 24px;
+            color: #1b1c1b; /* on-surface */
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        /* Error state overrides */
+        .floating-input.error {
+            border-color: #ba1a1a; /* error */
+            border-width: 2px;
+        }
+
+        .floating-input:focus {
+            border-color: #ba1a1a; /* maintains error color on focus if error class present */
+        }
+        
+        /* If not error and focused */
+        .floating-input:not(.error):focus {
+            border: 2px solid #002447; /* primary-container */
+        }
+
+        .floating-label {
+            position: absolute;
+            top: 18px;
+            left: 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            line-height: 24px;
+            color: #43474e; /* on-surface-variant */
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+        
+        .floating-label.error {
+            color: #ba1a1a; /* error */
+        }
+
+        .floating-input:focus ~ .floating-label,
+        .floating-input:not(:placeholder-shown) ~ .floating-label {
+            top: 8px;
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 500;
+        }
+        
+        /* Interactive element transitions */
+        .btn-primary {
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-ghost {
+            transition: background-color 0.2s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-screen-margin bg-background">
+<!-- Suppressed Shell: Linear/Transactional intent (Identification screen) -->
+<!-- Main Content Canvas -->
+<main class="w-full max-w-md bg-surface-container-lowest border border-outline-variant p-stack-lg flex flex-col gap-stack-lg rounded">
+<!-- Header Section -->
+<header class="flex flex-col gap-unit items-center text-center">
+<!-- Brand Mark / Icon Placeholder -->
+<div class="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center border border-outline-variant mb-unit">
+<span aria-hidden="true" class="material-symbols-outlined text-4xl text-primary-container" data-weight="fill" style="font-variation-settings: 'FILL' 1;">
+                    school
+                </span>
+</div>
+<!-- Exact string match requested: "School code" related context -->
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+                Find your school
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                Enter your unique school code to access SchoolPilot.
+            </p>
+</header>
+<!-- Form Section (Error State) -->
+<form class="flex flex-col gap-stack-lg" onsubmit="event.preventDefault();">
+<div class="flex flex-col gap-unit">
+<!-- Floating Label Input -->
+<div class="input-wrapper">
+<!-- placeholder=" " is required for the CSS :placeholder-shown hack -->
+<input aria-describedby="schoolCode-error" aria-invalid="true" class="floating-input error" id="schoolCode" placeholder=" " type="text" value="NG-12345"/>
+<label class="floating-label error" for="schoolCode">School code</label>
+</div>
+<!-- Helper / Error Text -->
+<div class="flex items-center gap-unit text-error font-body-md text-body-md" id="schoolCode-error">
+<span aria-hidden="true" class="material-symbols-outlined text-sm">error</span>
+<span>We couldn't find a school with that code.</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-stack-md mt-unit">
+<!-- Primary Button (Amber/Yellow as requested) -->
+<!-- Note: The prompt requested "Amber primary button". I am using the provided secondary-container (#ffc16a) which acts as the yellow/amber accent in the provided palette, paired with on-secondary-container text for contrast. -->
+<button class="btn-primary w-full h-[48px] bg-secondary-container text-on-secondary-container font-label-lg text-label-lg rounded-full flex items-center justify-center" type="submit">
+                    Continue
+                </button>
+</div>
+</form>
+<!-- Ghost Link & Hint -->
+<div class="flex flex-col items-center gap-unit mt-stack-md pt-stack-md border-t border-surface-variant">
+<button class="btn-ghost px-4 py-2 border border-primary-container text-primary-container bg-transparent font-label-lg text-label-lg rounded-full w-full" type="button">
+                I don't know my code
+            </button>
+<p class="font-body-md text-body-md text-on-surface-variant text-center mt-unit">
+                Your school code is in your invite SMS or email.
+            </p>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-stack-lg w-full max-w-md text-center">
+<p class="font-label-sm text-label-sm text-outline">
+            SchoolPilot — for Nigerian schools
+        </p>
+</footer>
+</body></html>

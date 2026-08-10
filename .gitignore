@@ -28,3 +28,6 @@ Thumbs.db
 /backend/storage/framework/cache/
 /backend/storage/framework/sessions/
 /backend/storage/framework/views/
+
+# The Stitch export archive — the unpacked folder next to it is what we read.
+docs/*.zip

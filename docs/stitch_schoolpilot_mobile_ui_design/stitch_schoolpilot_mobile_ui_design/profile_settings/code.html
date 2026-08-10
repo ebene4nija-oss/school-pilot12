@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Profile &amp; Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#ffddb4",
+                        "tertiary": "#001105",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "on-surface-variant": "#43474e",
+                        "surface-container-high": "#eae7e7",
+                        "surface-container-highest": "#e4e2e1",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#002a11",
+                        "primary-container": "#002447",
+                        "surface": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#d4e3ff",
+                        "outline": "#74777f",
+                        "on-primary-fixed": "#001c39",
+                        "tertiary-fixed": "#c0eec7",
+                        "inverse-primary": "#acc8f4",
+                        "secondary": "#835500",
+                        "on-surface": "#1b1c1b",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-primary-container": "#718cb5",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-secondary-fixed": "#291800",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#303030",
+                        "primary-fixed-dim": "#acc8f4",
+                        "primary": "#000e22",
+                        "surface-container": "#f0edec",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#6a9472",
+                        "on-secondary-container": "#784d00",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#ffc16a",
+                        "surface-tint": "#446086",
+                        "on-background": "#1b1c1b",
+                        "outline-variant": "#c3c6cf",
+                        "surface-variant": "#e4e2e1",
+                        "surface-bright": "#fcf9f8",
+                        "background": "#fcf9f8",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dcd9d8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "screen-margin": "16px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Work Sans"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "label-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant flex items-center justify-between px-screen-margin w-full">
+<button aria-label="Menu" class="flex items-center justify-center h-10 w-10 text-primary hover:bg-surface-container-high transition-colors active:scale-95 duration-100 rounded-full">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</h1>
+<button aria-label="Notifications" class="flex items-center justify-center h-10 w-10 text-primary hover:bg-surface-container-high transition-colors active:scale-95 duration-100 rounded-full">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-screen-margin py-stack-lg pb-[100px] flex flex-col gap-stack-lg">
+<!-- Profile Header -->
+<section class="flex flex-col items-center gap-stack-sm text-center">
+<div class="relative w-24 h-24 rounded-full overflow-hidden border border-outline-variant bg-surface-container mb-stack-sm">
+<img alt="Mrs. Adeyemi Avatar" class="w-full h-full object-cover" data-alt="A professional, high-quality portrait photograph of a confident African female teacher in her 40s named Mrs. Adeyemi. She is wearing a neat, dark blue corporate blazer over a white blouse. The background is a slightly blurred, bright modern classroom setting with natural light, emphasizing a clean, authoritative yet approachable educational environment. The image aligns with a modern corporate functionalism aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcMk2AVFDZ7hw1BWYZ_cl16_h-bmS3mo6EFpiCKeIU3BBJsC9hjsLgb-4-UnAgC9l-Ezvx3hJojHWSTs37ckF4M5_6-Uem64Q0rM7YeS3UoSBTE346w5NEsdUHuJ6aF3AbndR8G_2qHBXL57do7b8DKiVR4m-wzqk4viLk3_OoseShGGgkT-xmJyersNmWIkGP2fEYbG3fPHi3HGmJ2oZNDQO1tQGSDV4nWLuq1AFaPEuHpk1odp02"/>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Mrs. Adeyemi</h2>
+<div class="flex items-center gap-2">
+<span class="bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm px-2 py-1 rounded-sm">Teacher</span>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">school</span>
+                    Graceland College
+                </span>
+</div>
+</section>
+<!-- Offline Sync Alert Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT border-l-4 border-l-secondary-container p-stack-md flex items-center justify-between">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-secondary-container icon-fill">sync_problem</span>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface">Offline Mode</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">3 items waiting to sync</p>
+</div>
+</div>
+<button class="font-label-sm text-label-sm text-primary hover:bg-surface-variant px-3 py-2 rounded-sm transition-colors active:scale-95 duration-100">Sync Now</button>
+</div>
+<!-- Account Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider px-unit">Account</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT flex flex-col">
+<button class="flex items-center justify-between w-full p-stack-md border-b border-surface-variant hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">person</span>
+<span class="font-body-lg text-body-lg text-on-surface">Edit profile</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="flex items-center justify-between w-full p-stack-md border-b border-surface-variant hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">password</span>
+<span class="font-body-lg text-body-lg text-on-surface">Change password</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="flex items-center justify-between w-full p-stack-md hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">security</span>
+<span class="font-body-lg text-body-lg text-on-surface">Two-factor authentication</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm px-2 py-0.5 rounded-sm">On</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Preferences Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider px-unit">Preferences</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT flex flex-col">
+<button class="flex items-center justify-between w-full p-stack-md border-b border-surface-variant hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">notifications</span>
+<span class="font-body-lg text-body-lg text-on-surface">Notifications</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="flex items-center justify-between w-full p-stack-md border-b border-surface-variant hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">language</span>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface">Language</span>
+<span class="font-body-md text-body-md text-on-surface-variant">English (UK)</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<div class="flex items-center justify-between w-full p-stack-md hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant">data_usage</span>
+<span class="font-body-lg text-body-lg text-on-surface">Data saver</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- About Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider px-unit">About</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT flex flex-col">
+<button class="flex items-center justify-between w-full p-stack-md border-b border-surface-variant hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">help</span>
+<span class="font-body-lg text-body-lg text-on-surface">Help &amp; Support</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="flex items-center justify-between w-full p-stack-md hover:bg-surface-container-low transition-colors text-left group">
+<div class="flex items-center gap-gutter">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">policy</span>
+<span class="font-body-lg text-body-lg text-on-surface">Privacy Policy</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Sign Out Button -->
+<button class="w-full h-[48px] mt-stack-md border border-error bg-transparent text-error font-label-lg text-label-lg rounded-full flex items-center justify-center gap-2 hover:bg-error-container transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+            Sign out
+        </button>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-[80px] border-t border-outline-variant flex justify-around items-center bg-surface px-unit pb-safe">
+<button aria-label="Home" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full w-[64px]">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button aria-label="Fees" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full w-[64px]">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-sm text-label-sm">Fees</span>
+</button>
+<button aria-label="Students" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full w-[64px]">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Students</span>
+</button>
+<button aria-label="Staff" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out px-4 py-1 rounded-full w-[64px]">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</button>
+<!-- Active Tab: More (Mapping to Settings/Profile) -->
+<button aria-label="More" class="flex flex-col items-center justify-center gap-1 text-primary-container bg-secondary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out w-[64px]">
+<span class="material-symbols-outlined icon-fill">more_horiz</span>
+<span class="font-label-sm text-label-sm font-semibold">More</span>
+</button>
+</nav>
+</body></html>

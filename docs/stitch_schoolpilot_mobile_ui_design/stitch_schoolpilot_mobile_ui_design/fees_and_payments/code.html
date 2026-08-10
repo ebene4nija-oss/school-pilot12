@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>School Fees</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#446086",
+                      "on-surface-variant": "#43474e",
+                      "outline-variant": "#c3c6cf",
+                      "on-primary-fixed": "#001c39",
+                      "background": "#fcf9f8",
+                      "on-secondary-fixed": "#291800",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#303030",
+                      "surface-container-highest": "#e4e2e1",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#718cb5",
+                      "on-tertiary-container": "#6a9472",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "primary": "#000e22",
+                      "surface-dim": "#dcd9d8",
+                      "tertiary": "#001105",
+                      "secondary-container": "#ffc16a",
+                      "secondary": "#835500",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "primary-container": "#002447",
+                      "surface": "#fcf9f8",
+                      "tertiary-fixed": "#c0eec7",
+                      "on-background": "#1b1c1b",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "tertiary-container": "#002a11",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "on-tertiary-fixed": "#00210c",
+                      "on-surface": "#1b1c1b",
+                      "outline": "#74777f",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "secondary-fixed": "#ffddb4",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#fcf9f8",
+                      "surface-variant": "#e4e2e1",
+                      "surface-container-high": "#eae7e7",
+                      "surface-container": "#f0edec",
+                      "on-secondary-container": "#784d00",
+                      "inverse-primary": "#acc8f4",
+                      "inverse-on-surface": "#f3f0ef",
+                      "primary-fixed-dim": "#acc8f4",
+                      "error": "#ba1a1a",
+                      "surface-container-low": "#f6f3f2",
+                      "primary-fixed": "#d4e3ff",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "gutter": "16px",
+                      "stack-lg": "24px",
+                      "stack-sm": "8px",
+                      "screen-margin": "16px",
+                      "stack-md": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Work Sans"
+                      ],
+                      "headline-sm": [
+                              "Work Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col font-body-md">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 bg-surface border-b border-outline-variant flex items-center justify-between px-screen-margin h-16 w-full z-50">
+<div class="flex items-center gap-unit">
+<img class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A small, professional portrait photograph of a young school child in a tidy uniform, smiling gently against a plain, light grey background. Modern corporate photography style, high contrast, clean lighting, suitable for a mobile app profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsYDH4f0ZVoQLsbCXgZMqMq6Xy7TnYJ4KIm18NH5zUE2OE4EL5BentZH4Wbo521EHS1iHDLzI76QU8JluthdsquN5DGl7OAzz-Cn-_qgWxBIA3dFFeb6JZAQeBIUvYgqq9LOFNx5j8lxdTBRirgj2I4hMHpZ4sOkpP5LRF1ZnQXR6RtG4M8TrSRkCVOo0R2XuHO4FptcvuWrQ3SQ32SRzWtOU78QhlF2BH64JCjaQJMMci6KuXsGz2"/>
+</div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">SchoolNexus</h1>
+<button class="text-on-surface-variant hover:bg-surface-container active:opacity-80 transition-opacity p-unit rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="swap_horizontal_circle">swap_horizontal_circle</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow pb-24 flex flex-col gap-stack-lg p-screen-margin">
+<!-- Page Title & Child Chip -->
+<div class="flex flex-col gap-stack-sm">
+<div class="flex items-center gap-unit">
+<span class="font-headline-md text-headline-md text-primary">School fees</span>
+<div class="inline-flex items-center gap-1 bg-surface-container-high text-on-surface px-2 py-1 rounded-full border border-outline-variant text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[16px]">person</span>
+                    Daniel
+                </div>
+</div>
+</div>
+<!-- Overview Card -->
+<div class="bg-surface border border-outline-variant rounded-xl p-gutter flex flex-col gap-stack-md border-l-4 border-l-error">
+<div class="flex flex-col gap-unit">
+<span class="text-label-lg font-label-lg text-on-surface-variant">Outstanding</span>
+<span class="text-headline-lg-mobile font-headline-lg-mobile text-error">₦45,000.00</span>
+<span class="text-body-md font-body-md text-outline">of ₦145,000.00 for Second Term</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary-container rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- Instalment Plan -->
+<div class="bg-surface border border-outline-variant rounded-xl p-gutter flex items-start gap-gutter border-l-4 border-l-secondary-container">
+<span class="material-symbols-outlined text-on-surface-variant mt-1">calendar_month</span>
+<div class="flex flex-col gap-1">
+<span class="text-label-lg font-label-lg text-on-surface">Plan: 3 instalments</span>
+<span class="text-body-md font-body-md text-on-surface-variant">next ₦45,000.00 due Fri 13 Aug</span>
+</div>
+</div>
+<!-- Breakdown Section -->
+<section class="flex flex-col gap-stack-sm">
+<h2 class="text-headline-sm font-headline-sm text-primary border-b border-outline-variant pb-2">Breakdown</h2>
+<div class="flex flex-col border border-outline-variant rounded-xl bg-surface overflow-hidden">
+<div class="flex justify-between items-center p-unit px-gutter border-b border-outline-variant bg-surface-container-lowest">
+<span class="text-body-md font-body-md text-on-surface">Tuition</span>
+<span class="text-label-lg font-label-lg font-mono text-on-surface">₦110,000.00</span>
+</div>
+<div class="flex justify-between items-center p-unit px-gutter border-b border-outline-variant bg-surface-container-lowest">
+<span class="text-body-md font-body-md text-on-surface">Books</span>
+<span class="text-label-lg font-label-lg font-mono text-on-surface">₦18,000.00</span>
+</div>
+<div class="flex justify-between items-center p-unit px-gutter border-b border-outline-variant bg-surface-container-lowest">
+<span class="text-body-md font-body-md text-on-surface">Uniform</span>
+<span class="text-label-lg font-label-lg font-mono text-on-surface">₦12,000.00</span>
+</div>
+<div class="flex justify-between items-center p-unit px-gutter bg-surface-container-lowest">
+<span class="text-body-md font-body-md text-on-surface">PTA levy</span>
+<span class="text-label-lg font-label-lg font-mono text-on-surface">₦5,000.00</span>
+</div>
+</div>
+</section>
+<!-- Payments Made Section -->
+<section class="flex flex-col gap-stack-sm">
+<h2 class="text-headline-sm font-headline-sm text-primary border-b border-outline-variant pb-2">Payments made</h2>
+<div class="flex flex-col gap-stack-sm">
+<!-- Payment Row 1 -->
+<div class="flex items-center justify-between p-gutter bg-surface border border-outline-variant rounded-xl">
+<div class="flex flex-col gap-1">
+<span class="text-body-md font-body-md text-on-surface">12 May 2024</span>
+<div class="inline-flex items-center bg-surface-container px-2 py-0.5 rounded-sm border border-outline-variant text-label-sm font-label-sm w-fit text-on-surface-variant">
+                            Bank transfer
+                        </div>
+</div>
+<div class="flex items-center gap-gutter">
+<span class="text-label-lg font-label-lg font-mono text-tertiary-container">₦50,000.00</span>
+<button class="text-primary hover:bg-surface-container p-1 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</div>
+</div>
+<!-- Payment Row 2 -->
+<div class="flex items-center justify-between p-gutter bg-surface border border-outline-variant rounded-xl">
+<div class="flex flex-col gap-1">
+<span class="text-body-md font-body-md text-on-surface">04 Apr 2024</span>
+<div class="inline-flex items-center bg-surface-container px-2 py-0.5 rounded-sm border border-outline-variant text-label-sm font-label-sm w-fit text-on-surface-variant">
+                            Paystack
+                        </div>
+</div>
+<div class="flex items-center gap-gutter">
+<span class="text-label-lg font-label-lg font-mono text-tertiary-container">₦50,000.00</span>
+<button class="text-primary hover:bg-surface-container p-1 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Pay Action Bar (FAB-like bottom anchored before nav) -->
+<div class="fixed bottom-[64px] w-full z-40 px-screen-margin py-stack-sm bg-gradient-to-t from-background to-transparent pointer-events-none">
+<button class="w-full bg-[#feae2c] text-[#1b1c1c] h-12 rounded-full font-label-lg text-label-lg font-bold flex items-center justify-center pointer-events-auto transition-transform active:scale-95 shadow-sm border border-outline-variant">
+            Pay ₦45,000.00
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant bg-surface flex justify-around items-center h-16 px-4 md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:bg-surface-container-low active:scale-95 transition-transform w-full h-full">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:bg-surface-container-low active:scale-95 transition-transform w-full h-full">
+<span class="material-symbols-outlined" data-icon="child_care">child_care</span>
+<span class="font-label-sm text-label-sm mt-1">Child</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary border-t-2 border-primary pt-2 w-full h-full bg-surface-container-low">
+<span class="material-symbols-outlined font-variation-settings-'FILL'-1" data-icon="payments" data-weight="fill" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Fees</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:bg-surface-container-low active:scale-95 transition-transform w-full h-full">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:bg-surface-container-low active:scale-95 transition-transform w-full h-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</button>
+</nav>
+</body></html>

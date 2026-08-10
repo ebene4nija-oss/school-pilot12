@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>SchoolPilot - Notifications</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#ffddb4",
+                        "tertiary": "#001105",
+                        "on-tertiary-fixed-variant": "#274f32",
+                        "on-surface-variant": "#43474e",
+                        "surface-container-high": "#eae7e7",
+                        "surface-container-highest": "#e4e2e1",
+                        "tertiary-fixed-dim": "#a5d1ac",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#002a11",
+                        "primary-container": "#002447",
+                        "surface": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#d4e3ff",
+                        "outline": "#74777f",
+                        "on-primary-fixed": "#001c39",
+                        "tertiary-fixed": "#c0eec7",
+                        "inverse-primary": "#acc8f4",
+                        "secondary": "#835500",
+                        "on-surface": "#1b1c1b",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-primary-container": "#718cb5",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#2c486d",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-secondary-fixed": "#291800",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#303030",
+                        "primary-fixed-dim": "#acc8f4",
+                        "primary": "#000e22",
+                        "surface-container": "#f0edec",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#6a9472",
+                        "on-secondary-container": "#784d00",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#f9bb65",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#ffc16a",
+                        "surface-tint": "#446086",
+                        "on-background": "#1b1c1b",
+                        "outline-variant": "#c3c6cf",
+                        "surface-variant": "#e4e2e1",
+                        "surface-bright": "#fcf9f8",
+                        "background": "#fcf9f8",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dcd9d8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "screen-margin": "16px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Work Sans"],
+                        "headline-lg-mobile": ["Work Sans"],
+                        "label-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Work Sans"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top App Bar -->
+<header class="h-[56px] w-full sticky top-0 z-50 bg-surface border-b border-outline-variant flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-unit cursor-pointer active:scale-95 duration-100 group">
+<span class="material-symbols-outlined text-primary group-hover:bg-surface-container-high transition-colors rounded-full p-1 -ml-1">arrow_back</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary truncate flex-1 text-center pr-8">Notifications</h1>
+<button class="font-label-lg text-label-lg text-primary bg-transparent border border-primary px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors active:scale-95">Mark read</button>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 w-full max-w-md mx-auto pb-[80px] md:pb-0 overflow-y-auto no-scrollbar">
+<!-- Today Group -->
+<section class="mt-stack-md px-screen-margin">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-stack-sm">Today</h2>
+<div class="flex flex-col gap-unit">
+<!-- Notification Row 1: Homework (Unread) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-stack-sm flex items-start gap-stack-sm relative overflow-hidden group hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-secondary-container">
+<!-- Unread Indicator -->
+<div class="absolute top-stack-sm right-stack-sm w-2 h-2 rounded-full bg-primary-container"></div>
+<!-- Icon -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+</div>
+<!-- Content -->
+<div class="flex-1 min-w-0 pr-6">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface truncate">New assignment: Physics</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Kinematics worksheet due Wed. Please review chapters 3-4 before starting.</p>
+<time class="font-label-sm text-label-sm text-outline mt-1 block">10:42 AM</time>
+</div>
+</article>
+<!-- Notification Row 2: Fee Alert (Unread) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-stack-sm flex items-start gap-stack-sm relative overflow-hidden group hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-error">
+<!-- Unread Indicator -->
+<div class="absolute top-stack-sm right-stack-sm w-2 h-2 rounded-full bg-primary-container"></div>
+<!-- Icon -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<!-- Content -->
+<div class="flex-1 min-w-0 pr-6">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface truncate">Tuition Overdue</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Term 2 tuition fee of $1,250 is now 3 days past due.</p>
+<time class="font-label-sm text-label-sm text-outline mt-1 block">8:15 AM</time>
+</div>
+</article>
+</div>
+</section>
+<!-- This Week Group -->
+<section class="mt-stack-lg px-screen-margin mb-stack-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-stack-sm">This week</h2>
+<div class="flex flex-col gap-unit">
+<!-- Notification Row 3: Result (Read) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-stack-sm flex items-start gap-stack-sm relative overflow-hidden group hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-tertiary-fixed">
+<!-- Icon -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+<!-- Content -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">Grade Posted: Mathematics</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Midterm exam results are now available. Grade: A-</p>
+<time class="font-label-sm text-label-sm text-outline mt-1 block">Yesterday</time>
+</div>
+</article>
+<!-- Notification Row 4: General (Read) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-stack-sm flex items-start gap-stack-sm relative overflow-hidden group hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-primary-fixed">
+<!-- Icon -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+</div>
+<!-- Content -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">School Assembly Notice</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Special guest speaker this Friday at 9:00 AM in the main auditorium.</p>
+<time class="font-label-sm text-label-sm text-outline mt-1 block">Tue</time>
+</div>
+</article>
+<!-- Notification Row 5: General (Read) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-stack-sm flex items-start gap-stack-sm relative overflow-hidden group hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-primary-fixed">
+<!-- Icon -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">event</span>
+</div>
+<!-- Content -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">Calendar Update</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Spring break dates have been finalized. Please check the academic calendar.</p>
+<time class="font-label-sm text-label-sm text-outline mt-1 block">Mon</time>
+</div>
+</article>
+</div>
+</section>
+</main>
+</body></html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Tutor Chat - SchoolPath</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from system prompt -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#74777f",
+                      "primary-fixed": "#d4e3ff",
+                      "inverse-on-surface": "#f3f0ef",
+                      "surface-container": "#f0edec",
+                      "on-tertiary-container": "#6a9472",
+                      "on-primary-fixed": "#001c39",
+                      "primary-fixed-dim": "#acc8f4",
+                      "secondary-fixed": "#ffddb4",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#43474e",
+                      "on-secondary-fixed": "#291800",
+                      "surface-tint": "#446086",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "outline-variant": "#c3c6cf",
+                      "secondary-container": "#ffc16a",
+                      "on-secondary-container": "#784d00",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "secondary": "#835500",
+                      "surface-container-low": "#f6f3f2",
+                      "tertiary-fixed": "#c0eec7",
+                      "tertiary": "#001105",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-background": "#1b1c1b",
+                      "primary": "#000e22",
+                      "surface-variant": "#e4e2e1",
+                      "on-tertiary-fixed": "#00210c",
+                      "on-primary-container": "#718cb5",
+                      "on-surface": "#1b1c1b",
+                      "background": "#fcf9f8",
+                      "primary-container": "#002447",
+                      "surface-container-highest": "#e4e2e1",
+                      "inverse-surface": "#303030",
+                      "surface": "#fcf9f8",
+                      "surface-dim": "#dcd9d8",
+                      "error": "#ba1a1a",
+                      "tertiary-container": "#002a11",
+                      "inverse-primary": "#acc8f4",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#eae7e7",
+                      "on-tertiary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#fcf9f8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "16px",
+                      "stack-sm": "8px",
+                      "gutter": "16px",
+                      "unit": "8px",
+                      "stack-lg": "24px",
+                      "screen-margin": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Work Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+    </script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- MathJax for LaTeX rendering (Simulation for aesthetic) -->
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-headline-sm, .font-headline-md, .font-headline-lg, .font-headline-lg-mobile { font-family: 'Work Sans', sans-serif; }
+        
+        /* Custom scrollbar for chat area */
+        .chat-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background-color: #c3c6cf;
+            border-radius: 20px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-screen flex flex-col font-body-md text-body-md overflow-hidden">
+<!-- TopAppBar from JSON -->
+<header class="w-full top-0 sticky flex justify-between items-center h-16 px-screen-margin w-full bg-surface dark:bg-surface-dim z-50 border-b border-outline-variant dark:border-outline">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden flex items-center justify-center border border-outline-variant" data-icon="student_profile_photo">
+<img class="object-cover h-full w-full" data-alt="A professional headshot of a diverse high school student with a friendly expression, soft lighting, modern light-mode corporate functional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVlS4htqHET9EV9W6TxlxZPdagZ5WeUG9MduljA1Z_AyRERmP5M0aC2G7tx_GttGdv0FBV7CeM_nWwP2UPCMXlT9PZ_06wsivfL2v5BlIoigBttOBgfyNb3dlYFPKjfTNg3SEveuTAPJ7jhR8Ot7TRN9K3zwAKO8nL9XA3AFjf8bwAYiJqIl_m-zVACRUDO4NsSVxFGnOFm-sRP76lkwnlC4I8dlrXVJ2JZ53RMBd4XXI4k5GgtChr"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary dark:text-primary-fixed">Tutor · Mathematics</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="h-2 w-2 rounded-full bg-on-tertiary-container inline-block"></span> Online
+                </span>
+</div>
+</div>
+<button class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 active:bg-surface-container-highest text-on-surface-variant dark:text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_vert</span>
+</button>
+</header>
+<!-- Main Chat Canvas -->
+<main class="flex-1 overflow-y-auto chat-scroll p-screen-margin flex flex-col gap-stack-lg pb-32">
+<!-- Date Divider -->
+<div class="flex justify-center w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-3 py-1 rounded-full border border-outline-variant">Today, 10:42 AM</span>
+</div>
+<!-- Student Message (Image Upload) -->
+<div class="flex justify-end w-full">
+<div class="max-w-[85%] sm:max-w-[70%] bg-primary-container text-on-primary border-outline-variant rounded-l-xl rounded-tr-xl p-stack-sm flex flex-col gap-stack-sm shadow-none">
+<div class="rounded-lg overflow-hidden border border-outline-variant/30">
+<img class="object-cover w-full max-h-64" data-alt="A well-lit photograph of a handwritten math problem on grid paper, showing a triangle with angles and side lengths labeled, specifically asking to find side c. Corporate light mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsNMUZzoH2Ugn21-iziQo8Gg7Rx2O1wD_NFB8F6ke2bQkGYdLNRey2FzWSObs7uLyvxExshUOEjDlSyR3W31VKximxdRaqGqaM3XAtm-dd2v_l6kN0nDD1m5XQoSBV49Rky27-_e60G9b1ibIXmj5crUvvLAKtQD4ZOM2Oy6GHCOvfLul4XZM8K3oV57bwD_XfJ0R9iDqVtzk7y9ycrFZK775TSxyx09R8oJOEC_SIsV4BiTyb2egA"/>
+</div>
+<p class="font-body-lg text-body-lg px-2">Can you help me solve this triangle problem? I need to find the value of beta and side c.</p>
+</div>
+</div>
+<!-- Tutor Message (Response) -->
+<div class="flex justify-start w-full">
+<div class="max-w-[90%] sm:max-w-[80%] bg-surface border border-outline-variant rounded-r-xl rounded-tl-xl p-stack-md flex flex-col gap-stack-md shadow-none">
+<p class="font-body-lg text-body-lg text-on-surface">Hello! Let's break down this geometry problem step-by-step. We are given a triangle with two known angles and one known side. This is a classic scenario for applying the Law of Sines.</p>
+<div class="bg-surface-container-low border-l-4 border-primary p-stack-md rounded-r-lg">
+<p class="font-label-lg text-label-lg mb-2 text-on-surface">Step 1: Find the missing angle (\(\beta\))</p>
+<p class="text-on-surface-variant mb-2">The sum of angles in any triangle is always 180°.</p>
+<div class="bg-surface border border-outline-variant p-2 rounded flex justify-center font-mono text-sm mb-2 text-primary">
+                        \(\alpha + \beta + \gamma = 180^\circ\)
+                    </div>
+<p class="text-on-surface-variant mb-2">We know \(\alpha = 40^\circ\) and \(\gamma = 60^\circ\).</p>
+<div class="bg-surface border border-outline-variant p-2 rounded flex justify-center font-mono text-sm text-primary">
+                        \(40^\circ + \beta + 60^\circ = 180^\circ\) <br/>
+                        \(\beta = 180^\circ - 100^\circ\) <br/>
+                        \(\beta = 80^\circ\)
+                    </div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface">Now that we have \(\beta = 80^\circ\), we can proceed to find side <i>c</i>. What theorem do you think we should use next when we know all angles and one side?</p>
+<!-- Interaction Buttons inside message -->
+<div class="flex gap-unit mt-2 flex-wrap">
+<button class="bg-transparent border border-primary-container text-primary-container font-label-sm text-label-sm px-4 py-2 rounded-full hover:bg-surface-container-low transition-colors">Law of Sines</button>
+<button class="bg-transparent border border-primary-container text-primary-container font-label-sm text-label-sm px-4 py-2 rounded-full hover:bg-surface-container-low transition-colors">Pythagorean Theorem</button>
+<button class="bg-transparent border border-primary-container text-primary-container font-label-sm text-label-sm px-4 py-2 rounded-full hover:bg-surface-container-low transition-colors">Law of Cosines</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Composer Area (Fixed Bottom) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface dark:bg-surface-dim border-t border-outline-variant dark:border-outline pb-safe flex flex-col z-50">
+<!-- Suggested Prompts -->
+<div class="flex gap-unit overflow-x-auto px-screen-margin py-stack-sm no-scrollbar scroll-smooth">
+<button class="whitespace-nowrap flex-shrink-0 bg-surface-container-low border border-outline-variant rounded-full px-4 py-1.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container transition-colors">Explain simultaneous equations</button>
+<button class="whitespace-nowrap flex-shrink-0 bg-surface-container-low border border-outline-variant rounded-full px-4 py-1.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container transition-colors">Give me a practice question</button>
+<button class="whitespace-nowrap flex-shrink-0 bg-surface-container-low border border-outline-variant rounded-full px-4 py-1.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container transition-colors">Review Law of Sines</button>
+</div>
+<!-- Input Box -->
+<div class="px-screen-margin pb-stack-md pt-2 flex flex-col gap-2">
+<div class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-full pl-4 pr-1 py-1 focus-within:border-primary-container focus-within:border-2 transition-all">
+<button class="text-on-surface-variant hover:text-primary transition-colors h-10 w-10 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add_photo_alternate</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body-md text-body-md px-2 placeholder:text-on-surface-variant/70" placeholder="Type your response..." type="text"/>
+<button class="bg-[#feae2c] text-[#1b1c1c] h-10 w-10 flex items-center justify-center rounded-full hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+<!-- Pedagogical Footer -->
+<div class="flex justify-center items-center gap-1 text-on-surface-variant/80">
+<span class="material-symbols-outlined text-[14px]">school</span>
+<span class="font-label-sm text-[10px] tracking-wide uppercase">Your tutor explains — it won't just give you the answer.</span>
+</div>
+</div>
+</div>
+</body></html>

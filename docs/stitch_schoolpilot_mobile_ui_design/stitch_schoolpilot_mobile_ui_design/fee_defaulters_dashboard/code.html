@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Defaulters</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f6f3f2",
+                    "surface": "#fcf9f8",
+                    "tertiary-fixed": "#c0eec7",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#6a9472",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e4e2e1",
+                    "on-primary-fixed": "#001c39",
+                    "outline-variant": "#c3c6cf",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#446086",
+                    "error-container": "#ffdad6",
+                    "inverse-surface": "#303030",
+                    "inverse-primary": "#acc8f4",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "surface-container": "#f0edec",
+                    "on-tertiary-fixed": "#00210c",
+                    "primary-fixed-dim": "#acc8f4",
+                    "tertiary": "#001105",
+                    "surface-bright": "#fcf9f8",
+                    "tertiary-container": "#002a11",
+                    "primary": "#000e22",
+                    "secondary": "#835500",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-container-high": "#eae7e7",
+                    "surface-dim": "#dcd9d8",
+                    "inverse-on-surface": "#f3f0ef",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "primary-fixed": "#d4e3ff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1b1c1b",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "on-primary-container": "#718cb5",
+                    "on-surface": "#1b1c1b",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "on-surface-variant": "#43474e",
+                    "on-secondary-container": "#784d00",
+                    "on-secondary-fixed": "#291800",
+                    "primary-container": "#002447",
+                    "outline": "#74777f",
+                    "background": "#fcf9f8",
+                    "secondary-container": "#ffc16a",
+                    "surface-variant": "#e4e2e1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "unit": "8px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px",
+                    "stack-md": "16px",
+                    "screen-margin": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Work Sans"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Work Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Work Sans"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ]
+            },
+            "fontSize": {
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background antialiased md:hidden h-screen flex flex-col font-body-md overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary-fixed h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant dark:border-outline flex items-center justify-between px-screen-margin">
+<button aria-label="Menu" class="active:scale-95 duration-100 p-2 -ml-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed truncate flex-1 text-center">Defaulters</h1>
+<button aria-label="Notifications" class="active:scale-95 duration-100 p-2 -mr-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto pb-[120px]">
+<!-- Summary Band -->
+<div class="bg-primary-container text-on-primary py-stack-md px-screen-margin flex flex-col justify-center min-h-[80px]">
+<p class="font-body-md opacity-90">Total Outstanding</p>
+<p class="font-headline-sm text-headline-sm">₦11,280,000.00 <span class="font-label-sm text-label-sm opacity-80 font-normal">across 37 students</span></p>
+</div>
+<!-- Segmented Control -->
+<div class="px-screen-margin py-stack-sm bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-40">
+<div class="flex bg-surface-container-low rounded-lg p-1">
+<button class="flex-1 py-1 px-2 text-center rounded-md bg-surface border border-outline-variant text-on-surface font-label-sm text-label-sm shadow-sm transition-all">All</button>
+<button class="flex-1 py-1 px-2 text-center rounded-md text-on-surface-variant hover:bg-surface-container transition-all font-label-sm text-label-sm">1 Term</button>
+<button class="flex-1 py-1 px-2 text-center rounded-md text-on-surface-variant hover:bg-surface-container transition-all font-label-sm text-label-sm">2+ Terms</button>
+</div>
+</div>
+<!-- Defaulters List -->
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="px-screen-margin py-stack-sm border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-unit flex-1 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary-container font-label-lg shrink-0">
+                        OA
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Oluwaseun Adebayo</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">JSS 2A</span>
+</div>
+</div>
+<div class="flex items-center gap-unit shrink-0 ml-unit">
+<div class="flex flex-col items-end">
+<span class="font-body-md text-error font-semibold">₦450,000</span>
+<span class="font-label-sm text-label-sm text-error">90 days overdue</span>
+</div>
+<button class="p-1 text-on-surface-variant rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="px-screen-margin py-stack-sm border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-unit flex-1 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary-container font-label-lg shrink-0">
+                        CN
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Chioma Nwachukwu</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">SS 1 Science</span>
+</div>
+</div>
+<div class="flex items-center gap-unit shrink-0 ml-unit">
+<div class="flex flex-col items-end">
+<span class="font-body-md text-error font-semibold">₦820,000</span>
+<span class="font-label-sm text-label-sm text-error">120 days overdue</span>
+</div>
+<button class="p-1 text-on-surface-variant rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="px-screen-margin py-stack-sm border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-unit flex-1 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary-container font-label-lg shrink-0">
+                        AB
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Abubakar Bello</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">Primary 4</span>
+</div>
+</div>
+<div class="flex items-center gap-unit shrink-0 ml-unit">
+<div class="flex flex-col items-end">
+<span class="font-body-md text-error font-semibold">₦150,000</span>
+<span class="font-label-sm text-label-sm text-error">45 days overdue</span>
+</div>
+<button class="p-1 text-on-surface-variant rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Action Area Bottom -->
+<div class="fixed bottom-0 left-0 right-0 bg-surface border-t border-outline-variant pt-stack-sm pb-stack-md px-screen-margin shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+<div class="flex gap-gutter mb-unit">
+<button class="flex-1 h-12 bg-transparent border border-primary-container text-primary-container font-label-lg text-label-lg rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+                Export
+            </button>
+<button class="flex-[2] h-12 bg-[#feae2c] text-[#1b1c1c] font-bold font-label-lg text-label-lg rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="send">send</span>
+                Send reminders
+            </button>
+</div>
+<div class="text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+                SMS is charged per message.
+            </span>
+</div>
+</div>
+</body></html>

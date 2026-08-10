@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Sign in</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#fcf9f8",
+                    "outline-variant": "#c3c6cf",
+                    "primary-container": "#002447",
+                    "error": "#ba1a1a",
+                    "on-surface": "#1b1c1b",
+                    "inverse-surface": "#303030",
+                    "on-tertiary-container": "#6a9472",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "surface-dim": "#dcd9d8",
+                    "primary": "#000e22",
+                    "surface-container": "#f0edec",
+                    "primary-fixed-dim": "#acc8f4",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#f3f0ef",
+                    "tertiary-fixed": "#c0eec7",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "secondary-container": "#ffc16a",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "tertiary": "#001105",
+                    "tertiary-container": "#002a11",
+                    "on-primary-fixed": "#001c39",
+                    "on-tertiary-fixed": "#00210c",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#784d00",
+                    "secondary": "#835500",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "surface": "#fcf9f8",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "primary-fixed": "#d4e3ff",
+                    "surface-container-low": "#f6f3f2",
+                    "on-secondary-fixed": "#291800",
+                    "surface-tint": "#446086",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "on-surface-variant": "#43474e",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-container-highest": "#e4e2e1",
+                    "on-error": "#ffffff",
+                    "on-background": "#1b1c1b",
+                    "on-primary-container": "#718cb5",
+                    "outline": "#74777f",
+                    "inverse-primary": "#acc8f4",
+                    "background": "#fcf9f8",
+                    "surface-variant": "#e4e2e1",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "screen-margin": "16px",
+                    "unit": "8px",
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "stack-md": "16px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Work Sans"],
+                    "headline-lg": ["Work Sans"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Work Sans"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        /* Modern Corporate Functionalism - Floating Label Implementation */
+        .floating-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .floating-input {
+            width: 100%;
+            height: 56px;
+            padding: 16px 16px 0;
+            background-color: transparent;
+            border: 1px solid theme('colors.outline-variant');
+            border-radius: theme('borderRadius.DEFAULT');
+            color: theme('colors.on-surface');
+            transition: border-color 0.15s ease-in-out, border-width 0.15s ease-in-out;
+        }
+        
+        .floating-input:focus {
+            outline: none;
+            border: 2px solid theme('colors.primary-container');
+            padding-left: 15px; /* Adjust padding to prevent jump when border expands from 1 to 2px */
+            padding-right: 15px;
+        }
+        
+        .floating-label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: theme('colors.surface-bright');
+            padding: 0 4px;
+            pointer-events: none;
+            transition: 0.2s ease all;
+            transform-origin: left top;
+        }
+        
+        .floating-input:focus ~ .floating-label,
+        .floating-input:not(:placeholder-shown) ~ .floating-label {
+            top: 0;
+            transform: translateY(-50%) scale(0.85);
+        }
+        
+        .floating-input:focus ~ .floating-label {
+            color: theme('colors.primary-container');
+        }
+        
+        .floating-input:not(:focus):not(:placeholder-shown) ~ .floating-label {
+            color: theme('colors.on-surface-variant');
+        }
+    </style>
+</head>
+<body class="bg-surface-bright min-h-screen flex flex-col font-body-lg text-body-lg antialiased">
+<!-- Contextual Transactional Header (Global Nav Suppressed) -->
+<header class="w-full h-[56px] border-b border-outline-variant flex items-center justify-between px-screen-margin bg-surface-bright sticky top-0 z-50">
+<div class="font-headline-sm text-headline-sm font-bold text-primary-container tracking-tight">
+            SchoolPilot
+        </div>
+<!-- School Context Chip -->
+<div class="flex items-center gap-2 border border-outline-variant bg-surface rounded-full py-1 pl-1 pr-3">
+<div class="w-6 h-6 rounded-full overflow-hidden border border-outline-variant bg-surface-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist abstract geometric logo design representing a modern educational institution. The crest features simple interlocking shapes in deep blue and white, set against a flat, neutral background. High contrast, sharp edges, and a corporate functionalist aesthetic. Studio lighting, digital vector art style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrucuRdO4AuSK_UaeQSJkLJTTe6wzVnsnZal942RnmXKmrLMEavB6aNPmMkGiPfaOKoXJ-FTpmH1x50lnY6ABPfLLGZaGmsCbYVeE_tXgJu_4lDD651Mfo6_Zo740sN9g5Dv66ZNzEy5SkiXoAXBOlxiV2wHywljIYDuOTLmcr7ic2f6cQUkO_jNkzcEdN8Le-dwYDr47D-ltdnJ1rOcFHcUWlXx3SyzZ80qiq8uSvbxby-0XfpJ8V"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface truncate max-w-[120px] md:max-w-[200px]">Graceland College</span>
+<a class="font-label-sm text-label-sm text-primary-container underline hover:text-primary transition-colors ml-1" href="#">change</a>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex items-center justify-center p-screen-margin">
+<!-- Login Card Container -->
+<div class="w-full max-w-[360px] flex flex-col gap-stack-lg animate-fade-in-up">
+<!-- Header Section -->
+<div class="flex flex-col gap-stack-sm text-center">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Sign in</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Use the account your school created for you.</p>
+</div>
+<!-- Form Section -->
+<form class="flex flex-col gap-stack-md" onsubmit="event.preventDefault();">
+<!-- Email Input -->
+<div class="floating-input-group">
+<input autocomplete="email" class="floating-input font-body-md text-body-md" id="email" placeholder=" " required="" type="email"/>
+<label class="floating-label font-body-md text-body-md text-on-surface-variant" for="email">Email address</label>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-2">
+<div class="floating-input-group">
+<input autocomplete="current-password" class="floating-input font-body-md text-body-md pr-12" id="password" placeholder=" " required="" type="password"/>
+<label class="floating-label font-body-md text-body-md text-on-surface-variant" for="password">Password</label>
+<button aria-label="Toggle password visibility" class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center rounded focus:outline-none focus:ring-2 focus:ring-primary-container" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="visibility-icon" style="font-variation-settings: 'FILL' 0; font-size: 20px;">visibility_off</span>
+</button>
+</div>
+<!-- Forgot Password Link -->
+<div class="flex justify-end">
+<a class="font-label-sm text-label-sm text-primary-container hover:underline decoration-1 underline-offset-2" href="#">Forgot password?</a>
+</div>
+</div>
+<!-- Submit Action -->
+<div class="mt-2">
+<button class="w-full h-[48px] bg-secondary-container text-on-surface font-label-lg text-label-lg font-bold rounded-full flex items-center justify-center transition-transform active:scale-[0.98] hover:bg-[#ffb44d]" type="submit">
+                        Sign in
+                    </button>
+</div>
+</form>
+</div>
+</main>
+<script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const visibilityIcon = document.getElementById('visibility-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                visibilityIcon.textContent = 'visibility';
+            } else {
+                passwordInput.type = 'password';
+                visibilityIcon.textContent = 'visibility_off';
+            }
+        }
+    </script>
+</body></html>

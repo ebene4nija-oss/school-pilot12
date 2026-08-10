@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPath - Student Dashboard</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#74777f",
+                    "primary-fixed": "#d4e3ff",
+                    "inverse-on-surface": "#f3f0ef",
+                    "surface-container": "#f0edec",
+                    "on-tertiary-container": "#6a9472",
+                    "on-primary-fixed": "#001c39",
+                    "primary-fixed-dim": "#acc8f4",
+                    "secondary-fixed": "#ffddb4",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#43474e",
+                    "on-secondary-fixed": "#291800",
+                    "surface-tint": "#446086",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "outline-variant": "#c3c6cf",
+                    "secondary-container": "#ffc16a",
+                    "on-secondary-container": "#784d00",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "secondary": "#835500",
+                    "surface-container-low": "#f6f3f2",
+                    "tertiary-fixed": "#c0eec7",
+                    "tertiary": "#001105",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "on-background": "#1b1c1b",
+                    "primary": "#000e22",
+                    "surface-variant": "#e4e2e1",
+                    "on-tertiary-fixed": "#00210c",
+                    "on-primary-container": "#718cb5",
+                    "on-surface": "#1b1c1b",
+                    "background": "#fcf9f8",
+                    "primary-container": "#002447",
+                    "surface-container-highest": "#e4e2e1",
+                    "inverse-surface": "#303030",
+                    "surface": "#fcf9f8",
+                    "surface-dim": "#dcd9d8",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#002a11",
+                    "inverse-primary": "#acc8f4",
+                    "on-error-container": "#93000a",
+                    "surface-container-high": "#eae7e7",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-primary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#fcf9f8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "gutter": "16px",
+                    "unit": "8px",
+                    "stack-lg": "24px",
+                    "screen-margin": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Work Sans"],
+                    "headline-lg-mobile": ["Work Sans"],
+                    "label-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Work Sans"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Base styles to ensure crisp rendering */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Mobile safe area padding for bottom nav */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md flex flex-col md:hidden">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-screen-margin w-full bg-surface z-50 w-full top-0 sticky border-b border-outline-variant flat no shadows">
+<!-- Leading: Avatar -->
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A close-up, highly professional studio portrait of a young female secondary school student named Chidinma, wearing a neat school uniform consisting of a white shirt and dark blue tie. The lighting is soft, even, and creates a bright, modern corporate aesthetic. The background is a crisp, clean light gray." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWE3r_F6O1VqksPM8I8XfUTe5quv22gSMa8BDOS_1SrghRqnua4gnJC8y7yjfiUP4mbQ8olbnJhnpWy3xU4KdIcCQzICYkZKlmTzY6hDwEqFUCTaVXE7xPSIAWs710xSKyfuLd-Zy0lddHvioJ5-2hWnirNLSLa_cLZ9_Rnrmq1MGJkgW-7FYFlND20CN3RnAd1gmibyX4GlGWguTiTOMEYpVYv7q0YDY5i1n6io12mCZepkZgM6Zt"/>
+</div>
+<!-- Headline & Chip cluster -->
+<div class="flex flex-col items-center">
+<h1 class="font-headline-sm text-headline-sm text-primary">SchoolPath</h1>
+<div class="flex items-center gap-1 bg-secondary-fixed-dim text-on-secondary-fixed-variant px-2 py-0.5 rounded-full mt-0.5">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-label-sm text-label-sm">12-day streak</span>
+</div>
+</div>
+<!-- Trailing: Icon -->
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors duration-200 active:bg-surface-container-highest p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-screen-margin py-stack-md flex flex-col gap-stack-lg pb-32">
+<!-- Hero Card -->
+<section class="bg-primary-container text-on-primary-container rounded-xl p-stack-md border border-primary flex flex-col gap-unit">
+<div class="flex justify-between items-start">
+<span class="font-label-lg text-label-lg opacity-80 uppercase tracking-wider">Next Class</span>
+<span class="material-symbols-outlined opacity-80">schedule</span>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-primary">Mathematics</h2>
+<div class="flex items-center gap-stack-sm mt-unit pt-unit border-t border-on-primary-container/20">
+<div class="flex items-center gap-1 font-body-md">
+<span class="material-symbols-outlined text-[18px]">nest_clock_farsight_analog</span>
+<span>09:40</span>
+</div>
+<span class="opacity-50 text-xl leading-none">·</span>
+<div class="flex items-center gap-1 font-body-md">
+<span class="material-symbols-outlined text-[18px]">meeting_room</span>
+<span>Room 4</span>
+</div>
+</div>
+</section>
+<!-- Stats 2-Column -->
+<section class="grid grid-cols-2 gap-gutter">
+<!-- Stat 1 -->
+<div class="bg-surface rounded-lg border border-outline-variant p-stack-sm flex flex-col justify-between h-24">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Average this term</span>
+<div class="flex items-end gap-1">
+<span class="font-headline-md text-headline-md text-on-surface">74.5%</span>
+<span class="material-symbols-outlined text-tertiary-container mb-1" style="font-variation-settings: 'FILL' 1;">arrow_upward</span>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface rounded-lg border border-outline-variant p-stack-sm flex flex-col justify-between h-24">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Attendance</span>
+<div class="flex items-end gap-1">
+<span class="font-headline-md text-headline-md text-on-surface">96%</span>
+<span class="material-symbols-outlined text-tertiary-container mb-1" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</section>
+<!-- Due Soon Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">Due Soon</h3>
+<!-- Homework Card 1 (Today) -->
+<div class="bg-surface rounded-lg border border-outline-variant p-stack-sm flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Literature</span>
+<span class="font-body-md text-on-surface font-medium mt-1">Read Chapters 4-6</span>
+</div>
+<div class="bg-error-container text-on-error-container px-2 py-1 rounded font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                    Today
+                </div>
+</div>
+<!-- Homework Card 2 (Tomorrow) -->
+<div class="bg-surface rounded-lg border border-outline-variant p-stack-sm flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Physics</span>
+<span class="font-body-md text-on-surface font-medium mt-1">Kinematics Worksheet</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-2 py-1 rounded font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event</span>
+                    Tomorrow
+                </div>
+</div>
+</section>
+<!-- Exams Section -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">Exams</h3>
+<!-- CBT Card -->
+<div class="bg-surface rounded-lg border border-outline-variant p-stack-md flex flex-col gap-stack-sm border-l-4 border-l-secondary">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary bg-surface-container p-1 rounded">laptop_mac</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Computer Based Test</span>
+</div>
+<h4 class="font-body-lg text-on-surface font-semibold">Second Term Mid-Term Test · Mathematics</h4>
+<div class="flex flex-wrap gap-x-4 gap-y-2 mt-unit text-on-surface-variant">
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">format_list_numbered</span>
+<span>40 Qs</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+<span>45 mins</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm w-full mt-1 text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-[16px]">lock_clock</span>
+<span>Opens Tue 10 Aug, 10:00</span>
+</div>
+</div>
+<button class="mt-stack-sm w-full h-12 rounded-full font-label-lg text-label-lg bg-secondary text-on-secondary opacity-50 cursor-not-allowed flex items-center justify-center gap-2" disabled="">
+                    Start Test
+                    <span class="material-symbols-outlined text-[18px]">lock</span>
+</button>
+</div>
+</section>
+<!-- Ask Tutor Section -->
+<section class="bg-surface-container-low rounded-lg border border-outline-variant p-stack-sm flex items-center gap-stack-sm">
+<div class="bg-surface-container-high p-2 rounded-full">
+<span class="material-symbols-outlined text-on-surface">help_center</span>
+</div>
+<div class="flex-1 flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Ask your tutor</span>
+<span class="font-body-md text-on-surface-variant text-[12px]">Stuck on a problem? Get help now.</span>
+</div>
+<button class="w-8 h-8 rounded-full border border-primary-container text-primary-container flex items-center justify-center hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 flex justify-around items-center px-unit bg-surface pb-safe border-t border-outline-variant flat no shadows z-50">
+<!-- Tab 1: Home (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<!-- Tab 2: Timetable -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low active:scale-95 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-1 group-hover:text-on-surface transition-colors">calendar_month</span>
+<span class="font-label-sm text-label-sm group-hover:text-on-surface transition-colors">Timetable</span>
+</button>
+<!-- Tab 3: Learn -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low active:scale-95 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-1 group-hover:text-on-surface transition-colors">school</span>
+<span class="font-label-sm text-label-sm group-hover:text-on-surface transition-colors">Learn</span>
+</button>
+<!-- Tab 4: Results -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low active:scale-95 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-1 group-hover:text-on-surface transition-colors">grade</span>
+<span class="font-label-sm text-label-sm group-hover:text-on-surface transition-colors">Results</span>
+</button>
+<!-- Tab 5: More -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-low active:scale-95 transition-transform duration-150 group">
+<span class="material-symbols-outlined mb-1 group-hover:text-on-surface transition-colors">menu</span>
+<span class="font-label-sm text-label-sm group-hover:text-on-surface transition-colors">More</span>
+</button>
+</nav>
+</body></html>

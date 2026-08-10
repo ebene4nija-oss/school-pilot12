@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Roll Call</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#c0eec7",
+                      "on-secondary-fixed": "#291800",
+                      "on-tertiary": "#ffffff",
+                      "primary": "#000e22",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "inverse-primary": "#acc8f4",
+                      "surface-tint": "#446086",
+                      "primary-container": "#002447",
+                      "surface-container-highest": "#e4e2e1",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#d4e3ff",
+                      "surface-container-low": "#f6f3f2",
+                      "primary-fixed-dim": "#acc8f4",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#dcd9d8",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#43474e",
+                      "surface-container-high": "#eae7e7",
+                      "tertiary-container": "#002a11",
+                      "on-surface": "#1b1c1b",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#784d00",
+                      "inverse-on-surface": "#f3f0ef",
+                      "secondary-fixed": "#ffddb4",
+                      "on-primary-container": "#718cb5",
+                      "on-tertiary-fixed": "#00210c",
+                      "background": "#fcf9f8",
+                      "on-secondary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "surface-variant": "#e4e2e1",
+                      "on-primary-fixed": "#001c39",
+                      "surface-container": "#f0edec",
+                      "surface-bright": "#fcf9f8",
+                      "secondary-container": "#ffc16a",
+                      "on-background": "#1b1c1b",
+                      "inverse-surface": "#303030",
+                      "outline": "#74777f",
+                      "surface": "#fcf9f8",
+                      "secondary": "#835500",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "on-tertiary-container": "#6a9472",
+                      "tertiary": "#001105",
+                      "outline-variant": "#c3c6cf"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "stack-lg": "24px",
+                      "stack-md": "16px",
+                      "screen-margin": "16px",
+                      "unit": "8px",
+                      "stack-sm": "8px",
+                      "safe": "env(safe-area-inset-bottom)"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Work Sans"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "headline-lg": [
+                              "Work Sans"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+      </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[120px] md:pb-[80px]">
+<!-- TopAppBar -->
+<header class="h-[56px] w-full sticky top-0 z-50 bg-surface border-b border-outline-variant flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SchoolPilot</h1>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="w-full max-w-4xl mx-auto px-screen-margin pt-stack-lg flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<div class="flex flex-col gap-unit">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">JSS2A Roll Call</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Monday, 9 August</p>
+</div>
+<!-- Student List (Bento-style list) -->
+<div class="flex flex-col gap-unit">
+<!-- Student Row (Present) -->
+<div class="bg-surface border border-outline-variant rounded p-stack-md flex items-center justify-between border-l-[4px] border-l-tertiary-container">
+<div class="flex items-center gap-stack-md">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A small circular avatar placeholder image showing a young student in a plain white collared shirt against a soft blue background. Studio lighting, professional portrait style, corporate functional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuACNz9JOAklxaMpHBFCbWpAbv8DlybLtfhhphhRzkJQwy-PD4Pk8-t8QcxLA4G__6V-SHSEnxqpMoH4SCKFSRSo8q9OV8JsveQMgG-Qlw2edjRAIE4pO4hViTG3Fr6DrfCWgf8h6HnxYjm4UBBGrrSRrgbBWVUChWpZ8gTqdwiRiwOnOSEXVTR7K3NtNs3CfrWJNaM76WR-QK-WqyIHm-sGLWGnZc6n35dCpvNRYgdnG1-9voV4CyeO"/>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Adebayo, Samuel</span>
+<span class="font-body-md text-body-md text-on-surface-variant">ID: 2023-001</span>
+</div>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+                    Present
+                </div>
+</div>
+<!-- Student Row (Absent) -->
+<div class="bg-surface border border-outline-variant rounded p-stack-md flex items-center justify-between border-l-[4px] border-l-error">
+<div class="flex items-center gap-stack-md">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A small circular avatar placeholder image showing a young student in a plain white collared shirt against a soft gray background. Studio lighting, professional portrait style, corporate functional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6XSYA4f0kZA8OCnbyq0duBY730kVldLWdKw5Xc76EicqyT-q_YS_FG-NbiiNQQkxOMU18aD9i98eOH7fYWZRXixgGpPG0zI6OMgG8lCJWaeYldWWeiKcXDGm-5UVNCOUIgNmPsou4gL-5safZT0v1BgoOrVhSY_N2HfAY_BYjafanwJuTHCQ56wEfqiy96tJdRBL1DZtACXiUlgR2Ys2CoXPpLwkNRHVdWgAiR1qlFMt3xOHhWwnY"/>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Chukwu, Emeka</span>
+<span class="font-body-md text-body-md text-on-surface-variant">ID: 2023-014</span>
+</div>
+</div>
+<div class="bg-error-container text-on-error-container px-3 py-1 rounded-full flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] fill">cancel</span>
+                    Absent
+                </div>
+</div>
+<!-- Student Row (Present) -->
+<div class="bg-surface border border-outline-variant rounded p-stack-md flex items-center justify-between border-l-[4px] border-l-tertiary-container">
+<div class="flex items-center gap-stack-md">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-on-surface-variant">
+                        FO
+                    </div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Fashola, Olaitan</span>
+<span class="font-body-md text-body-md text-on-surface-variant">ID: 2023-042</span>
+</div>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+                    Present
+                </div>
+</div>
+</div>
+</main>
+<!-- Snackbar (Confirmation) -->
+<div class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 bg-tertiary-container text-on-tertiary rounded-lg px-stack-md py-stack-sm flex items-center gap-2 shadow-sm min-w-fit max-w-sm w-full mx-4" role="alert">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="font-body-md text-body-md">Register saved</span>
+</div>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 h-[80px] bg-surface flex justify-around items-center px-unit pb-safe border-t border-outline-variant">
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-primary-container bg-secondary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined fill" data-icon="checklist">checklist</span>
+<span class="font-label-sm text-label-sm font-bold">Register</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="book">book</span>
+<span class="font-label-sm text-label-sm">Gradebook</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="font-label-sm text-label-sm">Classes</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 ease-in-out p-2 rounded-lg">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</button>
+</nav>
+<!-- Desktop Nav Sidebar (hidden on mobile, basic representation) -->
+<aside class="hidden md:flex flex-col w-[240px] fixed top-[56px] left-0 bottom-0 bg-surface border-r border-outline-variant py-stack-lg px-screen-margin gap-stack-sm">
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high transition-colors p-3 rounded-lg text-left">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-lg text-label-lg">Home</span>
+</button>
+<button class="flex items-center gap-3 text-primary-container bg-secondary-container transition-colors p-3 rounded-lg text-left font-bold">
+<span class="material-symbols-outlined fill" data-icon="checklist">checklist</span>
+<span class="font-label-lg text-label-lg">Register</span>
+</button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high transition-colors p-3 rounded-lg text-left">
+<span class="material-symbols-outlined" data-icon="book">book</span>
+<span class="font-label-lg text-label-lg">Gradebook</span>
+</button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high transition-colors p-3 rounded-lg text-left">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="font-label-lg text-label-lg">Classes</span>
+</button>
+</aside>
+</body></html>

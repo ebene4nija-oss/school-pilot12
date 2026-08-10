@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolNexus - Chidinma · JSS2A</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter and Work Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#446086",
+                    "on-surface-variant": "#43474e",
+                    "outline-variant": "#c3c6cf",
+                    "on-primary-fixed": "#001c39",
+                    "background": "#fcf9f8",
+                    "on-secondary-fixed": "#291800",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#303030",
+                    "surface-container-highest": "#e4e2e1",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#718cb5",
+                    "on-tertiary-container": "#6a9472",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "primary": "#000e22",
+                    "surface-dim": "#dcd9d8",
+                    "tertiary": "#001105",
+                    "secondary-container": "#ffc16a",
+                    "secondary": "#835500",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "primary-container": "#002447",
+                    "surface": "#fcf9f8",
+                    "tertiary-fixed": "#c0eec7",
+                    "on-background": "#1b1c1b",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "tertiary-container": "#002a11",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "on-tertiary-fixed": "#00210c",
+                    "on-surface": "#1b1c1b",
+                    "outline": "#74777f",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "secondary-fixed": "#ffddb4",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#fcf9f8",
+                    "surface-variant": "#e4e2e1",
+                    "surface-container-high": "#eae7e7",
+                    "surface-container": "#f0edec",
+                    "on-secondary-container": "#784d00",
+                    "inverse-primary": "#acc8f4",
+                    "inverse-on-surface": "#f3f0ef",
+                    "primary-fixed-dim": "#acc8f4",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f6f3f2",
+                    "primary-fixed": "#d4e3ff",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "gutter": "16px",
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "screen-margin": "16px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Work Sans"
+                    ],
+                    "headline-sm": [
+                            "Work Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Work Sans"
+                    ],
+                    "headline-md": [
+                            "Work Sans"
+                    ],
+                    "label-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Modern Corporate Functionalism additions */
+        .status-present { background-color: rgba(106, 148, 114, 0.1); color: #002a11; }
+        .status-absent { background-color: rgba(186, 26, 26, 0.1); color: #93000a; }
+        .status-late { background-color: rgba(255, 193, 106, 0.1); color: #784d00; }
+        
+        .dot-present { background-color: #6a9472; }
+        .dot-absent { background-color: #ba1a1a; }
+        .dot-late { background-color: #ffc16a; }
+        .dot-none { background-color: #e4e2e1; }
+        
+        /* Functional borders for cards */
+        .card-commendation { border-left: 4px solid #6a9472; }
+        .card-concern { border-left: 4px solid #ffc16a; }
+        
+        /* Non-optical depth (crisp boundaries) */
+        .crisp-card {
+            background-color: #ffffff;
+            border: 1px solid #c3c6cf;
+        }
+        
+        /* Hide scrollbar for clean segmented control */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* JS Toggle utility classes */
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg min-h-screen pb-24 md:hidden">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-outline-variant w-full sticky top-0 z-50 h-16 flex items-center justify-between px-screen-margin">
+<div class="flex items-center gap-stack-sm">
+<!-- Leading Avatar -->
+<img alt="Chidinma" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A small, professional circular portrait photo of a female junior secondary school student (JSS2) in a crisp school uniform. Lighting is bright and neutral studio lighting, emphasizing a clean corporate functionalist aesthetic with no harsh shadows. White background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm5kwU0cHIOxWLt9u2w_BpGEcKiCUrVEaAlHwh4rKfjqb2fYq753rjXjclI4T-KnH2V_4qD2WRpKQdRKrjas6jq7tAsbtHuVYTfked8WIxwVdJrMb7Gv89IFa2GTDX5D-0GUE4oXXG6TcP08oNpCOZoaRXgpxQ8EUgkhdGrQdbC74-6xpoHAiKNWYz8ILzaYxcbFbaWqi7Dhb2nHOEGdxPqQfOvDqhQZEhOhOEhKkjKC-VkOplQLIE"/>
+<!-- Headline -->
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Chidinma · JSS2A</h1>
+</div>
+<!-- Trailing Icon -->
+<button class="text-on-surface-variant hover:bg-surface-container active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">swap_horizontal_circle</span>
+</button>
+</header>
+<!-- Segmented Control Container -->
+<div class="px-screen-margin pt-stack-md pb-stack-sm bg-surface">
+<div class="flex bg-surface-container-high rounded-full p-1 border border-outline-variant relative z-10">
+<!-- Active state indicator (controlled by JS) -->
+<div class="absolute top-1 bottom-1 left-1 bg-surface border border-outline-variant rounded-full transition-transform duration-300 ease-in-out w-[calc(50%-4px)] z-0" id="segment-indicator"></div>
+<button class="flex-1 py-2 font-label-lg text-label-lg text-on-background relative z-10 font-bold" id="tab-attendance" onclick="switchTab('attendance')">
+                Attendance
+            </button>
+<button class="flex-1 py-2 font-label-lg text-label-lg text-on-surface-variant relative z-10" id="tab-behaviour" onclick="switchTab('behaviour')">
+                Behaviour
+            </button>
+</div>
+</div>
+<!-- MAIN CONTENT AREA -->
+<main class="px-screen-margin py-stack-md flex flex-col gap-stack-lg">
+<!-- ==================== ATTENDANCE VIEW ==================== -->
+<div class="flex flex-col gap-stack-lg animate-[fadeIn_0.3s_ease-out]" id="view-attendance">
+<!-- Summary Strip -->
+<div class="flex gap-unit overflow-x-auto no-scrollbar py-1">
+<div class="flex-1 min-w-fit crisp-card rounded-DEFAULT p-3 flex flex-col items-start status-present">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Present</span>
+<span class="font-headline-md text-headline-md font-bold mt-1">58</span>
+</div>
+<div class="flex-1 min-w-fit crisp-card rounded-DEFAULT p-3 flex flex-col items-start status-absent">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Absent</span>
+<span class="font-headline-md text-headline-md font-bold mt-1">3</span>
+</div>
+<div class="flex-1 min-w-fit crisp-card rounded-DEFAULT p-3 flex flex-col items-start status-late">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Late</span>
+<span class="font-headline-md text-headline-md font-bold mt-1">2</span>
+</div>
+</div>
+<!-- Calendar Grid Card -->
+<div class="crisp-card rounded-lg p-stack-md">
+<div class="flex justify-between items-center mb-stack-md">
+<h2 class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">July 2024</h2>
+<span class="material-symbols-outlined text-outline">calendar_month</span>
+</div>
+<!-- Weekday Headers -->
+<div class="grid grid-cols-5 gap-unit mb-2">
+<div class="text-center font-label-sm text-label-sm text-outline">M</div>
+<div class="text-center font-label-sm text-label-sm text-outline">T</div>
+<div class="text-center font-label-sm text-label-sm text-outline">W</div>
+<div class="text-center font-label-sm text-label-sm text-outline">T</div>
+<div class="text-center font-label-sm text-label-sm text-outline">F</div>
+</div>
+<!-- Grid Dots -->
+<div class="grid grid-cols-5 gap-unit gap-y-3">
+<!-- Row 1 -->
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">1</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">2</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">3</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">4</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-late flex items-center justify-center text-[10px] text-on-secondary-container font-bold">5</div></div>
+<!-- Row 2 -->
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">8</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-absent flex items-center justify-center text-[10px] text-white font-bold">9</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">10</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">11</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">12</div></div>
+<!-- Row 3 -->
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">15</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">16</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">17</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">18</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">19</div></div>
+<!-- Row 4 -->
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">22</div></div>
+<div class="flex justify-center ring-2 ring-primary-container ring-offset-2 rounded-full"><div class="w-6 h-6 rounded-full dot-absent flex items-center justify-center text-[10px] text-white font-bold">23</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-present flex items-center justify-center text-[10px] text-white font-bold">24</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-none flex items-center justify-center text-[10px] text-outline font-bold">25</div></div>
+<div class="flex justify-center"><div class="w-6 h-6 rounded-full dot-none flex items-center justify-center text-[10px] text-outline font-bold">26</div></div>
+</div>
+</div>
+<!-- Exceptions List -->
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-stack-sm px-1">Exceptions</h3>
+<div class="flex flex-col gap-unit">
+<!-- Exception Item -->
+<div class="crisp-card rounded-DEFAULT p-3 flex flex-col gap-1 border-l-4 border-l-[#ba1a1a]">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg font-bold text-[#93000a]">Absent</span>
+<span class="font-label-sm text-label-sm text-outline">Tue 23 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">No reason given by parent/guardian.</p>
+</div>
+<!-- Exception Item -->
+<div class="crisp-card rounded-DEFAULT p-3 flex flex-col gap-1 border-l-4 border-l-[#ba1a1a]">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg font-bold text-[#93000a]">Absent</span>
+<span class="font-label-sm text-label-sm text-outline">Tue 09 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Medical appointment. Note provided.</p>
+</div>
+<!-- Exception Item -->
+<div class="crisp-card rounded-DEFAULT p-3 flex flex-col gap-1 border-l-4 border-l-[#ffc16a]">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg font-bold text-[#784d00]">Late</span>
+<span class="font-label-sm text-label-sm text-outline">Fri 05 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Arrived 8:25 AM. Traffic delay reported.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- ==================== BEHAVIOUR VIEW ==================== -->
+<div class="hidden-view flex flex-col gap-stack-lg animate-[fadeIn_0.3s_ease-out]" id="view-behaviour">
+<div class="flex flex-col gap-stack-sm">
+<!-- Commendation Card -->
+<div class="crisp-card card-commendation rounded-DEFAULT p-stack-sm flex gap-stack-sm items-start bg-surface-container-lowest">
+<div class="w-8 h-8 rounded-full bg-[#c0eec7] flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[#00210c] text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-lg text-label-lg font-bold text-on-background">Commendation</span>
+<span class="font-label-sm text-label-sm text-outline">22 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Exceptional leadership during the group science project. Kept the team focused and delivered high-quality findings.</p>
+<div class="flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px] text-outline">person</span>
+<span class="font-label-sm text-label-sm text-outline">Mrs Adeyemi</span>
+</div>
+</div>
+</div>
+<!-- Concern Card -->
+<div class="crisp-card card-concern rounded-DEFAULT p-stack-sm flex gap-stack-sm items-start bg-surface-container-lowest">
+<div class="w-8 h-8 rounded-full bg-[#ffddb4] flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[#633f00] text-[18px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-lg text-label-lg font-bold text-on-background">Concern</span>
+<span class="font-label-sm text-label-sm text-outline">15 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Disruptive talking during Mathematics lecture. Reminded twice before focusing.</p>
+<div class="flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px] text-outline">person</span>
+<span class="font-label-sm text-label-sm text-outline">Mr Okoro</span>
+</div>
+</div>
+</div>
+<!-- Commendation Card -->
+<div class="crisp-card card-commendation rounded-DEFAULT p-stack-sm flex gap-stack-sm items-start bg-surface-container-lowest">
+<div class="w-8 h-8 rounded-full bg-[#c0eec7] flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[#00210c] text-[18px]" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-lg text-label-lg font-bold text-on-background">Commendation</span>
+<span class="font-label-sm text-label-sm text-outline">02 Jul</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-2">Volunteered to help organize the library during break time without being asked. Very helpful attitude.</p>
+<div class="flex items-center gap-1 mt-auto">
+<span class="material-symbols-outlined text-[14px] text-outline">person</span>
+<span class="font-label-sm text-label-sm text-outline">Ms Bello</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Semantic Shell mapping: "Child" is active based on viewing a specific student's record) -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant bg-surface h-16 px-4 flex justify-around items-center">
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 h-full hover:bg-surface-container-low active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- Active Tab ("Child") -->
+<a class="flex flex-col items-center justify-center text-primary border-t-2 border-primary pt-2 w-16 h-full hover:bg-surface-container-low active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">child_care</span>
+<span class="font-label-sm text-label-sm mt-1 font-bold">Child</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 h-full hover:bg-surface-container-low active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Fees</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 h-full hover:bg-surface-container-low active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[24px]">assessment</span>
+<span class="font-label-sm text-label-sm mt-1">Results</span>
+</a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-2 w-16 h-full hover:bg-surface-container-low active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</a>
+</nav>
+<!-- Simple JS for Segmented Control Logic -->
+<script>
+        function switchTab(tabName) {
+            const attView = document.getElementById('view-attendance');
+            const behView = document.getElementById('view-behaviour');
+            const attTab = document.getElementById('tab-attendance');
+            const behTab = document.getElementById('tab-behaviour');
+            const indicator = document.getElementById('segment-indicator');
+
+            if (tabName === 'attendance') {
+                attView.classList.remove('hidden-view');
+                behView.classList.add('hidden-view');
+                
+                attTab.classList.add('text-on-background', 'font-bold');
+                attTab.classList.remove('text-on-surface-variant');
+                
+                behTab.classList.remove('text-on-background', 'font-bold');
+                behTab.classList.add('text-on-surface-variant');
+                
+                indicator.style.transform = 'translateX(0)';
+            } else {
+                behView.classList.remove('hidden-view');
+                attView.classList.add('hidden-view');
+                
+                behTab.classList.add('text-on-background', 'font-bold');
+                behTab.classList.remove('text-on-surface-variant');
+                
+                attTab.classList.remove('text-on-background', 'font-bold');
+                attTab.classList.add('text-on-surface-variant');
+                
+                indicator.style.transform = 'translateX(100%)';
+            }
+        }
+    </script>
+</body></html>

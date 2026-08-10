@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SchoolPilot - Find your school</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#fcf9f8",
+                    "outline-variant": "#c3c6cf",
+                    "primary-container": "#002447",
+                    "error": "#ba1a1a",
+                    "on-surface": "#1b1c1b",
+                    "inverse-surface": "#303030",
+                    "on-tertiary-container": "#6a9472",
+                    "on-tertiary-fixed-variant": "#274f32",
+                    "surface-dim": "#dcd9d8",
+                    "primary": "#000e22",
+                    "surface-container": "#f0edec",
+                    "primary-fixed-dim": "#acc8f4",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#f3f0ef",
+                    "tertiary-fixed": "#c0eec7",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "secondary-container": "#ffc16a",
+                    "tertiary-fixed-dim": "#a5d1ac",
+                    "tertiary": "#001105",
+                    "tertiary-container": "#002a11",
+                    "on-primary-fixed": "#001c39",
+                    "on-tertiary-fixed": "#00210c",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#784d00",
+                    "secondary": "#835500",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "surface": "#fcf9f8",
+                    "on-primary-fixed-variant": "#2c486d",
+                    "primary-fixed": "#d4e3ff",
+                    "surface-container-low": "#f6f3f2",
+                    "on-secondary-fixed": "#291800",
+                    "surface-tint": "#446086",
+                    "secondary-fixed-dim": "#f9bb65",
+                    "on-surface-variant": "#43474e",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#ffddb4",
+                    "surface-container-highest": "#e4e2e1",
+                    "on-error": "#ffffff",
+                    "on-background": "#1b1c1b",
+                    "on-primary-container": "#718cb5",
+                    "outline": "#74777f",
+                    "inverse-primary": "#acc8f4",
+                    "background": "#fcf9f8",
+                    "surface-variant": "#e4e2e1",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "screen-margin": "16px",
+                    "unit": "8px",
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "stack-md": "16px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Work Sans"],
+                    "headline-lg": ["Work Sans"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Work Sans"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface-bright min-h-screen flex flex-col items-center justify-between p-screen-margin antialiased">
+<!-- Top Spacer for vertical centering -->
+<div class="flex-grow"></div>
+<!-- Main Content Container -->
+<main class="w-full max-w-[400px] flex flex-col items-center gap-stack-lg">
+<!-- Header Section -->
+<header class="flex flex-col items-center gap-stack-md text-center w-full">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary md:font-headline-lg md:text-headline-lg">
+                SchoolPilot
+            </h1>
+<h2 class="font-headline-md text-headline-md text-on-surface">
+                Find your school
+            </h2>
+</header>
+<!-- Form Section -->
+<form class="w-full flex flex-col gap-stack-lg mt-stack-md" onsubmit="event.preventDefault();">
+<!-- Input Group -->
+<div class="flex flex-col w-full">
+<div class="relative w-full">
+<input autocomplete="off" class="peer w-full h-[56px] px-4 pt-6 pb-2 border border-outline-variant bg-surface text-body-lg font-body-lg text-on-surface rounded focus:outline-none focus:border-2 focus:border-primary-container transition-all" id="schoolCode" placeholder=" " required="" type="text"/>
+<label class="absolute left-4 top-4 text-body-lg font-body-lg text-on-surface-variant pointer-events-none transition-all origin-left peer-focus:top-1.5 peer-focus:scale-75 peer-focus:text-primary-container peer-valid:top-1.5 peer-valid:scale-75" for="schoolCode">
+                        School code
+                    </label>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-stack-sm px-1">
+                    The short name your school gave you, e.g. graceland
+                </p>
+</div>
+<!-- Actions Group -->
+<div class="flex flex-col items-center gap-stack-md w-full mt-stack-md">
+<!-- Primary Button -->
+<button class="w-full h-[48px] bg-secondary-container text-on-surface font-label-lg text-label-lg rounded-full flex items-center justify-center hover:bg-secondary-fixed-dim transition-colors active:scale-[0.98]" type="submit">
+                    Continue
+                </button>
+<!-- Ghost Link -->
+<button class="h-[48px] px-4 text-primary-container font-label-lg text-label-lg bg-transparent border border-transparent rounded hover:bg-surface-container-low transition-colors" type="button">
+                    I don't know my code
+                </button>
+</div>
+</form>
+</main>
+<!-- Bottom Spacer for vertical centering -->
+<div class="flex-grow"></div>
+<!-- Footer -->
+<footer class="w-full pb-screen-margin text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant">
+            SchoolPilot — for Nigerian schools
+        </p>
+</footer>
+</body></html>

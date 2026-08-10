@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Messages - SchoolPilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#ffddb4",
+                      "tertiary": "#001105",
+                      "on-tertiary-fixed-variant": "#274f32",
+                      "on-surface-variant": "#43474e",
+                      "surface-container-high": "#eae7e7",
+                      "surface-container-highest": "#e4e2e1",
+                      "tertiary-fixed-dim": "#a5d1ac",
+                      "error-container": "#ffdad6",
+                      "tertiary-container": "#002a11",
+                      "primary-container": "#002447",
+                      "surface": "#fcf9f8",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed": "#d4e3ff",
+                      "outline": "#74777f",
+                      "on-primary-fixed": "#001c39",
+                      "tertiary-fixed": "#c0eec7",
+                      "inverse-primary": "#acc8f4",
+                      "secondary": "#835500",
+                      "on-surface": "#1b1c1b",
+                      "on-tertiary-fixed": "#00210c",
+                      "on-primary-container": "#718cb5",
+                      "inverse-on-surface": "#f3f0ef",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#2c486d",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-secondary-fixed": "#291800",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#303030",
+                      "primary-fixed-dim": "#acc8f4",
+                      "primary": "#000e22",
+                      "surface-container": "#f0edec",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-container": "#6a9472",
+                      "on-secondary-container": "#784d00",
+                      "on-error-container": "#93000a",
+                      "surface-container-low": "#f6f3f2",
+                      "secondary-fixed-dim": "#f9bb65",
+                      "on-error": "#ffffff",
+                      "secondary-container": "#ffc16a",
+                      "surface-tint": "#446086",
+                      "on-background": "#1b1c1b",
+                      "outline-variant": "#c3c6cf",
+                      "surface-variant": "#e4e2e1",
+                      "surface-bright": "#fcf9f8",
+                      "background": "#fcf9f8",
+                      "on-primary": "#ffffff",
+                      "surface-dim": "#dcd9d8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-lg": "24px",
+                      "stack-md": "16px",
+                      "stack-sm": "8px",
+                      "gutter": "16px",
+                      "screen-margin": "16px",
+                      "unit": "8px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Work Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Work Sans"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Work Sans"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Work Sans"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container md:hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface h-[56px] w-full sticky top-0 z-50 border-b border-outline-variant dark:border-outline flex items-center justify-between px-screen-margin w-full">
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 p-2 -ml-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Messages</h1>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 p-2 -mr-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">search</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-safe">
+<div class="px-screen-margin py-stack-md flex flex-col gap-unit">
+<!-- Message List Item 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-sm flex items-start gap-stack-sm active:border-primary-container transition-colors duration-200">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="A close up professional headshot of an African man wearing a neat polo shirt, against a bright flat minimalist office background. Lighting is high-key and crisp." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6ikGqjrmQ4fVctQyOpIk2z43TY56yhRjck4mBFeVZi8yiqPpu--Q1gxl7GMhpSp_UVxYplPHE5HJK9oDIeIzY7wbraD8syagjOgXK5kOPxbAcxwDwkfaqJEn2Y3gS8frK1xd_2_WZRVu6lJ5SANoPxTDVeoCVZGGTb-Qx2RFb5OOkvRKzgKFNnMTDbTwuuGKSvvEpOnCxPsbQHvYJPpDQ1hrgYXV3_aFAGACVTGsFGJu4_HqeKclw"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h2 class="font-label-lg text-label-lg text-on-surface truncate">Mr. Okeke</h2>
+<span class="font-label-sm text-label-sm text-primary-container">10:42 AM</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant truncate mb-1">
+                        Parent · Chidinma JSS2A
+                    </div>
+<p class="font-body-md text-body-md text-on-surface truncate">Thank you for the update on her math scores. I will...</p>
+</div>
+<div class="flex flex-col items-end justify-between h-full pt-1">
+<div class="bg-[#feae2c] text-[#1b1c1c] font-label-sm text-label-sm rounded-full w-5 h-5 flex items-center justify-center">
+                        2
+                    </div>
+</div>
+</div>
+<!-- Message List Item 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-sm flex items-start gap-stack-sm active:border-primary-container transition-colors duration-200">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover border border-outline-variant" data-alt="A close up professional headshot of an African woman wearing a formal blouse, against a bright flat minimalist office background. Lighting is high-key and crisp." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtVolxkVvw8TKjdP28WGpGEjqfXCk9Wo8VYJExRW4GouO4qdKy_PGK2iv5jia235Kd0cRYzj-jf7L2C2WIqxNtEeSO9C_9yk4yC71LEGl74tcdaW5TyluGvEYaKEYlKQQCW0AL1-JJay7EbPk17bhbzKPic5TSbWOHkTNR5FSUr5FHe97gvbxZkds7FfQ5lTdf3sqwUIIPZhNZcdF3QtoGmfcBMxZDnuy579I6q9iu4mi39MAVnO6t"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h2 class="font-label-lg text-label-lg text-on-surface truncate">Mrs. Adebayo</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Yesterday</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant truncate mb-1">
+                        Parent · Tunde SS1
+                    </div>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Has the excursion fee been confirmed?</p>
+</div>
+</div>
+<!-- Message List Item 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-sm flex items-start gap-stack-sm active:border-primary-container transition-colors duration-200">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center text-on-surface-variant font-headline-sm">
+                        E
+                    </div>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h2 class="font-label-lg text-label-lg text-on-surface truncate">Eze Family</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tuesday</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant truncate mb-1">
+                        Parents · Obi &amp; Nneka
+                    </div>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">We received the report cards. We'd like to schedule a...</p>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for New Message (Contextual to Messages list) -->
+<button class="fixed bottom-[24px] right-screen-margin bg-[#002447] text-[#ffffff] h-14 w-14 rounded-full flex items-center justify-center z-40 active:scale-95 transition-transform duration-100 shadow-none border border-outline-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit</span>
+</button>
+</body></html>
