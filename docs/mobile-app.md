@@ -587,7 +587,7 @@ output, not a stylistic preference:
 | 6 screens | Product name drifts to **SchoolPath** and **SchoolNexus** (`ai_tutor_chat`, `student_home_dashboard`, `student_results`, `parent_dashboard`, `attendance_behaviour`, `result_checker_pin_gate`). | Cosmetic — the app bar carries the school name, not the product name. Ignore, do not propagate. |
 | `class_register_offline_state`, `gradebook_score_entry` | Teacher bottom nav drifts to `Students` / `Staff`. Three other teacher screens have it right. | Use the canonical set in §B3. |
 | `school_admin_dashboard` | Duplicate of `principal_dashboard` for a different school, with no bottom nav. | Redundant. Build from `principal_dashboard`. |
-| — | **Missing:** the student-side "results not yet released" locked variant, and the CBT question-navigator grid sheet. Both were requested; neither came back. | Regeneration prompts are in `docs/mobile-stitch-prompt.md` §6. |
+| — | **Missing:** the student-side "results not yet released" locked variant, and the CBT question-navigator grid sheet. Both were requested; neither came back. | Both are built in code without a mock — `ResultsScreen._NotReleased` and the navigator sheet in `cbt_attempt_screen.dart`. A 40-question paper is unusable without the navigator. |
 
 **What came out well and should be followed closely:** `ai_comment_review` —
 the amber left-bordered draft block, the "Pending Approval" sparkle chip and the
