@@ -6,7 +6,6 @@ use App\Models\ResultPin;
 use App\Models\ResultPinBatch;
 use App\Models\School;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -268,8 +267,14 @@ class ResultPinService
         return $serial;
     }
 
+    /**
+     * Kept as the call site the PIN flows already use, but the shape now lives
+     * in one place. Two implementations of what a SchoolPilot reference looks
+     * like is the kind of thing that drifts and then stops matching at
+     * settlement, when a parent has already been debited.
+     */
     public function generateReference(string $prefix): string
     {
-        return $prefix . '_' . now()->format('YmdHis') . '_' . strtoupper(Str::random(8));
+        return PaymentGatewayService::reference($prefix);
     }
 }

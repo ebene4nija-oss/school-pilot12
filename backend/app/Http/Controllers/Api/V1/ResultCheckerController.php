@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\PaymentGatewayException;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ResultPin;
@@ -11,6 +12,7 @@ use App\Models\School;
 use App\Models\ScoreEntry;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\PaymentGatewayService;
 use App\Services\ReportCard\TemplateException;
 use App\Services\ReportCardPdfService;
 use App\Services\ResultPinService;
@@ -162,7 +164,7 @@ class ResultCheckerController extends Controller
      * unlocked here — the PIN is allocated when the signed webhook confirms
      * payment, because a client telling us it paid is not evidence that it did.
      */
-    public function purchase(Request $request)
+    public function purchase(Request $request, PaymentGatewayService $gateways)
     {
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|integer',
@@ -204,12 +206,46 @@ class ResultCheckerController extends Controller
             ], 409);
         }
 
+        /*
+         * Checkout is opened server-side on the school's own merchant account
+         * (gap G8). This used to hand back a reference and a comment saying the
+         * client would drive the gateway "with the school's own public key" —
+         * a key nothing in the product stored and no endpoint exposed, so the
+         * flow terminated here and the guardian had no way to pay.
+         */
+        $credentials = $gateways->usableCredentialsFor((int) $student->school_id, $request->gateway);
+
+        if (! $credentials) {
+            return response()->json([
+                'error' => 'This school has not connected its ' . $request->gateway . ' account, so results cannot be paid for online. Buy a PIN at the school office instead.',
+            ], 409);
+        }
+
+        $reference = PaymentGatewayService::reference('SPRP');
+
+        try {
+            $checkout = $gateways->initializeCheckout($credentials, [
+                'reference' => $reference,
+                'amount' => (float) $price,
+                'email' => $request->user()->email,
+                'name' => $request->user()->name,
+                'title' => 'Result checker',
+                'metadata' => [
+                    'student_id' => $student->id,
+                    'term_id' => $term->id,
+                    'school_id' => $student->school_id,
+                ],
+            ]);
+        } catch (PaymentGatewayException $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+
         $sale = ResultPinSale::create([
             'school_id' => $student->school_id,
             'student_id' => $student->id,
             'term_id' => $term->id,
             'purchased_by' => $request->user()->id,
-            'reference' => $this->pins->generateReference('SPRP'),
+            'reference' => $reference,
             'amount' => $price,
             'gateway' => $request->gateway,
             'status' => 'pending',
@@ -217,6 +253,9 @@ class ResultCheckerController extends Controller
 
         return response()->json([
             'message' => 'Purchase initiated. Complete payment to unlock the result.',
+            // Open this and nothing else. The result unlocks only when the
+            // school's gateway calls back with a signature we can verify.
+            'authorization_url' => $checkout['authorization_url'],
             'sale' => [
                 'id' => $sale->id,
                 'reference' => $sale->reference,
@@ -225,9 +264,6 @@ class ResultCheckerController extends Controller
                 'gateway' => $sale->gateway,
                 'status' => $sale->status,
             ],
-            // The gateway is driven client-side with the school's own public
-            // key; the backend's role is to mint the reference and to trust
-            // only the signed webhook that comes back against it.
             'stock_warning' => $this->pins->availableStock($student->school_id) < 1
                 ? 'The school has no PINs in stock. Your payment will still be honoured.'
                 : null,

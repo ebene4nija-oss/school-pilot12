@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\BehaviorReport;
+use App\Models\Guardian;
 use App\Models\Homework;
 use App\Models\PickupAuthorization;
 use App\Models\SchoolCalendarEvent;
@@ -16,6 +17,73 @@ use Illuminate\Support\Facades\Validator;
 
 class ParentPortalController extends Controller
 {
+    /**
+     * The caller's own children (gap G11).
+     *
+     * `student_guardian` has existed since the first migration and nothing ever
+     * read it from the guardian's side. Every other parent endpoint —
+     * `/parent/feed/{studentId}`, `/analytics/parent/{studentId}`,
+     * `/result-checker/{studentId}/{termId}`, `/finance/students/{studentId}/statement`
+     * — takes a student id the app had no way to learn, and `GET /students` is
+     * staff-only. That made the parent role non-functional rather than merely
+     * incomplete: a signed-in parent had no first request to make.
+     *
+     * Scoped to the guardian record belonging to this user, so it is the pivot
+     * that decides what comes back, not school membership. A parent with no
+     * guardian row gets an empty list and a reason, which is the state the app
+     * already renders.
+     */
+    public function children(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+
+        $guardian = Guardian::where('school_id', $schoolId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $guardian) {
+            return response()->json([
+                'data' => [],
+                'message' => 'No children are linked to this account. Ask the school to link your child to your profile.',
+            ]);
+        }
+
+        /*
+         * `select` rather than the whole model. Student carries four encrypted
+         * health columns; they are in `$hidden`, but a list this small has no
+         * business loading and decrypting them at all just to render a name and
+         * a class on a home screen (NDPA data minimisation, doc §12).
+         */
+        $children = $guardian->students()
+            ->withPivot('is_primary')
+            ->with(['user:id,name', 'currentClass:id,name', 'currentArm:id,name'])
+            ->select([
+                'students.id',
+                'students.user_id',
+                'students.class_id',
+                'students.arm_id',
+                'students.admission_number',
+                'students.passport_photo_path',
+                'students.status',
+            ])
+            ->orderBy('students.id')
+            ->get()
+            ->map(fn (Student $student) => [
+                'id' => $student->id,
+                'name' => $student->user?->name,
+                'admission_number' => $student->admission_number,
+                'class_id' => $student->class_id,
+                'class_name' => $student->currentClass?->name,
+                'arm_name' => $student->currentArm?->name,
+                'photo_url' => $student->passport_photo_path,
+                'status' => $student->status,
+                'is_primary_guardian' => (bool) $student->pivot->is_primary,
+            ]);
+
+        return response()->json(['data' => $children]);
+    }
+
     /**
      * Get 360-Degree Parent Feed / Dashboard for a Linked Child
      */

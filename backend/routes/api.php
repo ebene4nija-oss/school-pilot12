@@ -17,6 +17,19 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     // used to brute-force credentials.
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
+    /*
+     * Self-service password recovery (gap G2).
+     *
+     * Unauthenticated by necessity — the whole point is that the caller cannot
+     * sign in. Both carry their own limiter: `forgot-password` because each
+     * accepted call can cost the school an SMS, and `reset-password` because
+     * without one the token is brute-forceable at 60 guesses a minute.
+     */
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:password-reset');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:password-reset');
+
     // Authenticated Protected Routes
     //
     // BindTenantFromUser runs after authentication because the tenant
@@ -24,6 +37,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     // bare `localhost` on any deployment not using subdomains.
     Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class])->group(function () {
         Route::post('/auth/invite', [AuthController::class, 'inviteUser'])->middleware('role:super_admin,school_admin');
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
         
         // Student Information System (SIS) Routes
         Route::get('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
@@ -91,7 +105,27 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/finance/invoices/generate', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'generateInvoices']);
         });
 
+        /*
+         * A school's own merchant account (gap G8).
+         *
+         * school_admin only, with no super_admin fallback, for the same reason
+         * result release is: a SchoolPilot operator sells the school software.
+         * They do not get to decide which bank account another organisation's
+         * fee income lands in. Platform staff who need this changed ask the
+         * school to change it.
+         */
+        Route::middleware('role:school_admin')->group(function () {
+            Route::get('/finance/gateways', [\App\Http\Controllers\Api\V1\PaymentGatewayController::class, 'index']);
+            Route::put('/finance/gateways/{gateway}', [\App\Http\Controllers\Api\V1\PaymentGatewayController::class, 'update']);
+            Route::delete('/finance/gateways/{gateway}', [\App\Http\Controllers\Api\V1\PaymentGatewayController::class, 'destroy']);
+        });
+
         // Fees & Finance Routes
+        //
+        // `initialize` opens checkout on the school's own gateway and returns a
+        // hosted URL; `payments` records a manual or already-taken payment. The
+        // client never holds a key and never mints a reference (G8, G9).
+        Route::post('/finance/payments/initialize', [\App\Http\Controllers\Api\V1\FinanceController::class, 'initializePayment'])->middleware('role:super_admin,school_admin,parent,student');
         Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment'])->middleware('role:super_admin,school_admin,parent,student');
         Route::post('/finance/payments/reconcile-bank-transfer', [\App\Http\Controllers\Api\V1\FinanceController::class, 'reconcileBankTransfer'])->middleware('role:super_admin,school_admin');
         Route::get('/finance/invoices/{id}/pdf', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadInvoicePdf']);
@@ -144,6 +178,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/accounting/income-report', [\App\Http\Controllers\Api\V1\AccountingController::class, 'getIncomeReport'])->middleware('role:super_admin,school_admin');
 
         // Advanced Parent Engagement Portal Routes
+        /*
+         * The guardian's own children (gap G11) — and the first request a
+         * signed-in parent can make. Every other route in this block takes a
+         * `{studentId}` that had no discoverable source: `GET /students` is
+         * staff-only and nothing read `student_guardian` from the guardian's
+         * side. Scoped to the caller's own pivot rows inside the controller,
+         * so the role list here is the outer fence, not the check.
+         */
+        Route::get('/parent/children', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'children'])
+            ->middleware('role:super_admin,school_admin,parent');
         Route::get('/parent/feed/{studentId}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'getStudentFeed'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/parent/pickup-authorization', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storePickupAuthorization'])->middleware('role:super_admin,school_admin,parent');
         // Full behaviour history, paginated. The feed carries only the ten most
@@ -203,6 +247,22 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/students/{studentId}/portfolio', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'addPortfolioEntry'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/portfolio/{id}/verify', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'verifyPortfolioEntry'])->middleware('role:super_admin,school_admin');
 
+        /*
+         * Academic structure — the two pickers everything else depends on
+         * (gap G12). Only `/classes/{id}/subjects` existed, which is useful
+         * only once you already hold a class id, so a register, a score sheet,
+         * a broadsheet or a result release had nowhere to learn "which class,
+         * which term?".
+         *
+         * Open to every authenticated role. Both return reference data about
+         * the school — names, ordering, dates, a head-count — and nothing that
+         * touches a named child, so there is no NDPA §12 surface to gate. A
+         * student needs the term list to read their own result just as much as
+         * a teacher needs it to enter scores.
+         */
+        Route::get('/classes', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'classes']);
+        Route::get('/terms', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'terms']);
+
         // Subject Management & Enrollment Routes
         Route::get('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'listSubjects']);
         Route::post('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'storeSubject'])->middleware('role:super_admin,school_admin');
@@ -258,6 +318,15 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::post('/notifications/devices', [\App\Http\Controllers\Api\V1\NotificationController::class, 'registerDevice']);
         Route::delete('/notifications/devices', [\App\Http\Controllers\Api\V1\NotificationController::class, 'unregisterDevice']);
+
+        /*
+         * Self-diagnostic: push to your own handset and get back a per-device
+         * verdict. Open to every role because it can only ever reach the
+         * caller's own devices. Throttled anyway — it is the one push route
+         * that sends immediately rather than queueing.
+         */
+        Route::post('/notifications/devices/test', [\App\Http\Controllers\Api\V1\NotificationController::class, 'testDevice'])
+            ->middleware('throttle:10,1');
 
         Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
             Route::post('/notifications/broadcast', [\App\Http\Controllers\Api\V1\NotificationController::class, 'broadcast']);

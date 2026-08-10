@@ -11,6 +11,7 @@ use App\Models\ResultPinSale;
 use App\Models\ResultRelease;
 use App\Models\School;
 use App\Models\SchoolClass;
+use App\Models\SchoolPaymentGateway;
 use App\Models\ScoreEntry;
 use App\Models\Student;
 use App\Models\Subject;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Models\UserProfile;
 use App\Services\ResultPinService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
@@ -46,6 +48,23 @@ class ResultCheckerPinTest extends TestCase
         parent::setUp();
 
         URL::forceRootUrl('http://graceland.localhost');
+
+        /*
+         * Checkout is opened server-side now, so a purchase reaches out to
+         * Paystack. Faked, and stray requests prevented outright — a test suite
+         * that can quietly talk to a live payment gateway is a test suite that
+         * will one day charge somebody.
+         */
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.paystack.co/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://checkout.paystack.com/test-checkout',
+                    'access_code' => 'test-access-code',
+                ],
+            ]),
+        ]);
 
         $this->school = School::create([
             'name' => 'Graceland College',
@@ -130,11 +149,30 @@ class ResultCheckerPinTest extends TestCase
             ->withServerVariables(['HTTP_HOST' => 'graceland.localhost']);
     }
 
+    /**
+     * Switch the paywall on — and connect a merchant account, because since
+     * gap G8 was closed a school cannot sell a result online without one.
+     */
     private function enableChecker(float $retail = 500.00): void
     {
         $this->school->update([
             'result_checker_enabled' => true,
             'result_pin_retail_price' => $retail,
+        ]);
+
+        $this->connectPaystack();
+    }
+
+    private function connectPaystack(string $secret = 'sk_test_gracelandsecretkey'): SchoolPaymentGateway
+    {
+        return SchoolPaymentGateway::create([
+            'school_id' => $this->school->id,
+            'gateway' => 'paystack',
+            'secret_key' => $secret,
+            'public_key' => 'pk_test_gracelandpublickey',
+            'secret_last4' => substr($secret, -4),
+            'mode' => 'test',
+            'is_active' => true,
         ]);
     }
 
@@ -882,10 +920,21 @@ class ResultCheckerPinTest extends TestCase
 
     /**
      * A correctly signed Paystack charge.success, the way the gateway sends it.
+     *
+     * Signed with whichever secret the callback will actually be checked
+     * against: the school's own where it has connected an account, the platform
+     * key where it has not.
      */
     private function postPaystackWebhook(string $reference, int $amountKobo)
     {
         config(['services.paystack.secret' => 'test_secret']);
+
+        $connected = SchoolPaymentGateway::allTenants()
+            ->where('school_id', $this->school->id)
+            ->where('gateway', 'paystack')
+            ->first();
+
+        $secret = $connected?->secret_key ?: 'test_secret';
 
         $payload = [
             'event' => 'charge.success',
@@ -903,7 +952,7 @@ class ResultCheckerPinTest extends TestCase
             [
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_ACCEPT' => 'application/json',
-                'HTTP_X_PAYSTACK_SIGNATURE' => hash_hmac('sha512', $body, 'test_secret'),
+                'HTTP_X_PAYSTACK_SIGNATURE' => hash_hmac('sha512', $body, $secret),
             ],
             $body
         );

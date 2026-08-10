@@ -67,7 +67,9 @@ This file has two parts:
   four distinct widgets, and every list and detail screen has all four. An
   endless spinner is a bug.
 - **No secrets in the binary.** No API keys, no gateway secret keys, no admin
-  tokens. Public gateway keys are supplied at runtime or by `--dart-define`.
+  tokens. Since G8 was closed the app holds **no gateway key at all**, public
+  ones included: checkout is opened server-side and the app is handed a hosted
+  `authorization_url` to open in a webview (§B14).
 - **Role is enforced server-side; the app only hides.** Never treat a hidden
   button as a permission check — 403 is always a possible response and every
   screen handles it.
@@ -82,7 +84,7 @@ This file has two parts:
 | Models | hand-written, tolerant parsing | See the note below. |
 | Local DB | `sqflite` | See the note below. |
 | Token storage | `flutter_secure_storage` | Keystore/Keychain, never SharedPreferences. |
-| Push | `firebase_messaging` + `flutter_local_notifications` | Matches `DeviceToken.platform` (`android`/`ios`). See gap **G7**. |
+| Push | `firebase_messaging` + `flutter_local_notifications` | Matches `DeviceToken.platform` (`android`/`ios`). Backend transport is live — see §B10. |
 | QR scan | `mobile_scanner` | Attendance clock-in, phone camera only. |
 | GPS | `geolocator` | Staff GPS clock-in against the school geofence. |
 | Rich question content | `flutter_widget_from_html` + `flutter_math_fork` | CBT questions carry sanitised HTML, images and LaTeX. |
@@ -109,10 +111,13 @@ written**, recorded here rather than left as a surprise in the code:
    tolerant readers (`listOf`, `mapOf`, `numOf`, `stringOf`) that every screen
    uses instead. Revisit once the API is consistent — the parsing is confined
    to the data layer precisely so it can be swapped.
-3. **No `firebase_messaging` yet.** Push cannot work at all until gap **G7** is
-   fixed on the backend, and adding Firebase means a `google-services.json` and
-   a signing story for a feature that would be dead on arrival. The device
-   registration endpoint is wired; the transport is not.
+3. **No `firebase_messaging` yet — but it is now unblocked.** This originally
+   read "push cannot work at all until gap **G7** is fixed on the backend".
+   G7 is fixed: the backend sends over FCM HTTP v1 and there is a
+   `POST /notifications/devices/test` endpoint that pushes to your own handset
+   and tells you per device whether it arrived. What remains is client work —
+   `google-services.json`, the iOS APNs key, and the notification channel named
+   in §B10. See §B10 for the exact payload the server sends.
 
 ## A4.1 Theme — from the mobile design system
 
@@ -245,10 +250,10 @@ Each stage is independently useful, and each ends in a commit.
 | 3 | Attendance | Teacher register (bulk, idempotent, offline-queued), staff GPS clock-in. | done |
 | 4 | Timetable & academics | `/timetable/view` with cache, roster, admin academics hub, result release, PIN inventory. | done |
 | 5 | Homework | Teacher set/grade, student submit, parent visibility. | **blocked on G5** — no student-facing homework list exists |
-| 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done except gateway checkout (**G8**) |
+| 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done except opening the hosted checkout the backend now returns (§B14) |
 | 7 | CBT | Available exams, sitting a paper (timer, image/LaTeX rendering, local answer buffer, question navigator), submit. | done |
-| 8 | Finance | Statement, defaulters, payment history. | done except online payment (**G8**, **G9**) |
-| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done except push transport (**G7**) and the per-user inbox (**G6**) |
+| 8 | Finance | Statement, defaulters, payment history. | done except online payment — the backend half landed (G8, G9); the client still shows the "pay at the office" copy |
+| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done except the client half of push (backend transport is live — §B10) and the per-user inbox (**G6**) |
 | 10 | Hardening | Offline soak on a real handset, low-end profiling, accessibility pass, crash reporting, release signing, store listing. | not started |
 
 Stage 10 is the remaining work, plus whatever the gap fixes unblock. QR
@@ -290,14 +295,23 @@ school_id } }`. Token to `flutter_secure_storage`, sent as
 login with `two_factor_code`. Teachers, students and parents never see this
 step.
 
-**Rate limits the UI must respect:** login is 5/min per email+IP, PIN redeem is
-10/min, everything else shares 60/min. On `429` the app shows a plain
-"too many attempts, try again shortly" and backs off — it does not retry
-automatically.
+**Rate limits the UI must respect:** login is 5/min per email+IP,
+forgot-password is 3/min per address and 10/min per IP, PIN redeem is 10/min,
+everything else shares 60/min. On `429` the app shows a plain "too many
+attempts, try again shortly" and backs off — it does not retry automatically.
 
-**Sign-out.** Delete the FCM token via `DELETE /api/v1/notifications/devices`,
-wipe secure storage and the local cache. The Sanctum token is *not* revoked
-server-side — see gap **G1**.
+**Sign-out.** `POST /api/v1/auth/logout` to revoke this device's token, delete
+the FCM token via `DELETE /api/v1/notifications/devices`, then wipe secure
+storage and the local cache. The logout call is best-effort: a handset with no
+signal must still be able to sign out locally. The 401 path skips it, because
+the token it would present is the one the server just rejected.
+
+**Forgot password.** `POST /api/v1/auth/forgot-password` with an `email`. It
+always returns 200 with the same message, so the app must not branch on the
+answer or claim the address was found — that response is what stops the screen
+being used to discover who holds an account. The link it sends opens the web
+portal at `FRONTEND_URL/reset-password`; the app handles no deep links, so the
+user sets the password there and comes back to sign in.
 
 ## B3. Roles and navigation
 
@@ -513,11 +527,73 @@ Staff never pay: `/report-cards/{studentId}/{termId}` is unmetered.
 
 ## B10. Notifications
 
+**Transport: FCM HTTP v1.** The backend authenticates with a Firebase service
+account and posts to `/v1/projects/{id}/messages:send`. It previously used the
+legacy `/fcm/send` server-key endpoint, which Google decommissioned in June
+2024 — that was gap **G7**, and it is closed. Server side lives in
+`backend/app/Services/FcmService.php`, covered by
+`backend/tests/Feature/PushDeliveryTest.php`.
+
 Register the FCM token on login and on token refresh via
 `POST /notifications/devices` with `platform: android|ios`. Unregister on
-sign-out so a shared handset stops receiving another family's alerts. Deep-link
-payloads route to the relevant screen (invoice, result, homework, message).
-Blocked by gap **G7**.
+sign-out so a shared handset stops receiving another family's alerts.
+
+### Verifying your end without an admin
+
+```
+POST /api/v1/notifications/devices/test
+{ "title": "optional", "body": "optional" }
+```
+
+Pushes to the caller's **own** registered devices, synchronously, and returns a
+verdict per device. Any role may call it; throttled to 10/minute. Read the
+status codes before reaching for a debugger:
+
+| Code | Meaning |
+|---|---|
+| `200` | At least one device accepted it. `devices[].status` is `sent`. |
+| `422` | You have not registered a token yet. |
+| `502` | Every device failed. `devices[].reason` says why; a `status` of `invalid_token` means the token was deleted server-side and the app should re-register. |
+| `503` | The **deployment** has no `FCM_CREDENTIALS`. Not your bug — an operator has to set it. |
+
+### The payload you will receive
+
+```json
+{
+  "notification": { "title": "…", "body": "…" },
+  "data":         { "…": "string" },
+  "android": { "priority": "high",
+               "notification": { "channel_id": "schoolpilot_default", "sound": "default" } },
+  "apns":    { "headers": { "apns-priority": "10" },
+               "payload": { "aps": { "sound": "default", "content-available": 1 } } }
+}
+```
+
+Three things the client must match:
+
+1. **The Android channel id is `schoolpilot_default`.** Create exactly that
+   channel via `flutter_local_notifications` at startup. Android 8+ silently
+   discards a notification naming a channel that does not exist — no error, no
+   log, nothing appears. It is configurable server-side as
+   `FCM_ANDROID_CHANNEL_ID`, but do not change it unless both sides change.
+2. **Every `data` value is a string.** FCM v1 rejects anything else, so the
+   server coerces on the way out: `42` arrives as `"42"`, `true` as `"true"`,
+   and any nested structure as a JSON string you must decode. Parse
+   defensively; do not assume an int.
+3. **`content-available: 1` on iOS** means the app is woken on receipt, so the
+   background handler should refresh the inbox rather than waiting for a tap.
+
+Deep-link payloads route to the relevant screen (invoice, result, homework,
+message) off the `data` map.
+
+### Token lifecycle
+
+The server deletes a token the moment FCM says `UNREGISTERED`,
+`SENDER_ID_MISMATCH`, or that `message.token` itself is malformed. So a
+re-install, a "clear data", or a restored backup means the app is silently
+unregistered and **must** re-register on next launch — `onTokenRefresh` alone
+is not enough, because the token can be unchanged while the server row is gone.
+Register on every cold start; the endpoint upserts, so it is cheap and safe.
 
 ## B11. Testing
 
@@ -539,27 +615,51 @@ should be worked around by hacking the client.
 
 | # | Gap | Impact | Suggested fix |
 |---|---|---|---|
-| **G1** | No `POST /auth/logout`. Only `login` and `invite` exist. | Signing out leaves a valid Sanctum token alive forever. On a shared or stolen handset that is a live session. | Add `POST /api/v1/auth/logout` deleting the current access token. |
-| **G2** | No self-service password reset. Only admin-initiated `POST /users/{id}/reset-password`. | A parent who forgets their password must phone the school. This will be the single largest support cost at scale. | Add forgot/reset-password with an emailed or SMS token. |
+| **G1** | ~~No `POST /auth/logout`.~~ **Done.** `POST /api/v1/auth/logout` deletes the token that made the request, leaving the user's other sessions alone. `AuthController::logout`. | — | — |
+| **G2** | ~~No self-service password reset.~~ **Done.** `POST /api/v1/auth/forgot-password` and `POST /api/v1/auth/reset-password`, backed by `PasswordResetService` and Laravel's `password_reset_tokens` broker. | — | — |
 | **G3** | `PUT /users/{id}/profile` is admin-only. | Students and parents cannot update their own phone number or photo. | Add a `PUT /me/profile` scoped to the caller. |
 | **G4** | `GET /cbt/exams/{examId}/offline-package` is staff-only. | A student device cannot pre-download a paper. Fine if offline CBT is desktop-only (§A1) — a blocker the moment mobile offline sitting is wanted. | Decide explicitly; if wanted, add a candidate-scoped variant behind `CbtAttemptPolicy`. |
 | **G5** | No student- or parent-facing homework list. Only `POST /academics/homework` (teacher), the teacher's submissions index, and the student's own single-submission endpoint. | A student cannot discover what homework exists — only open one they already have the id for. | Add `GET /academics/homework` scoped to the caller's class/child. |
 | **G6** | `GET /notifications/history` is `role:super_admin,school_admin`. | No per-user notification inbox. A parent can receive a push but cannot see what they were sent. | Add `GET /me/notifications`, paginated, own rows only. |
-| **G7** | `NotificationService::push()` posts to `https://fcm.googleapis.com/fcm/send` with a `server_key`. That is the **legacy FCM API, decommissioned by Google**. | Push does not work at all, regardless of client code. Stage 9 cannot be completed. | Migrate to FCM HTTP v1 (OAuth service account, `/v1/projects/{id}/messages:send`). Backend change; flag before touching. |
-| **G8** | No endpoint exposes a school's gateway **public** key, and `School` stores none. `ResultCheckerController::purchase` explicitly expects checkout to be driven client-side "with the school's own public key". | The app has no way to learn which key to open checkout with, in a product where each school holds its own merchant account. | Either add the public key to the school settings payload, or add a server-side `initialize` returning a hosted `authorization_url`. The second is safer. |
-| **G9** | `POST /finance/payments` requires a client-supplied unique `reference`. | A client minting its own payment reference is fragile — a retry with a fresh reference creates a duplicate pending row. | Have the server mint the reference, as `result-checker/purchase` already does with `generateReference('SPRP')`. |
+| ~~**G7**~~ | ~~`NotificationService::push()` posts to `https://fcm.googleapis.com/fcm/send` with a `server_key`. That is the **legacy FCM API, decommissioned by Google**.~~ | ~~Push does not work at all, regardless of client code.~~ | **Fixed.** Migrated to FCM HTTP v1 in `FcmService`. Operators set `FCM_CREDENTIALS`; clients verify with `POST /notifications/devices/test`. Contract in §B10. |
+| ~~**G8**~~ | ~~No endpoint exposes a school's gateway **public** key, and `School` stores none.~~ | ~~The app has no way to learn which key to open checkout with.~~ | **Fixed.** Each school now holds its own merchant account in `school_payment_gateways` (keys encrypted at rest, write-only across the API), set through `PUT /finance/gateways/{gateway}`. Checkout is opened **server-side**: `POST /finance/payments/initialize` and `POST /result-checker/purchase` return a hosted `authorization_url`, so no key of any kind reaches the client. Contract in §B14. |
+| ~~**G9**~~ | ~~`POST /finance/payments` requires a client-supplied unique `reference`.~~ | ~~A retry with a fresh reference creates a duplicate pending row.~~ | **Fixed.** The server mints every reference. `reference` is now optional and honoured only from an admin recording a manual payment, where it carries a real bank slip number. |
 | **G10** | No paginated envelope on several list endpoints. | Roster and history screens can pull the whole table on a metered connection. | Confirm per endpoint during Stage 2; add cursor pagination where missing. |
-| **G11** | **Nothing lists a guardian's own children.** `student_guardian` exists as a pivot, but `GET /students` is staff-only and no route exposes the pivot to the guardian. | The parent role cannot function at all: every parent endpoint takes a `studentId` the app has no way to learn. This is the single largest gap. | Add `GET /api/v1/parent/children` returning the caller's linked students. The app already calls exactly that path and degrades to a "no children linked" state until it exists. |
-| **G12** | **No `GET /classes` and no `GET /terms`.** Only `GET /classes/{id}/subjects` exists, and nothing publishes terms or the current session. | Every staff screen needs a class and a term before it can ask the server anything — register, score entry, broadsheet, result release. The app falls back to deriving classes from `GET /teachers/{id}/subjects`, which works for teachers only; terms have no fallback at all. | Add both, with `is_current` on the term. |
+| ~~**G11**~~ | ~~Nothing lists a guardian's own children.~~ | ~~The parent role cannot function at all.~~ | **Fixed.** `GET /api/v1/parent/children` — the path the app already calls. Scoped by the `student_guardian` pivot rather than by school membership, and it returns name, class, arm and admission number only; the four encrypted health columns never appear (NDPA §12). |
+| ~~**G12**~~ | ~~No `GET /classes` and no `GET /terms`.~~ | ~~Every staff screen needs a class and a term before it can ask the server anything.~~ | **Fixed.** `GET /api/v1/classes` (teaching order, arms, active roll) and `GET /api/v1/terms`. See the note on `is_current` below. |
 
 **Handling.** None of these were worked around in the client. Where a gap blocks
 a control, the app shows what to do instead of offering a button that cannot
-work, and the code says which gap it is waiting on. Priority order if you are
-fixing them: **G11 and G12 first** — they block whole roles and screens, not
-single controls. Then G1 and G2, which are security and support cost. Then G7,
-without which push cannot work at all. G8 and G9 are a decision, not a bug fix:
-per the payment-config rule in `CLAUDE.md`, the app will not invent its own
-payment reference or guess at a gateway key.
+work, and the code says which gap it is waiting on. What is left is **G3, G4,
+G5, G6 and G10** — each blocks a single control or screen rather than a whole
+role. G1, G2, G7, G8, G9, G11 and G12 are done.
+
+**On G12 and `terms.is_current`.** The column exists and nothing in the product
+ever writes it — no route, no job, no admin screen sets it — so on a real
+school's data it is `false` on every row, and a picker that trusted it would
+open with no default at all. `GET /terms` therefore *computes* `is_current`:
+the term today falls inside; failing that whatever an admin has pinned, since a
+hand-set flag is still a deliberate statement; failing that the term that most
+recently started. The last case is the Nigerian long vacation, roughly July to
+September, when today is inside no term and the school is finishing results for
+the term that just ended rather than preparing one that has not begun.
+`current_term_id` is lifted out of the array so no two clients can disagree
+about what happens when nothing matches.
+
+**On G2 and credential delivery.** Fixing self-service reset also removed the
+last three places a working credential came back over the API — `POST /students`
+returned `temp_password`, `POST /users/{id}/reset-password` returned
+`temporary_password`, and both bulk importers created accounts with an
+8-hex-character password nobody could receive. Account creation, admin reset and
+invite now all send the same single-use expiring link through
+`PasswordResetService`. The link is recorded in `notification_logs` as a
+description rather than verbatim: a school admin can read
+`GET /notifications/history`, and a stored link would be an account takeover.
+
+Delivery is email (`MAIL_MAILER` — a deployment left on the default `log`
+swallows every link) plus optional SMS behind `SMS_PASSWORD_LINKS`, off by
+default because a reset link costs two billed segments. Links point at
+`FRONTEND_URL`, where `{subdomain}` is substituted per school.
 
 ## B13. Design set — coverage and known defects
 
@@ -600,7 +700,47 @@ language anywhere in the set; no biometric, card-reader or barcode-scanner
 iconography anywhere; names and schools are Nigerian throughout. The only
 currency violation is the one row in `notifications`.
 
-## B14. Related documents
+## B14. Online payment — the client contract
+
+Closes G8 and G9. Every school holds its own merchant account, and the client
+holds nothing.
+
+**What the school does, once.** A school admin — not a SchoolPilot operator, the
+route is `role:school_admin` with no super_admin fallback — pastes the keys from
+its own Paystack or Flutterwave dashboard into
+`PUT /api/v1/finance/gateways/{gateway}`, then copies the `webhook_url` that
+comes back into that same dashboard. Keys are stored encrypted in
+`school_payment_gateways` and are write-only across the API: `GET
+/finance/gateways` returns `••••` plus the last four characters, never the key.
+Flutterwave additionally requires the secret hash from its dashboard, because
+without it not one callback from that account can be verified.
+
+**What the app does, per payment.**
+
+1. `POST /api/v1/finance/payments/initialize` with `invoice_id` and `gateway`.
+   Omit `amount` to settle the whole balance; a supplied one may not exceed it.
+   For a result, `POST /api/v1/result-checker/purchase` is the same shape.
+2. Open the returned `authorization_url` in a browser or webview. That is the
+   entire client-side gateway integration. There is no key to hold, no SDK to
+   embed, and no amount for the client to assert.
+3. Poll or refresh the invoice. The payment stays `pending` until the gateway
+   calls back and the signature verifies. **Nothing the app does can mark a
+   payment successful** — that has always been true and is now the only path.
+
+**Failure states worth rendering.** `409` — the school has not connected that
+gateway, so offer bank transfer or the school office instead of a dead button.
+`403` — not this caller's child. `502` — the school's gateway refused; the
+message is safe to show, it comes from the gateway itself.
+
+**Why the server picks the reference.** A client that mints its own retries a
+dropped connection with a fresh one and creates a second pending row against the
+same money. References are now `SPFP_…` (fees), `SPRP_…` (a result PIN),
+`SPMP_…` (a manual payment an admin recorded) and `SPRB_…` (a school buying PIN
+stock from SchoolPilot — the one flow that still settles on the platform
+account). `POST /finance/payments` still accepts a `reference`, but only from an
+admin recording a manual payment, where it is a real bank slip number.
+
+## B15. Related documents
 
 - Product spec: `docs/SchoolPilot-Comprehensive-Documentation.md` (§3 hardware,
   §7.16 mobile, §11 architecture, §12 NDPA)
