@@ -506,6 +506,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         });
     });
 
+    /*
+     * Where a gateway sends the payer's browser when checkout ends.
+     *
+     * Unauthenticated by necessity — a redirect from Paystack carries no token
+     * and no session — and it says nothing about the payment, because it cannot
+     * verify one. It exists so the mobile webview has a URL it can recognise as
+     * "checkout is over" and close on. Host sniffing cannot do that job: bank
+     * 3-D Secure steps bounce through arbitrary domains mid-payment.
+     */
+    Route::get('/payments/return', [\App\Http\Controllers\Api\V1\FinanceController::class, 'paymentReturn'])
+        ->name('payments.return');
+
     // Public unauthenticated result verification route with anti-scraping rate limiting
     Route::middleware('throttle:10,1')->get('/verify-result/{token}', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'verifyResult']);
 

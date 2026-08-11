@@ -250,9 +250,9 @@ Each stage is independently useful, and each ends in a commit.
 | 3 | Attendance | Teacher register (bulk, idempotent, offline-queued), staff GPS clock-in. | done |
 | 4 | Timetable & academics | `/timetable/view` with cache, roster, admin academics hub, result release, PIN inventory. | done |
 | 5 | Homework | Teacher set/grade, student submit, parent visibility. | **blocked on G5** — no student-facing homework list exists |
-| 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done except opening the hosted checkout the backend now returns (§B14) |
+| 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done |
 | 7 | CBT | Available exams, sitting a paper (timer, image/LaTeX rendering, local answer buffer, question navigator), submit. | done |
-| 8 | Finance | Statement, defaulters, payment history. | done except online payment — the backend half landed (G8, G9); the client still shows the "pay at the office" copy |
+| 8 | Finance | Statement, defaulters, payment history, hosted-checkout payment. | done |
 | 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done except the client half of push (backend transport is live — §B10) and the per-user inbox (**G6**) |
 | 10 | Hardening | Offline soak on a real handset, low-end profiling, accessibility pass, crash reporting, release signing, store listing. | not started |
 
@@ -715,22 +715,38 @@ comes back into that same dashboard. Keys are stored encrypted in
 Flutterwave additionally requires the secret hash from its dashboard, because
 without it not one callback from that account can be verified.
 
-**What the app does, per payment.**
+**What the app does, per payment.** Implemented in
+`mobile/lib/features/finance/gateway_checkout.dart`, used by the fees screen and
+the result-checker PIN gate.
 
-1. `POST /api/v1/finance/payments/initialize` with `invoice_id` and `gateway`.
-   Omit `amount` to settle the whole balance; a supplied one may not exceed it.
-   For a result, `POST /api/v1/result-checker/purchase` is the same shape.
-2. Open the returned `authorization_url` in a browser or webview. That is the
-   entire client-side gateway integration. There is no key to hold, no SDK to
-   embed, and no amount for the client to assert.
-3. Poll or refresh the invoice. The payment stays `pending` until the gateway
-   calls back and the signature verifies. **Nothing the app does can mark a
-   payment successful** — that has always been true and is now the only path.
+1. `POST /api/v1/finance/payments/initialize` with `invoice_id` — and, in the
+   normal case, nothing else. **Send no `gateway`:** a parent has no idea which
+   merchant account their school holds, and `GET /finance/gateways` is
+   school_admin only, so the server picks the one the school connected. **Send
+   no `amount`** unless the payer is deliberately part-paying; the default is
+   the balance the server computed, which is what stops a tampered client
+   paying ₦1 against a ₦45,000 bill. For a result,
+   `POST /api/v1/result-checker/purchase` takes `student_id` and `term_id` and
+   behaves identically.
+2. Open the returned `authorization_url` in a webview. That is the entire
+   client-side gateway integration: no key to hold, no SDK, no card field of
+   ours, no PCI surface.
+3. Close the webview on `/api/v1/payments/return` — **that URL specifically,
+   never "a host that isn't the gateway's"**. A card that asks for 3-D Secure
+   routes the payer through their own bank's domain mid-payment, so host
+   sniffing abandons checkout exactly when the parent is verifying it. The
+   return page is served by the backend, is unauthenticated, and deliberately
+   claims nothing about the outcome.
+4. Refresh the statement — on abandon as well as on completion, because a payer
+   can finish a transfer and then background the app rather than wait for the
+   redirect. Say *confirming*, never *paid*: settlement is a signed webhook the
+   app never sees, and **nothing the app does can mark a payment successful.**
 
-**Failure states worth rendering.** `409` — the school has not connected that
-gateway, so offer bank transfer or the school office instead of a dead button.
-`403` — not this caller's child. `502` — the school's gateway refused; the
-message is safe to show, it comes from the gateway itself.
+**Failure states worth rendering.** `409` — the school takes fees another way,
+so this is not an error the parent can fix; show the server's message and point
+at the office or bank transfer rather than an error dialog. `403` — not this
+caller's child. `502` — the school's gateway refused; the message is safe to
+show, it comes from the gateway itself.
 
 **Why the server picks the reference.** A client that mints its own retries a
 dropped connection with a fresh one and creates a second pending row against the

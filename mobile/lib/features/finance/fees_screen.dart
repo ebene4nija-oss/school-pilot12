@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/api_exception.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/auth/session.dart';
 import '../../core/data/cached.dart';
@@ -11,6 +13,7 @@ import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
+import 'gateway_checkout.dart';
 
 /// One Fees tab, two very different jobs: a bursar chasing arrears, and a
 /// guardian looking at one child's bill.
@@ -177,11 +180,19 @@ final statementProvider =
   );
 });
 
-class _StatementScreen extends ConsumerWidget {
+class _StatementScreen extends ConsumerStatefulWidget {
   const _StatementScreen();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_StatementScreen> createState() => _StatementScreenState();
+}
+
+class _StatementScreenState extends ConsumerState<_StatementScreen> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final statement = ref.watch(statementProvider);
 
     return Scaffold(
@@ -346,13 +357,20 @@ class _StatementScreen extends ConsumerWidget {
               if (outstanding > 0)
                 BottomActionBar(
                   caption: Text(
-                    'Paying online opens your school\'s payment page.',
+                    "Opens your school's own payment page. "
+                    'Your receipt appears here once the bank confirms it.',
                     style: AppText.labelSm
                         .copyWith(color: AppColors.onSurfaceVariant),
                   ),
                   child: FilledButton(
-                    onPressed: () => _explainPayment(context),
-                    child: Text('Pay ${Money.format(outstanding)}'),
+                    onPressed: _busy ? null : () => _pay(invoices),
+                    child: _busy
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text('Pay ${Money.format(outstanding)}'),
                   ),
                 ),
             ],
@@ -362,28 +380,123 @@ class _StatementScreen extends ConsumerWidget {
     );
   }
 
-  /// Online payment is not wired up, and deliberately so.
+  /// Pay a bill.
   ///
-  /// The backend expects checkout to run client-side against the school's own
-  /// public gateway key, but nothing exposes that key to a client, and
-  /// `POST /finance/payments` requires the client to invent a unique
-  /// `reference` (gaps G8 and G9). Guessing at either would mean shipping a
-  /// payment flow that can create orphaned pending rows against a real
-  /// merchant account, so the app says what to do instead.
-  void _explainPayment(BuildContext context) {
+  /// The app sends an invoice id and nothing else: no key, no reference, and
+  /// no amount — the server settles the outstanding balance it computed, so a
+  /// tampered client cannot pay ₦1 against a ₦45,000 bill. It sends no gateway
+  /// either; a parent does not know which merchant account their school holds,
+  /// so the server picks the one the school connected.
+  Future<void> _pay(List<Map<String, dynamic>> invoices) async {
+    final payable = [
+      for (final invoice in invoices)
+        if (numOf(invoice['balance']) > 0) invoice,
+    ];
+
+    // A family with one outstanding bill — most of them — is never asked.
+    final invoice = payable.length == 1 ? payable.first : await _chooseBill(payable);
+    if (invoice == null) return;
+
+    final invoiceId = intOf(invoice['invoice_id'] ?? invoice['id']);
+    if (invoiceId == 0) return;
+
+    setState(() => _busy = true);
+
+    try {
+      final res = await ref.read(apiClientProvider).post<Map<String, dynamic>>(
+        Api.paymentsInitialize,
+        body: {'invoice_id': invoiceId},
+      );
+
+      final url = stringOf(res['authorization_url']);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (url.isEmpty) return;
+
+      await GatewayCheckout.open(context, url: url, title: 'Pay school fees');
+
+      // Refresh either way. Settlement is a webhook the app never sees, and a
+      // payer can finish a transfer and then background the app rather than
+      // wait for the redirect.
+      if (!mounted) return;
+      ref.invalidate(statementProvider);
+      _announceConfirming();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _explainFailure(asApiException(error));
+    }
+  }
+
+  /// Which bill, when a family owes on more than one term.
+  Future<Map<String, dynamic>?> _chooseBill(
+    List<Map<String, dynamic>> payable,
+  ) {
+    if (payable.isEmpty) return Future.value(null);
+
+    return showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Text('Which bill would you like to pay?'),
+            ),
+            for (final invoice in payable)
+              ListTile(
+                title: Text(
+                  stringOf(invoice['term'] ?? invoice['invoice_number'], 'Bill'),
+                ),
+                subtitle: Text(stringOf(invoice['status'], 'unpaid')),
+                trailing: MoneyText(numOf(invoice['balance']), size: 14),
+                onTap: () => Navigator.pop(sheetContext, invoice),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Deliberately never says "paid".
+  ///
+  /// The app cannot know: only the gateway's signed callback to the server
+  /// settles a payment. Telling a parent their fees are paid and then showing
+  /// an unchanged balance on the next refresh is worse than telling them to
+  /// wait a moment.
+  void _announceConfirming() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Confirming your payment with the school. Your receipt appears here '
+          'once it arrives.',
+        ),
+      ),
+    );
+  }
+
+  void _explainFailure(ApiException failure) {
+    // 409 is the school not having connected a merchant account. That is not a
+    // fault the parent can fix or should see as an error — it means this school
+    // takes fees another way.
+    final title = failure.statusCode == 409
+        ? 'Paying your school'
+        : 'Payment could not start';
+
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Paying your school'),
-        content: const Text(
-          'Online payment from the app is not available yet.\n\n'
-          'You can pay at the school office, or by bank transfer using the '
-          'details on your invoice. Your payment will show here once the '
-          'bursar records it.',
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(
+          failure.statusCode == 409
+              ? '${failure.message}\n\nYour payment will show here once the '
+                  'bursar records it.'
+              : failure.message,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Close'),
           ),
         ],

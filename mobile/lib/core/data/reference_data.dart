@@ -25,11 +25,11 @@ class TermRef {
 
 /// The classes this user can act on.
 ///
-/// **The backend has no `GET /classes`** (gap G12). What it does have is
-/// `GET /teachers/{id}/subjects`, which returns a teacher's assignments with
-/// their class ids attached — so for the role that most needs a class picker,
-/// there is a real source. The canonical route is tried first so this starts
-/// working properly the day it exists.
+/// `GET /classes` is the source. It did not exist when this was written (gap
+/// G12) and the fallback below — deriving classes from a teacher's own subject
+/// assignments — is what stood in for it. The fallback is kept because it still
+/// covers a school whose backend has not been upgraded, but it only ever worked
+/// for teachers, which is why the canonical route is tried first.
 final classesProvider =
     FutureProvider.autoDispose<List<ClassRef>>((ref) async {
   final api = ref.watch(apiClientProvider);
@@ -40,7 +40,7 @@ final classesProvider =
     final cached = await cachedGet<dynamic>(
       cache: cache,
       key: 'ref:classes',
-      fetch: () => api.get<dynamic>('${Api.version}/classes'),
+      fetch: () => api.get<dynamic>(Api.classes),
     );
     return _parseClasses(listOf(cached.data, ['classes']));
   }
@@ -101,9 +101,10 @@ List<ClassRef> _parseClasses(List<Map<String, dynamic>> rows) => [
 
 /// The school's terms.
 ///
-/// Also missing from the backend (G12). Without it the app cannot tell which
-/// term "now" belongs to, and every endpoint that takes a `term_id` is
-/// unreachable — so this is the gap that most limits the staff side.
+/// The server decides which one is current — it computes `is_current` from the
+/// term dates rather than reading the unmaintained column of the same name, and
+/// also returns `current_term_id` resolved once. Reading the per-row flag here
+/// is equivalent and keeps the parsing tolerant of an older backend.
 final termsProvider = FutureProvider.autoDispose<List<TermRef>>((ref) async {
   final api = ref.watch(apiClientProvider);
   final cache = ref.watch(cacheStoreProvider);
@@ -112,7 +113,7 @@ final termsProvider = FutureProvider.autoDispose<List<TermRef>>((ref) async {
     final cached = await cachedGet<dynamic>(
       cache: cache,
       key: 'ref:terms',
-      fetch: () => api.get<dynamic>('${Api.version}/terms'),
+      fetch: () => api.get<dynamic>(Api.terms),
     );
 
     final rows = listOf(cached.data, ['terms']);

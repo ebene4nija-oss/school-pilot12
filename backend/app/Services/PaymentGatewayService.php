@@ -69,6 +69,42 @@ class PaymentGatewayService
     }
 
     /**
+     * Whichever gateway this school can actually take money through.
+     *
+     * Callers name a gateway only when the payer has been given a choice. They
+     * usually have not: a parent tapping Pay has no idea which merchant account
+     * their school holds, and the one endpoint that could tell them —
+     * `GET /finance/gateways` — is school_admin only, and rightly so. So the
+     * server picks, in the order gateways are declared, and the client sends no
+     * `gateway` at all.
+     */
+    public function defaultCredentialsFor(int $schoolId): ?SchoolPaymentGateway
+    {
+        foreach (SchoolPaymentGateway::GATEWAYS as $gateway) {
+            $credentials = $this->usableCredentialsFor($schoolId, $gateway);
+
+            if ($credentials) {
+                return $credentials;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve an optional caller-supplied gateway to usable credentials.
+     *
+     * Returns null when the school cannot take an online payment at all, which
+     * every caller turns into a 409 telling the payer what to do instead.
+     */
+    public function resolveCredentials(int $schoolId, ?string $gateway): ?SchoolPaymentGateway
+    {
+        return $gateway === null || $gateway === ''
+            ? $this->defaultCredentialsFor($schoolId)
+            : $this->usableCredentialsFor($schoolId, $gateway);
+    }
+
+    /**
      * Open a hosted checkout on the school's own account.
      *
      * @param  array{reference:string,amount:float,email:string,name?:string,callback_url?:string,title?:string,metadata?:array}  $order

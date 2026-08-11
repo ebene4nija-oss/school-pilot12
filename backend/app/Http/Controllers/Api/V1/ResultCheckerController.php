@@ -169,7 +169,9 @@ class ResultCheckerController extends Controller
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|integer',
             'term_id' => 'required|integer',
-            'gateway' => 'required|in:paystack,flutterwave',
+            // Optional: the guardian does not know which merchant account their
+            // school holds, so by default the server picks.
+            'gateway' => 'nullable|in:paystack,flutterwave',
         ]);
 
         if ($validator->fails()) {
@@ -213,11 +215,11 @@ class ResultCheckerController extends Controller
          * a key nothing in the product stored and no endpoint exposed, so the
          * flow terminated here and the guardian had no way to pay.
          */
-        $credentials = $gateways->usableCredentialsFor((int) $student->school_id, $request->gateway);
+        $credentials = $gateways->resolveCredentials((int) $student->school_id, $request->input('gateway'));
 
         if (! $credentials) {
             return response()->json([
-                'error' => 'This school has not connected its ' . $request->gateway . ' account, so results cannot be paid for online. Buy a PIN at the school office instead.',
+                'error' => 'This school does not accept online payment yet, so this result cannot be paid for in the app. Buy a PIN at the school office instead.',
             ], 409);
         }
 
@@ -230,6 +232,7 @@ class ResultCheckerController extends Controller
                 'email' => $request->user()->email,
                 'name' => $request->user()->name,
                 'title' => 'Result checker',
+                'callback_url' => route('payments.return'),
                 'metadata' => [
                     'student_id' => $student->id,
                     'term_id' => $term->id,
@@ -247,7 +250,7 @@ class ResultCheckerController extends Controller
             'purchased_by' => $request->user()->id,
             'reference' => $reference,
             'amount' => $price,
-            'gateway' => $request->gateway,
+            'gateway' => $credentials->gateway,
             'status' => 'pending',
         ]);
 

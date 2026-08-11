@@ -34,9 +34,15 @@ class FinanceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'invoice_id' => 'required|exists:invoices,id',
-            'gateway' => 'required|in:paystack,flutterwave',
-            // Optional: part-payment. Absent means "settle the balance", which
-            // is what a parent tapping Pay on a statement means.
+            /*
+             * Optional, and usually absent. A parent tapping Pay has no idea
+             * which merchant account their school holds, and the endpoint that
+             * could tell them is admin-only — so the server picks unless the
+             * caller has genuinely offered a choice.
+             */
+            'gateway' => 'nullable|in:paystack,flutterwave',
+            // Also optional: part-payment. Absent means "settle the balance",
+            // which is what tapping Pay on a statement means.
             'amount' => 'nullable|numeric|min:1',
         ]);
 
@@ -72,11 +78,13 @@ class FinanceController extends Controller
             ], 422);
         }
 
-        $credentials = $gateways->usableCredentialsFor((int) $schoolId, $request->gateway);
+        $credentials = $gateways->resolveCredentials((int) $schoolId, $request->input('gateway'));
 
         if (! $credentials) {
             return response()->json([
-                'message' => 'This school has not connected its ' . $request->gateway . ' account yet, so online payment is not available. Please pay at the school or by bank transfer.',
+                'message' => $request->filled('gateway')
+                    ? "This school has not connected its {$request->gateway} account, so online payment through it is not available. Please pay at the school or by bank transfer."
+                    : 'This school does not accept online payment yet. Please pay at the school or by bank transfer.',
             ], 409);
         }
 
@@ -94,6 +102,7 @@ class FinanceController extends Controller
                 'email' => $user->email,
                 'name' => $user->name,
                 'title' => 'School fees',
+                'callback_url' => route('payments.return'),
                 'metadata' => [
                     'invoice_id' => $invoice->id,
                     'student_id' => $invoice->student_id,
@@ -109,7 +118,9 @@ class FinanceController extends Controller
             'invoice_id' => $invoice->id,
             'reference' => $reference,
             'amount' => $amount,
-            'gateway' => $request->gateway,
+            // The gateway that was actually used, which is not necessarily the
+            // one the caller named — it may not have named one.
+            'gateway' => $credentials->gateway,
             'status' => 'pending',
         ]);
 
@@ -203,6 +214,29 @@ class FinanceController extends Controller
             'invoice' => $invoice,
             'whatsapp_notification' => $notificationResult,
         ]);
+    }
+
+    /**
+     * Where the gateway sends the payer's browser when checkout ends.
+     *
+     * Deliberately a dumb page. It is unauthenticated — the webview carries no
+     * Sanctum token and the gateway's redirect carries no session — so it must
+     * never look anything up or say anything about a payment it cannot verify.
+     * Its job is to be a URL both the mobile app and a desktop browser can
+     * recognise as "checkout is over", which is what lets the app close the
+     * webview at the right moment instead of guessing from the host. Bank 3-D
+     * Secure steps bounce through arbitrary domains mid-checkout, so host
+     * sniffing would close the window in the middle of a card verification.
+     *
+     * What actually happened to the money is decided by the signed webhook and
+     * read back through the statement, never from this page.
+     */
+    public function paymentReturn()
+    {
+        return response()->view('payments.return')
+            // Nothing here is worth caching, and a stale copy of it in a
+            // webview would be shown against the next payment too.
+            ->header('Cache-Control', 'no-store');
     }
 
     public function handleWebhook(Request $request, $gateway, PaymentGatewayService $gateways)

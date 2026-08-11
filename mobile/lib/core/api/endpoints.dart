@@ -10,8 +10,10 @@ class Api {
 
   // Auth
   static const login = '$version/auth/login';
+  static const logout = '$version/auth/logout';
   static const currentUser = '$version/user';
   static const invite = '$version/auth/invite';
+  static const forgotPassword = '$version/auth/forgot-password';
 
   // Analytics dashboards
   static const analyticsPrincipal = '$version/analytics/principal';
@@ -49,6 +51,11 @@ class Api {
   static String reviewComment(int scoreId) =>
       '$version/assessment/score/$scoreId/review-comment';
 
+  // Academic structure — the class and term pickers every staff screen needs
+  // before it can ask the server anything.
+  static const classes = '$version/classes';
+  static const terms = '$version/terms';
+
   // Subjects
   static const subjects = '$version/subjects';
   static String classSubjects(int classId) =>
@@ -85,6 +92,14 @@ class Api {
 
   // Finance
   static const payments = '$version/finance/payments';
+  // Opens a hosted checkout on the school's own merchant account and returns an
+  // `authorization_url`. The app holds no gateway key and mints no reference;
+  // the payment is confirmed only by the gateway's signed callback to the
+  // server, never by anything the app does.
+  static const paymentsInitialize = '$version/finance/payments/initialize';
+  // Where the gateway sends the payer when checkout ends. The checkout webview
+  // watches for this exact path to know when to close — see GatewayCheckout.
+  static const paymentReturn = '$version/payments/return';
   static const defaulters = '$version/finance/defaulters';
   static String studentStatement(int studentId) =>
       '$version/finance/students/$studentId/statement';
@@ -113,6 +128,10 @@ class Api {
   static const resultRelease = '$version/results/release';
 
   // Parent portal
+  //
+  // `parentChildren` is the only way to learn a studentId: /students is
+  // staff-only and every other parent route takes an id it does not hand out.
+  static const parentChildren = '$version/parent/children';
   static String parentFeed(int studentId) => '$version/parent/feed/$studentId';
   static const pickupAuthorization = '$version/parent/pickup-authorization';
 
@@ -121,6 +140,9 @@ class Api {
   static String messageThread(int id) => '$version/messages/threads/$id';
   static const sendMessage = '$version/messages/send';
   static const notificationDevices = '$version/notifications/devices';
+  // Pushes to the caller's own handsets and reports per-device delivery.
+  // 503 means the deployment has no Firebase credentials, not a client bug.
+  static const notificationDeviceTest = '$version/notifications/devices/test';
   static const notificationBroadcast = '$version/notifications/broadcast';
   static const notificationHistory = '$version/notifications/history';
 

@@ -229,10 +229,10 @@ class SwaggerDocController extends Controller
                                 'application/json' => [
                                     'schema' => [
                                         'type' => 'object',
-                                        'required' => ['invoice_id', 'gateway'],
+                                        'required' => ['invoice_id'],
                                         'properties' => [
                                             'invoice_id' => ['type' => 'integer'],
-                                            'gateway' => ['type' => 'string', 'enum' => ['paystack', 'flutterwave']],
+                                            'gateway' => ['type' => 'string', 'nullable' => true, 'enum' => ['paystack', 'flutterwave'], 'description' => 'Usually omit. A payer does not know which merchant account their school holds, so the server picks the one it connected.'],
                                             'amount' => ['type' => 'number', 'nullable' => true, 'description' => 'Part-payment in naira. Defaults to the full balance and may not exceed it.'],
                                         ],
                                     ],
@@ -289,29 +289,12 @@ class SwaggerDocController extends Controller
                         ],
                     ],
                 ],
-                '/parent/children' => [
+                '/payments/return' => [
                     'get' => [
-                        'summary' => "The caller's own children",
-                        'description' => 'The first request a signed-in parent makes: every other parent endpoint takes a studentId, and this is what supplies them. Scoped by the student_guardian pivot, not by school membership. Returns an empty list and a message when no child is linked.',
+                        'summary' => 'Where a gateway sends the payer when checkout ends',
+                        'description' => 'Unauthenticated, and says nothing about whether the payment succeeded — it cannot verify one. It exists so a mobile webview has a URL it can recognise as "checkout is over" and close on; host sniffing cannot do that job because bank 3-D Secure steps route through arbitrary domains mid-payment. What happened to the money is decided by the signed webhook and read back from the statement.',
                         'responses' => [
-                            '200' => ['description' => 'Linked children with name, class, arm and admission number'],
-                        ],
-                    ],
-                ],
-                '/classes' => [
-                    'get' => [
-                        'summary' => 'The school\'s classes, in teaching order, with arms and active roll',
-                        'responses' => [
-                            '200' => ['description' => 'Classes ordered by order_index then name'],
-                        ],
-                    ],
-                ],
-                '/terms' => [
-                    'get' => [
-                        'summary' => 'The school\'s terms, with the current one resolved',
-                        'description' => '`current_term_id` is the term today falls inside; failing that a term an admin pinned; failing that the term that most recently started, which is the long-vacation case. Null only when the school has no terms.',
-                        'responses' => [
-                            '200' => ['description' => 'Terms newest first, plus current_term_id and current_session'],
+                            '200' => ['description' => 'A static "checkout complete, confirming" page'],
                         ],
                     ],
                 ],

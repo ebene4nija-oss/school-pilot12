@@ -46,12 +46,11 @@ final selectedChildIdProvider = StateProvider<int?>((ref) => null);
 
 /// The guardian's children.
 ///
-/// **There is no backend endpoint for this** — `/students` is staff-only and
-/// nothing exposes the `student_guardian` pivot to the guardian themselves
-/// (gap G11 in `docs/mobile-app.md` §B12). The call below is written against
-/// the route that ought to exist so the parent role works the day it lands;
-/// until then it 404s and the UI says exactly what is missing rather than
-/// spinning.
+/// `GET /parent/children` is the only way to learn a `studentId`: `/students`
+/// is staff-only, and every other parent endpoint takes an id it does not
+/// hand out. The server scopes this by the `student_guardian` pivot, not by
+/// school membership, and returns an empty list with a message — not a 403 —
+/// for a parent the school has not linked to a child yet.
 final myChildrenProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final api = ref.watch(apiClientProvider);
@@ -60,7 +59,7 @@ final myChildrenProvider =
   final cached = await cachedGet<dynamic>(
     cache: cache,
     key: 'parent:children',
-    fetch: () => api.get<dynamic>('${Api.version}/parent/children'),
+    fetch: () => api.get<dynamic>(Api.parentChildren),
   );
 
   final children = listOf(cached.data, ['children', 'students']);

@@ -13,6 +13,7 @@ import '../../core/ui/pickers.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
+import '../finance/gateway_checkout.dart';
 
 /// Whose results are being looked at: the signed-in student, or the guardian's
 /// selected child.
@@ -172,45 +173,44 @@ class _PinGateState extends ConsumerState<PinGate> {
     });
 
     try {
+      // No gateway named: the guardian has no idea which merchant account
+      // their school holds, so the server picks the one it connected.
       final res = await ref.read(apiClientProvider).post<Map<String, dynamic>>(
         Api.purchasePin,
-        body: {
-          'student_id': studentId,
-          'term_id': termId,
-          'gateway': 'paystack',
-        },
+        body: {'student_id': studentId, 'term_id': termId},
       );
 
       if (!mounted) return;
       setState(() => _busy = false);
 
-      final sale = mapOf(res['sale']);
-      // The reference is minted server-side and the gateway runs client-side
-      // against the school's own public key — which nothing exposes to the app
-      // (gap G8). So the app hands the parent their reference rather than
-      // opening a checkout it cannot configure.
-      showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Payment reference created'),
+      final url = stringOf(res['authorization_url']);
+      if (url.isEmpty) return;
+
+      await GatewayCheckout.open(context, url: url, title: 'Buy a PIN');
+
+      if (!mounted) return;
+
+      // Re-ask the server either way. The PIN is allocated by the signed
+      // webhook, which the app never sees, and a guardian may background the
+      // app rather than wait for the redirect.
+      ref.invalidate(resultSummaryProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text(
-            'Quote this reference when you pay at the school office or by '
-            'transfer:\n\n${stringOf(sale['reference'], '—')}\n\n'
-            'Amount: ${Money.format(numOf(sale['amount']))}\n\n'
-            'The result unlocks automatically once your payment is confirmed.',
+            'Confirming your payment. This result unlocks as soon as it '
+            'arrives.',
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
         ),
       );
     } catch (error) {
+      if (!mounted) return;
+      final failure = asApiException(error);
       setState(() {
         _busy = false;
-        _error = asApiException(error).message;
+        // 409 here is the school not selling online — not the guardian's
+        // mistake, and the server's wording already says to buy at the office.
+        _error = failure.message;
       });
     }
   }

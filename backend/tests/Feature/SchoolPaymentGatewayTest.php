@@ -337,6 +337,35 @@ class SchoolPaymentGatewayTest extends TestCase
         $this->assertDatabaseHas('payments', ['reference' => $reference, 'status' => 'pending']);
     }
 
+    /**
+     * The webview needs one URL it can recognise as "checkout is over". Without
+     * a callback the app would have to guess from the host, and a bank's 3-D
+     * Secure step would close the window mid-card-verification.
+     */
+    public function test_checkout_carries_a_return_url_the_app_can_recognise()
+    {
+        $this->connect();
+
+        $this->as($this->parent)->postJson('/api/v1/finance/payments/initialize', [
+            'invoice_id' => $this->invoice->id,
+        ])->assertStatus(201);
+
+        Http::assertSent(
+            fn ($request) => $request['callback_url'] === 'http://graceland.localhost/api/v1/payments/return'
+        );
+    }
+
+    /** It must render for a payer carrying no token at all. */
+    public function test_the_return_page_is_public_and_claims_nothing_about_the_payment()
+    {
+        $response = $this->get('/api/v1/payments/return')->assertOk();
+
+        $response->assertSee('Checkout complete');
+        // It cannot verify a payment, so it must never imply one succeeded.
+        $response->assertDontSee('successful', escape: false);
+        $response->assertDontSee('Paid', escape: false);
+    }
+
     public function test_the_charge_reaches_paystack_in_kobo_on_the_schools_own_key()
     {
         $this->connect();
@@ -354,6 +383,38 @@ class SchoolPaymentGatewayTest extends TestCase
                 && $request['currency'] === 'NGN'
                 && $request->hasHeader('Authorization', 'Bearer ' . self::SECRET);
         });
+    }
+
+    /**
+     * The common case. A parent has no idea which merchant account their school
+     * holds, and `GET /finance/gateways` is admin-only, so the app names no
+     * gateway and the server picks.
+     */
+    public function test_the_server_picks_the_gateway_when_the_client_names_none()
+    {
+        $this->connect();
+
+        $this->as($this->parent)
+            ->postJson('/api/v1/finance/payments/initialize', [
+                'invoice_id' => $this->invoice->id,
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('payment.gateway', 'paystack');
+    }
+
+    public function test_naming_a_gateway_the_school_has_not_connected_is_refused_by_name()
+    {
+        $this->connect();
+
+        $this->as($this->parent)
+            ->postJson('/api/v1/finance/payments/initialize', [
+                'invoice_id' => $this->invoice->id,
+                'gateway' => 'flutterwave',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('message', "This school has not connected its flutterwave account, so online payment through it is not available. Please pay at the school or by bank transfer.");
+
+        $this->assertDatabaseCount('payments', 0);
     }
 
     public function test_a_school_that_has_not_connected_an_account_cannot_take_online_payment()

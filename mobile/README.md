@@ -66,10 +66,41 @@ that cannot work. Each one traces to a missing backend route — see
 
 | Area | Why |
 |---|---|
-| Sign out | No `/auth/logout`, so the token is only forgotten locally (G1) |
-| Forgot password | No self-service reset endpoint (G2) |
 | Edit my profile | `PUT /users/{id}/profile` is admin-only (G3) |
-| Parent's children | Nothing lists a guardian's own children (G11) |
-| Class / term pickers | No `GET /classes`, no `GET /terms` (G12) |
-| Online fee payment | No exposed gateway public key; client-minted references (G8, G9) |
-| Push notifications | Backend still calls the decommissioned legacy FCM API (G7) |
+| Homework list | Nothing lets a student or parent discover what work exists (G5) |
+| Notification inbox | `GET /notifications/history` is admin-only, so there are no per-user rows to show (G6) |
+| Push notifications | Backend transport is live over FCM HTTP v1. What is missing is the client half: `firebase_messaging`, `google-services.json`, the APNs key and the `schoolpilot_default` channel. |
+
+Sign-out, forgot-password, the parent's children list, the class/term pickers
+and online payment used to sit in this table. They no longer do. `POST
+/auth/logout` revokes this device's token on sign-out, and "Forgot password?"
+asks the backend to email a reset link — which opens in the web portal, since
+the app does not handle deep links. `GET /parent/children` lists a guardian's
+own children, and `GET /classes` and `GET /terms` back the staff pickers; the
+app was already written against all three paths, so they started working the
+day the routes landed.
+
+## Paying a school
+
+Worth knowing before touching `features/finance/`, because the interesting part
+is what the app deliberately does *not* do.
+
+`GatewayCheckout` is the whole payment integration. The app posts an invoice id
+to `POST /finance/payments/initialize` and gets back an `authorization_url` on
+the school's own merchant account; it opens that in a webview and watches for
+the server's `/api/v1/payments/return` page. That is the entire client side:
+
+- **No key is compiled into the binary**, public ones included. Every school
+  holds its own Paystack or Flutterwave account and the server holds the keys.
+- **The app sends no amount.** The server charges the balance it computed, so a
+  tampered client cannot pay ₦1 against a ₦45,000 bill.
+- **The app sends no gateway.** A parent does not know which merchant account
+  their school holds, and the endpoint that would tell them is admin-only, so
+  the server picks.
+- **The app never says "paid".** Settlement is a signed webhook the app cannot
+  see. Both screens re-ask the server after checkout and say *confirming*.
+
+The webview closes on the return URL specifically, and never on "a host that
+isn't the gateway's" — a card that asks for 3-D Secure routes the payer through
+their own bank's domain mid-payment, and host sniffing would abandon checkout at
+exactly the wrong moment.
