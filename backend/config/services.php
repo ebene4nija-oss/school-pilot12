@@ -148,6 +148,48 @@ return [
         // Haiku for high-volume short output; Sonnet for structured documents.
         'comment_model' => env('ANTHROPIC_COMMENT_MODEL', 'claude-haiku-4-5'),
         'document_model' => env('ANTHROPIC_DOCUMENT_MODEL', 'claude-sonnet-5'),
+
+        /*
+         * Daily AI spend cap per school, in kobo (LAUNCH.md §1).
+         *
+         * Null/0 means uncapped, which is the right default for a deployment
+         * that has not thought about it yet — AiSpendLedger meters either way,
+         * so turning the cap on later is a config change, not a code change.
+         *
+         * 2500000 kobo = ₦25,000/day.
+         */
+        'daily_cap_kobo' => env('AI_DAILY_COST_CAP_KOBO'),
+
+        // Fraction of the cap at which the alert fires (once per school/day).
+        'alert_threshold' => (float) env('AI_ALERT_THRESHOLD', 0.8),
+
+        /*
+         * Anthropic bills in USD; every money column in this product is Naira
+         * minor units, and a proprietor's budget conversation is in Naira. The
+         * rate each row was converted at is stamped on the row, so a historical
+         * figure stays explainable after this moves.
+         */
+        'usd_to_ngn' => (float) env('AI_USD_TO_NGN', 1500),
+
+        /*
+         * USD per million tokens, per Anthropic's published pricing as of
+         * 2026-08-11. Overridable so a price change is a deploy, not a release.
+         *
+         * Sonnet 5 is on introductory pricing through 2026-08-31; the ledger
+         * switches to `*_after_intro` past that date rather than quietly
+         * continuing to under-bill.
+         */
+        'pricing' => [
+            'claude-haiku-4-5' => ['input' => 1.00, 'output' => 5.00],
+            'claude-sonnet-5' => [
+                'input' => 2.00,
+                'output' => 10.00,
+                'input_after_intro' => 3.00,
+                'output_after_intro' => 15.00,
+                'intro_ends' => '2026-08-31',
+            ],
+            'claude-opus-5' => ['input' => 5.00, 'output' => 25.00],
+        ],
     ],
 
 ];

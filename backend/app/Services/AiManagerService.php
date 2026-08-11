@@ -90,6 +90,12 @@ class AiManagerService
             return "[STUB] {$studentName} scored {$score}% in {$subject}. This placeholder text was generated without calling the AI provider.";
         }
 
+        // A school on its own BYO key still gets metered and capped: the cap
+        // exists to stop a runaway loop, which costs the school just as much
+        // when they are the one being billed.
+        $ledger = app(AiSpendLedger::class);
+        $ledger->assertWithinCap($schoolId);
+
         $response = Http::withHeaders([
             'x-api-key' => $config['api_key'],
             'anthropic-version' => '2023-06-01',
@@ -102,6 +108,8 @@ class AiManagerService
                 ['role' => 'user', 'content' => "Write a 2-sentence teacher remark for {$studentName} in {$subject} scoring {$score}%."]
             ]
         ]);
+
+        $ledger->record($schoolId, (string) $config['model'], (array) $response->json('usage', []));
 
         return $response->json('content.0.text') ?? "{$studentName} performed well in {$subject}.";
     }

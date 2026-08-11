@@ -41,7 +41,8 @@ class ClaudeService
             $response = $this->request(
                 (string) config('services.anthropic.comment_model'),
                 $prompt,
-                150
+                150,
+                isset($scoreData['school_id']) ? (int) $scoreData['school_id'] : null
             );
 
             return (string) $response->json('content.0.text');
@@ -51,11 +52,11 @@ class ClaudeService
     /**
      * Generate a lesson plan / worksheet skeleton.
      */
-    public function generateLessonPlan(string $subject, string $topic, string $classLevel): array
+    public function generateLessonPlan(string $subject, string $topic, string $classLevel, ?int $schoolId = null): array
     {
         $cacheKey = 'lesson_plan_' . md5("{$subject}_{$topic}_{$classLevel}");
 
-        return Cache::remember($cacheKey, 172800, function () use ($subject, $topic, $classLevel) {
+        return Cache::remember($cacheKey, 172800, function () use ($subject, $topic, $classLevel, $schoolId) {
             if ($this->shouldStub()) {
                 return [
                     'subject' => $subject,
@@ -73,7 +74,8 @@ class ClaudeService
             $response = $this->request(
                 (string) config('services.anthropic.document_model'),
                 $prompt,
-                1500
+                1500,
+                $schoolId
             );
 
             return json_decode((string) $response->json('content.0.text'), true) ?? [];
@@ -90,13 +92,18 @@ class ClaudeService
         return is_string($this->apiKey) && trim($this->apiKey) !== '';
     }
 
-    private function request(string $model, string $prompt, int $maxTokens)
+    private function request(string $model, string $prompt, int $maxTokens, ?int $schoolId = null)
     {
         if (! $this->hasKey()) {
             // Loud failure. The caller queues or surfaces this; it must never
             // degrade into invented content that looks like a real remark.
             throw new RuntimeException('ANTHROPIC_API_KEY is not configured, so AI generation is unavailable.');
         }
+
+        // Checked before the call, not enforced mid-flight: a school can end
+        // fractionally over its cap rather than have a half-written report-card
+        // comment truncated. See AiSpendLedger.
+        app(AiSpendLedger::class)->assertWithinCap($schoolId);
 
         $response = Http::withHeaders([
             'x-api-key' => $this->apiKey,
@@ -119,6 +126,10 @@ class ClaudeService
         if ($response->failed()) {
             throw new RuntimeException('Claude API call failed: ' . $response->body());
         }
+
+        // Metered after the fact from the response's own usage object, rather
+        // than estimated from the prompt — an estimate drifts from the invoice.
+        app(AiSpendLedger::class)->record($schoolId, $model, (array) $response->json('usage', []));
 
         return $response;
     }

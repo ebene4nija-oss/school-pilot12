@@ -276,6 +276,17 @@ TXT;
         // reply() persists it before this runs.
         $messages = $history !== [] ? $history : [['role' => 'user', 'content' => $message]];
 
+        /*
+         * The tutor is the reason the cap exists. Every other AI feature is
+         * bounded by something real — one comment per subject per term, one
+         * lesson plan per topic — but a chat loop is bounded only by how long a
+         * student keeps typing, and the whole conversation is resent each turn,
+         * so cost grows quadratically over a session.
+         */
+        $model = (string) ($config['model'] ?: config('services.anthropic.comment_model'));
+        $ledger = app(AiSpendLedger::class);
+        $ledger->assertWithinCap($student->school_id);
+
         $response = Http::withHeaders([
             'x-api-key' => $config['api_key'],
             'anthropic-version' => '2023-06-01',
@@ -285,7 +296,7 @@ TXT;
             ->connectTimeout(10)
             ->retry(2, 500, throw: false)
             ->post('https://api.anthropic.com/v1/messages', [
-                'model' => $config['model'] ?: config('services.anthropic.comment_model'),
+                'model' => $model,
                 'max_tokens' => 800,
                 'system' => $this->systemPrompt($student, $conversation, $redirected),
                 'messages' => $messages,
@@ -294,6 +305,8 @@ TXT;
         if ($response->failed()) {
             throw new RuntimeException('The tutor could not be reached right now. Please try again shortly.');
         }
+
+        $ledger->record($student->school_id, $model, (array) $response->json('usage', []));
 
         $text = $response->json('content.0.text');
 
