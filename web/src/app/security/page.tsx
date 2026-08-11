@@ -37,9 +37,12 @@ export default function SecurityPage() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
 
+  // Awaits before its first setState: a synchronous setState in the effect
+  // body below would trigger a cascading re-render.
   const loadStatus = useCallback(async () => {
     try {
-      setStatus(await fetchApi<Status>('/auth/2fa'));
+      const next = await fetchApi<Status>('/auth/2fa');
+      setStatus(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not read your security settings.');
     } finally {
@@ -48,7 +51,9 @@ export default function SecurityPage() {
   }, []);
 
   useEffect(() => {
-    loadStatus();
+    void (async () => {
+      await loadStatus();
+    })();
   }, [loadStatus]);
 
   const begin = async (e: React.FormEvent) => {

@@ -1,77 +1,109 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+/**
+ * Admin navigation.
+ *
+ * Every link here now resolves. Six of them — setup, staff, timetable, CBT,
+ * notifications and analytics — pointed at routes that had never been built,
+ * so the portal advertised most of its own feature set and 404'd on it.
+ */
+
+type Item = { href: string; icon: string; label: string; className?: string };
+
+const SECTIONS: { heading?: string; items: Item[] }[] = [
+  {
+    items: [
+      { href: '/', icon: '📊', label: 'Dashboard' },
+      { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist' },
+    ],
+  },
+  {
+    heading: 'People',
+    items: [
+      { href: '/students', icon: '🎓', label: 'Students Directory' },
+      { href: '/staff', icon: '👨‍🏫', label: 'Staff & Leave' },
+    ],
+  },
+  {
+    heading: 'Academics',
+    items: [
+      { href: '/timetable', icon: '🗓️', label: 'Timetable Builder' },
+      { href: '/attendance', icon: '⏱️', label: 'Attendance' },
+      { href: '/results', icon: '📝', label: 'Results & Broadsheet' },
+      { href: '/cbt-setup', icon: '💻', label: 'CBT Exams' },
+    ],
+  },
+  {
+    heading: 'Operations',
+    items: [
+      { href: '/finance', icon: '💳', label: 'Fees & Finance' },
+      { href: '/notifications', icon: '📢', label: 'Notifications' },
+      { href: '/analytics', icon: '📈', label: 'Analytics & Insights' },
+    ],
+  },
+  {
+    heading: 'Administration',
+    items: [
+      { href: '/security', icon: '🔐', label: 'Security' },
+      { href: '/director', icon: '👑', label: 'Director Console', className: 'text-amber-400 font-bold' },
+      { href: '/super-admin', icon: '🛡️', label: 'Super Admin', className: 'text-indigo-400' },
+    ],
+  },
+];
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col justify-between p-4 border-r border-slate-800">
+    <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between border-r border-slate-800 bg-slate-900 p-4 text-slate-300">
       <div>
-        <div className="flex items-center space-x-3 mb-8 px-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold text-lg">
+        <div className="mb-8 flex items-center space-x-3 px-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-lg font-bold text-slate-950">
             S
           </div>
           <div>
-            <h1 className="font-bold text-white leading-none">SchoolPilot</h1>
+            <h1 className="font-bold leading-none text-white">SchoolPilot</h1>
             <span className="text-xs text-slate-500">K-12 Management</span>
           </div>
         </div>
 
-        <nav className="space-y-1 text-sm font-medium">
-          <Link href="/" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-white transition">
-            <span>📊</span>
-            <span>Dashboard</span>
-          </Link>
-          <Link href="/setup-wizard" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>⚙️</span>
-            <span>Setup Wizard</span>
-          </Link>
-          <Link href="/students" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>🎓</span>
-            <span>Students Directory</span>
-          </Link>
-          <Link href="/staff" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>👨‍🏫</span>
-            <span>Staff Directory</span>
-          </Link>
-          <Link href="/timetable" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>🗓️</span>
-            <span>Timetable Builder</span>
-          </Link>
-          <Link href="/attendance" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>⏱️</span>
-            <span>Attendance</span>
-          </Link>
-          <Link href="/results" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>📝</span>
-            <span>Results & Broadsheet</span>
-          </Link>
-          <Link href="/cbt-setup" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>💻</span>
-            <span>CBT Exams</span>
-          </Link>
-          <Link href="/finance" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>💳</span>
-            <span>Fees & Finance</span>
-          </Link>
-          <Link href="/notifications" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>📢</span>
-            <span>Notifications</span>
-          </Link>
-          <Link href="/analytics" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
-            <span>📈</span>
-            <span>Analytics & Insights</span>
-          </Link>
-          <Link href="/director" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white text-amber-400 font-bold transition">
-            <span>👑</span>
-            <span>Director Console</span>
-          </Link>
-          <Link href="/super-admin" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white text-indigo-400 transition">
-            <span>🛡️</span>
-            <span>Super Admin</span>
-          </Link>
+        <nav className="space-y-4 text-sm font-medium">
+          {SECTIONS.map((section, i) => (
+            <div key={section.heading ?? i} className="space-y-1">
+              {section.heading && (
+                <p className="px-3 pb-1 text-[0.65rem] uppercase tracking-wider text-slate-600">
+                  {section.heading}
+                </p>
+              )}
+              {section.items.map((item) => {
+                // Exact match for the dashboard, prefix match elsewhere — "/"
+                // is a prefix of every route.
+                const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center space-x-3 rounded-lg px-3 py-2.5 transition ${
+                      active ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'
+                    } ${item.className ?? ''}`}
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </div>
 
-      <div className="pt-4 border-t border-slate-800 px-2 text-xs text-slate-500">
+      <div className="border-t border-slate-800 px-2 pt-4 text-xs text-slate-500">
         <p className="font-semibold text-slate-400">Greenfield Academy</p>
         <p>subdomain: greenfield.schoolpilot.ng</p>
       </div>
