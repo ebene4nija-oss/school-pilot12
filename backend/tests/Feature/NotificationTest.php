@@ -133,7 +133,7 @@ class NotificationTest extends TestCase
      */
     public function test_push_without_configuration_is_recorded_as_failed_not_sent()
     {
-        config()->set('services.fcm.server_key', null);
+        config()->set('services.fcm.credentials', null);
 
         $this->actingAs($this->parent, 'sanctum')
             ->postJson($this->url('/notifications/devices'), ['token' => 'tok', 'platform' => 'android']);
@@ -143,6 +143,88 @@ class NotificationTest extends TestCase
                 'user_ids' => [$this->parent->id],
                 'body' => 'Results are published.',
                 'channels' => ['push'],
+            ])
+            ->assertStatus(202);
+
+        $this->assertSame('failed', NotificationLog::first()->status);
+    }
+
+    /**
+     * The regression this whole change exists for.
+     *
+     * With no SMS key the old SmsService returned
+     * `['status' => 'success', 'message_id' => 'mock_msg_…']`, so the school's
+     * notification history filled up with fee reminders that were never sent.
+     * An unconfigured channel must read as failed.
+     */
+    public function test_sms_without_configuration_is_recorded_as_failed_not_sent()
+    {
+        Http::fake();
+        config()->set('services.sms.api_key', null);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson($this->url('/notifications/broadcast'), [
+                'user_ids' => [$this->parent->id],
+                'body' => 'Second term fees are due on Friday.',
+                'channels' => ['sms'],
+            ])
+            ->assertStatus(202);
+
+        $log = NotificationLog::first();
+        $this->assertSame('failed', $log->status);
+
+        // And nothing was attempted against the gateway.
+        Http::assertNothingSent();
+    }
+
+    public function test_whatsapp_without_configuration_is_recorded_as_failed_not_sent()
+    {
+        Http::fake();
+        config()->set('services.whatsapp.api_key', null);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson($this->url('/notifications/broadcast'), [
+                'user_ids' => [$this->parent->id],
+                'body' => 'Results are ready.',
+                'channels' => ['whatsapp'],
+            ])
+            ->assertStatus(202);
+
+        $this->assertSame('failed', NotificationLog::first()->status);
+        Http::assertNothingSent();
+    }
+
+    /** A gateway that answers 4xx is a failure, however configured we are. */
+    public function test_sms_rejected_by_the_gateway_is_recorded_as_failed()
+    {
+        Http::fake(['api.ng.termii.com/*' => Http::response(['error' => 'insufficient balance'], 402)]);
+        config()->set('services.sms.api_key', 'live-key');
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson($this->url('/notifications/broadcast'), [
+                'user_ids' => [$this->parent->id],
+                'body' => 'Fees are due.',
+                'channels' => ['sms'],
+            ])
+            ->assertStatus(202);
+
+        $this->assertSame('failed', NotificationLog::first()->status);
+    }
+
+    /**
+     * Termii answers 200 with a status field on some rejections rather than an
+     * HTTP error code. `!== 'error'` used to treat that as delivered.
+     */
+    public function test_whatsapp_soft_failure_at_200_is_recorded_as_failed()
+    {
+        Http::fake(['api.ng.termii.com/*' => Http::response(['status' => 'failed'], 200)]);
+        config()->set('services.whatsapp.api_key', 'live-key');
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson($this->url('/notifications/broadcast'), [
+                'user_ids' => [$this->parent->id],
+                'body' => 'Attendance update.',
+                'channels' => ['whatsapp'],
             ])
             ->assertStatus(202);
 
@@ -174,7 +256,7 @@ class NotificationTest extends TestCase
 
     public function test_history_reports_what_the_school_sent()
     {
-        config()->set('services.fcm.server_key', null);
+        config()->set('services.fcm.credentials', null);
 
         $this->actingAs($this->admin, 'sanctum')
             ->postJson($this->url('/notifications/broadcast'), [

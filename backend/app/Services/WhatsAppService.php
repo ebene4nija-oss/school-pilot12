@@ -5,55 +5,84 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * WhatsApp over Termii's WhatsApp channel.
+ *
+ * Same correction as SmsService, and this one was the worse of the two: the key
+ * was read as `config('services.whatsapp.api_key', env('WHATSAPP_API_KEY', 'mock_key'))`
+ * against a `services.whatsapp` block that did not exist. So on any deployment
+ * that had run `config:cache` the expression evaluated to null, and assigning
+ * null to the typed `string $apiKey` property fatalled the request outright.
+ * On every other deployment it evaluated to `mock_key` and returned a
+ * fabricated success.
+ *
+ * WhatsApp carries the fee reminders and result notifications parents actually
+ * read, so "reported as delivered, never sent" is the expensive failure here.
+ */
 class WhatsAppService
 {
-    protected string $provider;
-    protected string $apiKey;
-    protected string $senderId;
+    private const ENDPOINT = 'https://api.ng.termii.com/api/sms/send';
 
-    public function __construct()
+    public function isConfigured(): bool
     {
-        $this->provider = config('services.whatsapp.provider', 'termii');
-        $this->apiKey = config('services.whatsapp.api_key', env('WHATSAPP_API_KEY', 'mock_key'));
-        $this->senderId = config('services.whatsapp.sender_id', env('WHATSAPP_SENDER_ID', 'SchoolPilot'));
+        return $this->apiKey() !== null;
     }
 
     /**
-     * Send automated WhatsApp notification message to a recipient phone number
+     * @return array{status:string, message_id?:string, message?:string}
      */
     public function sendMessage(string $recipientPhone, string $message): array
     {
-        Log::info("WhatsApp Notification Queued", [
-            'provider' => $this->provider,
-            'recipient' => $recipientPhone,
-            'message_snippet' => substr($message, 0, 50) . '...'
-        ]);
+        $apiKey = $this->apiKey();
 
-        // In production/testing, dispatch to provider API or fallback clean mock response
-        if (env('APP_ENV') === 'testing' || $this->apiKey === 'mock_key') {
+        if ($apiKey === null) {
+            Log::warning('WhatsApp not sent: no WHATSAPP_API_KEY is configured for this deployment.');
+
             return [
-                'status' => 'success',
-                'provider' => $this->provider,
-                'message_id' => 'WA_MOCK_' . uniqid(),
-                'recipient' => $recipientPhone,
-                'sent_at' => now()->toIso8601String(),
+                'status' => 'error',
+                'message' => 'WhatsApp is not configured for this deployment.',
             ];
         }
 
-        try {
-            $response = Http::post("https://api.ng.termii.com/api/sms/send", [
-                'to' => $recipientPhone,
-                'from' => $this->senderId,
-                'sms' => $message,
-                'type' => 'plain',
-                'channel' => 'whatsapp',
-                'api_key' => $this->apiKey,
-            ]);
+        // Snippet only. The message body carries the child's name, scores and
+        // fee balance, none of which belongs in a logfile — see doc §12.
+        Log::info('WhatsApp dispatch', [
+            'provider' => $this->provider(),
+            'recipient' => $recipientPhone,
+            'length' => strlen($message),
+        ]);
 
-            return $response->json() ?? ['status' => 'success'];
-        } catch (\Exception $e) {
-            Log::error("WhatsApp API Error: " . $e->getMessage());
-            return ['status' => 'failed', 'error' => $e->getMessage()];
+        try {
+            $response = Http::timeout(15)
+                ->retry(2, 500, throw: false)
+                ->post(self::ENDPOINT, [
+                    'to' => $recipientPhone,
+                    'from' => $this->senderId(),
+                    'sms' => $message,
+                    'type' => 'plain',
+                    'channel' => 'whatsapp',
+                    'api_key' => $apiKey,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('WhatsApp gateway rejected the message', [
+                    'status' => $response->status(),
+                    'recipient' => $recipientPhone,
+                ]);
+
+                return [
+                    'status' => 'error',
+                    'message' => 'WhatsApp gateway returned ' . $response->status() . '.',
+                ];
+            }
+
+            $payload = $response->json();
+
+            return is_array($payload) ? $payload + ['status' => 'success'] : ['status' => 'success'];
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp API error: ' . $e->getMessage());
+
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 
@@ -110,5 +139,22 @@ class WhatsAppService
     {
         $msg = "Dear {$parentName},\nClass Timetable update for {$studentName} ({$className}):\n{$summary}";
         return $this->sendMessage($recipientPhone, $msg);
+    }
+
+    private function apiKey(): ?string
+    {
+        $key = config('services.whatsapp.api_key');
+
+        return is_string($key) && $key !== '' ? $key : null;
+    }
+
+    private function provider(): string
+    {
+        return (string) config('services.whatsapp.provider', 'termii');
+    }
+
+    private function senderId(): string
+    {
+        return (string) config('services.whatsapp.sender_id', 'SchoolPilot');
     }
 }
