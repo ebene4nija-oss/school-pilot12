@@ -8,6 +8,7 @@ use App\Models\DeviceToken;
 use App\Models\NotificationLog;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\FcmService;
 use App\Services\NotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
@@ -45,6 +46,81 @@ class NotificationController extends Controller
             'message' => 'Device registered for notifications.',
             'device_id' => $device->id,
         ], 201);
+    }
+
+    /**
+     * Push a test notification to the caller's own devices.
+     *
+     * Exists for the client side. Without it, the only way to find out whether
+     * a handset's token actually receives anything is to have a school admin
+     * fire a real broadcast at a real parent — which is not something you do
+     * while debugging, and which reports one aggregated status for the whole
+     * user rather than saying which device failed and why.
+     *
+     * Synchronous on purpose: a diagnostic that answers "queued" has not
+     * answered anything. One or two devices is one or two HTTP calls, not the
+     * 900 that made `broadcast` a queued endpoint.
+     *
+     * Not written to the notification log — that log is how a school accounts
+     * for its messaging spend, and developer test pings are not spend.
+     */
+    public function testDevice(Request $request, FcmService $fcm)
+    {
+        $validated = $request->validate([
+            'body' => 'nullable|string|max:200',
+            'title' => 'nullable|string|max:120',
+        ]);
+
+        $devices = DeviceToken::where('user_id', $request->user()->id)->get();
+
+        if ($devices->isEmpty()) {
+            return response()->json([
+                'error' => 'No devices registered. POST /notifications/devices first.',
+            ], 422);
+        }
+
+        if (! $fcm->isConfigured()) {
+            /*
+             * 503, not 500: the deployment is missing FCM_CREDENTIALS. That is
+             * an operator task, and the client should say so rather than
+             * leaving someone hunting for a bug in their Flutter code.
+             */
+            return response()->json([
+                'error' => 'Push is not configured on this deployment. Set FCM_CREDENTIALS.',
+            ], 503);
+        }
+
+        $results = $devices->map(function (DeviceToken $device) use ($fcm, $validated) {
+            $result = $fcm->sendToToken(
+                $device->token,
+                $validated['title'] ?? 'SchoolPilot test',
+                $validated['body'] ?? 'Push is working on this device.',
+                ['type' => 'test', 'sent_at' => now()->toIso8601String()]
+            );
+
+            if ($result['status'] === FcmService::SENT) {
+                $device->update(['last_used_at' => now()]);
+            }
+
+            // Same rule as a real send: a token FCM has disowned is deleted,
+            // otherwise every future broadcast pays for it again.
+            if ($result['status'] === FcmService::INVALID_TOKEN) {
+                $device->delete();
+            }
+
+            return [
+                'device_id' => $device->id,
+                'platform' => $device->platform,
+                'device_name' => $device->device_name,
+                'status' => $result['status'],
+                'reason' => $result['reason'],
+            ];
+        });
+
+        return response()->json([
+            'delivered' => $results->where('status', FcmService::SENT)->count(),
+            'devices' => $results->values(),
+        ], $results->contains('status', FcmService::SENT) ? 200 : 502);
     }
 
     /** Unregister on logout, so a shared handset stops receiving. */
@@ -148,6 +224,106 @@ class NotificationController extends Controller
                 ->groupBy('channel', 'status')
                 ->get(),
             'data' => $query->orderByDesc('id')->paginate(min((int) $request->input('per_page', 50), 100)),
+        ]);
+    }
+
+    /**
+     * The caller's own inbox (gap G6).
+     *
+     * `history` above is the school's delivery ledger — every message to every
+     * family, with per-channel totals a bursar uses to check an SMS bill. It is
+     * admin-only and should stay that way. This is the other half: a parent
+     * receives a push about a fee deadline, taps it away, and has had until now
+     * no way to find out what it said.
+     *
+     * Own rows only, and enforced by `user_id` rather than by school — a school
+     * admin reading this endpoint gets their own messages, not everyone's. The
+     * ledger is where the everyone's-messages view lives.
+     */
+    public function inbox(Request $request)
+    {
+        $user = $request->user();
+
+        $query = NotificationLog::where('user_id', $user->id)
+            /*
+             * Failed sends are not inbox items. A push that never left the
+             * server is an operational fact for the ledger; showing a parent a
+             * message their phone never received, in a list of messages their
+             * phone did receive, invents a notification.
+             */
+            ->where('status', 'sent');
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        if ($request->boolean('unread_only')) {
+            $query->whereNull('read_at');
+        }
+
+        $page = $query->orderByDesc('id')
+            ->paginate(min((int) $request->input('per_page', 25), 100));
+
+        $page->getCollection()->transform(fn (NotificationLog $row) => [
+            'id' => $row->id,
+            'category' => $row->category,
+            'channel' => $row->channel,
+            'body' => $row->body,
+            'sent_at' => $row->sent_at?->toIso8601String(),
+            'read_at' => $row->read_at?->toIso8601String(),
+            'read' => $row->read_at !== null,
+            // `recipient` (the phone number or token tail it went to) is
+            // deliberately not here. The caller knows their own number, and it
+            // is one more copy of a personal identifier on a handset (§12).
+        ]);
+
+        return response()->json([
+            'data' => $page->items(),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+            ],
+            // What the badge shows. Counted across the whole inbox rather than
+            // the page, which is the only figure that makes sense on a tab.
+            'unread_count' => NotificationLog::where('user_id', $user->id)
+                ->where('status', 'sent')
+                ->whereNull('read_at')
+                ->count(),
+        ]);
+    }
+
+    /**
+     * Mark the caller's messages read.
+     *
+     * `ids` marks those; no `ids` marks everything, which is the "clear the
+     * badge" gesture. Scoped by `user_id` in the same statement that writes, so
+     * a supplied id belonging to somebody else updates no rows rather than
+     * being checked and then trusted.
+     */
+    public function markInboxRead(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'nullable|array|max:200',
+            'ids.*' => 'integer',
+        ]);
+
+        $query = NotificationLog::where('user_id', $request->user()->id)
+            ->whereNull('read_at');
+
+        if (! empty($validated['ids'])) {
+            $query->whereIn('id', $validated['ids']);
+        }
+
+        $marked = $query->update(['read_at' => now()]);
+
+        return response()->json([
+            'marked_read' => $marked,
+            'unread_count' => NotificationLog::where('user_id', $request->user()->id)
+                ->where('status', 'sent')
+                ->whereNull('read_at')
+                ->count(),
         ]);
     }
 

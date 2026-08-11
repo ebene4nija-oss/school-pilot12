@@ -115,6 +115,9 @@ class AddedFeaturesController extends Controller
         $schoolId = $this->getSchoolId($request);
         $userId = $request->user()->id;
 
+        // Paginated (gap G10). A form teacher accumulates one thread per family
+        // and keeps them for years, so "every conversation I have ever had" is
+        // not a payload to hand a handset on every open of the Messages tab.
         $threads = MessageThread::where('school_id', $schoolId)
             ->where(function ($query) use ($userId) {
                 $query->where('teacher_id', $userId)
@@ -124,7 +127,7 @@ class AddedFeaturesController extends Controller
                 $q->latest()->limit(1);
             }])
             ->latest('last_message_at')
-            ->get();
+            ->paginate(min((int) $request->input('per_page', 25), 100));
 
         // Unread count per thread, counted in one query rather than per row.
         $unread = Message::whereIn('thread_id', $threads->pluck('id'))
@@ -134,13 +137,41 @@ class AddedFeaturesController extends Controller
             ->groupBy('thread_id')
             ->pluck('unread', 'thread_id');
 
-        $threads->each(function (MessageThread $thread) use ($unread) {
+        $threads->getCollection()->each(function (MessageThread $thread) use ($unread) {
             $thread->setAttribute('unread_count', (int) ($unread[$thread->id] ?? 0));
         });
 
         return response()->json([
-            'data' => $threads,
-            'total_unread' => (int) $unread->sum(),
+            /*
+             * The rows stay a flat array under `data`.
+             *
+             * Handing back the paginator whole would move every row from
+             * `data.N` to `data.data.N`, and this path is already published to
+             * installed clients — the versioning rule in CLAUDE.md exists for
+             * exactly this. Paging metadata goes in a sibling key, where adding
+             * it breaks nobody.
+             */
+            'data' => $threads->items(),
+            'meta' => [
+                'current_page' => $threads->currentPage(),
+                'last_page' => $threads->lastPage(),
+                'per_page' => $threads->perPage(),
+                'total' => $threads->total(),
+            ],
+            /*
+             * Counted across every thread, not just this page — it is the badge
+             * on the Messages tab, and a badge that only counts the first
+             * twenty-five conversations is worse than no badge.
+             */
+            'total_unread' => Message::whereIn(
+                'thread_id',
+                MessageThread::where('school_id', $schoolId)
+                    ->where(fn ($q) => $q->where('teacher_id', $userId)->orWhere('parent_id', $userId))
+                    ->select('id')
+            )
+                ->where('sender_id', '!=', $userId)
+                ->whereNull('read_at')
+                ->count(),
         ]);
     }
 
@@ -250,8 +281,53 @@ class AddedFeaturesController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
+        /*
+         * The most recent page, not the whole conversation (gap G10).
+         *
+         * `->load('messages.sender')` pulled every message ever exchanged about
+         * a child — a form teacher and a parent over three years — on every
+         * open of the thread, over a metered connection, to render the last
+         * dozen. Paged backwards with `before_id` because a chat is read from
+         * the bottom: the newest page is the one that is always wanted, and
+         * older ones are fetched only when someone scrolls up.
+         */
+        $perPage = min((int) $request->input('per_page', 50), 100);
+
+        $window = Message::where('thread_id', $thread->id)
+            ->when(
+                $request->filled('before_id'),
+                fn ($q) => $q->where('id', '<', (int) $request->input('before_id'))
+            )
+            ->with('sender:id,name')
+            ->orderByDesc('id')
+            ->limit($perPage + 1)
+            ->get();
+
+        // One row over the page size answers "is there more" without a second
+        // count query over the same rows.
+        $hasMore = $window->count() > $perPage;
+        $messages = $window->take($perPage)->reverse()->values();
+
         return response()->json([
-            'thread' => $thread->load(['teacher:id,name', 'parent:id,name', 'student', 'messages.sender:id,name']),
+            // Participants and subject, without the messages hanging off them.
+            'thread' => $thread->load(['teacher:id,name', 'parent:id,name', 'student']),
+            /*
+             * Top level, and oldest-first.
+             *
+             * It used to be nested under `thread`, where the mobile client's
+             * `listOf(data, ['messages'])` could not see it — the thread view
+             * has been rendering "No messages yet" over a full conversation.
+             * Ascending because that is the order a chat is drawn in; leaving
+             * the client to reverse it is one more thing for three clients to
+             * disagree about.
+             */
+            'messages' => $messages,
+            'messages_meta' => [
+                'per_page' => $perPage,
+                'has_more' => $hasMore,
+                // Pass back as `before_id` to fetch the page above this one.
+                'next_before_id' => $hasMore ? $messages->first()?->id : null,
+            ],
         ]);
     }
 }

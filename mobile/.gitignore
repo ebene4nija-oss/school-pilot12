@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase project config. Carries a school's own project id and API key, and
+# is per-deployment — the Gradle plugin is applied only when it is present, so
+# a clone without one still builds, with push unavailable. See README.md.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart

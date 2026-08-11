@@ -1148,8 +1148,23 @@ class CbtController extends Controller
      * Everything the offline lab client needs to run a paper with no network:
      * questions, media manifest, and the deadline it must honour.
      */
+    /**
+     * What to cache before exam day.
+     *
+     * Two callers with the same need and very different rights, so this splits
+     * on role rather than opening the staff payload to candidates (gap G4).
+     * Staff are provisioning a room of lab machines and see the paper's shape;
+     * a candidate is pre-caching their own paper's images over the school's
+     * wifi so the exam does not die on the diagrams when the signal does.
+     */
     public function offlinePackage(Request $request, $examId)
     {
+        $profile = $request->user()->userProfile;
+
+        if ($profile && $profile->role === 'student') {
+            return $this->candidateOfflinePackage($request, $examId);
+        }
+
         $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($examId);
         $this->authorize('view', $exam);
 
@@ -1157,9 +1172,7 @@ class CbtController extends Controller
             return response()->json(['error' => 'This exam is not marked as available offline.'], 403);
         }
 
-        $questions = QuestionBankItem::withoutGlobalScopes()
-            ->whereIn('id', CbtExamQuestion::where('exam_id', $exam->id)->pluck('question_id'))
-            ->get();
+        $questions = $this->examQuestions($exam);
 
         return response()->json([
             'exam' => $exam->only(['id', 'title', 'instructions', 'duration_minutes', 'max_attempts', 'pass_mark']),
@@ -1167,5 +1180,76 @@ class CbtController extends Controller
             'media_manifest' => $this->media->buildOfflineManifest($questions),
             'generated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * The candidate's half of the same thing.
+     *
+     * Deliberately **media only**. The manifest is checksums, byte sizes and
+     * asset URLs — it carries no question text, no options and no correct
+     * answers, which is what makes it safe to hand a candidate before the paper
+     * opens. The questions themselves still arrive only from `startAttempt`,
+     * through `buildCandidatePaper`, after the exam has opened and the attempt
+     * exists. There is no second, laxer way into a paper.
+     *
+     * Available before `opens_at` on purpose: downloading fourteen megabytes of
+     * diagrams over the school's wifi the day before is the entire point, and a
+     * candidate who can only fetch it once the exam has started has gained
+     * nothing.
+     */
+    private function candidateOfflinePackage(Request $request, $examId)
+    {
+        $student = $this->currentStudent($request);
+
+        if (! $student) {
+            return response()->json(['error' => 'Student record not found.'], 404);
+        }
+
+        $exam = CbtExam::where('school_id', $student->school_id)->findOrFail($examId);
+
+        // Class binding, exactly as when sitting: an SS3 mock is not
+        // pre-downloadable by a JSS1 pupil who guessed the id.
+        if (! $request->user()->can('sit', [$exam, $student])) {
+            return response()->json(['error' => 'This exam was not set for your class.'], 403);
+        }
+
+        // A draft paper is not a paper yet. Its media would give away what is
+        // coming, and it may still change before it is published.
+        if ($exam->status !== 'published') {
+            return response()->json(['error' => 'This exam is not available yet.'], 403);
+        }
+
+        if ($exam->closes_at && $exam->closes_at->isPast()) {
+            return response()->json(['error' => 'This exam has closed.'], 403);
+        }
+
+        if (! $exam->allow_offline) {
+            return response()->json([
+                'error' => 'This exam must be sat online. Ask your school if you expect to be offline.',
+            ], 403);
+        }
+
+        $questions = $this->examQuestions($exam);
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'instructions' => $exam->instructions,
+                'duration_minutes' => $exam->duration_minutes,
+                'opens_at' => $exam->opens_at?->toIso8601String(),
+                'closes_at' => $exam->closes_at?->toIso8601String(),
+            ],
+            'question_count' => $questions->count(),
+            'media_manifest' => $this->media->buildOfflineManifest($questions),
+            'generated_at' => now()->toIso8601String(),
+        ]);
+    }
+
+    private function examQuestions(CbtExam $exam)
+    {
+        return QuestionBankItem::withoutGlobalScopes()
+            ->whereIn('id', CbtExamQuestion::where('exam_id', $exam->id)->pluck('question_id'))
+            ->get();
     }
 }

@@ -8,6 +8,7 @@ import 'auth/session_store.dart';
 import 'db/app_database.dart';
 import 'db/cache_store.dart';
 import 'db/outbox.dart';
+import 'push/push_service.dart';
 import 'sync/sync_service.dart';
 
 /// Everything below is constructed in `main()` and injected as an override, so
@@ -41,6 +42,10 @@ final syncServiceProvider = Provider<SyncService>(
   (_) => throw UnimplementedError('overridden in main()'),
 );
 
+final pushServiceProvider = Provider<PushService>(
+  (_) => throw UnimplementedError('overridden in main()'),
+);
+
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepository(ref.watch(apiClientProvider)),
 );
@@ -52,6 +57,7 @@ final authControllerProvider =
     store: ref.watch(sessionStoreProvider),
     holder: ref.watch(sessionHolderProvider),
     database: ref.watch(databaseProvider),
+    push: ref.watch(pushServiceProvider),
   );
 });
 

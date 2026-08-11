@@ -368,6 +368,19 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             ->middleware('role:super_admin,school_admin');
 
         /*
+         * The caller's own inbox (gap G6).
+         *
+         * `/notifications/history` above is the school's delivery ledger — every
+         * message to every family, with the per-channel totals a bursar checks
+         * an SMS bill against — and stays admin-only. This is the other half: a
+         * parent who receives a push about a fee deadline and taps it away had
+         * no way to find out what it said. Scoped by `user_id`, not by school,
+         * so an admin calling it gets their own messages like anyone else.
+         */
+        Route::get('/me/notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'inbox']);
+        Route::post('/me/notifications/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markInboxRead']);
+
+        /*
          * Queued work and its status. Report-card runs and broadcasts return a
          * batch id immediately; clients poll here rather than holding a request
          * open past a shared-hosting PHP timeout.

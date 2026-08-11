@@ -10,6 +10,7 @@ import 'core/auth/session_store.dart';
 import 'core/db/app_database.dart';
 import 'core/db/outbox.dart';
 import 'core/providers.dart';
+import 'core/push/push_service.dart';
 import 'core/sync/sync_service.dart';
 
 Future<void> main() async {
@@ -28,6 +29,20 @@ Future<void> main() async {
   final store = SessionStore();
   final outbox = Outbox(database);
   final sync = SyncService(api: api, outbox: outbox);
+  final push = PushService(api: api);
+
+  /*
+   * Push comes up before the first frame but asks for nothing.
+   *
+   * `initialise` starts Firebase and creates the Android channel; the
+   * permission prompt and the token registration happen at sign-in instead
+   * (see AuthController). Prompting on a cold launch, over a login screen, is
+   * how an install gets its notifications denied for good on the first run.
+   *
+   * It cannot throw: a build with no `google-services.json` — which is what a
+   * fresh clone is — has to start and run with push simply unavailable.
+   */
+  await push.initialise();
 
   final container = ProviderContainer(
     overrides: [
@@ -36,6 +51,7 @@ Future<void> main() async {
       apiClientProvider.overrideWithValue(api),
       sessionStoreProvider.overrideWithValue(store),
       syncServiceProvider.overrideWithValue(sync),
+      pushServiceProvider.overrideWithValue(push),
     ],
   );
 

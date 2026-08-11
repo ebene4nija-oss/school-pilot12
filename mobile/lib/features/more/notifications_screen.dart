@@ -2,19 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
-import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
+import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
-import '../../core/ui/widgets.dart';
 
 /// The notification inbox.
 ///
-/// `GET /notifications/history` is admin-only and there is no per-user inbox
-/// route (gap G6), so for everyone else this explains itself instead of
-/// showing an empty list that looks like a bug.
+/// Every role has one now. `GET /notifications/history` is the school's
+/// delivery ledger — every message to every family, with the totals a bursar
+/// checks an SMS bill against — and stays admin-only; this reads
+/// `GET /me/notifications`, which is scoped to the caller's own rows.
+///
+/// It exists because a push is a banner that disappears. A parent who taps away
+/// a fee-deadline notification on the bus had, until this, no way to find out
+/// what it said.
 final notificationsProvider =
     FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
   final api = ref.watch(apiClientProvider);
@@ -22,9 +26,17 @@ final notificationsProvider =
 
   return cachedGet<dynamic>(
     cache: cache,
-    key: 'notifications:history',
-    fetch: () => api.get<dynamic>(Api.notificationHistory),
+    key: 'notifications:inbox',
+    fetch: () => api.get<dynamic>(Api.myNotifications),
   );
+});
+
+/// What the badge shows. Read from the same payload rather than counted in the
+/// client, so it stays right when the list is only the first page.
+final unreadNotificationsProvider = Provider.autoDispose<int>((ref) {
+  final data = ref.watch(notificationsProvider).valueOrNull?.data;
+
+  return data is Map ? intOf(data['unread_count']) : 0;
 });
 
 class NotificationsScreen extends ConsumerWidget {
@@ -32,79 +44,108 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final role = ref.watch(currentRoleProvider);
     final notifications = ref.watch(notificationsProvider);
+    final unread = ref.watch(unreadNotificationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
-      body: !role.isAdmin
-          ? const EmptyState(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        actions: [
+          if (unread > 0)
+            TextButton(
+              onPressed: () => _markAllRead(ref),
+              child: const Text('Mark all read'),
+            ),
+        ],
+      ),
+      body: CachedView<dynamic>(
+        value: notifications,
+        onRetry: () => ref.invalidate(notificationsProvider),
+        builder: (context, data, meta) {
+          final list = listOf(data, ['notifications']);
+
+          if (list.isEmpty) {
+            return const EmptyState(
               icon: Icons.notifications_none,
-              title: 'No inbox yet',
-              message:
-                  'Messages your school sends arrive as phone notifications. '
-                  'A history of them is not available in the app yet.',
-            )
-          : notifications.when(
-              loading: () => const LoadingState(),
-              error: (error, _) => ErrorState(
-                error: asApiException(error),
-                onRetry: () => ref.invalidate(notificationsProvider),
-              ),
-              data: (cached) {
-                final list = listOf(cached.data, ['notifications', 'history']);
+              title: "You're all caught up",
+              message: 'Messages from your school will appear here.',
+            );
+          }
 
-                if (list.isEmpty) {
-                  return const EmptyState(
-                    icon: Icons.notifications_none,
-                    title: "You're all caught up",
-                    message: 'Nothing has been sent recently.',
-                  );
-                }
+          return RefreshIndicator(
+            onRefresh: () async => ref.refresh(notificationsProvider.future),
+            child: ListView.separated(
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, i) => _NotificationTile(item: list[i]),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-                return ListView.separated(
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final item = list[i];
-                    final channel = stringOf(item['channel'], 'push');
-                    final failed = stringOf(item['status']) == 'failed';
+  Future<void> _markAllRead(WidgetRef ref) async {
+    try {
+      await ref.read(apiClientProvider).post<dynamic>(Api.myNotificationsRead);
+      ref.invalidate(notificationsProvider);
+    } catch (_) {
+      // Clearing a badge is not worth an error dialog. The next refresh will
+      // show whatever the server actually thinks.
+    }
+  }
+}
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: (failed
-                                ? AppColors.absent
-                                : AppColors.primaryContainer)
-                            .withValues(alpha: 0.12),
-                        child: Icon(
-                          switch (channel) {
-                            'sms' => Icons.sms_outlined,
-                            'whatsapp' => Icons.chat_outlined,
-                            _ => Icons.notifications_outlined,
-                          },
-                          size: 20,
-                          color: failed
-                              ? AppColors.absent
-                              : AppColors.primaryContainer,
-                        ),
-                      ),
-                      title: Text(
-                        stringOf(item['body'] ?? item['message'], '—'),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${channel.toUpperCase()} · '
-                        '${Dates.dayAndTime(Dates.tryParse(item['created_at']))}',
-                        style: AppText.labelSm,
-                      ),
-                      trailing: failed
-                          ? const StatusChip('Failed', color: AppColors.absent)
-                          : null,
-                    );
-                  },
-                );
+class _NotificationTile extends StatelessWidget {
+  const _NotificationTile({required this.item});
+
+  final Map<String, dynamic> item;
+
+  @override
+  Widget build(BuildContext context) {
+    final channel = stringOf(item['channel'], 'push');
+    final read = item['read'] == true;
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.12),
+        child: Icon(
+          switch (stringOf(item['category'])) {
+            'fee_reminder' => Icons.receipt_long_outlined,
+            'result_published' => Icons.workspace_premium_outlined,
+            'homework' => Icons.assignment_outlined,
+            'attendance' => Icons.event_available_outlined,
+            _ => switch (channel) {
+                'sms' => Icons.sms_outlined,
+                'whatsapp' => Icons.chat_outlined,
+                _ => Icons.notifications_outlined,
               },
+          },
+          size: 20,
+          color: AppColors.primaryContainer,
+        ),
+      ),
+      title: Text(
+        stringOf(item['body'], '—'),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        // Unread reads heavier, which is the only thing distinguishing a
+        // message a parent has dealt with from one they have not.
+        style: read ? null : AppText.bodyMd.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        Dates.dayAndTime(Dates.tryParse(item['sent_at'])),
+        style: AppText.labelSm,
+      ),
+      trailing: read
+          ? null
+          : Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
             ),
     );
   }

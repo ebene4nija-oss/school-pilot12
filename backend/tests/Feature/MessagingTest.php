@@ -168,4 +168,149 @@ class MessagingTest extends TestCase
             ->getJson($this->url('/messages/threads'))
             ->assertJsonPath('total_unread', 0);
     }
+
+    // ==================================================================
+    // Gap G10 — neither list is unbounded any more
+    // ==================================================================
+
+    /**
+     * A form teacher keeps one thread per family for years. "Every conversation
+     * I have ever had" is not a payload to hand a handset on every open of the
+     * Messages tab.
+     */
+    public function test_the_thread_list_is_paginated()
+    {
+        foreach (range(1, 5) as $i) {
+            $parent = $this->user("Parent {$i}", "parent{$i}@chat.test", 'parent');
+
+            $this->actingAs($parent, 'sanctum')->postJson($this->url('/messages/send'), [
+                'recipient_id' => $this->teacher->id,
+                'body' => "Message from family {$i}.",
+            ])->assertStatus(201);
+        }
+
+        $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url('/messages/threads?per_page=2'))
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 5)
+            ->assertJsonPath('meta.last_page', 3);
+    }
+
+    /**
+     * The badge counts every conversation, not the page.
+     *
+     * A teacher with forty threads and unread messages in the fortieth would
+     * otherwise see a badge that says zero.
+     */
+    public function test_the_unread_badge_counts_past_the_first_page()
+    {
+        foreach (range(1, 5) as $i) {
+            $parent = $this->user("Parent {$i}", "parent{$i}@chat.test", 'parent');
+
+            $this->actingAs($parent, 'sanctum')->postJson($this->url('/messages/send'), [
+                'recipient_id' => $this->teacher->id,
+                'body' => "Message from family {$i}.",
+            ])->assertStatus(201);
+        }
+
+        $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url('/messages/threads?per_page=1'))
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('total_unread', 5);
+    }
+
+    /**
+     * A thread used to load every message ever exchanged about a child, on
+     * every open, to render the last dozen.
+     */
+    public function test_a_thread_returns_the_latest_page_of_messages_not_all_of_them()
+    {
+        $this->actingAs($this->parent, 'sanctum')->postJson($this->url('/messages/send'), [
+            'recipient_id' => $this->teacher->id,
+            'body' => 'Message 1',
+        ])->assertStatus(201);
+
+        $thread = MessageThread::first();
+
+        foreach (range(2, 10) as $i) {
+            $this->actingAs($this->parent, 'sanctum')->postJson($this->url('/messages/send'), [
+                'recipient_id' => $this->teacher->id,
+                'thread_id' => $thread->id,
+                'body' => "Message {$i}",
+            ])->assertStatus(201);
+        }
+
+        $response = $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url("/messages/threads/{$thread->id}?per_page=4"))
+            ->assertStatus(200);
+
+        $bodies = collect($response->json('messages'))->pluck('body')->all();
+
+        // The newest four, oldest-first — the order a chat is drawn in.
+        $this->assertSame(['Message 7', 'Message 8', 'Message 9', 'Message 10'], $bodies);
+        $this->assertTrue($response->json('messages_meta.has_more'));
+    }
+
+    /** Scrolling up. `before_id` walks backwards through the conversation. */
+    public function test_older_messages_are_reachable_by_paging_backwards()
+    {
+        $this->actingAs($this->parent, 'sanctum')->postJson($this->url('/messages/send'), [
+            'recipient_id' => $this->teacher->id,
+            'body' => 'Message 1',
+        ])->assertStatus(201);
+
+        $thread = MessageThread::first();
+
+        foreach (range(2, 6) as $i) {
+            $this->actingAs($this->parent, 'sanctum')->postJson($this->url('/messages/send'), [
+                'recipient_id' => $this->teacher->id,
+                'thread_id' => $thread->id,
+                'body' => "Message {$i}",
+            ])->assertStatus(201);
+        }
+
+        $first = $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url("/messages/threads/{$thread->id}?per_page=3"))
+            ->assertStatus(200);
+
+        $before = $first->json('messages_meta.next_before_id');
+        $this->assertNotNull($before);
+
+        $older = $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url("/messages/threads/{$thread->id}?per_page=3&before_id={$before}"))
+            ->assertStatus(200);
+
+        $this->assertSame(
+            ['Message 1', 'Message 2', 'Message 3'],
+            collect($older->json('messages'))->pluck('body')->all()
+        );
+        $this->assertFalse($older->json('messages_meta.has_more'));
+    }
+
+    /**
+     * The messages moved to the top level of the response.
+     *
+     * They used to hang off `thread`, where the mobile client's
+     * `listOf(data, ['messages'])` could not see them — the thread view was
+     * rendering "No messages yet" over a full conversation.
+     */
+    public function test_messages_are_at_the_top_level_where_clients_look_for_them()
+    {
+        $this->actingAs($this->parent, 'sanctum')->postJson($this->url('/messages/send'), [
+            'recipient_id' => $this->teacher->id,
+            'body' => 'Good afternoon.',
+        ])->assertStatus(201);
+
+        $thread = MessageThread::first();
+
+        $response = $this->actingAs($this->teacher, 'sanctum')
+            ->getJson($this->url("/messages/threads/{$thread->id}"))
+            ->assertStatus(200);
+
+        $this->assertSame('Good afternoon.', $response->json('messages.0.body'));
+        $this->assertSame('Parent One', $response->json('messages.0.sender.name'));
+        $this->assertNull($response->json('thread.messages'));
+    }
 }

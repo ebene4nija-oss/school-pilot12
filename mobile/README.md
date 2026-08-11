@@ -67,18 +67,43 @@ that cannot work. Each one traces to a missing backend route — see
 | Area | Why |
 |---|---|
 | Edit my profile | `PUT /users/{id}/profile` is admin-only (G3) |
-| Homework list | Nothing lets a student or parent discover what work exists (G5) |
-| Notification inbox | `GET /notifications/history` is admin-only, so there are no per-user rows to show (G6) |
-| Push notifications | Backend transport is live over FCM HTTP v1. What is missing is the client half: `firebase_messaging`, `google-services.json`, the APNs key and the `schoolpilot_default` channel. |
 
-Sign-out, forgot-password, the parent's children list, the class/term pickers
-and online payment used to sit in this table. They no longer do. `POST
-/auth/logout` revokes this device's token on sign-out, and "Forgot password?"
-asks the backend to email a reset link — which opens in the web portal, since
-the app does not handle deep links. `GET /parent/children` lists a guardian's
-own children, and `GET /classes` and `GET /terms` back the staff pickers; the
-app was already written against all three paths, so they started working the
-day the routes landed.
+That is the whole list now. Sign-out, forgot-password, the parent's children
+list, the class and term pickers, the homework list, the notification inbox,
+online payment and push all used to sit here. `POST /auth/logout` revokes this
+device's token on sign-out, and "Forgot password?" asks the backend to email a
+reset link — which opens in the web portal, since the app does not handle deep
+links.
+
+## Push notifications
+
+Wired end to end, and off until you give it a Firebase project.
+
+`core/push/push_service.dart` gets an FCM token, registers it at sign-in,
+follows `onTokenRefresh`, unregisters at sign-out — a family handset is the norm
+here, and a token left registered sends one child's results to whoever picks the
+phone up next — and draws foreground messages on the `schoolpilot_default`
+channel. That channel id must match the backend's `FCM_ANDROID_CHANNEL_ID`:
+Android 8+ silently drops a notification addressed to a channel it does not
+know, with no error anywhere.
+
+**To turn it on:**
+
+1. Create a Firebase project and add an Android app with the applicationId
+   `ng.schoolpilot.schoolpilot`.
+2. Download `google-services.json` into `android/app/`. It is gitignored — it
+   carries your project id and key, and it is per-deployment.
+3. For iOS, add the APNs key in the Firebase console and drop
+   `GoogleService-Info.plist` into `ios/Runner/`.
+4. On the backend, set `FCM_CREDENTIALS` to the service-account JSON.
+5. Check it with `POST /api/v1/notifications/devices/test`, which pushes to your
+   own handset and reports per-device delivery.
+
+**Without any of that the app still builds and runs.** The Gradle plugin is
+applied only when `google-services.json` exists, and `Firebase.initializeApp` is
+guarded, so a fresh clone gets `isAvailable == false` and no push. A handset
+with no Play Services behaves the same way. Push is a convenience on a product
+where the school can still reach every family by SMS.
 
 ## Paying a school
 

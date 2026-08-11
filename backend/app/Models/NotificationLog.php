@@ -21,10 +21,12 @@ class NotificationLog extends Model
         'status',
         'failure_reason',
         'sent_at',
+        'read_at',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
     public function user()

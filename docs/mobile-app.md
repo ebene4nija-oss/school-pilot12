@@ -111,13 +111,20 @@ written**, recorded here rather than left as a surprise in the code:
    tolerant readers (`listOf`, `mapOf`, `numOf`, `stringOf`) that every screen
    uses instead. Revisit once the API is consistent — the parsing is confined
    to the data layer precisely so it can be swapped.
-3. **No `firebase_messaging` yet — but it is now unblocked.** This originally
-   read "push cannot work at all until gap **G7** is fixed on the backend".
-   G7 is fixed: the backend sends over FCM HTTP v1 and there is a
-   `POST /notifications/devices/test` endpoint that pushes to your own handset
-   and tells you per device whether it arrived. What remains is client work —
-   `google-services.json`, the iOS APNs key, and the notification channel named
-   in §B10. See §B10 for the exact payload the server sends.
+3. **Push is wired, and every path through it is allowed to fail.** This
+   originally read "push cannot work at all until gap **G7** is fixed on the
+   backend", then "what remains is client work". Both halves are now done:
+   `PushService` gets a token, registers it at sign-in, follows
+   `onTokenRefresh`, unregisters at sign-out, and draws foreground messages on
+   the `schoolpilot_default` channel.
+
+   What is deliberately *not* in the repository is `google-services.json` — it
+   carries a school's own Firebase project id and key. The Gradle plugin is
+   applied only when that file is present, and `Firebase.initializeApp` is
+   guarded, so a fresh clone builds and runs with push simply unavailable rather
+   than failing at startup or at compile time. A handset with no Play Services
+   is an ordinary case in this market, not an error. Setup is in
+   `mobile/README.md`; the payload the server sends is in §B10.
 
 ## A4.1 Theme — from the mobile design system
 
@@ -249,11 +256,11 @@ Each stage is independently useful, and each ends in a commit.
 | 2 | Shell & dashboards | Bottom nav per role, four dashboards from `/analytics/*`, profile, sign-out, offline-queue screen. | done |
 | 3 | Attendance | Teacher register (bulk, idempotent, offline-queued), staff GPS clock-in. | done |
 | 4 | Timetable & academics | `/timetable/view` with cache, roster, admin academics hub, result release, PIN inventory. | done |
-| 5 | Homework | Teacher set/grade, student submit, parent visibility. | **blocked on G5** — no student-facing homework list exists |
+| 5 | Homework | Teacher set/grade, student submit, parent visibility. | done |
 | 6 | Results | Student/parent results, release gate, PIN redeem, purchase. | done |
 | 7 | CBT | Available exams, sitting a paper (timer, image/LaTeX rendering, local answer buffer, question navigator), submit. | done |
 | 8 | Finance | Statement, defaulters, payment history, hosted-checkout payment. | done |
-| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done except the client half of push (backend transport is live — §B10) and the per-user inbox (**G6**) |
+| 9 | Communication & AI | Threads, messaging, notification inbox, student tutor chat. | done |
 | 10 | Hardening | Offline soak on a real handset, low-end profiling, accessibility pass, crash reporting, release signing, store listing. | not started |
 
 Stage 10 is the remaining work, plus whatever the gap fixes unblock. QR
@@ -618,21 +625,46 @@ should be worked around by hacking the client.
 | **G1** | ~~No `POST /auth/logout`.~~ **Done.** `POST /api/v1/auth/logout` deletes the token that made the request, leaving the user's other sessions alone. `AuthController::logout`. | — | — |
 | **G2** | ~~No self-service password reset.~~ **Done.** `POST /api/v1/auth/forgot-password` and `POST /api/v1/auth/reset-password`, backed by `PasswordResetService` and Laravel's `password_reset_tokens` broker. | — | — |
 | **G3** | `PUT /users/{id}/profile` is admin-only. | Students and parents cannot update their own phone number or photo. | Add a `PUT /me/profile` scoped to the caller. |
-| **G4** | `GET /cbt/exams/{examId}/offline-package` is staff-only. | A student device cannot pre-download a paper. Fine if offline CBT is desktop-only (§A1) — a blocker the moment mobile offline sitting is wanted. | Decide explicitly; if wanted, add a candidate-scoped variant behind `CbtAttemptPolicy`. |
-| **G5** | No student- or parent-facing homework list. Only `POST /academics/homework` (teacher), the teacher's submissions index, and the student's own single-submission endpoint. | A student cannot discover what homework exists — only open one they already have the id for. | Add `GET /academics/homework` scoped to the caller's class/child. |
-| **G6** | `GET /notifications/history` is `role:super_admin,school_admin`. | No per-user notification inbox. A parent can receive a push but cannot see what they were sent. | Add `GET /me/notifications`, paginated, own rows only. |
+| ~~**G4**~~ | ~~`GET /cbt/exams/{examId}/offline-package` is staff-only.~~ | ~~A student device cannot pre-download a paper.~~ | **Fixed, and the decision made: mobile candidates may pre-cache.** The same path now serves two payloads. Staff get the paper's shape for provisioning a lab; a candidate gets a **media manifest only** — checksums, sizes and asset URLs, no question text, no options, no answers — bound by `CbtExamPolicy::sit`, requiring a published paper that has not closed, and deliberately available *before* `opens_at`, because downloading fourteen megabytes of diagrams the night before over school wifi is the entire point. Questions still arrive only from `startAttempt`. |
+| ~~**G5**~~ | ~~No student- or parent-facing homework list.~~ | ~~A student cannot discover what homework exists.~~ | **Fixed.** `GET /api/v1/academics/homework`, one route with three scopings: a student to their class, a guardian to a child the pivot says is theirs (`student_id` when they have more than one), a teacher to their own assignments. Students and guardians also get `submitted`, `overdue` and any mark; `overdue` is computed server-side so it cannot disagree with the lateness rule submissions already use. |
+| ~~**G6**~~ | ~~`GET /notifications/history` is admin-only.~~ | ~~A parent can receive a push but cannot see what they were sent.~~ | **Fixed.** `GET /api/v1/me/notifications` and `POST /api/v1/me/notifications/read`, scoped by `user_id` rather than by school — an admin calling it gets their own messages like anyone else, and the ledger stays where it was. `notification_logs` grew a `read_at`, without which there is no unread count and so no badge. Failed and queued sends are excluded: a message the phone never received is not an inbox item. |
 | ~~**G7**~~ | ~~`NotificationService::push()` posts to `https://fcm.googleapis.com/fcm/send` with a `server_key`. That is the **legacy FCM API, decommissioned by Google**.~~ | ~~Push does not work at all, regardless of client code.~~ | **Fixed.** Migrated to FCM HTTP v1 in `FcmService`. Operators set `FCM_CREDENTIALS`; clients verify with `POST /notifications/devices/test`. Contract in §B10. |
 | ~~**G8**~~ | ~~No endpoint exposes a school's gateway **public** key, and `School` stores none.~~ | ~~The app has no way to learn which key to open checkout with.~~ | **Fixed.** Each school now holds its own merchant account in `school_payment_gateways` (keys encrypted at rest, write-only across the API), set through `PUT /finance/gateways/{gateway}`. Checkout is opened **server-side**: `POST /finance/payments/initialize` and `POST /result-checker/purchase` return a hosted `authorization_url`, so no key of any kind reaches the client. Contract in §B14. |
 | ~~**G9**~~ | ~~`POST /finance/payments` requires a client-supplied unique `reference`.~~ | ~~A retry with a fresh reference creates a duplicate pending row.~~ | **Fixed.** The server mints every reference. `reference` is now optional and honoured only from an admin recording a manual payment, where it carries a real bank slip number. |
-| **G10** | No paginated envelope on several list endpoints. | Roster and history screens can pull the whole table on a metered connection. | Confirm per endpoint during Stage 2; add cursor pagination where missing. |
+| ~~**G10**~~ | ~~No paginated envelope on several list endpoints.~~ | ~~Roster and history screens can pull the whole table on a metered connection.~~ | **Audited; two real offenders fixed.** Most lists were already paginated. `GET /messages/threads` was not — a form teacher keeps one thread per family for years — and `GET /messages/threads/{id}` eager-loaded *every message ever exchanged* about a child on every open. See the note below. |
 | ~~**G11**~~ | ~~Nothing lists a guardian's own children.~~ | ~~The parent role cannot function at all.~~ | **Fixed.** `GET /api/v1/parent/children` — the path the app already calls. Scoped by the `student_guardian` pivot rather than by school membership, and it returns name, class, arm and admission number only; the four encrypted health columns never appear (NDPA §12). |
 | ~~**G12**~~ | ~~No `GET /classes` and no `GET /terms`.~~ | ~~Every staff screen needs a class and a term before it can ask the server anything.~~ | **Fixed.** `GET /api/v1/classes` (teaching order, arms, active roll) and `GET /api/v1/terms`. See the note on `is_current` below. |
 
 **Handling.** None of these were worked around in the client. Where a gap blocks
 a control, the app shows what to do instead of offering a button that cannot
-work, and the code says which gap it is waiting on. What is left is **G3, G4,
-G5, G6 and G10** — each blocks a single control or screen rather than a whole
-role. G1, G2, G7, G8, G9, G11 and G12 are done.
+work, and the code says which gap it is waiting on. **Only G3 is left** — a
+student or parent still cannot edit their own phone number or photo, which
+blocks one control on one screen. Everything else in this table is done.
+
+**On G10 and the two lists that were not paginated.** The audit found most list
+endpoints already carrying `paginate()`; `GET /students`, the question bank, the
+exam list, users, leave and the delivery ledger were all fine. The two that were
+not were both in messaging, and the thread view was the worse of them: it loaded
+every message a teacher and a parent had ever exchanged about a child, on every
+open, over a metered connection, in order to render the last dozen. It now
+returns the newest page with `before_id` to walk backwards, because a chat is
+read from the bottom.
+
+Fixing it also uncovered a live client bug. The messages were nested under
+`thread`, where the app's `listOf(data, ['messages'])` could not see them — the
+thread view had been rendering "No messages yet" over a full conversation. They
+are now at the top level, oldest-first, which is the order a chat is drawn in.
+
+Both changes keep rows in a flat `data` array with paging metadata in a sibling
+`meta`, rather than handing back Laravel's paginator whole. A raw paginator
+moves every row from `data.N` to `data.data.N`, and these paths are published to
+installed clients — which is the versioning rule in `CLAUDE.md`, and the reason
+the new endpoints use the same shape.
+
+`GET /finance/defaulters` is deliberately left unpaginated. It sorts by a
+computed ageing figure rather than by a column, so paging it in SQL means
+restructuring the query, and it is a bursar's desktop dashboard bounded by the
+number of families with an unpaid invoice — not a handset screen.
 
 **On G12 and `terms.is_current`.** The column exists and nothing in the product
 ever writes it — no route, no job, no admin screen sets it — so on a real

@@ -5,6 +5,26 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+/*
+ * Firebase, only if this checkout has been given a project.
+ *
+ * `google-services.json` carries a school's own Firebase project id and API
+ * key, so it is not in the repository and never should be. Applying the plugin
+ * unconditionally would mean a fresh clone fails to build with an error about a
+ * missing file, which is a poor welcome for something the app treats as
+ * optional anyway — PushService degrades to "push unavailable" without it.
+ *
+ * Drop the file in at android/app/google-services.json and the next build picks
+ * it up. See mobile/README.md.
+ */
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.lifecycle(
+        "SchoolPilot: no android/app/google-services.json — building without push."
+    )
+}
+
 android {
     namespace = "ng.schoolpilot.schoolpilot"
     compileSdk = flutter.compileSdkVersion

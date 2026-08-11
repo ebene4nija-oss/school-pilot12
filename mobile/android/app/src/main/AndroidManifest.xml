@@ -18,6 +18,13 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!--
+        Android 13+ requires this to be granted at runtime. Asked for at
+        sign-in rather than at launch, and refusing it costs the user nothing
+        they cannot get another way — the school still reaches them by SMS.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
         The camera is genuinely optional: a teacher without one can still take
         a register by tapping. Marking it required would keep the app off
         handsets that can do everything except scan.
@@ -51,6 +58,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!--
+            The channel a notification lands in when the FCM payload names one
+            the device has not seen. It must match `PushService.androidChannelId`
+            and the backend's `FCM_ANDROID_CHANNEL_ID` — Android 8+ silently
+            drops a notification addressed to an unknown channel, with no error
+            anywhere, which is a bug that looks exactly like "push is broken".
+        -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="schoolpilot_default" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

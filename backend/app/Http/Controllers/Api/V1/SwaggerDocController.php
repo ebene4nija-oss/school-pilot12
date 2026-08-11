@@ -289,6 +289,43 @@ class SwaggerDocController extends Controller
                         ],
                     ],
                 ],
+                '/academics/homework' => [
+                    'get' => [
+                        'summary' => 'What homework exists, for the person who has to do it',
+                        'description' => 'Scoped server-side: a student to their own class, a guardian to a child the `student_guardian` pivot says is theirs (pass `student_id` when they have more than one), a teacher to their own assignments (`class_id` widens it to a class they are covering). Students and guardians additionally get `submitted`, `overdue` and any mark — `overdue` is computed here so clients cannot disagree about whether work due today is late. Defaults to open work; pass `include_past=1` for the whole term.',
+                        'responses' => [
+                            '200' => ['description' => 'Assignments, paginated as `data` + `meta`'],
+                        ],
+                    ],
+                ],
+                '/me/notifications' => [
+                    'get' => [
+                        'summary' => "The caller's own notification inbox",
+                        'description' => 'Not to be confused with `/notifications/history`, which is the school\'s delivery ledger and is admin-only. This is scoped by `user_id`, so an admin calling it gets their own messages like anyone else. Failed and queued sends are excluded — a message the phone never received is not an inbox item. `unread_count` is the badge and counts the whole inbox, not the page.',
+                        'responses' => [
+                            '200' => ['description' => 'Messages newest first, plus `unread_count`'],
+                        ],
+                    ],
+                ],
+                '/me/notifications/read' => [
+                    'post' => [
+                        'summary' => "Mark the caller's messages read",
+                        'description' => 'Pass `ids` to mark specific messages, or nothing to clear the badge entirely. Scoped by `user_id` in the same statement that writes, so a borrowed id updates no rows.',
+                        'responses' => [
+                            '200' => ['description' => 'How many were marked, and the remaining unread count'],
+                        ],
+                    ],
+                ],
+                '/cbt/exams/{examId}/offline-package' => [
+                    'get' => [
+                        'summary' => 'What to cache before exam day',
+                        'description' => 'Two payloads behind one path. Staff provisioning a lab get the paper\'s shape. A **candidate** gets a media manifest for their own paper and nothing else — no question text, no options, no answers — so the handset can pre-cache diagrams over wifi and the exam does not die on them when the signal does. The candidate variant is bound by CbtExamPolicy::sit, requires a published paper that has not closed, and is deliberately available *before* `opens_at`.',
+                        'responses' => [
+                            '200' => ['description' => 'Exam metadata and a checksummed media manifest'],
+                            '403' => ['description' => 'Not this candidate\'s class, not published, closed, or not marked offline-capable'],
+                        ],
+                    ],
+                ],
                 '/payments/return' => [
                     'get' => [
                         'summary' => 'Where a gateway sends the payer when checkout ends',
