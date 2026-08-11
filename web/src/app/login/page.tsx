@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState } from 'react';
 import { login, type LoginState } from '@/app/actions/auth';
 
@@ -44,6 +45,15 @@ export default function LoginPage() {
             autoComplete="current-password"
             errors={state.fieldErrors?.password}
           />
+
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-slate-500 hover:text-slate-900"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           {state.requiresTwoFactor && (
             <Field

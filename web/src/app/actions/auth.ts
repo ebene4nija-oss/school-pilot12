@@ -94,8 +94,155 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 }
 
 export async function logout(): Promise<void> {
+  const session = await getSession();
+
+  // Revoke the token server-side before dropping the cookie. Deleting the
+  // cookie alone left a working Sanctum token in existence with nothing able to
+  // reach it — on a shared machine that is a live session, not a signed-out one.
+  if (session) {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${session.token}`,
+          ...(session.subdomain ? { 'X-School-Subdomain': session.subdomain } : {}),
+        },
+        cache: 'no-store',
+      });
+    } catch {
+      // An unreachable API must not trap the user in a signed-in shell. The
+      // cookie goes either way.
+    }
+  }
+
   await destroySession();
   redirect('/login');
+}
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().email('Enter a valid email address.'),
+  subdomain: z.string().trim().min(1, 'Enter your school code.'),
+});
+
+export interface ForgotPasswordState {
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+  sent?: boolean;
+}
+
+/**
+ * Request a reset link.
+ *
+ * The success state is set for any accepted request, because the API answers
+ * identically whether or not the address is registered. Reporting "no such
+ * account" here would give away what the API deliberately withholds.
+ */
+export async function requestPasswordReset(
+  _prev: ForgotPasswordState,
+  formData: FormData,
+): Promise<ForgotPasswordState> {
+  const parsed = ForgotPasswordSchema.safeParse({
+    email: formData.get('email'),
+    subdomain: formData.get('subdomain'),
+  });
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { email, subdomain } = parsed.data;
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-School-Subdomain': subdomain,
+      },
+      body: JSON.stringify({ email, subdomain }),
+      cache: 'no-store',
+    });
+  } catch {
+    return { error: 'Could not reach the school server. Check your connection and try again.' };
+  }
+
+  if (response.status === 429) {
+    return { error: 'Too many requests. Please wait a minute and try again.' };
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    return { error: payload?.message ?? 'That request could not be completed.' };
+  }
+
+  return { sent: true };
+}
+
+const ResetPasswordSchema = z
+  .object({
+    email: z.string().email('Enter a valid email address.'),
+    token: z.string().min(1, 'This link is missing its token. Request a new one.'),
+    password: z.string().min(8, 'Use at least 8 characters, with letters and numbers.'),
+    password_confirmation: z.string().min(1, 'Confirm your new password.'),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    message: 'Both passwords must match.',
+    path: ['password_confirmation'],
+  });
+
+export interface ResetPasswordState {
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+  done?: boolean;
+}
+
+export async function resetPassword(
+  _prev: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> {
+  const parsed = ResetPasswordSchema.safeParse({
+    email: formData.get('email'),
+    token: formData.get('token'),
+    password: formData.get('password'),
+    password_confirmation: formData.get('password_confirmation'),
+  });
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(parsed.data),
+      cache: 'no-store',
+    });
+  } catch {
+    return { error: 'Could not reach the school server. Check your connection and try again.' };
+  }
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (response.status === 429) {
+    return { error: 'Too many attempts. Please wait a minute and try again.' };
+  }
+
+  if (!response.ok) {
+    if (payload?.errors) {
+      return { fieldErrors: payload.errors };
+    }
+
+    return { error: payload?.message ?? 'That reset link is invalid or has expired.' };
+  }
+
+  return { done: true };
 }
 
 /** For server components deciding what to render. */
