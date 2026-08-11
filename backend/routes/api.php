@@ -35,9 +35,26 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     // BindTenantFromUser runs after authentication because the tenant
     // middleware executes before it and can only see the host — which is a
     // bare `localhost` on any deployment not using subdomains.
-    Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class])->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class, 'require.2fa'])->group(function () {
         Route::post('/auth/invite', [AuthController::class, 'inviteUser'])->middleware('role:super_admin,school_admin');
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+        /*
+         * Two-factor enrolment.
+         *
+         * Login has verified TOTP codes for a while, but nothing could set a
+         * secret — there was no enrolment route in the whole application, so an
+         * admin could not turn 2FA on even if they wanted to.
+         *
+         * These sit outside `require.2fa` on purpose: when 2FA is mandatory,
+         * an admin who has not yet enrolled is blocked from everything else,
+         * and has to be able to reach exactly these routes to comply.
+         */
+        Route::get('/auth/2fa', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'status']);
+        Route::post('/auth/2fa/setup', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'setup']);
+        Route::post('/auth/2fa/confirm', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'confirm']);
+        Route::post('/auth/2fa/recovery-codes', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'regenerateRecoveryCodes']);
+        Route::delete('/auth/2fa', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'disable']);
         
         // Student Information System (SIS) Routes
         Route::get('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
@@ -196,6 +213,19 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/students/{studentId}/behavior-reports', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'behaviorHistory'])
             ->middleware('role:super_admin,school_admin,teacher,parent');
         Route::post('/academics/homework', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeHomework'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
+         * What homework exists (gap G5).
+         *
+         * The set half had a route and the discover half did not: a student
+         * could submit to an assignment id but nothing told them one had been
+         * set, while the parent feed showed a guardian work their own child
+         * could not see. Scoped in the controller — a student to their class, a
+         * guardian to a child the pivot says is theirs, a teacher to their own
+         * assignments — so all three ask the same question and get the same
+         * answer about what is overdue.
+         */
+        Route::get('/academics/homework', [\App\Http\Controllers\Api\V1\HomeworkSubmissionController::class, 'feed']);
 
         /*
          * Homework submissions — the return half, which did not exist. A
@@ -397,7 +427,6 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/cbt/exams/{id}/publish', [\App\Http\Controllers\Api\V1\CbtController::class, 'publishExam']);
             Route::post('/cbt/exams/{id}/close', [\App\Http\Controllers\Api\V1\CbtController::class, 'closeExam']);
             Route::get('/cbt/exams/{id}/results', [\App\Http\Controllers\Api\V1\CbtController::class, 'examResults']);
-            Route::get('/cbt/exams/{examId}/offline-package', [\App\Http\Controllers\Api\V1\CbtController::class, 'offlinePackage']);
             Route::post('/cbt/attempts/{attemptId}/grade', [\App\Http\Controllers\Api\V1\CbtController::class, 'gradeAttempt']);
         });
 
@@ -415,6 +444,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // Results: candidate, guardian and staff paths all land here and are
         // separated by CbtAttemptPolicy::view plus the exam's release setting.
         Route::get('/cbt/attempts/{attemptId}/result', [\App\Http\Controllers\Api\V1\CbtController::class, 'attemptResult']);
+
+        /*
+         * What to cache before exam day (gap G4). Staff get the paper's shape
+         * for provisioning a lab; a candidate gets a media manifest for their
+         * own paper and nothing else — no question text, no options, no
+         * answers. The controller splits on role, and CbtExamPolicy::sit binds
+         * the candidate to the class the paper was set for.
+         */
+        Route::get('/cbt/exams/{examId}/offline-package', [\App\Http\Controllers\Api\V1\CbtController::class, 'offlinePackage'])
+            ->middleware('role:super_admin,school_admin,teacher,student');
 
         Route::post('/cbt/offline-sync', [\App\Http\Controllers\Api\V1\CbtController::class, 'syncOfflineAnswers'])->middleware('role:student');
 

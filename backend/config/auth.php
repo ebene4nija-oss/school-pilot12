@@ -22,6 +22,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mandatory Two-Factor for Administrators
+    |--------------------------------------------------------------------------
+    |
+    | LAUNCH.md §1 lists mandatory TOTP for School Admin and Super Admin as a
+    | pre-flight item. RequireTwoFactorEnrolment enforces it: an admin who has
+    | not completed enrolment can authenticate and reach /auth/2fa/* and
+    | nothing else.
+    |
+    | Off by default. Turning it on before the admins of a live school have
+    | enrolled locks every one of them out simultaneously, so the order is:
+    | deploy, let admins enrol, then set AUTH_REQUIRE_ADMIN_2FA=true as the
+    | last step before go-live.
+    |
+    */
+
+    'require_admin_two_factor' => (bool) env('AUTH_REQUIRE_ADMIN_2FA', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |

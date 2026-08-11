@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\RequireRole::class,
+            'require.2fa' => \App\Http\Middleware\RequireTwoFactorEnrolment::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

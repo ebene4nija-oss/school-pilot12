@@ -7,11 +7,13 @@ use App\Models\AuditLog;
 use App\Models\School;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\PasswordResetService;
 use App\Services\TotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -92,7 +94,18 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            if (!app(TotpService::class)->verifyCode($secret, (string) $request->two_factor_code)) {
+            /*
+             * A recovery code is accepted in place of the six digits. A
+             * proprietor whose phone is lost, stolen or simply dead needs a way
+             * back into their own school that does not depend on us; each code
+             * is single-use and is spent by this check.
+             */
+            $code = (string) $request->two_factor_code;
+
+            $verified = app(TotpService::class)->verifyCode($secret, $code)
+                || app(\App\Services\TwoFactorService::class)->consumeRecoveryCode($profile, $code);
+
+            if (!$verified) {
                 return response()->json(['message' => 'Invalid 2FA code.'], 422);
             }
         }
@@ -122,7 +135,172 @@ class AuthController extends Controller
         ]);
     }
 
-    public function inviteUser(Request $request)
+    /**
+     * End this session (gap G1).
+     *
+     * Only the token that made the request is deleted, not every token the user
+     * holds: signing out of a phone must not sign the same teacher out of the
+     * browser they left open in the staff room.
+     */
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+        $token = $user->currentAccessToken();
+
+        if ($token) {
+            $token->delete();
+        }
+
+        AuditLog::create([
+            'school_id' => $user->userProfile?->school_id,
+            'user_id' => $user->id,
+            'action' => 'user.logout',
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json(['message' => 'Signed out.']);
+    }
+
+    /**
+     * Ask for a reset link (gap G2).
+     *
+     * The response is the same whether or not the address exists, whether or
+     * not it belongs to this school, and whether or not a link was actually
+     * sent. Anything else turns this endpoint into a membership oracle: "is
+     * this parent's email registered at this school" is exactly the kind of
+     * question a stranger should not be able to ask, and under NDPA (doc §12)
+     * the answer is personal data in itself.
+     */
+    public function forgotPassword(Request $request, PasswordResetService $resets)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $generic = response()->json([
+            'message' => 'If that email address has an account, a reset link is on its way to it.',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return $generic;
+        }
+
+        $profile = $user->userProfile;
+        $tenant = $this->resolveTenant($request);
+
+        // Wrong tenant: same silence as an unknown address. A reset link sent
+        // from one school's host to another school's user would also be a
+        // cross-tenant leak of which school a person belongs to.
+        if ($tenant && $profile && $profile->role !== 'super_admin' && $profile->school_id !== $tenant->id) {
+            return $generic;
+        }
+
+        if ($resets->recentlyRequested($user)) {
+            return $generic;
+        }
+
+        $school = $tenant ?? ($profile?->school_id ? School::find($profile->school_id) : null);
+
+        $resets->sendResetLink($user, $school);
+
+        AuditLog::create([
+            'school_id' => $profile?->school_id,
+            'user_id' => $user->id,
+            'action' => 'user.password_reset_requested',
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return $generic;
+    }
+
+    /**
+     * Redeem a reset or account-setup link (gap G2).
+     *
+     * Succeeding here revokes every existing token. If the reason for the reset
+     * was that somebody else had the old password, leaving their sessions alive
+     * would make the reset pointless.
+     */
+    public function resetPassword(Request $request, PasswordResetService $resets)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->numbers()],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        // One message for "no such user", "wrong token" and "expired token" —
+        // the caller cannot tell them apart, so the link cannot be used to
+        // probe for accounts either.
+        $invalid = response()->json([
+            'message' => 'That reset link is invalid or has expired. Request a new one.',
+        ], 422);
+
+        if (! $user || ! $resets->tokenIsValid($user, $request->token)) {
+            return $invalid;
+        }
+
+        $user->update([
+            'password' => $request->password,
+            'must_change_password' => false,
+            'password_changed_at' => now(),
+
+            // Someone who has proved control of the mailbox should not still be
+            // shut out by a lockout the forgotten password caused.
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+        ]);
+
+        $resets->consumeToken($user);
+        $user->tokens()->delete();
+
+        AuditLog::create([
+            'school_id' => $user->userProfile?->school_id,
+            'user_id' => $user->id,
+            'action' => 'user.password_reset_completed',
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated. Sign in with your new password.',
+        ]);
+    }
+
+    /**
+     * Host first, request body second — the same precedence login uses.
+     */
+    private function resolveTenant(Request $request): ?School
+    {
+        $tenant = $request->attributes->get('tenant_school');
+
+        if (! $tenant && $request->subdomain) {
+            $tenant = School::where('subdomain', $request->subdomain)->first();
+        }
+
+        return $tenant;
+    }
+
+    public function inviteUser(Request $request, PasswordResetService $resets)
     {
         $admin = $request->user();
         $profile = $admin->userProfile;
@@ -169,18 +347,23 @@ class AuthController extends Controller
         ]);
 
         /*
-         * The temporary password is deliberately not returned. It used to come
-         * back in this response body, which put a working credential into
-         * request logs, browser history and any client-side error reporting.
+         * The temporary password is neither returned nor kept: it exists only
+         * so the row is never briefly created with an empty or guessable
+         * password. What the invitee actually receives is a single-use,
+         * expiring setup link, sent directly to them.
          *
-         * TODO(delivery): send the credential over the school's configured
-         * channel (email/SMS) as a single-use, expiring setup link. Until that
-         * job exists, an admin triggers /users/{id}/reset-password to hand the
-         * user a fresh one out of band.
+         * This is what the response body used to do instead, which put a
+         * working credential into request logs, browser history and any
+         * client-side error reporting.
          */
+        $delivery = $resets->sendSetupLink($user, School::find($profile->school_id));
+
         return response()->json([
-            'message' => 'User invited successfully. Send them a password-setup link to complete onboarding.',
+            'message' => ($delivery['email']['status'] ?? null) === 'sent'
+                ? 'User invited. A setup link has been sent to their email address.'
+                : 'User invited, but the setup link could not be delivered. Ask them to use "Forgot password" on the sign-in screen.',
             'user_id' => $user->id,
+            'setup_link_sent' => ($delivery['email']['status'] ?? null) === 'sent',
         ], 201);
     }
 }
