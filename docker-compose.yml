@@ -1,4 +1,50 @@
-version: '3.8'
+# SchoolPilot production stack.
+#
+# Copy .env.docker.example to .env and fill it in before the first `up`.
+# APP_KEY and POSTGRES_PASSWORD have no defaults on purpose — a school's
+# encrypted medical columns are only as good as the key, and a default
+# password in a compose file committed to git is not a password.
+
+x-backend-env: &backend-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: "${APP_KEY:?set APP_KEY in .env - generate one with 'php artisan key:generate --show'}"
+  APP_URL: ${APP_URL:-http://localhost}
+
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: ${POSTGRES_DB:-schoolpilot}
+  DB_USERNAME: ${POSTGRES_USER:-schoolpilot_user}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  REDIS_CLIENT: phpredis
+
+  # Redis is in the stack, so use it. The .env.example defaults to the database
+  # driver because that is the right default for a developer with no Redis.
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: redis
+  SESSION_DRIVER: redis
+
+  # Integrations. All optional to boot, all fail loudly when exercised while
+  # unset — see SmsService / WhatsAppService / FcmService / AiManagerService.
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  AI_DAILY_COST_CAP_KOBO: ${AI_DAILY_COST_CAP_KOBO:-}
+  PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+  FLUTTERWAVE_SECRET_HASH: ${FLUTTERWAVE_SECRET_HASH:-}
+  SMS_API_KEY: ${SMS_API_KEY:-}
+  WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-}
+  FCM_CREDENTIALS: ${FCM_CREDENTIALS:-}
+  FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_HOST: ${MAIL_HOST:-}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@schoolpilot.ng}
 
 services:
   nginx:
@@ -9,8 +55,10 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
-      - ./backend:/var/www/backend
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      # nginx serves Laravel's static files and evaluates try_files against
+      # them, so it needs the document root php-fpm sees, at the same path.
+      - ./backend:/var/www/backend:ro
     depends_on:
       - backend
       - frontend
@@ -22,17 +70,47 @@ services:
     container_name: schoolpilot_backend
     restart: unless-stopped
     environment:
-      APP_ENV: production
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: schoolpilot
-      DB_USERNAME: schoolpilot_user
-      DB_PASSWORD: schoolpilot_password
-      REDIS_HOST: redis
+      <<: *backend-env
+      # Migrations run from here and nowhere else. The worker must not race it.
+      AUTO_MIGRATE: "true"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: schoolpilot_queue
+    # Was `php artisan horizon`, which could never have started: Horizon is not
+    # in composer.json. queue:work is what the installed framework provides.
+    #
+    # --max-time recycles the worker hourly so a slow leak in a long-lived PHP
+    # process cannot accumulate across a term.
+    command: php artisan queue:work --tries=3 --backoff=10 --max-time=3600
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      AUTO_MIGRATE: "false"
+    depends_on:
+      backend:
+        condition: service_started
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: schoolpilot_scheduler
+    command: php artisan schedule:work
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      AUTO_MIGRATE: "false"
+    depends_on:
+      backend:
+        condition: service_started
 
   frontend:
     build:
@@ -40,39 +118,39 @@ services:
       dockerfile: Dockerfile
     container_name: schoolpilot_frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
-
-  horizon:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: schoolpilot_horizon
-    command: php artisan horizon
-    restart: unless-stopped
+    environment:
+      # The admin's server-side proxy calls the API through nginx, because
+      # php-fpm speaks FastCGI and not HTTP — there is no direct URL for it.
+      BACKEND_API_URL: http://nginx/api/v1
     depends_on:
       - backend
-      - redis
 
   postgres:
     image: postgres:15-alpine
     container_name: schoolpilot_postgres
     restart: unless-stopped
+    # Loopback only. The previous 5432:5432 published the database to every
+    # interface on the host.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: schoolpilot
-      POSTGRES_USER: schoolpilot_user
-      POSTGRES_PASSWORD: schoolpilot_password
+      POSTGRES_DB: ${POSTGRES_DB:-schoolpilot}
+      POSTGRES_USER: ${POSTGRES_USER:-schoolpilot_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-schoolpilot_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: schoolpilot_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
 
