@@ -31,6 +31,13 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        /*
+         * flutter_local_notifications refuses to link without this: it uses
+         * java.time, which only exists from API 26, and the app ships lower.
+         * D8 backports those classes rather than us raising minSdk and
+         * dropping the older handsets this product is aimed at.
+         */
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -61,4 +68,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
