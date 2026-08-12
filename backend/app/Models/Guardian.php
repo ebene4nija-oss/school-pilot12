@@ -25,8 +25,15 @@ class Guardian extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * `is_primary` is carried explicitly because Eloquent selects only the two
+     * foreign keys off a pivot otherwise — without it `$student->pivot->is_primary`
+     * is null on every row, and `/parent/children` would report every guardian
+     * as secondary. The column decides who the school calls first.
+     */
     public function students()
     {
-        return $this->belongsToMany(Student::class, 'student_guardian');
+        return $this->belongsToMany(Student::class, 'student_guardian')
+            ->withPivot('is_primary');
     }
 }

@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\StudentMedicalResource;
 use App\Http\Resources\StudentResource;
 use App\Models\AuditLog;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentClassHistory;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -74,8 +76,16 @@ class StudentController extends Controller
         $admin = $request->user();
         $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
 
-        return DB::transaction(function () use ($request, $admin, $schoolId) {
-            $tempPassword = bin2hex(random_bytes(4));
+        $resets = app(PasswordResetService::class);
+
+        $student = DB::transaction(function () use ($request, $admin, $schoolId) {
+            /*
+             * Never seen by anyone, including the admin creating the record.
+             * It exists so the row is never briefly stored with a guessable
+             * password; the student receives a setup link instead, sent once
+             * the transaction has committed.
+             */
+            $tempPassword = bin2hex(random_bytes(32));
 
             $passportPhotoPath = $request->passport_photo_path;
             if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
@@ -125,12 +135,18 @@ class StudentController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
-            return response()->json([
-                'message' => 'Student record created successfully',
-                'student' => new StudentResource($student->load('user:id,name,email')),
-                'temp_password' => $tempPassword,
-            ], 201);
+            return $student;
         });
+
+        // Outside the transaction: a mail transport hiccup must not roll back
+        // an admission. The student can always use "Forgot password" instead.
+        $delivery = $resets->sendSetupLink($student->user, School::find($schoolId));
+
+        return response()->json([
+            'message' => 'Student record created successfully',
+            'student' => new StudentResource($student->load('user:id,name,email')),
+            'setup_link_sent' => ($delivery['email']['status'] ?? null) === 'sent',
+        ], 201);
     }
 
     public function show(Request $request, $id)
@@ -430,7 +446,12 @@ class StudentController extends Controller
 
             try {
                 DB::transaction(function () use ($name, $email, $gender, $schoolId) {
-                    $tempPassword = bin2hex(random_bytes(4));
+                    // 32 bytes, not 4. Nobody ever sees this: an imported
+                    // student reaches their account through "Forgot password",
+                    // so the value only has to be unguessable. Setup links are
+                    // deliberately not sent from here — a 500-row import would
+                    // mean 500 synchronous sends and a timed-out request.
+                    $tempPassword = bin2hex(random_bytes(32));
                     $user = User::create([
                         'name' => $name,
                         'email' => $email,
@@ -457,7 +478,8 @@ class StudentController extends Controller
         }
 
         return response()->json([
-            'message' => "Import complete. {$successCount} students imported successfully.",
+            'message' => "Import complete. {$successCount} students imported successfully. "
+                . 'They have no password yet — tell them to use "Forgot password" on the sign-in screen.',
             'successful_count' => $successCount,
             'errors' => $errors,
         ]);

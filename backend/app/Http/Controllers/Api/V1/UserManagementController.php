@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomRole;
 use App\Models\LoginHistory;
 use App\Models\ParentProfile;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentPortfolio;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use App\Models\UserActivityLog;
 use App\Models\UserProfile;
+use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -421,7 +423,10 @@ class UserManagementController extends Controller
                     $user = User::create([
                         'name'     => $name,
                         'email'    => $email,
-                        'password' => bin2hex(random_bytes(4)),
+                        // Unguessable and undelivered by design; an imported
+                        // user gets in via "Forgot password". Sending a setup
+                        // link per row would make a large import time out.
+                        'password' => bin2hex(random_bytes(32)),
                         'must_change_password' => true,
                     ]);
 
@@ -445,7 +450,8 @@ class UserManagementController extends Controller
         ]);
 
         return response()->json([
-            'message'        => "Imported {$imported} users.",
+            'message'        => "Imported {$imported} users. "
+                . 'They have no password yet — tell them to use "Forgot password" on the sign-in screen.',
             'imported_count' => $imported,
             'errors'         => $errors,
         ]);
@@ -643,24 +649,50 @@ class UserManagementController extends Controller
 
     // ─── Security Controls ───────────────────────────────────────────
 
-    public function resetPassword(Request $request, $id)
+    /**
+     * Admin-initiated reset.
+     *
+     * This used to mint an 8-character temporary password and return it in the
+     * response body for the admin to read out over the phone. That put a
+     * working credential into request logs, browser history and any front-end
+     * error reporting, and it meant a third party knew the password before the
+     * account holder did.
+     *
+     * Now it sends the user the same single-use link that self-service reset
+     * sends, and the admin is told it went — not what it contains. The account
+     * is locked out of its old password immediately either way: the stored hash
+     * is replaced with an unguessable value nobody has seen, and every session
+     * is revoked.
+     */
+    public function resetPassword(Request $request, PasswordResetService $resets, $id)
     {
         $schoolId = $this->getSchoolId($request);
         $user = User::whereHas('userProfile', fn($q) => $q->where('school_id', $schoolId))->findOrFail($id);
 
-        $tempPassword = bin2hex(random_bytes(4));
         $user->update([
-            'password' => $tempPassword,
+            'password' => bin2hex(random_bytes(32)),
             'must_change_password' => true,
             'password_changed_at' => now(),
+
+            // The usual reason an admin reaches for this is that the user is
+            // locked out, so leaving the lockout in place would defeat it.
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
         ]);
         $user->tokens()->delete();
 
-        $this->logActivity($request, $request->user()->id, 'user.password_reset', $user);
+        $delivery = $resets->sendSetupLink($user, School::find($schoolId), isNewAccount: false);
+        $sent = ($delivery['email']['status'] ?? null) === 'sent';
+
+        $this->logActivity($request, $request->user()->id, 'user.password_reset', $user, [
+            'link_delivered' => $sent,
+        ]);
 
         return response()->json([
-            'message' => 'Password reset. User must change password on next login.',
-            'temporary_password' => $tempPassword,
+            'message' => $sent
+                ? 'Reset link sent to the user. Their old password and all their sessions have been revoked.'
+                : 'Old password and sessions revoked, but the reset link could not be delivered. Ask the user to use "Forgot password" on the sign-in screen.',
+            'link_sent' => $sent,
         ]);
     }
 

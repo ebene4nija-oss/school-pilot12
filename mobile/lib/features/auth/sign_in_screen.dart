@@ -178,25 +178,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     );
   }
 
-  /// There is no self-service reset on the backend — only the admin-initiated
-  /// `POST /users/{id}/reset-password` (gap G2). Saying so plainly beats a
-  /// button that goes nowhere.
   void _showForgotPassword() {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Forgot your password?'),
-        content: const Text(
-          'Your school office can reset it for you from the admin portal.\n\n'
-          'Self-service reset is not available yet.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (_) => _ForgotPasswordDialog(initialEmail: _email.text),
     );
   }
 
@@ -224,6 +209,136 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (confirmed ?? false) {
       await ref.read(authControllerProvider.notifier).setSchoolCode('');
     }
+  }
+}
+
+/// Asks the backend to email a reset link.
+///
+/// The confirmation is deliberately worded so it is true whether or not the
+/// address is registered — the endpoint refuses to say which, so that a
+/// stranger cannot use this screen to find out who has an account at a given
+/// school. Showing "no such account" here would hand back exactly what the API
+/// withholds.
+class _ForgotPasswordDialog extends ConsumerStatefulWidget {
+  const _ForgotPasswordDialog({required this.initialEmail});
+
+  final String initialEmail;
+
+  @override
+  ConsumerState<_ForgotPasswordDialog> createState() =>
+      _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
+  late final TextEditingController _email =
+      TextEditingController(text: widget.initialEmail);
+
+  bool _busy = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final address = _email.text.trim();
+
+    if (address.isEmpty || !address.contains('@')) {
+      setState(() => _error = 'Enter the email address you sign in with.');
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(authControllerProvider.notifier).requestPasswordReset(address);
+      if (mounted) setState(() => _sent = true);
+    } catch (error) {
+      final failure = asApiException(error);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = failure.isOffline
+            ? 'No connection. You need to be online to reset your password.'
+            : failure.isRateLimited
+                ? 'Too many requests. Try again in a minute.'
+                : failure.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_sent) {
+      return AlertDialog(
+        title: const Text('Check your email'),
+        content: Text(
+          'If ${_email.text.trim()} has an account, a reset link is on its way '
+          'to it. The link expires in an hour.\n\n'
+          'Open it on this phone to set a new password, then come back and '
+          'sign in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      title: const Text('Forgot your password?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Enter the email address your school has on file and we will send '
+            'you a link to set a new password.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            autofocus: true,
+            enabled: !_busy,
+            onSubmitted: (_) => _send(),
+            decoration: InputDecoration(
+              labelText: 'Email',
+              errorText: _error,
+              prefixIcon: const Icon(Icons.mail_outline),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _busy ? null : _send,
+          child: _busy
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onAction,
+                  ),
+                )
+              : const Text('Send link'),
+        ),
+      ],
+    );
   }
 }
 

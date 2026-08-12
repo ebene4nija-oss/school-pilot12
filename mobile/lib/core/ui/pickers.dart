@@ -7,9 +7,10 @@ import 'states.dart';
 
 /// The class + term bar that sits under the app bar on every staff screen.
 ///
-/// When the backend cannot tell the app what the classes and terms are (gap
-/// G12), this says so in one line instead of leaving an empty dropdown that
-/// looks like a bug in the app.
+/// `GET /classes` and `GET /terms` fill both dropdowns. When a backend cannot
+/// answer either — an older deployment, or a school with no terms defined yet —
+/// this says so in one line instead of leaving an empty dropdown that looks
+/// like a bug in the app.
 class ClassTermBar extends ConsumerWidget {
   const ClassTermBar({super.key});
 

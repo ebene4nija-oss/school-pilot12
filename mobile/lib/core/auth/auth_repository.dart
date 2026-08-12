@@ -68,10 +68,6 @@ class AuthRepository {
 
   /// Best-effort device de-registration so a shared handset stops receiving
   /// another family's notifications.
-  ///
-  /// Note that this does *not* revoke the Sanctum token — the backend has no
-  /// logout route at all (gap G1 in `docs/mobile-app.md` §B12). Until it does,
-  /// signing out only forgets the token locally.
   Future<void> unregisterDevice(String pushToken) async {
     try {
       await _api.delete<dynamic>(
@@ -81,5 +77,32 @@ class AuthRepository {
     } catch (_) {
       // A failed unregister must never block sign-out.
     }
+  }
+
+  /// Revokes this device's token server-side.
+  ///
+  /// Best-effort on purpose: sign-out must complete even with no signal, or a
+  /// user handing the phone to someone else cannot get out of their account.
+  /// The local session is cleared either way — the cost of a failure here is a
+  /// token that stays valid until it is used against a server that still has
+  /// it, not a session that stays open on this handset.
+  Future<void> logout() async {
+    try {
+      await _api.post<dynamic>(Api.logout);
+    } catch (_) {
+      // Already-expired tokens 401 here, which is the desired end state anyway.
+    }
+  }
+
+  /// Asks the backend to send a reset link.
+  ///
+  /// The response is deliberately the same whether or not the address is
+  /// registered, so there is nothing here to branch on — the screen says the
+  /// same thing either way.
+  Future<void> requestPasswordReset(String email) async {
+    await _api.post<dynamic>(
+      Api.forgotPassword,
+      body: {'email': email.trim()},
+    );
   }
 }

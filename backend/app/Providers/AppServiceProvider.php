@@ -53,6 +53,24 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        /*
+         * Password recovery. Tighter than login because the damage is
+         * different: each accepted forgot-password can bill the school for an
+         * SMS and put a mail in someone's inbox they did not ask for, and each
+         * reset-password is a guess at a token.
+         *
+         * Keyed on email as well as IP so one address cannot be mail-bombed
+         * from a botnet, and on IP so one host cannot walk a list of addresses.
+         */
+        RateLimiter::for('password-reset', function (Request $request) {
+            $email = (string) $request->input('email');
+
+            return [
+                Limit::perMinute(3)->by(sha1('pwd|' . $email)),
+                Limit::perMinute(10)->by($request->ip()),
+            ];
+        });
+
         // Gateway callbacks must not be throttled alongside ordinary API
         // traffic — a 429 during peak fee season silently drops a payment
         // confirmation. Kept generous but not unbounded.

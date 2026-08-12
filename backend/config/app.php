@@ -56,6 +56,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Front-End URL
+    |--------------------------------------------------------------------------
+    |
+    | Where the Next.js admin portal is served from. The API needs this to build
+    | links a human clicks — a password-reset link is not an API path, so it
+    | cannot be generated from APP_URL.
+    |
+    | `{subdomain}`, if present, is replaced with the school's subdomain, which
+    | is how a multi-tenant deployment sends each school's users to their own
+    | host. A single-host deployment can leave the placeholder out.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
