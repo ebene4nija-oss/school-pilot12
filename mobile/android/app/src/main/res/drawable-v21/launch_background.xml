@@ -3,10 +3,14 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="?android:colorBackground" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!--
+        The launcher tile rather than the bare mark: colorBackground follows the
+        system theme, and a navy-ink mark would disappear against the dark one.
+        The tile carries its own navy, so it reads on either.
+    -->
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@mipmap/ic_launcher" />
+    </item>
 </layer-list>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("Dashboard");
@@ -10,8 +11,15 @@ export default function AdminDashboard() {
       {/* SideNavBar */}
       <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-[#002447] border-r border-[#c3c6cf] flex-col p-4 gap-4 z-40">
         <div className="mb-4 px-4 pt-2">
-          <h1 className="font-headline text-2xl font-bold text-white">SchoolPilot</h1>
-          <p className="text-xs text-white/70">Admin Portal</p>
+          <Image
+            src="/brand/logo-white.png"
+            alt="SchoolPilot"
+            width={1024}
+            height={210}
+            className="h-8 w-auto"
+            priority
+          />
+          <p className="mt-1 text-xs text-white/70">Admin Portal</p>
         </div>
         <nav className="flex-1 space-y-2">
           {[

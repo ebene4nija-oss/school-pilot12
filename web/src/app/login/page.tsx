@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { login, type LoginState } from '@/app/actions/auth';
@@ -18,6 +19,14 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+        <Image
+          src="/brand/logo.png"
+          alt="SchoolPilot"
+          width={1024}
+          height={210}
+          className="mb-6 h-8 w-auto"
+          priority
+        />
         <h1 className="text-xl font-semibold text-slate-900">Sign in to SchoolPilot</h1>
         <p className="mt-1 text-sm text-slate-500">Use the details your school gave you.</p>
 

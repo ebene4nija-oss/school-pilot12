@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/providers.dart';
+import '../../core/ui/brand.dart';
 
 /// First launch. A handset has no subdomain, so the tenant has to be typed in
 /// once and then travels as `X-School-Subdomain` on every request afterwards.
@@ -76,13 +77,7 @@ class _FindSchoolScreenState extends ConsumerState<FindSchoolScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'SchoolPilot',
-                  textAlign: TextAlign.center,
-                  style: AppText.headlineLg.copyWith(
-                    color: AppColors.primaryContainer,
-                  ),
-                ),
+                const Center(child: BrandLogo(height: 40)),
                 const SizedBox(height: AppSpacing.xl),
                 Text('Find your school', style: AppText.headlineMd),
                 const SizedBox(height: AppSpacing.sm),

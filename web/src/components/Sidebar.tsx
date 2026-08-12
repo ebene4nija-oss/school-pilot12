@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -62,9 +63,14 @@ export default function Sidebar() {
     <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between border-r border-slate-800 bg-slate-900 p-4 text-slate-300">
       <div>
         <div className="mb-8 flex items-center space-x-3 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-lg font-bold text-slate-950">
-            S
-          </div>
+          <Image
+            src="/brand/mark-white.png"
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8"
+            priority
+          />
           <div>
             <h1 className="font-bold leading-none text-white">SchoolPilot</h1>
             <span className="text-xs text-slate-500">K-12 Management</span>
