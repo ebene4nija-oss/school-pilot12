@@ -1,0 +1,66 @@
+//! Failures the relay can hit, phrased for the person standing in the lab.
+//!
+//! An invigilator with forty candidates waiting cannot act on "decrypt failed".
+//! Every message here is written to be read aloud to somebody who did not build
+//! this and cannot read a stack trace.
+
+use thiserror::Error;
+
+pub type Result<T> = std::result::Result<T, RelayError>;
+
+#[derive(Debug, Error)]
+pub enum RelayError {
+    #[error("Bundle failed authentication. It is the wrong key, or the file has been altered.")]
+    Authentication,
+
+    #[error(
+        "This bundle was built for format version {found}, and this relay understands version \
+         {supported}. Update the relay before exam day — it will not open this paper."
+    )]
+    UnsupportedFormat { found: i64, supported: i64 },
+
+    #[error("The exam has not opened yet, so the key has not been released.")]
+    NotOpenYet,
+
+    #[error("Not signed in. Run `relay login` while you still have internet.")]
+    NotAuthenticated,
+
+    #[error("No bundle has been provisioned. Run `relay provision --exam <id>` the day before.")]
+    NoBundle,
+
+    #[error("The paper is still sealed. The relay needs its key before it can serve candidates.")]
+    Locked,
+
+    #[error("No candidate on this bundle's roster matches that admission number and code.")]
+    UnknownCandidate,
+
+    #[error("Attempt {0} is not on this bundle's roster.")]
+    AttemptNotOnRoster(i64),
+
+    #[error("{0}")]
+    Protocol(String),
+
+    #[error("The server said: {message} (HTTP {status})")]
+    Server { status: u16, message: String },
+
+    #[error("Could not reach the server. Check the connection and try again. ({0})")]
+    Transport(String),
+
+    #[error("Local database error: {0}")]
+    Storage(#[from] rusqlite::Error),
+
+    #[error("Could not read or write relay files: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Malformed response from the server: {0}")]
+    Json(#[from] serde_json::Error),
+
+    #[error("Malformed base64 in the bundle: {0}")]
+    Base64(#[from] base64::DecodeError),
+}
+
+impl From<reqwest::Error> for RelayError {
+    fn from(error: reqwest::Error) -> Self {
+        RelayError::Transport(error.to_string())
+    }
+}
