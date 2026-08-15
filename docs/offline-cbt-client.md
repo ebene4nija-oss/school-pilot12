@@ -118,8 +118,8 @@ until the exam opens. Everything in §8 follows from that single decision.
                     │  SQLite: attempts,       │
                     │  answers, scripts, events│
                     └────────────┬─────────────┘
-                                 │  lab LAN / relay hotspot
-                                 │  (no internet)
+                                 │  lab network: wired, Wi-Fi,
+                                 │  or relay hotspot (no internet)
               ┌──────────┬───────┴───────┬──────────┐
               │          │               │          │
           ┌───┴───┐  ┌───┴───┐       ┌───┴───┐  ┌───┴───┐
@@ -296,9 +296,10 @@ costs cache complexity.
 Candidate clients pair to the relay in this phase too (§8.4), so exam morning
 involves no configuration.
 
-**Tier B** adds one step here and only here: the relay starts its hotspot and
-the candidate machines join it once, before pairing. Everything after that is
-identical to Tier A, and this is the only section that knows the difference.
+Getting everyone onto the network happens here and only here: on Tier A the
+machines join the school's Wi-Fi or are already on the wire; on Tier B the relay
+starts its hotspot and they join that. Either way it is done the day before,
+once, and no later section knows which it was.
 
 ### 5.2 Unlock — exam morning, ~10 seconds of connectivity
 
@@ -678,7 +679,7 @@ documentation is explicit that this needs a documented lawful basis under NDPA
 | Candidate photographs the screen | Nothing prevents this | **Accepted.** Invigilation is human |
 | Clock manipulation on candidate PC | Deadline enforced by relay, not candidate | None material |
 | Paper script substituted after the exam | QR ties page to attempt; page counts reconciled | Physical chain of custody stays the school's job |
-| Candidate joins the Tier B hotspot with their own phone | The passphrase is not the access control — the relay authenticates candidates and pins TLS (§8.3) | A phone on the network is not a phone in the paper |
+| Candidate puts their own phone on the lab network | The Wi-Fi passphrase is not the access control — the relay authenticates candidates and pins TLS (§8.3) | A phone on the network is not a phone in the paper |
 
 The third, fifth and sixth rows matter for how this is sold. A desktop app on a
 school's Windows PCs cannot truly lock down a machine, and claiming otherwise
@@ -693,12 +694,13 @@ HTTP. The relay generates a self-signed certificate at install; candidate
 clients pin it during pairing (§8.4). Certificate pinning at pairing time avoids
 both a CA and trust-on-every-connect prompts.
 
-**This is identical on Tier B.** A relay-broadcast hotspot is still a network
-with other people's machines on it, and a WPA2 passphrase shared with a room of
-candidates is not a secret. Do not let "it's our own hotspot" become a reason to
-weaken the pinned-TLS requirement. If anything the hotspot is the weaker network
-of the two, because its passphrase gets typed in front of forty people — pinned
-TLS is what makes that not matter.
+**This matters more on Wi-Fi, not less.** The school's wireless network carries
+staff laptops, phones and whatever else is in the building; a relay-broadcast
+hotspot has a passphrase typed in front of forty candidates. Neither is a
+private link, and a WPA2 passphrase is not access control. Do not let "it's the
+school's own network" or "it's our own hotspot" become a reason to weaken the
+pinned-TLS requirement — pinning is what makes the network's own security
+irrelevant to us.
 
 ### 8.4 Pairing
 
@@ -707,9 +709,11 @@ a short pairing code, the candidate client enters it, and the two exchange a
 long-lived device token plus the pinned certificate fingerprint. Pairing is
 staff-supervised and happens the day before, never during the exam.
 
-Tier B pairs the same way, once the machines have joined the hotspot. Pairing is
-also where a Tier B room discovers it has hit the client cap (§3.2.1) — the day
-before, with time to do something about it, rather than on exam morning.
+Pairing is the same on both tiers, once the machines are on the network. It is
+also the moment a room discovers a problem with that network — a client cap
+reached (§3.2.1), or client isolation silently blocking peer traffic (§3.2) —
+the day before, with time to do something about it, rather than on exam morning.
+**Pair every machine that will be used, not a sample**, for exactly this reason.
 
 ---
 
@@ -1017,9 +1021,10 @@ Retention is a feature, not cleanup.
 | Candidate PC dies | Move seat, re-auth to relay, resume; answers intact |
 | Relay dies mid-exam | Restart; SQLite is the source of truth; log `relay_restarted`. **Single point of failure — see below** |
 | Power cut, whole lab | On restore, relay and clients resume; deadline honoured from `server_deadline_at` |
-| LAN drops | Candidate client shows a clear banner, buffers locally, reconnects and flushes |
-| Hotspot drops (Tier B) | Same as a LAN drop; relay restarts the hotspot, clients rejoin and flush |
+| LAN or Wi-Fi drops | Candidate client shows a clear banner, buffers locally, reconnects and flushes |
+| Hotspot drops (Tier B) | Same as a network drop; relay restarts the hotspot, clients rejoin and flush |
 | Tier B hits its client cap | The ninth machine is refused with a plain message, not a hang. Caught at pairing the day before, never on exam morning |
+| Router has client isolation on | Candidate reaches the internet but not the relay. The client must name this specifically rather than reporting a generic connection error — it is a router setting, and an unrecognisable symptom otherwise (§3.2) |
 | No connectivity after exam | Relay holds queue indefinitely; sync when available; nothing expires locally |
 | Sync interrupted halfway | Retry; `supersedes()` makes it idempotent |
 | Exam closed server-side while relay offline | Sync still accepted and closed out — `syncOfflineAnswers` already saves late batches, then finalises |
@@ -1111,7 +1116,7 @@ and it is a question about drivers rather than about the framework choice.
 | Unit | Sequence monotonicity across restart; deadline enforcement; checksum verification; word-cap enforcement |
 | Integration | Full provision → unlock → sit → sync against a real backend, with a mixed paper: objectives, a comprehension group, an on-screen essay and an on-paper theory section. **Run it on both tiers** |
 | Failure injection | Kill candidate mid-essay; kill relay mid-exam; pull the LAN; drop the hotspot; skew clocks; corrupt a media file; corrupt the bundle; upload an unmatchable script page |
-| Scale | 40 concurrent candidates against one relay laptop, with essay-length payloads. Measure before promising a room size. Separately and earlier, **measure Tier B's real client cap** on hardware the pilot school actually has (§3.2.1) |
+| Scale | 40 concurrent candidates against one relay laptop, with essay-length payloads, over Wi-Fi rather than a cable — the wireless path is the one most schools will use. Measure before promising a room size. Separately and earlier, **measure the relay hotspot's real client cap** (§3.2.1) |
 | Security | Bundle unreadable before key release; **no answer keys and no rubrics in bundle**; batch sync rejects off-roster attempts |
 | Marking | AI suggestion cannot reach `awarded_marks` without a decision; release blocked while `pending_approval` exists; `graded_by` always a human |
 
@@ -1187,14 +1192,16 @@ desktop client ever ships. If the project is ever paused, pause it after step 6.
 
 ## 20. Open questions
 
-1. **Which tier is each pilot school, and how many machines?** One WhatsApp
-   message: is there a switch or router; if not, do the machines have Wi-Fi; how
-   many seats. A school that answers "neither" cannot run this client at all
-   (§3.2.2), and that is worth knowing before it is discovered on exam morning.
-2. **How many clients can the relay's hotspot actually hold?** §3.2.1. Not a
-   question for a school — a question for one afternoon with a laptop and a
-   handful of PCs, and the single measurement that decides how much of the
-   no-LAN market Tier B can serve. Do it early.
+1. **What network can the lab machines reach, and how many seats?** One WhatsApp
+   message: are the PCs on a switch; if not, do they see any Wi-Fi network —
+   the office router counts, and it does not need internet; how many seats. Most
+   schools that sound like Tier B turn out to be Tier A once asked properly
+   (§3.2). A school that genuinely reaches nothing cannot run this client
+   (§3.2.2), and that is worth knowing early rather than on exam morning.
+2. **How many clients can the relay's own hotspot hold?** §3.2.1. Not a question
+   for a school — a question for one afternoon with a laptop and a handful of
+   PCs. It only bounds the fallback path, but it decides what can be promised to
+   a school with no network of its own. Do it early.
 3. **How many candidates per room, realistically?** Sets the scale target.
 4. **Who is the relay operator** — the exam officer, or an IT person? Determines
    how much the relay UI must explain itself.
