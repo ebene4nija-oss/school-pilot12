@@ -161,6 +161,31 @@ async fn run() -> Result<()> {
     match cli.command {
         Command::Login { base_url, email, password, relay_identity } => {
             if let Some(url) = base_url {
+                // §13 and multi-tenancy together: a relay still holding one
+                // school's paper must not be re-pointed at another school's
+                // subdomain. `sync` then `purge` is the deliberate path.
+                let holds_data = Store::open(&paths.database())
+                    .ok()
+                    .and_then(|store| store.active_bundle().ok().flatten())
+                    .is_some();
+
+                if !schoolpilot_relay::config::may_switch_tenant(
+                    &config.base_url,
+                    &url,
+                    holds_data,
+                ) {
+                    return Err(RelayError::TenantSwitch {
+                        current: config.base_url.clone(),
+                        incoming: url,
+                    });
+                }
+
+                // A clean relay changing schools starts over: the old tenant
+                // binding must not outlive the school it belonged to.
+                if config.base_url != url {
+                    config.school_id = None;
+                }
+
                 config.base_url = url;
             }
             if relay_identity.is_some() {
@@ -192,7 +217,18 @@ async fn run() -> Result<()> {
                 .issue_bundle(exam, config.relay_identity.as_deref(), override_existing)
                 .await?;
 
+            // Checked before the ciphertext touches the disk, not after.
+            config.guard_tenant(sealed.envelope.header.school_id)?;
+
             store.save_bundle(&sealed)?;
+
+            // First bundle binds the relay to its school. Recorded rather than
+            // inferred from `base_url`, so a subdomain that changes (a rename,
+            // a custom domain) does not silently look like a different tenant.
+            if config.school_id.is_none() {
+                config.school_id = Some(sealed.envelope.header.school_id);
+                paths.save(&config)?;
+            }
 
             let header = &sealed.envelope.header;
             println!(

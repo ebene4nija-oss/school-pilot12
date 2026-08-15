@@ -106,6 +106,17 @@ src/
 
 ## Three things that will bite you
 
+**A relay belongs to one school, and it is enforced.** The platform is
+multi-tenant — `base_url` is a school's subdomain — and a relay carries
+children's answers on a laptop that leaves the building. So the relay records
+the `school_id` of the first bundle it is issued and refuses any bundle from
+another school (`guard_tenant`), and `relay login` refuses to re-point at a
+different subdomain while data is still held: `sync`, then `purge`, then sign
+in. Backend scoping would catch most of this — off-roster attempts are rejected
+at sync (§9.3) — but by then another school's candidate data has already left
+this machine, and under NDPA that is a disclosure whether or not the far end
+accepted it.
+
 **The relay's certificate is not the content key.** `relay-key.pem` lives on
 disk on purpose — it is the relay's identity across every exam it will serve,
 and a fingerprint that changed each morning would be unusable. The *content*

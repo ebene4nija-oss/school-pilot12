@@ -46,6 +46,21 @@ pub enum RelayError {
     #[error("Transport security failed: {0}")]
     Tls(String),
 
+    #[error(
+        "This bundle belongs to school {incoming}, and this relay is serving school {held}. \
+         Refusing it — a relay carries one school's papers at a time. If this laptop is being \
+         moved to another school, run `relay purge` first."
+    )]
+    TenantMismatch { held: i64, incoming: i64 },
+
+    #[error(
+        "This relay is signed in to {current} and is still holding that school's exam data. \
+         Signing in to {incoming} now would leave one school's candidate answers on a relay \
+         belonging to another. Run `relay sync` to upload what is outstanding, then \
+         `relay purge`, then sign in again."
+    )]
+    TenantSwitch { current: String, incoming: String },
+
     #[error("{0}")]
     Protocol(String),
 

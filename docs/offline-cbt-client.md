@@ -1060,6 +1060,7 @@ Retention is a feature, not cleanup.
 | Sync interrupted halfway | Retry; `supersedes()` makes it idempotent |
 | Exam closed server-side while relay offline | Sync still accepted and closed out — `syncOfflineAnswers` already saves late batches, then finalises |
 | Two relays provisioned for one exam | Must be prevented: bundle issuance records the relay identity; a second issuance requires explicit staff override |
+| One relay used for two schools | Refused. The platform is multi-tenant and a relay is bound to the `school_id` of its first bundle; another school's bundle is rejected before it touches the disk, and `relay login` will not re-point at a different subdomain while data is held. Redeploying a laptop means `sync`, then `purge`, then sign in |
 | Script page won't match by QR | Exceptions tray, manual assignment; never discarded (§6.5) |
 | Script page never captured | Desk shows received vs expected; release blocked while marks are outstanding |
 | Booklet printed for the wrong candidate | QR mismatch surfaces at capture, not at marking |
