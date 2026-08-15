@@ -6,6 +6,7 @@
 //! asserted against the shared parity vectors in `tests/parity.rs`.
 
 pub mod api;
+pub mod assets;
 pub mod bundle;
 pub mod config;
 pub mod error;

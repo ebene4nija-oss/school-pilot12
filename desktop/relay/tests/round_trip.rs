@@ -299,6 +299,73 @@ async fn the_candidate_client_asks_nothing_of_the_outside_world() {
     assert!(html.contains("/relay/v1/submit"));
 }
 
+#[tokio::test]
+async fn the_maths_a_paper_needs_is_served_by_the_relay_itself() {
+    // §16: the equations have to come from somewhere, and in a lab there is
+    // nowhere but this binary. The page asking for KaTeX and the relay serving
+    // it are two separate mistakes to make, so both are asserted — a stylesheet
+    // that 404s renders a maths paper as unstyled TeX just as completely as a
+    // CDN that cannot be reached.
+    let app = router(state());
+
+    for (path, expected_type) in [
+        ("/assets/katex/katex.min.css", "text/css"),
+        ("/assets/katex/katex.min.js", "text/javascript"),
+        ("/assets/katex/fonts/KaTeX_Main-Regular.woff2", "font/woff2"),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(Request::builder().uri(path).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK, "{path} did not serve");
+
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+
+        assert!(
+            content_type.starts_with(expected_type),
+            "{path} served as `{content_type}`, not `{expected_type}` — a WebView will ignore it"
+        );
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert!(!body.is_empty(), "{path} served zero bytes");
+    }
+
+    // The page must actually reference what the relay serves. A path typo here
+    // is invisible until a maths paper is in front of a candidate.
+    let page = app
+        .clone()
+        .oneshot(Request::builder().uri("/sit").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    let html = String::from_utf8(
+        page.into_body().collect().await.unwrap().to_bytes().to_vec(),
+    )
+    .unwrap();
+
+    assert!(html.contains("/assets/katex/katex.min.css"));
+    assert!(html.contains("/assets/katex/katex.min.js"));
+
+    // A font name outside the vendored list is a 404, not a file read.
+    let traversal = app
+        .oneshot(
+            Request::builder()
+                .uri("/assets/katex/fonts/KaTeX_Main-Regular.ttf")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(traversal.status(), StatusCode::NOT_FOUND);
+}
+
 fn urlencode(value: &str) -> String {
     value
         .chars()

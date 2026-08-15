@@ -20,18 +20,23 @@
 //! anyone can sit" — the same reasoning forbids a stylesheet or a font from a
 //! CDN here. There is no network in the room.
 
-/// LaTeX rendering is deliberately absent.
+/// Maths is rendered by KaTeX, vendored into the binary by [`crate::assets`].
 ///
-/// The bundle carries `content_format`, and a paper marked `latex` will show
-/// its source rather than its equations. Vendoring KaTeX into this page is
-/// step 4 work that is not done, and pretending otherwise would put a maths
-/// paper in front of a candidate as raw TeX with no warning. The client says so
-/// on screen instead.
+/// The segment parser below is a port of `web/src/components/RichContent.tsx`,
+/// which is in turn a mirror of `MathContentService::extractExpressions` on the
+/// server — same four delimiters, same longest-opener-first order, same
+/// escaped-dollar rule so `\$20` stays a price. Three implementations of one
+/// grammar is two too many, but the alternative is a candidate sitting a paper
+/// that splits differently from the one their classmate sat online, so the
+/// rule is the same as §10's: they must never drift. If you change one, change
+/// all three.
 pub const CANDIDATE_APP: &str = r##"<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SchoolPilot — Sit Your Paper</title>
+<link rel="stylesheet" href="/assets/katex/katex.min.css">
+<script src="/assets/katex/katex.min.js"></script>
 <style>
   :root {
     --ink: #14181f; --muted: #5b6472; --line: #d8dee8; --bg: #f6f7f9;
@@ -106,6 +111,13 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
   .save.bad { color: var(--warn); }
   .banner { background: #fff4ed; border: 1px solid #f0c6a8; padding: .7rem 1rem;
             border-radius: .4rem; margin-bottom: 1rem; }
+
+  /* A displayed equation may be wider than a lab monitor. Let it scroll on its
+     own rather than pushing the answer area off screen (§6.2's reasoning,
+     applied to maths). */
+  .math-display { display: block; margin: .6rem 0; overflow-x: auto; overflow-y: hidden; }
+  .math-inline { display: inline-block; }
+  .math-raw { font-family: ui-monospace, Consolas, monospace; color: var(--warn); }
 </style>
 
 <div class="wrap">
@@ -139,8 +151,9 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
       <strong>Welcome back.</strong> Your earlier answers were saved by the relay and are still here.
     </div>
     <div id="latex-warning" class="banner hidden">
-      This paper contains mathematical notation that this client cannot render yet.
-      Tell your invigilator before you continue.
+      This paper contains mathematical notation and the part of this client that
+      draws it did not load. Do not continue — raise your hand and tell your
+      invigilator now.
     </div>
 
     <div class="card">
@@ -200,6 +213,110 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
   var pending = {};      // question_id -> true while a save is in flight
 
   var $ = function (id) { return document.getElementById(id); };
+
+  // ---------------------------------------------------------------- maths
+  // A port of web/src/components/RichContent.tsx. Longest opener first, so
+  // `$$` wins over `$` and `\[` over `\(`.
+
+  var DELIMITERS = [
+    ["$$", "$$", true],
+    ["\\[", "\\]", true],
+    ["\\(", "\\)", false],
+    ["$", "$", false]
+  ];
+
+  function parseSegments(content) {
+    var segments = [];
+    var buffer = "";
+    var i = 0;
+
+    function flush() {
+      if (buffer) { segments.push({ kind: "text", value: buffer }); buffer = ""; }
+    }
+
+    while (i < content.length) {
+      // `\$20` is a price, not an opening delimiter.
+      if (content[i] === "\\" && content[i + 1] === "$") {
+        buffer += "$";
+        i += 2;
+        continue;
+      }
+
+      var match = null;
+      for (var d = 0; d < DELIMITERS.length; d++) {
+        if (content.startsWith(DELIMITERS[d][0], i)) { match = DELIMITERS[d]; break; }
+      }
+
+      if (!match) { buffer += content[i]; i += 1; continue; }
+
+      var from = i + match[0].length;
+      var closeAt = content.indexOf(match[1], from);
+
+      if (closeAt === -1) {
+        // The server rejects unclosed delimiters at authoring time, so reaching
+        // here means legacy content. Show it literally rather than swallowing
+        // the rest of the question.
+        buffer += content.slice(i);
+        break;
+      }
+
+      flush();
+      segments.push({ kind: "math", value: content.slice(from, closeAt), display: match[2] });
+      i = closeAt + match[1].length;
+    }
+
+    flush();
+    return segments;
+  }
+
+  // Put authored content into an element: prose as text nodes, maths as KaTeX.
+  //
+  // Prose is never assigned as HTML. A stem is authored by a teacher and could
+  // contain markup, and nothing in this product needs a teacher to be able to
+  // inject HTML into a paper.
+  function rich(el, content, format) {
+    el.innerHTML = "";
+
+    if (content === null || content === undefined) { return; }
+
+    // Most questions in a bank are prose, and a paper is sixty of them on a lab
+    // machine that is not fast. Skip the parser unless the author said maths.
+    if (format !== "latex" || !window.katex) {
+      el.appendChild(document.createTextNode(content));
+      return;
+    }
+
+    parseSegments(content).forEach(function (segment) {
+      if (segment.kind === "text") {
+        el.appendChild(document.createTextNode(segment.value));
+        return;
+      }
+
+      var span = document.createElement("span");
+
+      try {
+        // Same options as the web runner. `trust: false` blocks the
+        // HTML-injecting commands even though the server already refuses them;
+        // `throwOnError: false` means a bad expression shows as source rather
+        // than blanking the question mid-exam.
+        span.innerHTML = window.katex.renderToString(segment.value, {
+          displayMode: segment.display,
+          throwOnError: false,
+          trust: false,
+          strict: "ignore",
+          output: "htmlAndMathml"
+        });
+        span.className = segment.display ? "math-display" : "math-inline";
+      } catch (error) {
+        // Belt and braces: renderToString should not throw with the options
+        // above, but a candidate must never lose a question to an exception.
+        span.className = "math-raw";
+        span.textContent = segment.value;
+      }
+
+      el.appendChild(span);
+    });
+  }
 
   function show(id) {
     ["signin", "paper", "done"].forEach(function (name) {
@@ -276,10 +393,16 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
         $("who").textContent = data.candidate_name || creds.admission_number;
 
         // §16: a paper whose equations render as raw TeX is not a paper anyone
-        // can sit. Say so rather than letting a candidate discover it.
+        // can sit. KaTeX is vendored into the relay binary and served from it,
+        // so the only way it is missing is a build or a route that broke — in
+        // which case say so up front rather than letting a candidate discover
+        // it at question 14.
         var latex = data.exam.content_format === "latex"
-          || data.questions.some(function (q) { return q.content_format === "latex"; });
-        $("latex-warning").classList.toggle("hidden", !latex);
+          || data.questions.some(function (q) {
+               return q.content_format === "latex"
+                 || (q.group && q.group.content_format === "latex");
+             });
+        $("latex-warning").classList.toggle("hidden", !(latex && !window.katex));
 
         show("paper");
         render();
@@ -298,15 +421,15 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
     $("q-marks").textContent = q.marks + (q.marks === 1 ? " mark" : " marks");
     $("progress").textContent = Object.keys(answers).length + " of "
       + paper.questions.length + " answered";
-    $("stem").textContent = q.question;
+    rich($("stem"), q.question, q.content_format);
 
     // §6.2: the stimulus stays visible while any of its sub-questions is on
     // screen, and the candidate must know which sub-question they are on.
     if (q.group) {
       $("group").classList.remove("hidden");
-      $("group-title").textContent = q.group.title || "Read the following";
-      $("group-instructions").textContent = q.group.instructions || "";
-      $("stimulus").textContent = q.group.stimulus || "";
+      rich($("group-title"), q.group.title || "Read the following", q.group.content_format);
+      rich($("group-instructions"), q.group.instructions || "", q.group.content_format);
+      rich($("stimulus"), q.group.stimulus || "", q.group.content_format);
       $("group-position").textContent = "Question " + q.group.position_in_group
         + " of " + q.group.questions_in_group + " on this passage";
     } else {
@@ -347,8 +470,10 @@ pub const CANDIDATE_APP: &str = r##"<!doctype html>
         key.className = "key";
         key.textContent = option.key + ".";
 
+        // Options carry no format of their own; an option to a maths question
+        // is maths (`3x^2` as a distractor is the normal case, not the odd one).
         var text = document.createElement("span");
-        text.textContent = option.text;
+        rich(text, option.text, q.content_format);
 
         label.appendChild(input);
         label.appendChild(key);

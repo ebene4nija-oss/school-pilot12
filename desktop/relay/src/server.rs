@@ -45,6 +45,11 @@ pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/", get(status_page))
         .route("/sit", get(candidate_app))
+        // Vendored, never fetched (§16). Relative to `/sit`, so the stylesheet's
+        // own `url(fonts/…)` rules resolve here without rewriting the CSS.
+        .route("/assets/katex/katex.min.css", get(crate::assets::katex_css))
+        .route("/assets/katex/katex.min.js", get(crate::assets::katex_js))
+        .route("/assets/katex/fonts/:name", get(crate::assets::katex_font))
         .route("/relay/v1/status", get(status_json))
         .route("/relay/v1/session", post(session))
         .route("/relay/v1/paper", get(candidate_paper))
