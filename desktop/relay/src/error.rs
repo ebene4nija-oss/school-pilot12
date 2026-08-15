@@ -43,6 +43,9 @@ pub enum RelayError {
     )]
     Kiosk(String),
 
+    #[error("Transport security failed: {0}")]
+    Tls(String),
+
     #[error("{0}")]
     Protocol(String),
 

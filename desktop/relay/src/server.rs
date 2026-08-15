@@ -59,6 +59,39 @@ pub fn router(state: Arc<AppState>) -> Router {
         .with_state(state)
 }
 
+/// Serve the room over TLS (§8.3).
+///
+/// The certificate is the relay's own and candidates pin it by fingerprint;
+/// see [`crate::tls`] for why there is no CA and what that does and does not
+/// buy. This is the path a real exam runs on.
+pub async fn serve_tls(
+    state: Arc<AppState>,
+    addr: SocketAddr,
+    config: axum_server::tls_rustls::RustlsConfig,
+) -> Result<()> {
+    let handle = axum_server::Handle::new();
+    let shutdown = handle.clone();
+
+    tokio::spawn(async move {
+        let _ = tokio::signal::ctrl_c().await;
+        tracing::info!("shutting down; the paper is being dropped from memory");
+        // Long enough for an in-flight answer to finish landing. A candidate's
+        // last save is worth three seconds of patience.
+        shutdown.graceful_shutdown(Some(std::time::Duration::from_secs(3)));
+    });
+
+    tracing::info!("relay listening on https://{addr}");
+
+    axum_server::bind_rustls(addr, config)
+        .handle(handle)
+        .serve(router(state).into_make_service())
+        .await
+        .map_err(crate::error::RelayError::Io)?;
+
+    Ok(())
+}
+
+/// Serve without TLS. The demo path, and loopback development.
 pub async fn serve(state: Arc<AppState>, addr: SocketAddr) -> Result<()> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await

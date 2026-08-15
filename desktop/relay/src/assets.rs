@@ -63,6 +63,23 @@ const FONTS: &[(&str, &[u8])] = &[
 /// one resource the room is short of.
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
 
+/// Resolve a request path to a compiled-in asset.
+///
+/// One table, two front doors: the relay serves these over HTTP for a candidate
+/// on a browser, and the kiosk shell serves the same bytes over its custom
+/// protocol without a network hop at all (`kiosk.rs`). Having both go through
+/// here is what stops the two drifting into different KaTeX builds.
+pub fn lookup(path: &str) -> Option<(&'static str, &'static [u8])> {
+    match path {
+        "/assets/katex/katex.min.css" => Some(("text/css; charset=utf-8", KATEX_CSS)),
+        "/assets/katex/katex.min.js" => Some(("text/javascript; charset=utf-8", KATEX_JS)),
+        _ => path
+            .strip_prefix("/assets/katex/fonts/")
+            .and_then(|name| FONTS.iter().find(|(font, _)| *font == name))
+            .map(|(_, body)| ("font/woff2", *body)),
+    }
+}
+
 fn asset(content_type: &'static str, body: &'static [u8]) -> Response {
     (
         StatusCode::OK,

@@ -71,9 +71,10 @@ enum Command {
     Serve {
         #[arg(long)]
         port: Option<u16>,
-        /// Bind beyond loopback. Refused by default while transport security is
-        /// unfinished (§8.3) — a half-built relay must not quietly serve a real
-        /// exam over a LAN in the clear.
+        /// Bind beyond loopback, so the lab can reach it. The traffic is TLS
+        /// and candidates pin the certificate (§8.3), so this is the normal
+        /// setting for a real room; loopback stays the default so a relay
+        /// started by accident serves nobody.
         #[arg(long)]
         lan: bool,
     },
@@ -84,9 +85,14 @@ enum Command {
     /// the mode a candidate sees; every other subcommand here is the
     /// invigilator's.
     Candidate {
-        /// The relay's address on the lab network, e.g. http://10.0.0.4:8443.
+        /// The relay's address on the lab network, e.g. https://10.0.0.4:8443.
         #[arg(long)]
         relay: String,
+        /// The certificate fingerprint the relay must present (§8.3), shown by
+        /// `relay serve` on the invigilator's screen. Required for https;
+        /// without it there is nothing to pin against.
+        #[arg(long)]
+        fingerprint: Option<String>,
     },
 
     /// Upload everything held locally. After the exam, whenever connectivity
@@ -110,6 +116,11 @@ enum Command {
         /// Minutes on the clock, so the countdown does something visible.
         #[arg(long, default_value_t = 45)]
         minutes: i64,
+        /// Serve the demo over TLS and print the fingerprint, so the candidate
+        /// shell can be exercised on the same pinned path a real exam uses
+        /// (§8.3). Plain http otherwise, which is friendlier to a browser.
+        #[arg(long)]
+        tls: bool,
     },
 
     /// What this relay is holding right now.
@@ -277,12 +288,7 @@ async fn run() -> Result<()> {
                 port.unwrap_or(config.port),
             );
 
-            if lan {
-                println!(
-                    "\n  WARNING: serving on the LAN in plain HTTP. §8.3 requires pinned TLS \
-                     before a real paper runs on this. Use for testing only.\n"
-                );
-            }
+            let identity = schoolpilot_relay::tls::RelayIdentity::load_or_create(&paths.home())?;
 
             let state = Arc::new(server::AppState {
                 store: Mutex::new(store),
@@ -291,9 +297,20 @@ async fn run() -> Result<()> {
                 paper: RwLock::new(Some(opened)),
             });
 
-            println!("Status window: http://{addr}/\nPress Ctrl-C to close the paper.");
+            // The one thing the invigilator has to carry to the candidate
+            // machines. Printed large and last, because it is what somebody is
+            // about to read off this screen (§8.3).
+            println!("\n  Status window: https://{addr}/");
+            println!("\n  On each candidate machine:\n");
+            println!("    relay candidate --relay https://<this machine>:{} \\", addr.port());
+            println!("      --fingerprint {}\n", identity.fingerprint);
+            println!("  Certificate fingerprint, to check by eye:\n");
+            println!("    {}\n", identity.readable_fingerprint());
+            println!("  Press Ctrl-C to close the paper.");
 
-            server::serve(Arc::clone(&state), addr).await?;
+            let tls = schoolpilot_relay::tls::server_config(&identity).await?;
+
+            server::serve_tls(Arc::clone(&state), addr, tls).await?;
 
             // §8.1: zero the paper on close.
             state.close();
@@ -322,7 +339,7 @@ async fn run() -> Result<()> {
             }
         }
 
-        Command::Demo { port, lan, minutes } => {
+        Command::Demo { port, lan, minutes, tls } => {
             // The same fixture the tests use: a paper PHP actually sealed, with
             // a comprehension group, a theory question and two candidates.
             const SEALED: &str = include_str!("../tests/fixtures/sealed-bundle.json");
@@ -353,10 +370,12 @@ async fn run() -> Result<()> {
                 port.unwrap_or(config.port),
             );
 
+            let scheme = if tls { "https" } else { "http" };
+
             println!("\n  Demo paper: \"{}\"", opened.exam.title);
             println!("  {} questions, {} minutes on the clock.\n", opened.questions.len(), minutes);
-            println!("  Invigilator status window : http://{addr}/");
-            println!("  Candidates sit the paper  : http://{addr}/sit\n");
+            println!("  Invigilator status window : {scheme}://{addr}/");
+            println!("  Candidates sit the paper  : {scheme}://{addr}/sit\n");
             println!("  Sign in as one of:");
 
             for entry in &opened.roster {
@@ -377,16 +396,32 @@ async fn run() -> Result<()> {
                 paper: RwLock::new(Some(opened)),
             });
 
-            server::serve(Arc::clone(&state), addr).await?;
+            if tls {
+                let identity =
+                    schoolpilot_relay::tls::RelayIdentity::load_or_create(&paths.home())?;
+
+                println!("  Sit it in the kiosk window with:\n");
+                println!("    relay candidate --relay https://{addr} \\");
+                println!("      --fingerprint {}\n", identity.fingerprint);
+
+                let config = schoolpilot_relay::tls::server_config(&identity).await?;
+                server::serve_tls(Arc::clone(&state), addr, config).await?;
+            } else {
+                println!("  Sit it in the kiosk window with:\n");
+                println!("    relay candidate --relay http://{addr}\n");
+
+                server::serve(Arc::clone(&state), addr).await?;
+            }
+
             state.close();
         }
 
-        Command::Candidate { relay } => {
+        Command::Candidate { relay, fingerprint } => {
             // No store, no bundle, no token: a candidate machine holds none of
             // those and must not be able to. §3 is explicit that the paper lives
             // on one machine, not forty — this mode renders what the relay
             // serves and keeps nothing.
-            kiosk::run(&relay)?;
+            kiosk::run(&relay, fingerprint.as_deref())?;
         }
 
         Command::Status => {

@@ -1,8 +1,9 @@
 # Offline CBT Client — Design & Build Specification
 
-**Status:** §19 steps 1–3 are built and tested, and step 4 is nearly done — a
-candidate can sit a whole paper, maths and all, in a fullscreen kiosk window.
-Pairing and pinned TLS are not done; see §8.3 and §19.
+**Status:** §19 steps 1–3 are built and tested, and step 4 is done but for
+pairing — a candidate can sit a whole paper, maths and all, in a fullscreen
+kiosk window, over TLS whose certificate the client pins. Pairing (§8.4) and the
+softAP spike (§3.2.1) are what remain of it; see §19.
 **Target:** a desktop application that runs a published CBT exam on a school's
 existing computer-lab PCs with no internet connection during the paper.
 **Owner:** unassigned. **Last updated:** 2026-08-15.
@@ -698,18 +699,31 @@ HTTP. The relay generates a self-signed certificate at install; candidate
 clients pin it during pairing (§8.4). Certificate pinning at pairing time avoids
 both a CA and trust-on-every-connect prompts.
 
-**Step 4 found a constraint this section did not anticipate.** WebView2
-validates certificates itself and exposes no hook for a host application to
-override that decision, so a self-signed relay certificate produces the
-webview's own full-page certificate warning — the click-through prompt this
-section set out to avoid, relocated inside our own window. Pinning therefore
-cannot be added to a client whose webview loads the paper over the network.
-It requires the candidate client restructured so the page is served to the
-window from inside the binary over a custom protocol, and every `/relay/v1`
-call is proxied through Rust where `rustls` can pin the fingerprint. That is
-also a better shape — the paper's markup then never travels at all — but it is
-a design fork rather than an addition, and it is the last thing standing
-between this client and a real exam room.
+**Built, and step 4 changed how.** WebView2 validates certificates itself and
+exposes no hook for a host application to override that decision, so a
+self-signed relay certificate produces the webview's own full-page certificate
+warning — the click-through prompt this section set out to avoid, relocated
+inside our own window. Pinning cannot live in a client whose webview loads the
+paper over the network.
+
+So it does not. The candidate window loads the page over a custom protocol
+served from inside the binary, and every `/relay/v1` call is proxied through
+Rust, where `rustls` pins the relay's fingerprint. The paper's markup never
+crosses the lab network at all; only JSON does. That is a stronger outcome than
+this section originally asked for, and it arrived by way of a constraint rather
+than by design — worth recording as such.
+
+The verifier accepts exactly one certificate and ignores hostname, expiry and
+chain, all of which are meaningless for a self-signed certificate on whatever
+address DHCP handed out this morning. Stated plainly because it reads
+alarmingly: this is *stricter* than ordinary web PKI, which accepts any of
+hundreds of CAs for a matching name.
+
+The fingerprint reaches candidate machines by being read off the invigilator's
+screen at setup — supervised, one-time and out of band, which is the property
+§8.4's pairing was providing. A machine given the wrong fingerprint, or none,
+refuses to open a window at all rather than failing at the first save with a
+candidate already in the seat.
 
 **This matters more on Wi-Fi, not less.** The school's wireless network carries
 staff laptops, phones and whatever else is in the building; a relay-broadcast
@@ -1182,15 +1196,22 @@ objective answers.
    The window measures ~31 MB resident. `relay demo` runs the lot against a
    built-in sample paper with no backend.
 
-   Two things are **not** claimed. **Task-switching is suppressed only inside
-   the window** — every browser affordance leading out of the paper is blocked,
-   but Alt-Tab and the Windows key are not, because eating them needs a
-   low-level keyboard hook that antivirus flags and that a school PC may refuse
-   the privileges for. Of §8.2's three claims, the first and third are real and
-   the middle one is partial; focus loss is reported, not prevented. And
-   **pinned TLS is still missing**, which is why `serve` binds to loopback
-   unless told otherwise — see the note below, because building the window
-   changed what pinning costs.
+   **Pinned TLS is done** (§8.3): `serve` speaks HTTPS with a certificate the
+   relay generates once and keeps, prints the fingerprint for the invigilator to
+   carry to the lab machines, and `relay candidate --fingerprint …` refuses to
+   open a window against anything else. `tests/pinning.rs` proves it against a
+   real impostor rather than asserting it in prose.
+
+   One thing is **not** claimed. **Task-switching is suppressed only inside the
+   window** — every browser affordance leading out of the paper is blocked, but
+   Alt-Tab and the Windows key are not, because eating them needs a low-level
+   keyboard hook that antivirus flags and that a school PC may refuse the
+   privileges for. Of §8.2's three claims, the first and third are real and the
+   middle one is partial; focus loss is reported, not prevented.
+
+   Still outstanding for the step: pairing (§8.4), and the softAP client-cap
+   spike of §3.2.1, which needs a room and a handful of machines rather than
+   code.
 5. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
 6. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
 7. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part

@@ -4,11 +4,11 @@ The relay half of the offline CBT client. Design and rationale live in
 [`docs/offline-cbt-client.md`](../docs/offline-cbt-client.md); this file is how
 to run and work on the code.
 
-**Status:** step 3 complete; step 4 nearly complete. The relay runs, a candidate
-can sit a whole paper — maths included — and `relay candidate` opens it in a
-fullscreen kiosk window. Pairing and pinned TLS are the rest of step 4 and do
-not exist yet; read [Three things that will bite you](#three-things-that-will-bite-you)
-and [Not done yet](#not-done-yet) before showing this to a school.
+**Status:** step 3 complete; step 4 complete but for pairing. The relay runs and
+serves over pinned TLS, a candidate can sit a whole paper — maths included — and
+`relay candidate` opens it in a fullscreen kiosk window that refuses to start
+against a relay it cannot verify. Pairing (§8.4) is the remaining piece; read
+[Not done yet](#not-done-yet) before showing this to a school.
 
 ## Try it in one command
 
@@ -46,10 +46,11 @@ relay sync                                                          # afterwards
 relay purge                                                         # §13 retention
 ```
 
-On each candidate machine, one command, and it holds nothing:
+On each candidate machine, one command, and it holds nothing. The fingerprint is
+printed by `relay serve` — it is what makes this the *right* relay (§8.3):
 
 ```powershell
-relay candidate --relay http://10.0.0.4:8443
+relay candidate --relay https://10.0.0.4:8443 --fingerprint e0:fc:48:3c:…
 ```
 
 ## Building
@@ -74,6 +75,7 @@ cargo test
 | `tests/parity.rs` | **The one that must never fail.** Question and option order, asserted against `backend/tests/fixtures/cbt-shuffle-parity.json` — the same vectors `CbtShuffleParityTest` asserts in PHP. If the two sides disagree, a resumed candidate silently sits a different paper from the one they were served. Do not regenerate the fixture to make it pass. |
 | `tests/unseal.rs` | Opens a bundle **PHP actually sealed** (gzip + AES-256-GCM + header-as-AAD), rejects a wrong key, a retargeted header and a future format version, and asserts no marking scheme reached the room. |
 | `tests/round_trip.rs` | The scripted fake candidate: seat → read paper → answer → change answer → event → submit → inspect the batch payload. Includes the resume-after-a-dead-PC case, which §19 says to test first. |
+| `tests/pinning.rs` | Real TLS handshakes against a real server: the pinned relay is reached, an impostor holding its own valid self-signed certificate is refused, hostname is not what is checked, and a truncated fingerprint never matches. A pin never exercised against an impostor is a comment, not a control. |
 | unit tests | In each module — sequence monotonicity across restart, group position, HTML escaping, raw-JSON slicing. |
 
 Regenerate the sealed fixture only when the bundle format changes:
@@ -98,10 +100,16 @@ src/
   ui.rs        the candidate client — one self-contained page, no CDN
   kiosk.rs     the candidate's fullscreen window (§4's second mode)
   sync.rs      the upload walk (§5.5, §11)
+  tls.rs       the relay's certificate and the candidate's pin (§8.3)
   config.rs    paths and the staff token
 ```
 
 ## Three things that will bite you
+
+**The relay's certificate is not the content key.** `relay-key.pem` lives on
+disk on purpose — it is the relay's identity across every exam it will serve,
+and a fingerprint that changed each morning would be unusable. The *content*
+key, below, is the one that must never touch a disk. Do not let the two blur.
 
 **The content key is never written down.** Not to the config file, not to
 SQLite, not to a log. It is fetched at `serve`, held in memory, and dropped when
@@ -119,11 +127,6 @@ rules still agree, not to compute a paper — see the note at the top of
 
 ## Not done yet
 
-- **Pinned TLS between relay and candidate (§8.3).** `serve` binds to loopback
-  unless given `--lan`, which prints a warning, because a half-built relay must
-  not quietly serve a real exam in the clear. **This is now the one thing
-  standing between the client and a real exam room, and it needs a design
-  decision — see below.**
 - **Task-switching is not blocked.** The kiosk window is fullscreen,
   undecorated, always on top, refuses to close, and suppresses every browser
   affordance that leads out of the paper (context menu, devtools, view-source,
@@ -144,30 +147,41 @@ rules still agree, not to compute a paper — see the note at the top of
   but the JS port of the delimiter parser has no test of its own; the grammar
   is asserted only in PHP and TypeScript. See the note in `ui.rs`.
 
-### The TLS decision that is now blocking (§8.3)
+## How pinned TLS works here (§8.3)
 
-Building the kiosk window turned up something the spec did not anticipate, and
-it changes what pinned TLS costs.
+`relay serve` now speaks HTTPS and prints the fingerprint candidates must pin:
 
-**WebView2 validates certificates itself, and wry exposes no hook to override
-it.** A self-signed relay certificate therefore produces WebView2's own
-full-page certificate error — the click-through warning §8.3 explicitly wanted
-to avoid, now inside our own window where it looks even more like a bug. There
-is no "pin this fingerprint" call to make; the webview is not ours to instruct.
+```
+    relay candidate --relay https://10.0.0.4:8443 \
+      --fingerprint e0:fc:48:3c:…
+```
 
-So pinning cannot be bolted onto the current shape, where the window loads
-`https://relay/sit` and the page's own `fetch` talks to the relay. It needs the
-client restructured so that:
+The certificate is generated once, at first `serve`, and kept — a fingerprint
+that changed every morning would have to be re-read to forty machines every
+exam, which is the per-machine ritual §3.1 rejected the standalone design over.
 
-1. `ui.rs` is served to the window over a **custom protocol** from inside the
-   binary, rather than fetched from the relay — the page then never travels the
-   network at all, which is strictly better than encrypting it; and
-2. every `/relay/v1/...` call is proxied **through Rust**, where `rustls` can
-   pin the relay's fingerprint properly, instead of through the webview.
+**The webview never touches the network.** Building the kiosk turned up the
+constraint that shapes this: WebView2 validates certificates itself and wry
+exposes no hook to override it, so pointing the window at `https://relay/sit`
+would produce WebView2's own full-page certificate warning — the click-through
+prompt §8.3 set out to avoid, relocated inside our own window. So instead the
+window loads a custom protocol served from inside the binary, and `kiosk.rs`
+proxies every `/relay/v1/...` call through Rust, where `rustls` pins properly.
+The paper's markup never crosses the lab network at all; only JSON does, over a
+connection that accepts exactly one certificate.
 
-That is a real chunk of work — the client's whole networking path — and it is a
-design fork, not a patch. It also happens to be the shape §3 describes best:
-"candidate clients are thin". Worth doing deliberately rather than quickly.
+**What the pin checks, and what it ignores.** `PinnedServerCertVerifier`
+accepts one certificate — the one whose SHA-256 matches — and deliberately does
+not check hostname, expiry or chain, because none of those mean anything for a
+self-signed certificate on a DHCP address. That is *stricter* than ordinary web
+PKI, not weaker: ordinary verification accepts any of hundreds of CAs for a
+matching name; this accepts one key and nothing else.
 
-Until it exists, `--lan` serves question text in the clear and prints a warning,
-and that is the honest state.
+The residual risk is fingerprint delivery. §8.4's pairing was going to carry it;
+without pairing it is read off the invigilator's screen at setup — supervised,
+one-time, out of band, which is the property pairing was providing.
+
+A wrong or missing fingerprint **refuses to open a window at all**, rather than
+failing at the first save with a candidate already sitting there. `tests/pinning.rs`
+runs real handshakes: the right relay is reached, an impostor holding its own
+valid self-signed certificate is refused, and a truncated pin never matches.

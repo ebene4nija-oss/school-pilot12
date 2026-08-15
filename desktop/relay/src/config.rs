@@ -85,6 +85,11 @@ impl Paths {
         self.root.join("relay.json")
     }
 
+    /// Where the relay keeps everything, including its TLS identity (§8.3).
+    pub fn home(&self) -> PathBuf {
+        self.root.clone()
+    }
+
     pub fn database(&self) -> PathBuf {
         self.root.join("relay.sqlite")
     }
