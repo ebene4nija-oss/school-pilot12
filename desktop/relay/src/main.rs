@@ -26,7 +26,7 @@ use schoolpilot_relay::api::Api;
 use schoolpilot_relay::config::Paths;
 use schoolpilot_relay::error::{RelayError, Result};
 use schoolpilot_relay::store::Store;
-use schoolpilot_relay::{bundle, server, sync};
+use schoolpilot_relay::{bundle, kiosk, server, sync};
 
 #[derive(Parser)]
 #[command(name = "relay", version, about = "SchoolPilot lab relay")]
@@ -76,6 +76,17 @@ enum Command {
         /// exam over a LAN in the clear.
         #[arg(long)]
         lan: bool,
+    },
+
+    /// Sit the paper: the candidate's fullscreen exam window (§4's second mode).
+    ///
+    /// Runs on each lab PC and points at the relay over the lab network. This is
+    /// the mode a candidate sees; every other subcommand here is the
+    /// invigilator's.
+    Candidate {
+        /// The relay's address on the lab network, e.g. http://10.0.0.4:8443.
+        #[arg(long)]
+        relay: String,
     },
 
     /// Upload everything held locally. After the exam, whenever connectivity
@@ -368,6 +379,14 @@ async fn run() -> Result<()> {
 
             server::serve(Arc::clone(&state), addr).await?;
             state.close();
+        }
+
+        Command::Candidate { relay } => {
+            // No store, no bundle, no token: a candidate machine holds none of
+            // those and must not be able to. §3 is explicit that the paper lives
+            // on one machine, not forty — this mode renders what the relay
+            // serves and keeps nothing.
+            kiosk::run(&relay)?;
         }
 
         Command::Status => {

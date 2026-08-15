@@ -37,6 +37,12 @@ pub enum RelayError {
     #[error("Attempt {0} is not on this bundle's roster.")]
     AttemptNotOnRoster(i64),
 
+    #[error(
+        "The exam window could not be opened on this machine: {0}. If this says WebView2 is \
+         missing, install the WebView2 runtime from the relay's USB stick and try again."
+    )]
+    Kiosk(String),
+
     #[error("{0}")]
     Protocol(String),
 

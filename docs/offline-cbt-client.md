@@ -1,7 +1,8 @@
 # Offline CBT Client — Design & Build Specification
 
-**Status:** §19 steps 1–3 are built and tested, and step 4 is part-built — a
-candidate can sit a whole paper. Kiosk, pairing and TLS are not done; see §19.
+**Status:** §19 steps 1–3 are built and tested, and step 4 is nearly done — a
+candidate can sit a whole paper, maths and all, in a fullscreen kiosk window.
+Pairing and pinned TLS are not done; see §8.3 and §19.
 **Target:** a desktop application that runs a published CBT exam on a school's
 existing computer-lab PCs with no internet connection during the paper.
 **Owner:** unassigned. **Last updated:** 2026-08-15.
@@ -697,6 +698,19 @@ HTTP. The relay generates a self-signed certificate at install; candidate
 clients pin it during pairing (§8.4). Certificate pinning at pairing time avoids
 both a CA and trust-on-every-connect prompts.
 
+**Step 4 found a constraint this section did not anticipate.** WebView2
+validates certificates itself and exposes no hook for a host application to
+override that decision, so a self-signed relay certificate produces the
+webview's own full-page certificate warning — the click-through prompt this
+section set out to avoid, relocated inside our own window. Pinning therefore
+cannot be added to a client whose webview loads the paper over the network.
+It requires the candidate client restructured so the page is served to the
+window from inside the binary over a custom protocol, and every `/relay/v1`
+call is proxied through Rust where `rustls` can pin the fingerprint. That is
+also a better shape — the paper's markup then never travels at all — but it is
+a design fork rather than an addition, and it is the last thing standing
+between this client and a real exam room.
+
 **This matters more on Wi-Fi, not less.** The school's wireless network carries
 staff laptops, phones and whatever else is in the building; a relay-broadcast
 hotspot has a passphrase typed in front of forty candidates. Neither is a
@@ -1156,17 +1170,27 @@ objective answers.
    which should be done *early in the step*, not at the end. It is cheap, and a
    bad answer changes what can be sold before the UI work is sunk.
 
-   **Part done.** Paper rendering, answer capture, autosave, the countdown,
+   **Mostly done.** Paper rendering, answer capture, autosave, the countdown,
    resume, groups, theory word caps and focus/paste events all work, served by
    the relay at `/sit` as one self-contained page (`desktop/relay/src/ui.rs`).
-   `relay demo` runs the lot against a built-in sample paper with no backend.
+   Maths renders: KaTeX is vendored into the binary (`assets.rs`) and the
+   delimiter grammar is a port of the web runner's, per §16. `relay candidate`
+   opens the paper in a fullscreen kiosk window (`kiosk.rs`) built on wry/tao —
+   the webview layer Tauri itself is built on, chosen over the full Tauri
+   scaffolding because the client needs one window and no IPC, and §16's real
+   requirements (WebView2, small installer, low RAM) are identical either way.
+   The window measures ~31 MB resident. `relay demo` runs the lot against a
+   built-in sample paper with no backend.
 
-   Deliberately **not** claimed yet: kiosk. A page can report focus loss and it
-   cannot prevent task-switching, so the Tauri shell of §16 still owes
-   fullscreen and suppressed switching — and until it exists, the current state
-   must not be described to a school as invigilation. Pairing and pinned TLS
-   (§8.3, §8.4) are also outstanding, which is why `serve` binds to loopback
-   unless explicitly told otherwise.
+   Two things are **not** claimed. **Task-switching is suppressed only inside
+   the window** — every browser affordance leading out of the paper is blocked,
+   but Alt-Tab and the Windows key are not, because eating them needs a
+   low-level keyboard hook that antivirus flags and that a school PC may refuse
+   the privileges for. Of §8.2's three claims, the first and third are real and
+   the middle one is partial; focus loss is reported, not prevented. And
+   **pinned TLS is still missing**, which is why `serve` binds to loopback
+   unless told otherwise — see the note below, because building the window
+   changed what pinning costs.
 5. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
 6. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
 7. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part

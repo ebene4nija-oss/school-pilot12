@@ -28,10 +28,12 @@ serde = { version = "1", features = ["derive"] }
 # AAD depends on byte-exact header JSON, so this is load-bearing, not cosmetic
 # — see bundle::Envelope and the note on raw AAD capture.
 serde_json = { version = "1", features = ["preserve_order"] }
+tao = "0.36"
 thiserror = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "sync", "time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wry = "0.48"
 
 [dependencies.aes-gcm]
 version = "0.10"

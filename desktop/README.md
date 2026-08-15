@@ -4,9 +4,11 @@ The relay half of the offline CBT client. Design and rationale live in
 [`docs/offline-cbt-client.md`](../docs/offline-cbt-client.md); this file is how
 to run and work on the code.
 
-**Status:** step 3 complete; step 4 part-built. The relay runs, and a candidate
-can sit a whole paper in a browser served by it. Pairing, pinned TLS and the
-Tauri kiosk shell are the rest of step 4 and do not exist yet.
+**Status:** step 3 complete; step 4 nearly complete. The relay runs, a candidate
+can sit a whole paper — maths included — and `relay candidate` opens it in a
+fullscreen kiosk window. Pairing and pinned TLS are the rest of step 4 and do
+not exist yet; read [Three things that will bite you](#three-things-that-will-bite-you)
+and [Not done yet](#not-done-yet) before showing this to a school.
 
 ## Try it in one command
 
@@ -44,6 +46,12 @@ relay sync                                                          # afterwards
 relay purge                                                         # §13 retention
 ```
 
+On each candidate machine, one command, and it holds nothing:
+
+```powershell
+relay candidate --relay http://10.0.0.4:8443
+```
+
 ## Building
 
 Needs the Rust MSVC toolchain and Visual Studio Build Tools (`rusqlite` is
@@ -79,14 +87,16 @@ php make-sealed-bundle.php
 
 ```
 src/
-  main.rs      CLI: login, provision, serve, sync, status, purge
+  main.rs      CLI: login, provision, serve, candidate, sync, status, purge
   api.rs       backend client — §9.1 issuance, §9.2 key release, §9.3 batch sync
+  assets.rs    KaTeX, compiled in — there is no CDN in a lab (§16)
   bundle.rs    envelope, AES-256-GCM unseal, the paper's shape
   shuffle.rs   the determinism contract with the server (§10)
   store.rs     relay SQLite — attempts, answers, events, sync queue
   paper.rs     one candidate's paper, built from the roster's fixed order
   server.rs    candidate-facing HTTP + the invigilator's status window
   ui.rs        the candidate client — one self-contained page, no CDN
+  kiosk.rs     the candidate's fullscreen window (§4's second mode)
   sync.rs      the upload walk (§5.5, §11)
   config.rs    paths and the staff token
 ```
@@ -111,19 +121,53 @@ rules still agree, not to compute a paper — see the note at the top of
 
 - **Pinned TLS between relay and candidate (§8.3).** `serve` binds to loopback
   unless given `--lan`, which prints a warning, because a half-built relay must
-  not quietly serve a real exam in the clear.
-- **Kiosk mode.** The candidate client is a page, so it can report focus loss
-  and pastes but cannot prevent task-switching. §8.2 is already honest that the
-  real claim is "fullscreen, suppressed task-switching, and a logged event
-  trail" — a browser delivers the third of those three, and the Tauri shell owes
-  the first two. Do not describe the current state to a school as invigilation.
-- **LaTeX.** `content_format: latex` is carried through the bundle but not
-  rendered; the client shows a banner telling the candidate to raise it with the
-  invigilator rather than presenting raw TeX as if it were the question.
-  Vendoring KaTeX is the fix (§16).
+  not quietly serve a real exam in the clear. **This is now the one thing
+  standing between the client and a real exam room, and it needs a design
+  decision — see below.**
+- **Task-switching is not blocked.** The kiosk window is fullscreen,
+  undecorated, always on top, refuses to close, and suppresses every browser
+  affordance that leads out of the paper (context menu, devtools, view-source,
+  print, new window, reload, drag-and-drop, navigation off the relay's origin).
+  It does **not** block Alt-Tab or the Windows key: that needs a low-level
+  keyboard hook, which antivirus flags and which needs privileges a school PC
+  may not grant. So of §8.2's three claims — "fullscreen, suppressed
+  task-switching, and a logged event trail" — the first and third are real and
+  the second is partial. Focus loss is reported, not prevented. Say it that way
+  to a school.
 - Pairing and device tokens (§8.4), booklets and script capture (step 5),
   integrity enforcement (step 8).
 - Media checksum verification on download — files are fetched and stored, but
   the manifest's `checksum` is recorded rather than checked.
 - On-screen `allow_working_photo` (§6.4) — a candidate cannot yet attach a photo
   of handwritten working.
+- LaTeX in the **stimulus of a group whose questions are plain** renders,
+  but the JS port of the delimiter parser has no test of its own; the grammar
+  is asserted only in PHP and TypeScript. See the note in `ui.rs`.
+
+### The TLS decision that is now blocking (§8.3)
+
+Building the kiosk window turned up something the spec did not anticipate, and
+it changes what pinned TLS costs.
+
+**WebView2 validates certificates itself, and wry exposes no hook to override
+it.** A self-signed relay certificate therefore produces WebView2's own
+full-page certificate error — the click-through warning §8.3 explicitly wanted
+to avoid, now inside our own window where it looks even more like a bug. There
+is no "pin this fingerprint" call to make; the webview is not ours to instruct.
+
+So pinning cannot be bolted onto the current shape, where the window loads
+`https://relay/sit` and the page's own `fetch` talks to the relay. It needs the
+client restructured so that:
+
+1. `ui.rs` is served to the window over a **custom protocol** from inside the
+   binary, rather than fetched from the relay — the page then never travels the
+   network at all, which is strictly better than encrypting it; and
+2. every `/relay/v1/...` call is proxied **through Rust**, where `rustls` can
+   pin the relay's fingerprint properly, instead of through the webview.
+
+That is a real chunk of work — the client's whole networking path — and it is a
+design fork, not a patch. It also happens to be the shape §3 describes best:
+"candidate clients are thin". Worth doing deliberately rather than quickly.
+
+Until it exists, `--lan` serves question text in the clear and prints a warning,
+and that is the honest state.
