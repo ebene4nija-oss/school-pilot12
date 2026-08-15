@@ -41,6 +41,29 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Prepare this machine. Run once, at installation, before exam week.
+    ///
+    /// On the relay laptop this generates the TLS identity and prints the
+    /// fingerprint the lab machines must pin (§8.3). On a candidate machine,
+    /// `--relay` and `--fingerprint` record what it needs so that `relay
+    /// candidate` later takes no arguments at all.
+    ///
+    /// §5.1's rule is that exam morning involves no configuration. Generating
+    /// the certificate at first `serve` would break that: the fingerprint would
+    /// not exist until the morning it was needed on forty machines.
+    Init {
+        /// Configure this machine as a candidate PC pointing at that relay.
+        /// Omit on the relay laptop itself.
+        #[arg(long)]
+        relay: Option<String>,
+        /// The relay's fingerprint, from `relay init` on the relay laptop.
+        #[arg(long)]
+        fingerprint: Option<String>,
+        /// Print the fingerprint alone, for an installer script to capture.
+        #[arg(long)]
+        quiet: bool,
+    },
+
     /// Sign in with staff credentials and remember the school's address.
     Login {
         #[arg(long)]
@@ -86,10 +109,11 @@ enum Command {
     /// invigilator's.
     Candidate {
         /// The relay's address on the lab network, e.g. https://10.0.0.4:8443.
+        /// Defaults to what `relay init` recorded on this machine.
         #[arg(long)]
-        relay: String,
-        /// The certificate fingerprint the relay must present (§8.3), shown by
-        /// `relay serve` on the invigilator's screen. Required for https;
+        relay: Option<String>,
+        /// The certificate fingerprint the relay must present (§8.3). Defaults
+        /// to what `relay init` recorded. Required for https either way —
         /// without it there is nothing to pin against.
         #[arg(long)]
         fingerprint: Option<String>,
@@ -159,6 +183,70 @@ async fn run() -> Result<()> {
     let mut config = paths.load()?;
 
     match cli.command {
+        Command::Init { relay, fingerprint, quiet } => {
+            match relay {
+                // A candidate machine. It gets an address and a fingerprint and
+                // nothing else — no token, no school, no exam data.
+                Some(relay_url) => {
+                    if relay_url.starts_with("https://") && fingerprint.is_none() {
+                        return Err(RelayError::Tls(
+                            "an https relay needs --fingerprint, or this machine will have \
+                             nothing to check the relay against on exam morning"
+                                .into(),
+                        ));
+                    }
+
+                    paths.save_candidate(&schoolpilot_relay::config::CandidateConfig {
+                        relay_url: relay_url.clone(),
+                        fingerprint: fingerprint.clone(),
+                    })?;
+
+                    if !quiet {
+                        println!("\n  This machine is set up to sit exams from {relay_url}.");
+
+                        match &fingerprint {
+                            Some(pin) => println!("  It will accept only certificate {pin}."),
+                            None => println!(
+                                "  WARNING: no fingerprint, so this machine cannot verify the \
+                                 relay. Plain http only — never a real paper."
+                            ),
+                        }
+
+                        println!("\n  On exam morning, run:\n\n    relay candidate\n");
+                    }
+                }
+
+                // The relay laptop. This is the step that has to happen before
+                // the lab machines can be configured at all.
+                None => {
+                    let identity =
+                        schoolpilot_relay::tls::RelayIdentity::load_or_create(&paths.home())?;
+
+                    if quiet {
+                        // For an installer script: one line, nothing else, so
+                        // it can be captured and fed to the lab machines.
+                        println!("{}", identity.fingerprint);
+                    } else {
+                        println!(
+                            "\n  Relay {} at {}.",
+                            if identity.created { "prepared" } else { "already prepared" },
+                            paths.home().display()
+                        );
+                        println!("\n  Certificate fingerprint:\n");
+                        println!("    {}\n", identity.fingerprint);
+                        println!("  To check by eye:\n\n    {}\n", identity.readable_fingerprint());
+                        println!("  On each candidate machine, once:\n");
+                        println!("    relay init --relay https://<this machine>:{} \\", config.port);
+                        println!("      --fingerprint {}\n", identity.fingerprint);
+                        println!(
+                            "  Keep this fingerprint. It does not change, and every lab machine \n  \
+                             is checking against it.\n"
+                        );
+                    }
+                }
+            }
+        }
+
         Command::Login { base_url, email, password, relay_identity } => {
             if let Some(url) = base_url {
                 // §13 and multi-tenancy together: a relay still holding one
@@ -326,6 +414,19 @@ async fn run() -> Result<()> {
 
             let identity = schoolpilot_relay::tls::RelayIdentity::load_or_create(&paths.home())?;
 
+            if identity.created {
+                // §5.1: exam morning involves no configuration. Reaching here
+                // means installation never ran, so the lab machines are pinned
+                // to nothing and are about to need this fingerprint typed into
+                // them one at a time — which is worth saying now rather than
+                // letting it be discovered machine by machine.
+                println!(
+                    "\n  NOTE: this relay had no certificate, so one was just generated.\n  \
+                     `relay init` should have run at installation. Every candidate machine \n  \
+                     now needs the fingerprint below before it can sit this paper.\n"
+                );
+            }
+
             let state = Arc::new(server::AppState {
                 store: Mutex::new(store),
                 exam_title: opened.exam.title.clone(),
@@ -457,6 +558,24 @@ async fn run() -> Result<()> {
             // those and must not be able to. §3 is explicit that the paper lives
             // on one machine, not forty — this mode renders what the relay
             // serves and keeps nothing.
+            let installed = paths.load_candidate()?;
+
+            // Arguments win over what was installed, so a machine moved to a
+            // spare relay mid-exam (§14) can be pointed at it without an
+            // installer, but the ordinary case types nothing.
+            let relay = relay
+                .or_else(|| installed.as_ref().map(|c| c.relay_url.clone()))
+                .ok_or_else(|| {
+                    RelayError::NotConfigured(
+                        "This machine has not been set up for exams. Run `relay init --relay \
+                         <address> --fingerprint <value>` once, or pass --relay now."
+                            .into(),
+                    )
+                })?;
+
+            let fingerprint =
+                fingerprint.or_else(|| installed.and_then(|c| c.fingerprint));
+
             kiosk::run(&relay, fingerprint.as_deref())?;
         }
 

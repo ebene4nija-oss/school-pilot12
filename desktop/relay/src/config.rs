@@ -112,6 +112,26 @@ impl Default for Config {
     }
 }
 
+/// What a candidate machine is told once, at installation.
+///
+/// §5.1 puts every piece of configuration the day before or earlier, so that
+/// "exam morning involves no configuration". The fingerprint is the reason this
+/// file has to exist: it is generated when the relay is installed, and if a
+/// candidate machine only learned it at launch, somebody would be typing
+/// sixty-four hex characters into forty PCs with candidates sitting in front of
+/// them. Installed once, `relay candidate` then takes no arguments at all.
+///
+/// Deliberately not the same file as [`Config`]: a candidate machine holds no
+/// staff token, no school binding and no exam data, and giving it a structure
+/// with somewhere to put them invites putting them there.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CandidateConfig {
+    /// e.g. `https://10.0.0.4:8443`.
+    pub relay_url: String,
+    /// The relay certificate this machine will accept and no other (§8.3).
+    pub fingerprint: Option<String>,
+}
+
 /// Resolved paths for one relay installation.
 #[derive(Debug, Clone)]
 pub struct Paths {
@@ -172,6 +192,30 @@ impl Paths {
 
     pub fn save(&self, config: &Config) -> Result<()> {
         write_private(&self.config_file(), &serde_json::to_vec_pretty(config)?)
+    }
+
+    pub fn candidate_file(&self) -> PathBuf {
+        self.root.join("candidate.json")
+    }
+
+    /// What this lab machine was told at installation, if anything.
+    pub fn load_candidate(&self) -> Result<Option<CandidateConfig>> {
+        let path = self.candidate_file();
+
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        Ok(Some(serde_json::from_str(&std::fs::read_to_string(path)?)?))
+    }
+
+    pub fn save_candidate(&self, config: &CandidateConfig) -> Result<()> {
+        // Not `write_private`: this file holds no secret. A fingerprint is a
+        // public value — it is checked, not presented — and a lab PC may well
+        // run the exam under a different account from the one that installed
+        // it, which a 0600 file would break for no gain.
+        std::fs::write(self.candidate_file(), serde_json::to_vec_pretty(config)?)?;
+        Ok(())
     }
 }
 
@@ -282,6 +326,45 @@ mod tests {
             serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
 
         assert_eq!(reloaded.school_id, Some(42));
+    }
+
+    #[test]
+    fn a_lab_machine_remembers_what_installation_told_it() {
+        // The property that keeps exam morning free of configuration (§5.1):
+        // what `relay init` wrote is what `relay candidate` reads, with no
+        // arguments in between.
+        let dir = tempfile::tempdir().unwrap();
+        let paths = Paths::resolve(Some(dir.path().to_path_buf())).unwrap();
+
+        assert!(paths.load_candidate().unwrap().is_none(), "nothing before install");
+
+        paths
+            .save_candidate(&CandidateConfig {
+                relay_url: "https://10.0.0.4:8443".into(),
+                fingerprint: Some("ab:cd:ef".into()),
+            })
+            .unwrap();
+
+        let installed = paths.load_candidate().unwrap().expect("installed");
+
+        assert_eq!(installed.relay_url, "https://10.0.0.4:8443");
+        assert_eq!(installed.fingerprint.as_deref(), Some("ab:cd:ef"));
+    }
+
+    #[test]
+    fn a_candidate_machine_has_nowhere_to_put_a_staff_token() {
+        // Structural, not incidental: §3 keeps the paper and its credentials on
+        // one machine, and a lab PC that had a field for a token would
+        // eventually be given one.
+        let json = serde_json::to_string(&CandidateConfig {
+            relay_url: "https://10.0.0.4:8443".into(),
+            fingerprint: Some("ab:cd".into()),
+        })
+        .unwrap();
+
+        for absent in ["token", "school_id", "base_url", "staff_name"] {
+            assert!(!json.contains(absent), "candidate config carries `{absent}`");
+        }
     }
 
     #[test]

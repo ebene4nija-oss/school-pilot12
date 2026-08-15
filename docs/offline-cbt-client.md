@@ -301,6 +301,12 @@ costs cache complexity.
 Candidate clients pair to the relay in this phase too (§8.4), so exam morning
 involves no configuration.
 
+Transport security is settled earlier still, at installation rather than here:
+`relay init` generates the relay's certificate and records its fingerprint on
+each lab machine (§17). By provisioning day the machines already know which
+relay they will accept, and on exam morning `relay candidate` takes no
+arguments.
+
 Getting everyone onto the network happens here and only here: on Tier A the
 machines join the school's Wi-Fi or are already on the wire; on Tier B the relay
 starts its hotspot and they join that. Either way it is done the day before,
@@ -1134,6 +1140,15 @@ and it is a question about drivers rather than about the framework choice.
   unattended switch. This is a one-time cost per lab rather than a per-exam one
   — which is precisely the line §3.1 draws between an acceptable deployment and
   an unacceptable one.
+- **Transport security is configured at installation, not on exam day.**
+  `relay init` on the relay laptop generates its TLS identity and emits the
+  fingerprint; `relay init --relay … --fingerprint …` records it on each lab
+  machine, after which `relay candidate` takes no arguments. Generating the
+  certificate lazily at first `serve` would have put a sixty-four character
+  fingerprint on forty machines on the morning it was needed, which contradicts
+  §5.1 and is exactly the per-machine ritual §3.1 rejects. `relay init --quiet`
+  prints the fingerprint alone so an unattended installer can carry it from the
+  relay to the lab without a person in the loop.
 - **Updates:** version-check on provision (an online moment anyway). The client
   must refuse to run a bundle built for a newer bundle-format version and say so
   clearly, rather than failing obscurely at unlock.

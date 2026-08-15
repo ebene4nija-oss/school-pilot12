@@ -39,6 +39,7 @@ uploads the lot afterwards. The paper lives on that one machine, not on forty.
 Only four moments touch the network, and none of them is during the exam:
 
 ```
+relay init                                                          # at installation
 relay login     --base-url https://kings.schoolpilot.ng --email …   # once
 relay provision --exam 42                                           # day before
 relay serve                                                         # ~10s on exam morning
@@ -46,11 +47,32 @@ relay sync                                                          # afterwards
 relay purge                                                         # §13 retention
 ```
 
-On each candidate machine, one command, and it holds nothing. The fingerprint is
-printed by `relay serve` — it is what makes this the *right* relay (§8.3):
+`relay init` generates the TLS identity and prints the fingerprint. It belongs
+at **installation, not first `serve`** — the fingerprint has to exist before the
+lab machines are set up, or somebody is typing sixty-four hex characters into
+forty PCs on exam morning with candidates watching (§5.1 is explicit that exam
+morning involves no configuration). `serve` says so loudly if it finds itself
+generating one.
+
+Each candidate machine is then set up once, at installation, and holds nothing
+but an address and a fingerprint — no token, no school, no exam data:
 
 ```powershell
-relay candidate --relay https://10.0.0.4:8443 --fingerprint e0:fc:48:3c:…
+relay init --relay https://10.0.0.4:8443 --fingerprint e0:fc:48:3c:…
+```
+
+On exam morning that machine needs no arguments at all:
+
+```powershell
+relay candidate
+```
+
+For an unattended installer (§17), `relay init --quiet` prints the fingerprint
+alone, so a script can capture it on the relay and feed it to every lab machine:
+
+```powershell
+$pin = relay init --quiet                     # on the relay laptop
+relay init --relay https://10.0.0.4:8443 --fingerprint $pin   # on each PC
 ```
 
 ## Building
@@ -89,7 +111,7 @@ php make-sealed-bundle.php
 
 ```
 src/
-  main.rs      CLI: login, provision, serve, candidate, sync, status, purge
+  main.rs      CLI: init, login, provision, serve, candidate, sync, status, purge
   api.rs       backend client — §9.1 issuance, §9.2 key release, §9.3 batch sync
   assets.rs    KaTeX, compiled in — there is no CDN in a lab (§16)
   bundle.rs    envelope, AES-256-GCM unseal, the paper's shape

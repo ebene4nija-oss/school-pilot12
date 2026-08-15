@@ -46,6 +46,9 @@ pub enum RelayError {
     #[error("Transport security failed: {0}")]
     Tls(String),
 
+    #[error("{0}")]
+    NotConfigured(String),
+
     #[error(
         "This bundle belongs to school {incoming}, and this relay is serving school {held}. \
          Refusing it — a relay carries one school's papers at a time. If this laptop is being \

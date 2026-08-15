@@ -59,6 +59,15 @@ pub struct RelayIdentity {
     /// Lowercase hex, colon-separated, of the SHA-256 over the certificate's
     /// DER. The form a person reads off a screen and types into a command.
     pub fingerprint: String,
+    /// True if this call generated the certificate rather than loading one.
+    ///
+    /// Matters because of *when*: the identity is supposed to be created at
+    /// installation (`relay init`), so the fingerprint exists in time to
+    /// configure the lab machines. A `serve` that finds itself generating one
+    /// has been run on a relay nobody installed properly, and the person about
+    /// to open a paper needs telling — not because it is unsafe, but because
+    /// forty machines are about to need a fingerprint they have never seen.
+    pub created: bool,
 }
 
 impl RelayIdentity {
@@ -77,7 +86,7 @@ impl RelayIdentity {
             let key_pem = std::fs::read_to_string(&key_path)?;
             let fingerprint = fingerprint_of_pem(&cert_pem)?;
 
-            return Ok(Self { cert_pem, key_pem, fingerprint });
+            return Ok(Self { cert_pem, key_pem, fingerprint, created: false });
         }
 
         std::fs::create_dir_all(dir)?;
@@ -116,7 +125,7 @@ impl RelayIdentity {
         // may live on disk at all, but not world-readable either.
         restrict(&key_path)?;
 
-        Ok(Self { cert_pem, key_pem, fingerprint })
+        Ok(Self { cert_pem, key_pem, fingerprint, created: true })
     }
 
     /// The fingerprint in the form an invigilator reads aloud: grouped, short
