@@ -99,6 +99,74 @@ List<ClassRef> _parseClasses(List<Map<String, dynamic>> rows) => [
         ),
     ];
 
+/// A class this teacher actually owns — as form teacher or as assistant.
+class TeacherClass {
+  const TeacherClass({
+    required this.classId,
+    required this.name,
+    required this.isFormTeacher,
+    this.studentCount = 0,
+    this.session,
+  });
+
+  final int classId;
+
+  /// Class and arm together, the way a teacher says it: "JSS2 A".
+  final String name;
+  final bool isFormTeacher;
+  final int studentCount;
+  final String? session;
+}
+
+/// The classes this teacher is form teacher or assistant for.
+///
+/// Distinct from [classesProvider], which is every class in the school. The
+/// Classes tab used to label that full list "My classes" and chip each row
+/// "Assigned", which told a teacher in a forty-class school that they were
+/// form teacher of all forty.
+///
+/// An empty list is a real answer — plenty of subject teachers hold no form
+/// class — so it is not backfilled from anywhere.
+final myClassesProvider =
+    FutureProvider.autoDispose<List<TeacherClass>>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  final cache = ref.watch(cacheStoreProvider);
+  final user = ref.watch(currentUserProvider);
+
+  if (user == null || !(user.role == UserRole.teacher || user.role.isAdmin)) {
+    return const [];
+  }
+
+  try {
+    final cached = await cachedGet<dynamic>(
+      cache: cache,
+      key: 'ref:my-classes:${user.id}',
+      fetch: () => api.get<dynamic>(Api.teacherMyClasses),
+    );
+
+    return [
+      for (final row in listOf(cached.data))
+        TeacherClass(
+          classId: intOf(row['class_id']),
+          name: [
+            stringOf(row['class_name'], 'Class'),
+            stringOf(row['arm_name']),
+          ].where((part) => part.isNotEmpty).join(' '),
+          isFormTeacher: row['role'] == 'form_teacher',
+          studentCount: intOf(row['student_count']),
+          session: stringOf(row['session']).isEmpty
+              ? null
+              : stringOf(row['session']),
+        ),
+    ];
+  } catch (error) {
+    if (asApiException(error).isOffline) rethrow;
+    // A backend without form-teacher assignments yet answers 404. That is not
+    // an error worth showing anyone — the section simply does not appear.
+    return const [];
+  }
+});
+
 /// The school's terms.
 ///
 /// The server decides which one is current — it computes `is_current` from the

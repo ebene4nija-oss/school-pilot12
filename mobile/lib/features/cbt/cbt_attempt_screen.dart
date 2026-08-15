@@ -7,12 +7,13 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/api/endpoints.dart';
-import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import 'cbt_answer_buffer.dart';
+import 'cbt_answer_widgets.dart';
+import 'cbt_paper.dart';
 import 'question_content.dart';
 
 final answerBufferProvider = Provider<CbtAnswerBuffer>(
@@ -36,7 +37,7 @@ class CbtAttemptScreen extends ConsumerStatefulWidget {
 
 class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
     with WidgetsBindingObserver {
-  List<Map<String, dynamic>> _questions = const [];
+  CbtPaper? _paper;
   Map<int, Object?> _answers = {};
   final Set<int> _flagged = {};
 
@@ -49,6 +50,8 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
   Timer? _ticker;
   Timer? _flushTimer;
   int _unsynced = 0;
+
+  List<CbtQuestion> get _questions => _paper?.questions ?? const [];
 
   @override
   void initState() {
@@ -85,29 +88,28 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
       final data =
           await api.get<Map<String, dynamic>>(Api.cbtAttempt(widget.attemptId));
 
-      final questions = listOf(data, ['questions', 'items']);
-      final buffered = await ref.read(answerBufferProvider).answers(widget.attemptId);
+      final buffer = ref.read(answerBufferProvider);
+      final paper = CbtPaper.fromJson(data);
+      final buffered = await buffer.answers(widget.attemptId);
+      final flagged = await buffer.flagged(widget.attemptId);
 
       // Server-side answers seed the buffer, then anything answered locally
       // since the last sync wins — the local copy is always the newer one.
       final serverAnswers = <int, Object?>{};
-      for (final q in questions) {
-        final given = q['response'] ?? q['answer'];
-        if (given != null) serverAnswers[intOf(q['id'])] = given;
+      for (final question in paper.questions) {
+        if (question.savedResponse != null) {
+          serverAnswers[question.questionId] = question.savedResponse;
+        }
       }
-
-      final duration = intOf(
-        mapOf(data, ['exam'])['duration_minutes'] ?? data['duration_minutes'],
-      );
-      final started = Dates.tryParse(data['started_at']) ?? DateTime.now();
-      final expires = Dates.tryParse(data['expires_at'] ?? data['ends_at']);
 
       if (!mounted) return;
       setState(() {
-        _questions = questions;
+        _paper = paper;
         _answers = {...serverAnswers, ...buffered};
-        _endsAt = expires ??
-            (duration > 0 ? started.add(Duration(minutes: duration)) : null);
+        _flagged
+          ..clear()
+          ..addAll(flagged);
+        _endsAt = paper.endsAt();
         _loading = false;
       });
 
@@ -144,8 +146,24 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
           attemptId: widget.attemptId,
           questionId: questionId,
           response: response,
+          flagged: _flagged.contains(questionId),
         );
     await _refreshUnsynced();
+  }
+
+  Future<void> _toggleFlag(int questionId) async {
+    setState(() {
+      if (!_flagged.remove(questionId)) _flagged.add(questionId);
+    });
+
+    // The API carries `flagged_for_review` alongside the answer, so a flag
+    // survives leaving and reopening the paper, and reaches the invigilator.
+    // Only re-sent where there is already an answer to attach it to — the
+    // column lives on the answer row, so an unanswered question has nowhere
+    // to hang a flag until it is answered.
+    if (_answers.containsKey(questionId)) {
+      await _answer(questionId, _answers[questionId]);
+    }
   }
 
   Future<void> _flush() async {
@@ -169,8 +187,19 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
     }
   }
 
+  /// Questions still needing an answer.
+  ///
+  /// A question answered in a paper booklet (§6.4) is not unanswered — there
+  /// is nothing on this screen for the candidate to fill in, and counting it
+  /// would send every candidate into the submit dialog with a false warning.
+  int get _unansweredCount => _questions
+      .where((q) =>
+          !q.isAnsweredOnPaper &&
+          !CbtResponse.isAnswered(_answers[q.questionId]))
+      .length;
+
   Future<void> _submit() async {
-    final unanswered = _questions.length - _answers.length;
+    final unanswered = _unansweredCount;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -242,15 +271,17 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
     try {
       await ref.read(apiClientProvider).post<dynamic>(
             Api.cbtEvents(widget.attemptId),
-            body: {'event_type': type, 'occurred_at': DateTime.now().toUtc().toIso8601String()},
+            body: {
+              'event_type': type,
+              'occurred_at': DateTime.now().toUtc().toIso8601String(),
+            },
           );
     } catch (_) {
       // A proctoring signal is best-effort; it must never interrupt the paper.
     }
   }
 
-  Duration? get _remaining =>
-      _endsAt?.difference(DateTime.now());
+  Duration? get _remaining => _endsAt?.difference(DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -277,8 +308,6 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
     }
 
     final question = _questions[_index];
-    final questionId = intOf(question['id']);
-    final options = listOf(question['options'] ?? question['choices']);
     final remaining = _remaining;
 
     return PopScope(
@@ -316,36 +345,34 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
                 index: _index,
                 total: _questions.length,
                 remaining: remaining,
+                section: question.section,
               ),
               Expanded(
                 child: ListView(
+                  // Keyed on the question so scroll position resets between
+                  // questions instead of leaving question 8 halfway down.
+                  key: ValueKey(question.questionId),
                   padding: const EdgeInsets.all(AppSpacing.screenMargin),
                   children: [
+                    if (question.group != null)
+                      GroupStimulusCard(group: question.group!),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: QuestionContent(
-                            text: stringOf(
-                              question['question_text'] ??
-                                  question['body'] ??
-                                  question['text'],
-                            ),
-                            imageUrls: _imageUrls(question),
+                            text: question.text,
+                            media: question.media,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         IconButton(
-                          onPressed: () => setState(
-                            () => _flagged.contains(questionId)
-                                ? _flagged.remove(questionId)
-                                : _flagged.add(questionId),
-                          ),
+                          onPressed: () => _toggleFlag(question.questionId),
                           icon: Icon(
-                            _flagged.contains(questionId)
+                            _flagged.contains(question.questionId)
                                 ? Icons.flag
                                 : Icons.outlined_flag,
-                            color: _flagged.contains(questionId)
+                            color: _flagged.contains(question.questionId)
                                 ? AppColors.late
                                 : AppColors.outline,
                           ),
@@ -353,35 +380,17 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
                         ),
                       ],
                     ),
+                    _MarksLine(question: question),
                     const SizedBox(height: AppSpacing.lg),
-                    if (options.isEmpty)
-                      TextField(
-                        maxLines: 6,
-                        controller: TextEditingController(
-                          text: stringOf(_answers[questionId]),
-                        ),
-                        onChanged: (v) => _answer(questionId, v),
-                        decoration: const InputDecoration(
-                          labelText: 'Your answer',
-                          alignLabelWithHint: true,
-                        ),
-                      )
-                    else
-                      for (final option in options)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: _OptionCard(
-                            label: stringOf(
-                              option['text'] ?? option['label'] ?? option,
-                            ),
-                            selected: _answers[questionId] ==
-                                (option['id'] ?? option['key'] ?? option['text']),
-                            onTap: () => _answer(
-                              questionId,
-                              option['id'] ?? option['key'] ?? option['text'],
-                            ),
-                          ),
-                        ),
+                    CbtAnswerInput(
+                      // Rebuilds the input — and its controllers — when the
+                      // candidate moves to another question.
+                      key: ValueKey('answer-${question.questionId}'),
+                      question: question,
+                      response: _answers[question.questionId],
+                      onChanged: (response) =>
+                          _answer(question.questionId, response),
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                   ],
                 ),
@@ -401,21 +410,6 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
         ),
       ),
     );
-  }
-
-  List<String> _imageUrls(Map<String, dynamic> question) {
-    final media = question['media'] ?? question['images'] ?? question['assets'];
-    if (media is List) {
-      return [
-        for (final m in media)
-          if (m is Map)
-            stringOf(m['url'] ?? m['path'])
-          else
-            stringOf(m),
-      ].where((s) => s.isNotEmpty).toList();
-    }
-    final single = stringOf(question['image_url']);
-    return single.isEmpty ? const [] : [single];
   }
 
   /// The question navigator — answered green, flagged amber, unanswered
@@ -443,9 +437,10 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
                   crossAxisSpacing: AppSpacing.sm,
                 ),
                 itemBuilder: (context, i) {
-                  final id = intOf(_questions[i]['id']);
-                  final answered = _answers.containsKey(id);
-                  final flagged = _flagged.contains(id);
+                  final q = _questions[i];
+                  final answered = q.isAnsweredOnPaper ||
+                      CbtResponse.isAnswered(_answers[q.questionId]);
+                  final flagged = _flagged.contains(q.questionId);
                   final colour = flagged
                       ? AppColors.late
                       : answered
@@ -492,16 +487,50 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
   }
 }
 
+/// Marks, and the penalty for a wrong guess where the exam carries one — a
+/// candidate deciding whether to guess is entitled to know the cost.
+class _MarksLine extends StatelessWidget {
+  const _MarksLine({required this.question});
+
+  final CbtQuestion question;
+
+  @override
+  Widget build(BuildContext context) {
+    final marks = _trimZeros(question.marks);
+    final penalty = question.negativeMarks;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.xs,
+        children: [
+          StatusChip('$marks ${question.marks == 1 ? 'mark' : 'marks'}'),
+          if (penalty > 0)
+            StatusChip(
+              '−${_trimZeros(penalty)} if wrong',
+              color: AppColors.absent,
+            ),
+          if (question.isManuallyGraded)
+            const StatusChip('Marked by hand', color: AppColors.excused),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExamHeader extends StatelessWidget {
   const _ExamHeader({
     required this.index,
     required this.total,
     required this.remaining,
+    this.section,
   });
 
   final int index;
   final int total;
   final Duration? remaining;
+  final String? section;
 
   @override
   Widget build(BuildContext context) {
@@ -520,9 +549,20 @@ class _ExamHeader extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  'Question ${index + 1} of $total',
-                  style: AppText.headlineSm,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Question ${index + 1} of $total',
+                      style: AppText.headlineSm,
+                    ),
+                    if (section != null)
+                      Text(
+                        section!,
+                        style: AppText.labelSm
+                            .copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                  ],
                 ),
               ),
               if (remaining != null)
@@ -553,53 +593,6 @@ class _ExamHeader extends StatelessWidget {
         ),
         const Divider(height: 1),
       ],
-    );
-  }
-}
-
-class _OptionCard extends StatelessWidget {
-  const _OptionCard({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected
-          ? AppColors.primaryContainer.withValues(alpha: 0.08)
-          : AppColors.surfaceContainerLowest,
-      borderRadius: AppRadius.cardRadius,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.cardRadius,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.cardRadius,
-            border: Border.all(
-              color: selected ? AppColors.primaryContainer : AppColors.outlineVariant,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected ? AppColors.primaryContainer : AppColors.outline,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: QuestionContent(text: label)),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -690,3 +683,6 @@ class _ExamFooter extends StatelessWidget {
     );
   }
 }
+
+String _trimZeros(double value) =>
+    value == value.roundToDouble() ? value.toInt().toString() : '$value';

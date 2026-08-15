@@ -16,6 +16,7 @@ class ClassesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classes = ref.watch(classesProvider);
+    final myClasses = ref.watch(myClassesProvider).valueOrNull ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Classes')),
@@ -59,23 +60,52 @@ class ClassesTab extends ConsumerWidget {
                       detail: 'Conversations about your students',
                     ),
                   ),
-                  if (list.isNotEmpty) ...[
+                  // The classes this teacher actually owns, with the role that
+                  // makes it theirs. Absent for a subject teacher who holds no
+                  // form class, which is the common case.
+                  if (myClasses.isNotEmpty) ...[
                     const SectionHeader('My classes'),
-                    for (final c in list)
+                    for (final c in myClasses)
                       Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: OutlinedCard(
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(c.name, style: AppText.bodyLg),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(c.name, style: AppText.bodyLg),
+                                    Text(
+                                      '${c.studentCount} '
+                                      '${c.studentCount == 1 ? 'student' : 'students'}',
+                                      style: AppText.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const StatusChip(
-                                'Assigned',
-                                color: AppColors.primaryContainer,
+                              StatusChip(
+                                c.isFormTeacher ? 'Form teacher' : 'Assistant',
+                                color: c.isFormTeacher
+                                    ? AppColors.primaryContainer
+                                    : AppColors.onSurfaceVariant,
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                  ],
+
+                  if (list.isNotEmpty) ...[
+                    const SectionHeader('All classes'),
+                    for (final c in list)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: OutlinedCard(
+                          child: Text(c.name, style: AppText.bodyLg),
                         ),
                       ),
                   ],

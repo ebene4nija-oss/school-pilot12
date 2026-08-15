@@ -56,6 +56,11 @@ class Api {
   static const classes = '$version/classes';
   static const terms = '$version/terms';
 
+  // The classes this teacher is form teacher or assistant for, in the current
+  // session. Scoped to the caller by construction — unlike `classes`, which is
+  // every class in the school.
+  static const teacherMyClasses = '$version/teacher/my-classes';
+
   // Subjects
   static const subjects = '$version/subjects';
   static String classSubjects(int classId) =>
@@ -89,6 +94,13 @@ class Api {
   static String cbtEvents(int id) => '$version/cbt/attempts/$id/events';
   static String cbtResult(int id) => '$version/cbt/attempts/$id/result';
   static const cbtOfflineSync = '$version/cbt/offline-sync';
+
+  // Grouped questions — one shared passage, table or diagram with several
+  // sub-questions. Authoring is staff-only; a candidate never calls these,
+  // because the group a question belongs to already travels inside the
+  // attempt payload as `question.group`.
+  static const cbtQuestionGroups = '$version/cbt/question-groups';
+  static String cbtQuestionGroup(int id) => '$version/cbt/question-groups/$id';
 
   // Finance
   static const payments = '$version/finance/payments';

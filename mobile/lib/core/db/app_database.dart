@@ -12,13 +12,27 @@ class AppDatabase {
   final Database db;
 
   static const _fileName = 'schoolpilot.db';
-  static const _version = 1;
+
+  /// v2 added `cbt_answers.flagged` so a "flag for review" survives a restart
+  /// and travels to the invigilator with the answer.
+  static const _version = 2;
 
   static Future<AppDatabase> open() async {
     final path = p.join(await getDatabasesPath(), _fileName);
     final db = await openDatabase(
       path,
       version: _version,
+      // Migrated rather than recreated: an upgrade can land on a handset with
+      // a paper half-answered on it, and dropping the table would take the
+      // candidate's answers with it.
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE cbt_answers ADD COLUMN flagged INTEGER NOT NULL '
+            'DEFAULT 0',
+          );
+        }
+      },
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE cache_entries (
@@ -58,6 +72,7 @@ class AppDatabase {
             response          TEXT,
             client_sequence   INTEGER NOT NULL,
             client_timestamp  TEXT NOT NULL,
+            flagged           INTEGER NOT NULL DEFAULT 0,
             synced            INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (attempt_id, question_id)
           )

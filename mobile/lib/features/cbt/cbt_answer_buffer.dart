@@ -28,6 +28,7 @@ class CbtAnswerBuffer {
     required int attemptId,
     required int questionId,
     required Object? response,
+    bool flagged = false,
   }) async {
     await _db.db.insert(
       'cbt_answers',
@@ -37,6 +38,7 @@ class CbtAnswerBuffer {
         'response': response == null ? null : jsonEncode(response),
         'client_sequence': await _nextSequence(attemptId),
         'client_timestamp': DateTime.now().toUtc().toIso8601String(),
+        'flagged': flagged ? 1 : 0,
         'synced': 0,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -58,6 +60,19 @@ class CbtAnswerBuffer {
     };
   }
 
+  /// Questions the candidate flagged for review, so reopening the paper does
+  /// not lose the marks they made on their way through it.
+  Future<Set<int>> flagged(int attemptId) async {
+    final rows = await _db.db.query(
+      'cbt_answers',
+      columns: ['question_id'],
+      where: 'attempt_id = ? AND flagged = 1',
+      whereArgs: [attemptId],
+    );
+
+    return {for (final row in rows) row['question_id'] as int};
+  }
+
   /// The payload `/cbt/attempts/{id}/answers` and `/cbt/offline-sync` both take.
   Future<List<Map<String, dynamic>>> unsyncedPayload(int attemptId) async {
     final rows = await _db.db.query(
@@ -76,6 +91,7 @@ class CbtAnswerBuffer {
               : jsonDecode(row['response'] as String),
           'client_sequence': row['client_sequence'],
           'client_timestamp': row['client_timestamp'],
+          'flagged_for_review': (row['flagged'] as num? ?? 0) != 0,
         },
     ];
   }
