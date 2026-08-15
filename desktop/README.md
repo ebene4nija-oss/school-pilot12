@@ -4,9 +4,29 @@ The relay half of the offline CBT client. Design and rationale live in
 [`docs/offline-cbt-client.md`](../docs/offline-cbt-client.md); this file is how
 to run and work on the code.
 
-**Status:** build-order step 3 of 11 — auth, provision, bundle storage, SQLite,
-sync, status window, proven with a scripted fake candidate. The candidate
-client, pairing and pinned TLS are step 4 and do not exist yet.
+**Status:** step 3 complete; step 4 part-built. The relay runs, and a candidate
+can sit a whole paper in a browser served by it. Pairing, pinned TLS and the
+Tauri kiosk shell are the rest of step 4 and do not exist yet.
+
+## Try it in one command
+
+No backend, no school, no setup — a sample paper PHP actually sealed, served by
+the real relay:
+
+```powershell
+cd desktop/relay
+cargo run -- demo
+```
+
+It prints two candidate sign-ins. Open **http://127.0.0.1:8443/sit** to sit the
+paper and **http://127.0.0.1:8443/** for the invigilator's status window. Add
+`--lan` to reach it from another machine on the network, and `--minutes 3` to
+watch the clock run out and auto-submit.
+
+What that exercises: unsealing a real bundle, per-candidate question order,
+seeded option shuffling, a comprehension group with its stimulus pinned, a
+theory question with a word cap, autosave, resume, the countdown, focus events,
+and submission. What it does not exercise: anything that talks to the backend.
 
 ## What this is
 
@@ -66,6 +86,7 @@ src/
   store.rs     relay SQLite — attempts, answers, events, sync queue
   paper.rs     one candidate's paper, built from the roster's fixed order
   server.rs    candidate-facing HTTP + the invigilator's status window
+  ui.rs        the candidate client — one self-contained page, no CDN
   sync.rs      the upload walk (§5.5, §11)
   config.rs    paths and the staff token
 ```
@@ -91,7 +112,18 @@ rules still agree, not to compute a paper — see the note at the top of
 - **Pinned TLS between relay and candidate (§8.3).** `serve` binds to loopback
   unless given `--lan`, which prints a warning, because a half-built relay must
   not quietly serve a real exam in the clear.
-- Pairing and device tokens (§8.4), the candidate client (step 4), booklets and
-  script capture (step 5), kiosk and integrity enforcement (step 8).
+- **Kiosk mode.** The candidate client is a page, so it can report focus loss
+  and pastes but cannot prevent task-switching. §8.2 is already honest that the
+  real claim is "fullscreen, suppressed task-switching, and a logged event
+  trail" — a browser delivers the third of those three, and the Tauri shell owes
+  the first two. Do not describe the current state to a school as invigilation.
+- **LaTeX.** `content_format: latex` is carried through the bundle but not
+  rendered; the client shows a banner telling the candidate to raise it with the
+  invigilator rather than presenting raw TeX as if it were the question.
+  Vendoring KaTeX is the fix (§16).
+- Pairing and device tokens (§8.4), booklets and script capture (step 5),
+  integrity enforcement (step 8).
 - Media checksum verification on download — files are fetched and stored, but
   the manifest's `checksum` is recorded rather than checked.
+- On-screen `allow_working_photo` (§6.4) — a candidate cannot yet attach a photo
+  of handwritten working.

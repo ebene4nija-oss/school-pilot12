@@ -1,17 +1,18 @@
 # Offline CBT Client — Design & Build Specification
 
-**Status:** §19 steps 1–3 are built and tested. The relay exists; the candidate
-client does not.
+**Status:** §19 steps 1–3 are built and tested, and step 4 is part-built — a
+candidate can sit a whole paper. Kiosk, pairing and TLS are not done; see §19.
 **Target:** a desktop application that runs a published CBT exam on a school's
 existing computer-lab PCs with no internet connection during the paper.
 **Owner:** unassigned. **Last updated:** 2026-08-15.
 
 Built so far — §9.1 bundle issuance, §9.2 key release, §9.3 batch sync, §9.4
 question groups, §6.3/§6.4 theory answer modes, §6.6 grouping rules, and the
-§10 parity vectors, and the lab relay itself — `desktop/relay`, see its
-[README](../desktop/README.md). Steps 4–11 (candidate client, paper scripts,
-Teacher's Desk, AI suggestions, kiosk, packaging, pilot) are still design only.
-See §19 for the current state of each step.
+§10 parity vectors, the lab relay, and a candidate client that can sit a paper —
+`desktop/relay`, see its [README](../desktop/README.md). `relay demo` runs a
+sample paper end to end with no backend, which is the quickest way to see what
+exists. Steps 5–11 (paper scripts, Teacher's Desk, AI suggestions, kiosk,
+packaging, pilot) are still design only. See §19 for each step's state.
 
 **A school with no cabling can still run this.** The requirement is that the
 relay and the lab machines share a local network — wired or wireless, with or
@@ -1154,6 +1155,18 @@ objective answers.
    step rather than a separate build — and with it the softAP spike of §3.2.1,
    which should be done *early in the step*, not at the end. It is cheap, and a
    bad answer changes what can be sold before the UI work is sunk.
+
+   **Part done.** Paper rendering, answer capture, autosave, the countdown,
+   resume, groups, theory word caps and focus/paste events all work, served by
+   the relay at `/sit` as one self-contained page (`desktop/relay/src/ui.rs`).
+   `relay demo` runs the lot against a built-in sample paper with no backend.
+
+   Deliberately **not** claimed yet: kiosk. A page can report focus loss and it
+   cannot prevent task-switching, so the Tauri shell of §16 still owes
+   fullscreen and suppressed switching — and until it exists, the current state
+   must not be described to a school as invigilation. Pairing and pinned TLS
+   (§8.3, §8.4) are also outstanding, which is why `serve` binds to loopback
+   unless explicitly told otherwise.
 5. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
 6. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
 7. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part

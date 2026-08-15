@@ -14,3 +14,4 @@ pub mod server;
 pub mod shuffle;
 pub mod store;
 pub mod sync;
+pub mod ui;

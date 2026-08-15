@@ -85,6 +85,22 @@ enum Command {
         chunk: usize,
     },
 
+    /// Run the whole thing against a built-in sample paper, with no backend.
+    ///
+    /// Exists for two audiences: an engineer who wants to see the relay work
+    /// before wiring up a school, and a school that wants to know whether these
+    /// lab machines can run a paper at all — which is worth answering with a
+    /// demo rather than with a real exam.
+    Demo {
+        #[arg(long)]
+        port: Option<u16>,
+        #[arg(long)]
+        lan: bool,
+        /// Minutes on the clock, so the countdown does something visible.
+        #[arg(long, default_value_t = 45)]
+        minutes: i64,
+    },
+
     /// What this relay is holding right now.
     Status,
 
@@ -293,6 +309,65 @@ async fn run() -> Result<()> {
                      run sync again once the cause is fixed."
                 );
             }
+        }
+
+        Command::Demo { port, lan, minutes } => {
+            // The same fixture the tests use: a paper PHP actually sealed, with
+            // a comprehension group, a theory question and two candidates.
+            const SEALED: &str = include_str!("../tests/fixtures/sealed-bundle.json");
+            const KEY: &str = include_str!("../tests/fixtures/sealed-bundle.key");
+
+            let sealed = bundle::SealedBundle::from_issue_response(SEALED)?;
+            let mut opened = sealed.open(KEY.trim())?;
+
+            // The fixture's deadline is a fixed date, which would make the
+            // countdown either absurd or already expired. Move it so the clock
+            // demonstrates the thing it exists to demonstrate.
+            let deadline = (chrono::Local::now() + chrono::Duration::minutes(minutes))
+                .to_rfc3339();
+
+            for entry in opened.roster.iter_mut() {
+                entry.server_deadline_at = Some(deadline.clone());
+            }
+
+            // In memory: a demo must not leave a school's lab machine holding a
+            // SQLite file of invented children (§13 applies to fixtures too, if
+            // only as a habit worth keeping).
+            let store = Store::open_in_memory()?;
+            store.save_bundle(&sealed)?;
+            store.save_roster(&sealed.envelope.bundle_id, &opened.roster)?;
+
+            let addr = SocketAddr::new(
+                if lan { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) },
+                port.unwrap_or(config.port),
+            );
+
+            println!("\n  Demo paper: \"{}\"", opened.exam.title);
+            println!("  {} questions, {} minutes on the clock.\n", opened.questions.len(), minutes);
+            println!("  Invigilator status window : http://{addr}/");
+            println!("  Candidates sit the paper  : http://{addr}/sit\n");
+            println!("  Sign in as one of:");
+
+            for entry in &opened.roster {
+                println!(
+                    "    {:<14} code {}   ({})",
+                    entry.admission_number.as_deref().unwrap_or("-"),
+                    entry.relay_code.as_deref().unwrap_or("-"),
+                    entry.candidate_name.as_deref().unwrap_or("-"),
+                );
+            }
+
+            println!("\n  Nothing here talks to a backend. Ctrl-C to stop.\n");
+
+            let state = Arc::new(server::AppState {
+                store: Mutex::new(store),
+                exam_title: opened.exam.title.clone(),
+                bundle_id: sealed.envelope.bundle_id.clone(),
+                paper: RwLock::new(Some(opened)),
+            });
+
+            server::serve(Arc::clone(&state), addr).await?;
+            state.close();
         }
 
         Command::Status => {

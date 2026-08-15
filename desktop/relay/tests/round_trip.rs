@@ -269,6 +269,36 @@ async fn the_status_window_reports_the_room() {
     assert_eq!(body["submitted"], 0);
 }
 
+#[tokio::test]
+async fn the_candidate_client_asks_nothing_of_the_outside_world() {
+    // §16: the web app vendors KaTeX rather than using a CDN because an exam
+    // hall may have no internet. The same reasoning forbids a stylesheet, a
+    // font or a script from anywhere but this binary — there is no network in
+    // the room to fetch them over, and a paper that renders as unstyled text
+    // because a CDN was unreachable is not a paper anyone can sit.
+    let response = router(state())
+        .oneshot(Request::builder().uri("/sit").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(bytes.to_vec()).unwrap();
+
+    for offender in ["src=\"http", "href=\"http", "//cdn.", "googleapis", "unpkg", "jsdelivr"] {
+        assert!(
+            !html.contains(offender),
+            "the candidate client reaches for `{offender}`, which will not resolve in a lab"
+        );
+    }
+
+    // And it must actually be the client, not an empty page that trivially
+    // passes the check above.
+    assert!(html.contains("/relay/v1/session"));
+    assert!(html.contains("/relay/v1/submit"));
+}
+
 fn urlencode(value: &str) -> String {
     value
         .chars()

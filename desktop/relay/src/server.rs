@@ -44,6 +44,7 @@ impl AppState {
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/", get(status_page))
+        .route("/sit", get(candidate_app))
         .route("/relay/v1/status", get(status_json))
         .route("/relay/v1/session", post(session))
         .route("/relay/v1/paper", get(candidate_paper))
@@ -383,6 +384,12 @@ async fn status_json(State(state): State<Arc<AppState>>) -> Json<StatusResponse>
     Json(snapshot(&state))
 }
 
+/// The candidate client. Static, self-contained, no request to any other host —
+/// there is no network in the room to make one on.
+async fn candidate_app() -> Html<&'static str> {
+    Html(crate::ui::CANDIDATE_APP)
+}
+
 /// The invigilator's one screen. §19 asks for no more than a status window at
 /// this stage, and there is a reason to keep it that way: everything on it is a
 /// number an anxious exam officer needs, and nothing on it is a control that
@@ -408,6 +415,7 @@ async fn status_page(State(state): State<Arc<AppState>>) -> Html<String> {
 </style>
 <h1>{title}</h1>
 <p class="sub">Bundle {bundle} &middot; <span class="state">{lock}</span></p>
+<p class="sub">Candidates sit the paper at <code>/sit</code> on this machine's address.</p>
 <dl>
   <dt>Candidates on roster</dt><dd>{candidates}</dd>
   <dt>Seated</dt><dd>{seated}</dd>
