@@ -185,15 +185,7 @@ async fn run() -> Result<()> {
                     match api.download(&asset.url).await {
                         Ok(bytes) => {
                             std::fs::write(paths.media_file(asset.asset_id), &bytes)?;
-                            store.record_media(
-                                &header.bundle_id,
-                                asset.asset_id,
-                                &asset.url,
-                                asset.checksum.as_deref(),
-                                asset.byte_size,
-                                asset.mime_type.as_deref(),
-                                true,
-                            )?;
+                            store.record_media(&header.bundle_id, asset, true)?;
                         }
                         Err(error) => {
                             failed += 1;

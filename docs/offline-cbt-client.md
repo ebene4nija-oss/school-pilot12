@@ -1,15 +1,17 @@
 # Offline CBT Client — Design & Build Specification
 
-**Status:** backend steps 1–2 of §19 are built and tested. No desktop code yet.
+**Status:** §19 steps 1–3 are built and tested. The relay exists; the candidate
+client does not.
 **Target:** a desktop application that runs a published CBT exam on a school's
 existing computer-lab PCs with no internet connection during the paper.
 **Owner:** unassigned. **Last updated:** 2026-08-15.
 
 Built so far — §9.1 bundle issuance, §9.2 key release, §9.3 batch sync, §9.4
 question groups, §6.3/§6.4 theory answer modes, §6.6 grouping rules, and the
-§10 parity vectors. Steps 3–11 (relay, candidate client, paper scripts,
-Teacher's Desk, AI suggestions, packaging, pilot) are still design only. See
-§19 for the current state of each step.
+§10 parity vectors, and the lab relay itself — `desktop/relay`, see its
+[README](../desktop/README.md). Steps 4–11 (candidate client, paper scripts,
+Teacher's Desk, AI suggestions, kiosk, packaging, pilot) are still design only.
+See §19 for the current state of each step.
 
 **A school with no cabling can still run this.** The requirement is that the
 relay and the lab machines share a local network — wired or wireless, with or
@@ -1140,8 +1142,13 @@ objective answers.
    `CbtQuestionGroupController`, grouping rules in `CbtExamService::composePaper`,
    parity vectors in `tests/fixtures/cbt-shuffle-parity.json`. Live on the web
    runner now; the offline client will consume the same order.
-3. **Relay skeleton** — auth, provision, bundle storage, SQLite, sync. No UI
-   beyond a status window. Prove the round trip with a scripted fake candidate.
+3. ~~**Relay skeleton** — auth, provision, bundle storage, SQLite, sync. No UI
+   beyond a status window. Prove the round trip with a scripted fake candidate.~~
+   **Done.** `desktop/relay`, a Rust binary with `login` / `provision` / `serve`
+   / `sync` / `status` / `purge`. The scripted fake candidate is
+   `tests/round_trip.rs`; the parity vectors are asserted in Rust against the
+   same committed fixture the PHP suite uses. See the note below — the AAD
+   turned out to be the sharp edge, not the crypto.
 4. **Candidate client** — pairing, paper rendering including groups and theory
    editors, answer capture, resume. **Tier B lands here too**, as a provisioning
    step rather than a separate build — and with it the softAP spike of §3.2.1,
@@ -1169,6 +1176,24 @@ their single allowance and splitting their answers across two papers. The
 `used` count already excluded `provisioned`, so the accounting was fine; it was
 the resume path that was not. Covered by
 `test_pre_issued_attempts_do_not_burn_an_allowance`.
+
+**Step 3 surfaced one thing worth writing down: the AAD is the fragile part,
+not the cipher.** §8.1 binds the plaintext header in as additional
+authenticated data, and GCM authenticates the header's *bytes*, not its
+meaning. `CbtOfflineBundleService::aad()` is `json_encode($header, …)`, so the
+relay must reproduce that byte string exactly — and re-serialising a parsed
+header in a second language is precisely the kind of thing that works on every
+test school and then fails on the one whose exam title contains a character the
+two encoders escape differently. That failure would land at unlock, on exam
+morning, in a room with forty candidates in it.
+
+The relay therefore slices the raw `"header":{…}` substring straight out of the
+response body and never re-encodes it, falling back to a compact
+re-serialisation only if that fails — which covers the opposite hazard, a proxy
+or debug setting that pretty-prints the response after the server computed its
+AAD. Each covers the other's failure mode. `tests/unseal.rs` opens a bundle PHP
+actually sealed and exercises both paths; sealing in Rust and opening in Rust
+would have proved only that the relay agrees with itself.
 
 Two other things surfaced that the design did not anticipate, both now fixed:
 

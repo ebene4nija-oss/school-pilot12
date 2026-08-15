@@ -16,7 +16,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use std::path::Path;
 
-use crate::api::{AnswerUpload, AttemptUpload, EventUpload};
+use crate::api::{AnswerUpload, AttemptUpload, EventUpload, MediaAsset};
 use crate::bundle::{Envelope, RosterEntry, SealedBundle};
 use crate::error::{RelayError, Result};
 
@@ -525,21 +525,20 @@ impl Store {
     // Media
     // ------------------------------------------------------------------
 
-    pub fn record_media(
-        &self,
-        bundle_id: &str,
-        asset_id: i64,
-        url: &str,
-        checksum: Option<&str>,
-        byte_size: Option<i64>,
-        mime_type: Option<&str>,
-        verified: bool,
-    ) -> Result<()> {
+    pub fn record_media(&self, bundle_id: &str, asset: &MediaAsset, verified: bool) -> Result<()> {
         self.conn.execute(
             "INSERT INTO media (asset_id, bundle_id, url, checksum, byte_size, mime_type, verified)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
              ON CONFLICT(asset_id) DO UPDATE SET verified = excluded.verified",
-            params![asset_id, bundle_id, url, checksum, byte_size, mime_type, verified as i64],
+            params![
+                asset.asset_id,
+                bundle_id,
+                asset.url,
+                asset.checksum,
+                asset.byte_size,
+                asset.mime_type,
+                verified as i64,
+            ],
         )?;
 
         Ok(())

@@ -90,24 +90,33 @@ struct ApiError {
     error: String,
 }
 
-fn fail(status: StatusCode, message: impl Into<String>) -> axum::response::Response {
-    (status, Json(ApiError { error: message.into() })).into_response()
+/// A refusal, kept small on purpose so it can travel in a `Result` without
+/// making every success path carry an axum `Response`-sized hole.
+struct Refusal(StatusCode, String);
+
+impl IntoResponse for Refusal {
+    fn into_response(self) -> axum::response::Response {
+        (self.0, Json(ApiError { error: self.1 })).into_response()
+    }
 }
 
-/// Resolve credentials to a roster entry, or produce the response to send back.
+fn fail(status: StatusCode, message: impl Into<String>) -> axum::response::Response {
+    Refusal(status, message.into()).into_response()
+}
+
+/// Resolve credentials to a roster entry, or the refusal to send back.
 fn authenticate(
     state: &AppState,
     credentials: &Credentials,
-) -> std::result::Result<crate::bundle::RosterEntry, axum::response::Response> {
-    let guard = state
-        .paper
-        .read()
-        .map_err(|_| fail(StatusCode::INTERNAL_SERVER_ERROR, "relay state is poisoned"))?;
+) -> std::result::Result<crate::bundle::RosterEntry, Refusal> {
+    let guard = state.paper.read().map_err(|_| {
+        Refusal(StatusCode::INTERNAL_SERVER_ERROR, "relay state is poisoned".into())
+    })?;
 
     let Some(paper) = guard.as_ref() else {
-        return Err(fail(
+        return Err(Refusal(
             StatusCode::SERVICE_UNAVAILABLE,
-            "The paper is still sealed. The invigilator has not unlocked it yet.",
+            "The paper is still sealed. The invigilator has not unlocked it yet.".into(),
         ));
     };
 
@@ -115,9 +124,9 @@ fn authenticate(
         .authenticate(&credentials.admission_number, &credentials.relay_code)
         .cloned()
         .ok_or_else(|| {
-            fail(
+            Refusal(
                 StatusCode::UNAUTHORIZED,
-                "That admission number and code do not match anyone on this paper. Check the slip and call the invigilator.",
+                "That admission number and code do not match anyone on this paper. Check the slip and call the invigilator.".into(),
             )
         })
 }
@@ -146,7 +155,7 @@ async fn session(
 ) -> axum::response::Response {
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
-        Err(response) => return response,
+        Err(refusal) => return refusal.into_response(),
     };
 
     // The deadline is the one the bundle carries, never one computed here (§15).
@@ -187,7 +196,7 @@ async fn candidate_paper(
 ) -> axum::response::Response {
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
-        Err(response) => return response,
+        Err(refusal) => return refusal.into_response(),
     };
 
     let guard = state.paper.read().expect("paper lock");
@@ -217,7 +226,7 @@ async fn record_answer(
 ) -> axum::response::Response {
     let entry = match authenticate(&state, &request.credentials) {
         Ok(entry) => entry,
-        Err(response) => return response,
+        Err(refusal) => return refusal.into_response(),
     };
 
     // An answer to a question outside this attempt's order is a client bug, and
@@ -285,7 +294,7 @@ async fn record_event(
 ) -> axum::response::Response {
     let entry = match authenticate(&state, &request.credentials) {
         Ok(entry) => entry,
-        Err(response) => return response,
+        Err(refusal) => return refusal.into_response(),
     };
 
     if !RELAY_REPORTABLE.contains(&request.event_type.as_str()) {
@@ -309,7 +318,7 @@ async fn submit(
 ) -> axum::response::Response {
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
-        Err(response) => return response,
+        Err(refusal) => return refusal.into_response(),
     };
 
     let store = state.store.lock().expect("store lock");
@@ -431,3 +440,4 @@ fn html_escape(value: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
 }
+
