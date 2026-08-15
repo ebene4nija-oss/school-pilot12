@@ -2,8 +2,32 @@
 
 import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, uploadApi } from '@/lib/api';
 import type { Student } from '@/types/api';
+
+type ImportRow = {
+  line: number;
+  status: 'ready' | 'error';
+  errors: string[];
+  name: string | null;
+  admission_number: string | null;
+  gender: string | null;
+  class_id: number | null;
+  arm_id: number | null;
+};
+
+type ImportPreview = {
+  token: string;
+  summary: { total: number; ready: number; errors: number };
+  unrecognised_columns: string[];
+  rows: ImportRow[];
+};
+
+type ClassOption = {
+  id: number;
+  name: string;
+  arms?: { id: number; name: string }[];
+};
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -16,9 +40,15 @@ export default function StudentsPage() {
   const [gender, setGender] = useState('male');
   const [birthCertRef, setBirthCertRef] = useState('');
 
-  // Bulk CSV State
-  const [csvContent, setCsvContent] = useState('');
-  const [importResult, setImportResult] = useState<any>(null);
+  // Bulk CSV State — upload, look at what it found, then confirm.
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importClassId, setImportClassId] = useState('');
+  const [importArmId, setImportArmId] = useState('');
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<{ created: number } | null>(null);
 
   // Migration State
   const [prevSchoolName, setPrevSchoolName] = useState('');
@@ -41,6 +71,12 @@ export default function StudentsPage() {
 
   useEffect(() => {
     loadStudents();
+
+    // Classes and their arms drive the "import this whole file into JSS 1 Gold"
+    // picker, so a register with no class column can still be placed.
+    fetchApi<{ data?: ClassOption[] }>('/classes')
+      .then((res) => setClasses(res.data ?? []))
+      .catch(() => setClasses([]));
   }, []);
 
   const handleCreateStudent = async (e: React.FormEvent) => {
@@ -62,29 +98,55 @@ export default function StudentsPage() {
     }
   };
 
-  const handleBulkImport = async (e: React.FormEvent) => {
+  /**
+   * Step one: send the file up and get back what the server made of it.
+   * Nothing is created — this is the look-before-you-leap half.
+   */
+  const handleBulkPreview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!csvContent) return;
+    if (!csvFile) return;
 
-    const rows = csvContent.trim().split('\n').map((row, index) => {
-      const parts = row.split(',').map(s => s.trim());
-      return {
-        name: parts[0] || `Imported Student ${index + 1}`,
-        email: parts[1] || `student_${index}_${Date.now()}@school.edu`,
-        gender: parts[2] === 'female' ? 'female' : 'male',
-        admission_number: parts[3] || `IMP-${Date.now()}-${index}`,
-      };
-    });
+    setImportBusy(true);
+    setImportError(null);
+    setImportResult(null);
+
+    const form = new FormData();
+    form.append('file', csvFile);
+    if (importClassId) form.append('class_id', importClassId);
+    if (importArmId) form.append('arm_id', importArmId);
 
     try {
-      const res = await fetchApi('/students/import', {
+      setPreview(await uploadApi<ImportPreview>('/students/import/preview', form));
+    } catch (err) {
+      setPreview(null);
+      setImportError(err instanceof Error ? err.message : 'Could not read that file.');
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  /** Step two: redeem the token. The server creates the valid rows, or none. */
+  const handleBulkCommit = async () => {
+    if (!preview) return;
+
+    setImportBusy(true);
+    setImportError(null);
+
+    try {
+      const result = await fetchApi<{ created: number }>('/students/import/commit', {
         method: 'POST',
-        body: JSON.stringify({ students: rows }),
+        body: JSON.stringify({ token: preview.token }),
       });
-      setImportResult(res);
+
+      setImportResult(result);
+      // The token is single-use; clearing the preview stops a second confirm.
+      setPreview(null);
+      setCsvFile(null);
       loadStudents();
     } catch (err) {
-      alert('Failed to process bulk student import');
+      setImportError(err instanceof Error ? err.message : 'The import could not be completed.');
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -210,26 +272,141 @@ export default function StudentsPage() {
         {activeTab === 'bulk_students' && (
           <div className="mb-8 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
             <h2 className="text-lg font-bold text-white mb-2">Bulk Student CSV Import</h2>
-            <p className="text-slate-400 text-xs mb-4">Paste comma-separated rows in format: <code className="text-emerald-400 bg-slate-950 px-1.5 py-0.5 rounded">Name, Email, Gender (male/female), AdmissionNo</code></p>
-            <form onSubmit={handleBulkImport}>
-              <textarea
-                value={csvContent}
-                onChange={(e) => setCsvContent(e.target.value)}
-                placeholder="Amina Bello, amina@school.edu, female, ADM-101&#10;Chidi Okeke, chidi@school.edu, male, ADM-102"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none h-32 mb-4 font-mono text-xs"
-                required
-              />
+            <p className="text-slate-400 text-xs mb-4">
+              Upload the class register as a CSV. Columns are matched by their headings in any order —{' '}
+              <code className="text-emerald-400 bg-slate-950 px-1.5 py-0.5 rounded">Surname, First name, Admission No, Class, Arm, Sex, DOB, Guardian name, Guardian phone</code>.
+              If the sheet has no class column, pick a class below and the whole file goes there.
+            </p>
+
+            <form onSubmit={handleBulkPreview} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">CSV file</label>
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={(e) => {
+                      setCsvFile(e.target.files?.[0] ?? null);
+                      setPreview(null);
+                      setImportResult(null);
+                    }}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-slate-800 file:text-slate-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Class for the whole file (optional)</label>
+                  <select
+                    value={importClassId}
+                    onChange={(e) => {
+                      setImportClassId(e.target.value);
+                      setImportArmId('');
+                    }}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="">Use the Class column in the sheet</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Arm (optional)</label>
+                  <select
+                    value={importArmId}
+                    onChange={(e) => setImportArmId(e.target.value)}
+                    disabled={!importClassId}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none disabled:opacity-40"
+                  >
+                    <option value="">No arm</option>
+                    {classes
+                      .find((c) => String(c.id) === importClassId)
+                      ?.arms?.map((a) => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-sm transition"
+                disabled={importBusy || !csvFile}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-sm transition disabled:opacity-40"
               >
-                Upload & Process Bulk Student Batch
+                {importBusy && !preview ? 'Checking the file…' : 'Check this file (nothing is saved yet)'}
               </button>
             </form>
 
+            {importError && (
+              <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-300">
+                {importError}
+              </div>
+            )}
+
+            {preview && (
+              <div className="mt-6">
+                <div className="flex flex-wrap items-center gap-3 mb-3 text-xs">
+                  <span className="text-slate-300 font-semibold">{preview.summary.total} rows read</span>
+                  <span className="px-2 py-1 rounded bg-emerald-500/15 text-emerald-300">{preview.summary.ready} ready</span>
+                  {preview.summary.errors > 0 && (
+                    <span className="px-2 py-1 rounded bg-rose-500/15 text-rose-300">{preview.summary.errors} with problems</span>
+                  )}
+                  {preview.unrecognised_columns.length > 0 && (
+                    <span className="text-slate-500">Ignored columns: {preview.unrecognised_columns.join(', ')}</span>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto border border-slate-800 rounded-lg">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-950 sticky top-0">
+                      <tr className="text-slate-400 text-left">
+                        <th className="px-3 py-2 font-semibold">Row</th>
+                        <th className="px-3 py-2 font-semibold">Name</th>
+                        <th className="px-3 py-2 font-semibold">Admission No</th>
+                        <th className="px-3 py-2 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.rows.map((row) => (
+                        <tr key={row.line} className="border-t border-slate-800">
+                          <td className="px-3 py-2 text-slate-500">{row.line}</td>
+                          <td className="px-3 py-2 text-slate-200">{row.name ?? '—'}</td>
+                          <td className="px-3 py-2 text-slate-400">{row.admission_number ?? 'auto'}</td>
+                          <td className="px-3 py-2">
+                            {row.status === 'ready' ? (
+                              <span className="text-emerald-400">Ready</span>
+                            ) : (
+                              <span className="text-rose-400">{row.errors.join(' ')}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  onClick={handleBulkCommit}
+                  disabled={importBusy || preview.summary.ready === 0}
+                  className="mt-4 w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-sm transition disabled:opacity-40"
+                >
+                  {importBusy ? 'Importing…' : `Import the ${preview.summary.ready} valid row(s)`}
+                </button>
+
+                {preview.summary.errors > 0 && (
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    Rows with problems are skipped. Fix them in the sheet and upload again.
+                  </p>
+                )}
+              </div>
+            )}
+
             {importResult && (
               <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-300">
-                ✓ Bulk Import Complete! Successfully added {importResult.imported_count || importResult.length || 'batch'} student records.
+                ✓ {importResult.created} student record(s) created. They have no password yet — tell them to use
+                &ldquo;Forgot password&rdquo; on the sign-in screen.
               </div>
             )}
           </div>

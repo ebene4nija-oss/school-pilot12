@@ -362,7 +362,23 @@ HTML;
 
         $attendance = $this->attendanceSummary($student, $term);
 
+        /*
+         * The card has always had a `comments.class_teacher` slot with no way
+         * to say who the class teacher *is*. Now that form teachers are a
+         * record, the name can be printed and signed for. Additive: templates
+         * that never reference `staff` render exactly as before.
+         */
+        $formTeacher = \App\Models\ClassTeacherAssignment::formTeacherFor(
+            (int) $student->school_id,
+            (int) $term->session_id,
+            (int) $student->class_id,
+            $student->arm_id ? (int) $student->arm_id : null,
+        );
+
         return array_replace_recursive([
+            'staff' => [
+                'form_teacher' => $formTeacher->name ?? ($extra['form_teacher_name'] ?? ''),
+            ],
             'school' => [
                 'name' => $school->name ?? '',
                 'address' => $school->address ?? '',

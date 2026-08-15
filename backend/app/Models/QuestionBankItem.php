@@ -32,9 +32,22 @@ class QuestionBankItem extends Model
         'numeric', 'matching', 'ordering', 'image_choice', 'diagram_label', 'hotspot',
     ];
 
+    /**
+     * Shapes a manually-graded question can take. Deliberately not new
+     * question types: `theory` is the manually-graded *family*, and the shape
+     * lives in `answer_schema` alongside every other type's per-question
+     * grading configuration.
+     */
+    public const RESPONSE_FORMATS = ['short_answer', 'structured', 'essay'];
+
+    /** Where the candidate writes the answer (§6.4). */
+    public const ANSWER_MODES = ['on_screen', 'on_paper'];
+
     protected $fillable = [
         'school_id',
         'subject_id',
+        'group_id',
+        'group_sequence',
         'topic',
         'question',
         'options',
@@ -63,11 +76,49 @@ class QuestionBankItem extends Model
         'times_answered' => 'integer',
         'times_correct' => 'integer',
         'discrimination_index' => 'float',
+        'group_sequence' => 'integer',
     ];
 
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function group()
+    {
+        return $this->belongsTo(CbtQuestionGroup::class, 'group_id');
+    }
+
+    /**
+     * Where the candidate writes this answer.
+     *
+     * `on_paper` questions are shown, timed and reached like any other, but
+     * store no response — the marks arrive later from a booklet the teacher
+     * marks. Anything that is not a theory question is answered on screen by
+     * definition.
+     */
+    public function answerMode(): string
+    {
+        if ($this->question_type !== 'theory') {
+            return 'on_screen';
+        }
+
+        $mode = $this->answer_schema['answer_mode'] ?? 'on_screen';
+
+        return in_array($mode, self::ANSWER_MODES, true) ? $mode : 'on_screen';
+    }
+
+    /**
+     * The marking rubric, if one was authored.
+     *
+     * Staff-only, and never near a candidate payload or a bundle. It is
+     * marking-scheme data in exactly the sense `correct_answer` is: a rubric
+     * that says "2 marks for stating the thesis" tells a candidate what to
+     * write.
+     */
+    public function rubric(): array
+    {
+        return array_values($this->answer_schema['rubric'] ?? []);
     }
 
     public function isAutoGradable(): bool

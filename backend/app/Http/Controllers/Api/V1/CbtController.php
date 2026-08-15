@@ -149,7 +149,19 @@ class CbtController extends Controller
     {
         $schoolId = $this->schoolId($request);
 
-        $query = QuestionBankItem::where('school_id', $schoolId)->with('subject:id,name');
+        $query = QuestionBankItem::where('school_id', $schoolId)->with(['subject:id,name', 'group:id,title']);
+
+        // `group_id=null` is a real filter, not a missing one: "show me the
+        // standalone questions" is how an author finds what is not yet
+        // attached to a passage.
+        if ($request->has('group_id')) {
+            $groupId = $request->input('group_id');
+            $query->when(
+                $groupId === null || $groupId === '' || $groupId === 'null',
+                fn ($q) => $q->whereNull('group_id'),
+                fn ($q) => $q->where('group_id', $groupId)
+            );
+        }
 
         foreach (['subject_id', 'topic', 'difficulty', 'question_type', 'exam_body', 'status'] as $filter) {
             if ($request->filled($filter)) {
@@ -169,6 +181,10 @@ class CbtController extends Controller
                 'id' => $item->id,
                 'subject' => $item->subject?->name,
                 'subject_id' => $item->subject_id,
+                'group_id' => $item->group_id,
+                'group_title' => $item->group?->title,
+                'group_sequence' => $item->group_sequence,
+                'answer_mode' => $item->answerMode(),
                 'topic' => $item->topic,
                 'question' => $item->question,
                 'question_type' => $item->question_type,
@@ -191,6 +207,8 @@ class CbtController extends Controller
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
+            'group_id' => ['nullable', Rule::exists('cbt_question_groups', 'id')->where('school_id', $schoolId)],
+            'group_sequence' => 'nullable|integer|min:1|max:99',
             'topic' => 'nullable|string|max:255',
             'question' => 'required|string',
             'question_type' => ['required', Rule::in(QuestionBankItem::TYPES)],
@@ -216,6 +234,10 @@ class CbtController extends Controller
             return response()->json([
                 'errors' => ['correct_answer' => ["A {$type} question needs a correct_answer or an answer_schema."]],
             ], 422);
+        }
+
+        if ($error = $this->validateTheorySchema($type, $validated['answer_schema'] ?? null, $validated['marks'] ?? 1)) {
+            return response()->json(['errors' => ['answer_schema' => [$error]]], 422);
         }
 
         // LaTeX and image references are validated together: both are content
@@ -246,6 +268,8 @@ class CbtController extends Controller
         $question = QuestionBankItem::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate([
+            'group_id' => ['nullable', Rule::exists('cbt_question_groups', 'id')->where('school_id', $schoolId)],
+            'group_sequence' => 'nullable|integer|min:1|max:99',
             'topic' => 'nullable|string|max:255',
             'question' => 'sometimes|string',
             'options' => 'nullable|array',
@@ -261,6 +285,18 @@ class CbtController extends Controller
             'status' => 'nullable|in:draft,approved,retired',
         ]);
 
+        if (array_key_exists('answer_schema', $validated)) {
+            $error = $this->validateTheorySchema(
+                $question->question_type,
+                $validated['answer_schema'],
+                $validated['marks'] ?? $question->marks
+            );
+
+            if ($error) {
+                return response()->json(['errors' => ['answer_schema' => [$error]]], 422);
+            }
+        }
+
         // Editing a question mid-exam would change the paper under candidates
         // who are sitting it right now. Swapping its diagram counts as editing
         // it — a labelling question with a different image is a new question.
@@ -268,7 +304,10 @@ class CbtController extends Controller
             ->whereHas('exam', fn ($q) => $q->where('status', 'published'))
             ->exists();
 
-        if ($live && array_intersect(array_keys($validated), ['question', 'options', 'correct_answer', 'answer_schema', 'media'])) {
+        // Moving a question into or out of a group counts as editing it too:
+        // it changes which stimulus the candidate is reading it against, and
+        // it moves the question to a different place in the paper.
+        if ($live && array_intersect(array_keys($validated), ['question', 'options', 'correct_answer', 'answer_schema', 'media', 'group_id', 'group_sequence'])) {
             return response()->json([
                 'error' => 'This question is attached to a published exam. Retire it and add a replacement instead of editing it in place.',
             ], 409);
@@ -340,6 +379,87 @@ class CbtController extends Controller
         }
 
         return $format;
+    }
+
+    /**
+     * Validate the theory half of `answer_schema` (§6.3).
+     *
+     * Theory is the manually-graded *family*, not one question type, and its
+     * shape lives in `answer_schema` alongside every other type's grading
+     * configuration rather than in new columns. That keeps the migration
+     * surface small but means nothing validates it unless this does — and a
+     * mistyped `answer_mode` would quietly become "on screen" for a paper the
+     * school printed booklets for.
+     *
+     * @return string|null the complaint, or null if the schema is fine
+     */
+    private function validateTheorySchema(?string $questionType, ?array $schema, $marks): ?string
+    {
+        if ($questionType !== 'theory' || empty($schema)) {
+            return null;
+        }
+
+        if (isset($schema['response_format']) && ! in_array($schema['response_format'], QuestionBankItem::RESPONSE_FORMATS, true)) {
+            return 'response_format must be one of: ' . implode(', ', QuestionBankItem::RESPONSE_FORMATS) . '.';
+        }
+
+        if (isset($schema['answer_mode']) && ! in_array($schema['answer_mode'], QuestionBankItem::ANSWER_MODES, true)) {
+            return 'answer_mode must be on_screen or on_paper.';
+        }
+
+        $expected = isset($schema['expected_words']) ? (int) $schema['expected_words'] : null;
+        $max = isset($schema['max_words']) ? (int) $schema['max_words'] : null;
+
+        if ($max !== null && $max < 1) {
+            return 'max_words must be at least 1.';
+        }
+
+        if ($expected !== null && $max !== null && $expected > $max) {
+            // The candidate is shown `expected_words` as a guide and stopped
+            // at `max_words`. Guidance a candidate cannot follow is worse than
+            // no guidance.
+            return "expected_words ({$expected}) cannot exceed max_words ({$max}).";
+        }
+
+        if (($schema['answer_mode'] ?? 'on_screen') === 'on_paper' && ! empty($schema['max_words'])) {
+            return 'max_words has no meaning for an on_paper answer — nothing on the client counts words in a booklet.';
+        }
+
+        if (! array_key_exists('rubric', $schema)) {
+            return null;
+        }
+
+        if (! is_array($schema['rubric'])) {
+            return 'rubric must be a list of { criterion, marks } entries.';
+        }
+
+        $rubricTotal = 0.0;
+
+        foreach ($schema['rubric'] as $index => $criterion) {
+            if (! is_array($criterion) || empty($criterion['criterion'])) {
+                return "rubric entry {$index} needs a 'criterion'.";
+            }
+
+            if (! isset($criterion['marks']) || ! is_numeric($criterion['marks']) || $criterion['marks'] < 0) {
+                return "rubric entry {$index} needs a non-negative 'marks' value.";
+            }
+
+            $rubricTotal += (float) $criterion['marks'];
+        }
+
+        // A rubric adding to more than the question is worth is a marking
+        // dispute waiting to happen: the teacher awards against the criteria,
+        // the total exceeds the question, and the paper no longer sums to
+        // `total_marks`.
+        if ($marks !== null && $rubricTotal > (float) $marks + 0.001) {
+            return sprintf(
+                'The rubric awards %s mark(s) but the question is worth %s.',
+                rtrim(rtrim(number_format($rubricTotal, 2), '0'), '.'),
+                rtrim(rtrim(number_format((float) $marks, 2), '0'), '.')
+            );
+        }
+
+        return null;
     }
 
     public function destroyQuestion(Request $request, $id)
@@ -459,6 +579,7 @@ class CbtController extends Controller
             'closes_at' => 'nullable|date|after:opens_at',
             'shuffle_questions' => 'boolean',
             'shuffle_options' => 'boolean',
+            'shuffle_within_group' => 'boolean',
             'questions_per_attempt' => 'nullable|integer|min:1',
             'max_attempts' => 'nullable|integer|min:1|max:10',
             'negative_marking' => 'boolean',
@@ -472,9 +593,13 @@ class CbtController extends Controller
             'school_id' => $schoolId,
             'status' => 'draft',
             'created_by' => $request->user()->id,
-        ]));
+        ], $this->offlineResultPolicy($validated)));
 
-        return response()->json(['message' => 'Exam created as draft', 'exam' => $exam], 201);
+        return response()->json([
+            'message' => 'Exam created as draft',
+            'exam' => $exam,
+            'notice' => $exam->allow_offline ? self::OFFLINE_RESULTS_NOTICE : null,
+        ], 201);
     }
 
     public function showExam(Request $request, $id)
@@ -504,6 +629,7 @@ class CbtController extends Controller
             'closes_at' => 'nullable|date',
             'shuffle_questions' => 'boolean',
             'shuffle_options' => 'boolean',
+            'shuffle_within_group' => 'boolean',
             'questions_per_attempt' => 'nullable|integer|min:1',
             'max_attempts' => 'nullable|integer|min:1|max:10',
             'negative_marking' => 'boolean',
@@ -528,9 +654,38 @@ class CbtController extends Controller
             }
         }
 
-        $exam->update($validated);
+        $exam->update(array_merge($validated, $this->offlineResultPolicy($validated, $exam)));
 
-        return response()->json(['message' => 'Exam updated', 'exam' => $exam->fresh()]);
+        return response()->json([
+            'message' => 'Exam updated',
+            'exam' => $exam->fresh(),
+            'notice' => $exam->fresh()->allow_offline ? self::OFFLINE_RESULTS_NOTICE : null,
+        ]);
+    }
+
+    private const OFFLINE_RESULTS_NOTICE = 'Offline papers do not show results in the exam room. Marks are released by the school after the relay syncs.';
+
+    /**
+     * An offline paper never shows a score in the room (§5.4).
+     *
+     * This is a trade, not an oversight. Instant grading would need answer
+     * keys and marking rubrics inside the bundle — on a laptop, in the room
+     * where the exam is being sat, which is the highest-value secret in the
+     * system sitting in the worst possible place. Deferring results is what
+     * lets the bundle contain no correct answers at all, and that removes an
+     * entire class of attack rather than mitigating it.
+     *
+     * Forced rather than validated, because a school that ticks both boxes has
+     * not made a choice we should refuse — they have made one we should
+     * quietly correct and then explain.
+     */
+    private function offlineResultPolicy(array $validated, ?CbtExam $exam = null): array
+    {
+        $offline = array_key_exists('allow_offline', $validated)
+            ? (bool) $validated['allow_offline']
+            : (bool) ($exam?->allow_offline);
+
+        return $offline ? ['show_results_immediately' => false] : [];
     }
 
     public function attachQuestions(Request $request, $id)
@@ -607,9 +762,37 @@ class CbtController extends Controller
             ], 422);
         }
 
+        if ($exam->allow_offline && ! $exam->opens_at) {
+            return response()->json([
+                'error' => 'An offline paper needs an opening time before it is published, so the relay can carry a real deadline into a room with no clock it can trust.',
+            ], 422);
+        }
+
         $exam->update(['status' => 'published', 'total_marks' => $this->recalculateTotalMarks($exam)]);
 
-        return response()->json(['message' => 'Exam published', 'exam' => $exam->fresh()]);
+        // A subset draw selects whole groups, never individual sub-questions
+        // (§6.6). Where N cannot be composed exactly out of whole groups the
+        // engine overshoots to the nearest boundary — said here, at publish,
+        // rather than discovered by a candidate sitting 21 questions on a
+        // paper the author set to 20.
+        $effective = $this->exams->effectiveQuestionCount($exam->fresh());
+        $notice = null;
+
+        if ($exam->questions_per_attempt && $effective !== (int) $exam->questions_per_attempt) {
+            $notice = sprintf(
+                'Each candidate will sit %d questions rather than %d: a subset draw takes whole groups, and %d rounds up to the nearest group boundary.',
+                $effective,
+                $exam->questions_per_attempt,
+                $exam->questions_per_attempt
+            );
+        }
+
+        return response()->json(array_filter([
+            'message' => 'Exam published',
+            'exam' => $exam->fresh(),
+            'questions_per_candidate' => $effective,
+            'notice' => $notice,
+        ], fn ($value) => $value !== null));
     }
 
     public function closeExam(Request $request, $id)

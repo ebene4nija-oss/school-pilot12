@@ -4,7 +4,28 @@
       "Bash(php artisan test*)",
       "Bash(php artisan migrate*)",
       "Bash(php artisan route:list*)",
-      "Bash(composer dump-autoload*)"
+      "Bash(composer dump-autoload*)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --no-sandbox --no-pdf-header-footer '--print-to-pdf=C:\\\\Users\\\\Administrator\\\\Desktop\\\\school pilot\\\\SchoolPilot-Feature-Guide.pdf' --virtual-time-budget=10000 file:///C:/Users/Administrator/AppData/Local/Temp/claude/c--Users-Administrator-Desktop-school-pilot/c55c20bf-d7bf-4fed-a649-9cc8a42c2b83/scratchpad/feature-guide.html)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import fitz; print\\('pymupdf', fitz.__doc__\\)\")",
+      "Bash(python -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(cd \"c:/Users/Administrator/Desktop/school pilot/backend\" && ls database/migrations | grep -i cbt; echo \"--- exam model fillable ---\"; sed -n '/fillable/,/];/p' app/Models/CbtExam.php)",
+      "Bash(sed -n '/fillable/,/];/p' app/Models/CbtAttempt.php)",
+      "Bash(sed -n '/fillable/,/];/p' app/Models/CbtAttemptAnswer.php)",
+      "Bash(sed -n '/fillable/,/];/p' app/Models/CbtAttemptEvent.php)",
+      "Bash(grep -rhoE \"logEvent\\\\\\(\\\\\\\\\\\\$?[a-z]*,\\\\s*'[a-z_]+'\" app/)",
+      "Bash(awk '/^## 12\\\\./,/^## 13\\\\./' SchoolPilot-Comprehensive-Documentation.md)",
+      "Bash(echo \"--- tsc exit: $? ---\")",
+      "Bash(echo \"--- exit $? ---\")",
+      "Bash(mkdir -p tests/fixtures)",
+      "Bash(php \"C:/Users/ADMINI~1/AppData/Local/Temp/claude/c--Users-Administrator-Desktop-school-pilot/655eaa5e-4865-4a18-8d50-20908ece3f00/scratchpad/gen_parity.php\")",
+      "Bash(php -r '$d=json_decode\\(file_get_contents\\(\"tests/fixtures/cbt-shuffle-parity.json\"\\),true\\); echo count\\($d[\"seeded_shuffle\"]\\),\" shuffle, \",count\\($d[\"option_shuffle\"]\\),\" option, \",count\\($d[\"grouped_papers\"]\\),\" paper vectors\\\\n\"; print_r\\($d[\"grouped_papers\"][0]\\); print_r\\($d[\"grouped_papers\"][15]\\);')",
+      "Bash(sed -i 's/private function post\\(array \\\\$s, array \\\\$payload\\)/private function assign\\(array $s, array $payload\\)/; s/\\\\$this->post\\(\\\\$s,/$this->assign\\($s,/g' tests/Feature/ClassTeacherAssignmentTest.php)",
+      "Bash(grep -n 'assign\\($s\\\\|function assign' tests/Feature/ClassTeacherAssignmentTest.php)",
+      "Bash(php -r \"echo class_exists\\('ZipArchive'\\) ? 'zip-ok' : 'no-zip';\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Administrator\\Desktop\\school pilot\\app\\Models"
     ]
   }
 }

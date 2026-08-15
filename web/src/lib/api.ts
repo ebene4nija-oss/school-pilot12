@@ -63,3 +63,42 @@ export async function fetchApi<T = unknown>(
 
   return payload as T;
 }
+
+/**
+ * Multipart POST, for endpoints that take a real file.
+ *
+ * Separate from `fetchApi` because that one hard-sets
+ * `Content-Type: application/json`. The student importer takes an uploaded
+ * CSV, and the page was posting a JSON array to it — the request failed
+ * validation every time, so bulk import never worked from the browser at all.
+ *
+ * The header is deliberately absent here: the browser sets it, with the
+ * multipart boundary, which cannot be written by hand.
+ */
+export async function uploadApi<T = unknown>(
+  endpoint: string,
+  form: FormData,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    body: form,
+    headers: { Accept: 'application/json' },
+    credentials: 'same-origin',
+  });
+
+  const payload = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+    }
+
+    const message =
+      (payload as { message?: string })?.message ??
+      `Upload failed (${response.status})`;
+
+    throw new ApiError(response.status, message, payload);
+  }
+
+  return payload as T;
+}

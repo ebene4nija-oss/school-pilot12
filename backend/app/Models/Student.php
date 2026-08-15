@@ -10,6 +10,25 @@ class Student extends Model
 {
     use HasFactory, SoftDeletes, BelongsToTenant;
 
+    /**
+     * Enrolment states.
+     *
+     * Was a database enum of four values; `withdrawn` had no way in, so a
+     * child who simply left was recorded as `transferred` or left `active`
+     * forever, inflating every roster and head-count in the school.
+     *
+     * Nothing accepts a status from a request: it is always derived from an
+     * action — promote, graduate, transfer out, withdraw — so this list is the
+     * set of states those actions can produce, not a validation rule.
+     */
+    public const STATUSES = [
+        'active',
+        'graduated',
+        'transferred',
+        'withdrawn',
+        'suspended',
+    ];
+
     protected $fillable = [
         'school_id',
         'user_id',
@@ -88,6 +107,20 @@ class Student extends Model
     public function classHistory()
     {
         return $this->hasMany(StudentClassHistory::class)->orderByDesc('created_at');
+    }
+
+    /**
+     * Placement per session — where this student actually sat, as opposed to
+     * `classHistory`, which records the moments they moved.
+     */
+    public function enrollments()
+    {
+        return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function currentEnrollment()
+    {
+        return $this->hasOne(StudentEnrollment::class)->where('status', 'active');
     }
 
     public function guardians()

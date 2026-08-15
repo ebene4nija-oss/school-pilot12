@@ -91,7 +91,15 @@ class AddedFeaturesController extends Controller
     {
         $schoolId = $this->getSchoolId($request);
 
-        $students = Student::where('school_id', $schoolId)->with(['user', 'class', 'arm'])->get();
+        /*
+         * `class` and `arm` are not relations on Student — they are
+         * `currentClass` and `currentArm` — so this call raised
+         * RelationNotFoundException on every invocation and the endpoint had
+         * never once returned a successful response.
+         */
+        $students = Student::where('school_id', $schoolId)
+            ->with(['user:id,name,email', 'currentClass:id,name', 'currentArm:id,name'])
+            ->get();
 
         $data = [
             'export_timestamp' => now()->toIso8601String(),

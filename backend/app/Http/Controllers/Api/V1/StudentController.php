@@ -5,17 +5,23 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\StudentMedicalResource;
 use App\Http\Resources\StudentResource;
+use App\Models\AcademicSession;
 use App\Models\AuditLog;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentClassHistory;
+use App\Models\StudentEnrollment;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Services\PasswordResetService;
+use App\Services\StudentImportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
@@ -286,22 +292,43 @@ class StudentController extends Controller
 
     public function promote(Request $request)
     {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
+        /*
+         * Every id is scoped to the acting admin's school.
+         *
+         * A bare `exists:classes,id` passes for *any* school's class, and the
+         * destination was the one side of this operation that was never
+         * tenant-checked: the students were loaded with a `where school_id`,
+         * so a foreign `target_class_id` did not fail — it wrote this school's
+         * children into another school's class and left them there.
+         */
         $validator = Validator::make($request->all(), [
             'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
-            'target_class_id' => 'required|exists:classes,id',
-            'target_arm_id' => 'nullable|exists:arms,id',
-            'session_id' => 'required|exists:academic_sessions,id',
+            'target_class_id' => [
+                'required',
+                Rule::exists('classes', 'id')->where('school_id', $schoolId),
+            ],
+            'target_arm_id' => [
+                'nullable',
+                Rule::exists('arms', 'id')
+                    ->where('school_id', $schoolId)
+                    ->where('class_id', $request->input('target_class_id')),
+            ],
+            'session_id' => [
+                'required',
+                Rule::exists('academic_sessions', 'id')->where('school_id', $schoolId),
+            ],
             'action' => 'required|in:promote,repeat,transfer',
+            'is_leaving_school' => 'nullable|boolean',
             'remarks' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
-        $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
 
         return DB::transaction(function () use ($request, $admin, $schoolId) {
             // Load only students that belong to the admin's school
@@ -339,12 +366,50 @@ class StudentController extends Controller
                     'arm_id' => $request->target_arm_id,
                 ];
 
+                $isLeaving = $request->action === 'transfer'
+                    && $request->boolean('is_leaving_school', false);
+
                 // If transferring out of the school, mark student as transferred
-                if ($request->action === 'transfer' && $request->boolean('is_leaving_school', false)) {
+                if ($isLeaving) {
                     $updateData['status'] = 'transferred';
                 }
 
                 $student->update($updateData);
+
+                /*
+                 * Keep the enrolment record in step.
+                 *
+                 * This endpoint predates `student_enrollments` and is still
+                 * the right call for moving a handful of children between
+                 * arms, so it cannot be left writing only the old audit trail
+                 * — a placement made here would be invisible to the rollover
+                 * preview, and those students would silently sit out the next
+                 * promotion.
+                 */
+                if ($isLeaving) {
+                    StudentEnrollment::where('student_id', $student->id)
+                        ->where('status', 'active')
+                        ->update([
+                            'status' => 'closed',
+                            'outcome' => 'transferred_out',
+                            'closed_on' => now()->toDateString(),
+                            'outcome_remarks' => $request->remarks,
+                            'recorded_by' => $admin->id,
+                        ]);
+                } else {
+                    StudentEnrollment::updateOrCreate(
+                        ['student_id' => $student->id, 'session_id' => $request->session_id],
+                        [
+                            'school_id' => $schoolId,
+                            'class_id' => $request->target_class_id,
+                            'arm_id' => $request->target_arm_id,
+                            'status' => 'active',
+                            'enrolled_on' => now()->toDateString(),
+                            'recorded_by' => $admin->id,
+                        ]
+                    );
+                }
+
                 $movedStudentIds[] = $student->id;
             }
 
@@ -403,84 +468,188 @@ class StudentController extends Controller
         ]);
     }
 
-    public function bulkImport(Request $request)
+    /**
+     * Read a register and report what would happen. Writes nothing.
+     *
+     * The first half of the import. An admin uploads the class list, sees
+     * every row resolved — name, class, arm, guardian — with the bad ones
+     * named and numbered, and only then commits. Importing 400 children was
+     * previously a single irreversible click with no way to look first.
+     */
+    public function importPreview(Request $request, StudentImportService $importer)
     {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|mimes:csv,txt,xlsx',
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+            'class_id' => [
+                'nullable',
+                Rule::exists('classes', 'id')->where('school_id', $schoolId),
+            ],
+            'arm_id' => [
+                'nullable',
+                Rule::exists('arms', 'id')
+                    ->where('school_id', $schoolId)
+                    ->where('class_id', $request->input('class_id')),
+            ],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $file = $request->file('file');
-        $rows = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($rows);
+        $analysis = $importer->analyse($request->file('file'), $schoolId, [
+            'default_class_id' => $request->input('class_id'),
+            'default_arm_id' => $request->input('arm_id'),
+        ]);
 
-        $successCount = 0;
-        $errors = [];
+        if (isset($analysis['fatal'])) {
+            return response()->json(['message' => $analysis['fatal']], 422);
+        }
+
+        /*
+         * The validated rows are parked in the cache rather than handed back
+         * for the client to return: re-posting them would let anything that
+         * failed validation walk straight back in as "ready". The token is
+         * bound to the school, so another tenant redeeming it finds nothing.
+         */
+        $token = (string) Str::uuid();
+
+        Cache::put("student-import:{$schoolId}:{$token}", [
+            'rows' => $analysis['rows'],
+            'class_id' => $request->input('class_id'),
+            'arm_id' => $request->input('arm_id'),
+        ], now()->addMinutes(30));
+
+        return response()->json([
+            'token' => $token,
+            'expires_in_minutes' => 30,
+            'summary' => $analysis['summary'],
+            'recognised_columns' => $analysis['recognised_columns'],
+            'unrecognised_columns' => $analysis['unrecognised_columns'],
+            'rows' => $analysis['rows'],
+        ]);
+    }
+
+    /**
+     * Commit a previewed file. All the valid rows, or none of them.
+     */
+    public function importCommit(Request $request, StudentImportService $importer)
+    {
+        $admin = $request->user();
+        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'session_id' => [
+                'nullable',
+                Rule::exists('academic_sessions', 'id')->where('school_id', $schoolId),
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $cacheKey = "student-import:{$schoolId}:{$request->token}";
+        $payload = Cache::get($cacheKey);
+
+        if (! $payload) {
+            return response()->json([
+                'message' => 'That preview has expired or was already used. Upload the file again.',
+            ], 410);
+        }
+
+        // An import session is single-use: a double-tapped Confirm button must
+        // not create the intake twice.
+        Cache::forget($cacheKey);
+
+        $sessionId = $request->input('session_id')
+            ?: AcademicSession::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
+        $result = $importer->commit($payload['rows'], $schoolId, $sessionId, $admin->id);
+
+        AuditLog::create([
+            'school_id' => $schoolId,
+            'user_id' => $admin->id,
+            'action' => 'students.imported',
+            // The school, not a student: a batch has no single subject, and
+            // `auditable_id` is NOT NULL.
+            'auditable_type' => School::class,
+            'auditable_id' => $schoolId,
+            'new_values' => [
+                'created' => $result['created'],
+                'class_id' => $payload['class_id'],
+                'arm_id' => $payload['arm_id'],
+                'session_id' => $sessionId,
+            ],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'message' => $result['created'] . ' student(s) imported. They have no password yet — '
+                . 'tell them to use "Forgot password" on the sign-in screen.',
+            'created' => $result['created'],
+            'student_ids' => $result['student_ids'],
+        ]);
+    }
+
+    /**
+     * The original one-shot import.
+     *
+     * Kept because installed mobile apps call it, and kept to its old response
+     * shape for the same reason. It now runs through the same parser as the
+     * preview flow, so it inherits header-driven columns and in-file duplicate
+     * detection; what it does not inherit is the requirement to place a
+     * student in a class, because files written for this endpoint have no
+     * class column and rejecting all of them would be the breaking change the
+     * versioning rule exists to prevent.
+     */
+    public function bulkImport(Request $request, StudentImportService $importer)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt,xlsx|max:5120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         $admin = $request->user();
         $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
 
-        foreach ($rows as $index => $row) {
-            $rowNum = $index + 2; // Accounting for 1-based index and header row
-            if (count($row) < 3) {
-                $errors[] = "Row {$rowNum}: Insufficient columns provided.";
-                continue;
-            }
+        $analysis = $importer->analyse($request->file('file'), $schoolId, [
+            'require_class' => false,
+        ]);
 
-            $name = trim($row[0]);
-            $email = trim($row[1]);
-            $gender = strtolower(trim($row[2]));
+        if (isset($analysis['fatal'])) {
+            return response()->json([
+                'message' => $analysis['fatal'],
+                'successful_count' => 0,
+                'errors' => [$analysis['fatal']],
+            ], 422);
+        }
 
-            if (empty($name) || empty($email)) {
-                $errors[] = "Row {$rowNum}: Name and Email are required.";
-                continue;
-            }
+        $sessionId = AcademicSession::where('school_id', $schoolId)
+            ->where('is_current', true)
+            ->value('id');
 
-            if (User::where('email', $email)->exists()) {
-                $errors[] = "Row {$rowNum}: Email {$email} already exists.";
-                continue;
-            }
+        $result = $importer->commit($analysis['rows'], $schoolId, $sessionId, $admin->id);
 
-            try {
-                DB::transaction(function () use ($name, $email, $gender, $schoolId) {
-                    // 32 bytes, not 4. Nobody ever sees this: an imported
-                    // student reaches their account through "Forgot password",
-                    // so the value only has to be unguessable. Setup links are
-                    // deliberately not sent from here — a 500-row import would
-                    // mean 500 synchronous sends and a timed-out request.
-                    $tempPassword = bin2hex(random_bytes(32));
-                    $user = User::create([
-                        'name' => $name,
-                        'email' => $email,
-                        'password' => Hash::make($tempPassword),
-                    ]);
+        $errors = [];
 
-                    UserProfile::create([
-                        'school_id' => $schoolId,
-                        'user_id' => $user->id,
-                        'role' => 'student',
-                    ]);
-
-                    Student::create([
-                        'school_id' => $schoolId,
-                        'user_id' => $user->id,
-                        'gender' => in_array($gender, ['male', 'female']) ? $gender : 'male',
-                    ]);
-                });
-
-                $successCount++;
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNum}: Failed to import — " . $e->getMessage();
+        foreach ($analysis['rows'] as $row) {
+            if ($row['status'] === 'error') {
+                $errors[] = "Row {$row['line']}: " . implode(' ', $row['errors']);
             }
         }
 
         return response()->json([
-            'message' => "Import complete. {$successCount} students imported successfully. "
+            'message' => "Import complete. {$result['created']} students imported successfully. "
                 . 'They have no password yet — tell them to use "Forgot password" on the sign-in screen.',
-            'successful_count' => $successCount,
+            'successful_count' => $result['created'],
             'errors' => $errors,
         ]);
     }

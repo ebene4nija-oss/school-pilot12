@@ -27,6 +27,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/students', icon: '🎓', label: 'Students Directory' },
       { href: '/staff', icon: '👨‍🏫', label: 'Staff & Leave' },
+      { href: '/id-cards', icon: '🪪', label: 'ID Cards' },
     ],
   },
   {

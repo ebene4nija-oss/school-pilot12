@@ -37,7 +37,12 @@ class CbtMediaService
     public const THUMBNAIL_MAX_DIMENSION = 320;
 
     /** Where a media reference is allowed to sit on a question. */
-    public const ROLES = ['stem', 'option', 'explanation', 'diagram'];
+    /**
+     * `stimulus` belongs to a question *group* rather than a question: the map,
+     * circuit or data table a whole passage of sub-questions refers to. It
+     * loads once for the group, not once per sub-question.
+     */
+    public const ROLES = ['stem', 'option', 'explanation', 'diagram', 'stimulus'];
 
     public function __construct(
         private ImageMetadataStripper $stripper

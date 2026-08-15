@@ -63,6 +63,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/students/{student}/class-history', [\App\Http\Controllers\Api\V1\StudentController::class, 'classHistory'])->middleware('role:super_admin,school_admin,teacher');
 
         /*
+         * End-of-session rollover. Declared above `/students/{id}` so the
+         * literal segments win the match — `rollover` is not a student id.
+         *
+         * `preview` writes nothing; `commit` is the only destructive call, and
+         * it is one transaction for the whole school.
+         */
+        Route::post('/students/rollover/preview', [\App\Http\Controllers\Api\V1\SessionRolloverController::class, 'preview'])->middleware('role:super_admin,school_admin');
+        Route::post('/students/rollover/commit', [\App\Http\Controllers\Api\V1\SessionRolloverController::class, 'commit'])->middleware('role:super_admin,school_admin');
+        Route::post('/students/{id}/exit', [\App\Http\Controllers\Api\V1\SessionRolloverController::class, 'exitStudent'])->middleware('role:super_admin,school_admin');
+        Route::get('/students/{id}/enrollments', [\App\Http\Controllers\Api\V1\SessionRolloverController::class, 'enrollments'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
          * Health data is a separate, narrower route from the student record.
          * It used to ride along on every roster listing, which is open to
          * every teacher in the school. Admins and guardians only, policy-checked
@@ -76,6 +88,14 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/students/{id}', [\App\Http\Controllers\Api\V1\StudentController::class, 'show'])
             ->middleware('role:super_admin,school_admin,teacher,parent,student');
         Route::post('/students/import', [\App\Http\Controllers\Api\V1\StudentController::class, 'bulkImport'])->middleware('role:super_admin,school_admin');
+
+        /*
+         * Two-phase import: look before you leap. `preview` parses and
+         * validates a register and returns a token; `commit` redeems the token
+         * once. The single-shot route above stays for installed clients.
+         */
+        Route::post('/students/import/preview', [\App\Http\Controllers\Api\V1\StudentController::class, 'importPreview'])->middleware('role:super_admin,school_admin');
+        Route::post('/students/import/commit', [\App\Http\Controllers\Api\V1\StudentController::class, 'importCommit'])->middleware('role:super_admin,school_admin');
 
         // Attendance & Hardware-Free Clock-In
         Route::post('/attendance/qr-token', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'generateQrToken'])->middleware('role:super_admin,school_admin,teacher');
@@ -293,6 +313,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/classes', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'classes']);
         Route::get('/terms', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'terms']);
 
+        /*
+         * Form teachers. The listing is open to staff — a teacher needs to know
+         * who owns a class to route a message about a child — but only an admin
+         * assigns one. `my-classes` is scoped to the caller by construction.
+         */
+        Route::get('/class-teachers', [\App\Http\Controllers\Api\V1\ClassTeacherController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/class-teachers', [\App\Http\Controllers\Api\V1\ClassTeacherController::class, 'store'])->middleware('role:super_admin,school_admin');
+        Route::delete('/class-teachers/{id}', [\App\Http\Controllers\Api\V1\ClassTeacherController::class, 'destroy'])->middleware('role:super_admin,school_admin');
+        Route::get('/teacher/my-classes', [\App\Http\Controllers\Api\V1\ClassTeacherController::class, 'myClasses'])->middleware('role:super_admin,school_admin,teacher');
+
         // Subject Management & Enrollment Routes
         Route::get('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'listSubjects']);
         Route::post('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'storeSubject'])->middleware('role:super_admin,school_admin');
@@ -340,6 +370,21 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/compliance/parental-consent', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'recordParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/compliance/parental-consent/{id}/withdraw', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'withdrawParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/admin/export-data', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'exportSchoolData'])->middleware('role:super_admin,school_admin');
+
+        /*
+         * The real thing: a queued archive a school can actually keep. The
+         * inline JSON route above is left in place because clients call it,
+         * but it returns students only and cannot survive a real school's row
+         * counts — new work should use these.
+         *
+         * Admins only, including the download: an archive is every record the
+         * school holds, so the roles that can read one child's file are not
+         * the roles that can take all of them at once.
+         */
+        Route::get('/admin/exports', [\App\Http\Controllers\Api\V1\SchoolDataExportController::class, 'index'])->middleware('role:super_admin,school_admin');
+        Route::post('/admin/exports', [\App\Http\Controllers\Api\V1\SchoolDataExportController::class, 'store'])->middleware('role:super_admin,school_admin');
+        Route::get('/admin/exports/{id}', [\App\Http\Controllers\Api\V1\SchoolDataExportController::class, 'show'])->middleware('role:super_admin,school_admin');
+        Route::get('/admin/exports/{id}/download', [\App\Http\Controllers\Api\V1\SchoolDataExportController::class, 'download'])->middleware('role:super_admin,school_admin');
 
         /*
          * Notifications (§7.13). NotificationController was the only controller
@@ -424,6 +469,17 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/cbt/media', [\App\Http\Controllers\Api\V1\CbtController::class, 'uploadMedia']);
             Route::delete('/cbt/media/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'destroyMedia']);
 
+            // Grouped questions (§6.2): one shared passage, table or diagram
+            // with several sub-questions hanging off it. Authored here, and
+            // rendered by the web runner, the mobile app and the offline lab
+            // client alike — the grouping rules live server-side so no client
+            // re-derives them.
+            Route::get('/cbt/question-groups', [\App\Http\Controllers\Api\V1\CbtQuestionGroupController::class, 'index']);
+            Route::post('/cbt/question-groups', [\App\Http\Controllers\Api\V1\CbtQuestionGroupController::class, 'store']);
+            Route::get('/cbt/question-groups/{id}', [\App\Http\Controllers\Api\V1\CbtQuestionGroupController::class, 'show']);
+            Route::put('/cbt/question-groups/{id}', [\App\Http\Controllers\Api\V1\CbtQuestionGroupController::class, 'update']);
+            Route::delete('/cbt/question-groups/{id}', [\App\Http\Controllers\Api\V1\CbtQuestionGroupController::class, 'destroy']);
+
             Route::get('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'listQuestions']);
             Route::post('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'storeQuestion']);
             Route::post('/cbt/questions/import', [\App\Http\Controllers\Api\V1\CbtController::class, 'importQuestions']);
@@ -468,7 +524,34 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/cbt/exams/{examId}/offline-package', [\App\Http\Controllers\Api\V1\CbtController::class, 'offlinePackage'])
             ->middleware('role:super_admin,school_admin,teacher,student');
 
+        // Kept as-is: the mobile app sits a paper as the candidate and syncs
+        // its own single attempt. The lab relay cannot use this — it uploads
+        // for a whole room while authenticated as staff — and gets the batch
+        // route below instead.
         Route::post('/cbt/offline-sync', [\App\Http\Controllers\Api\V1\CbtController::class, 'syncOfflineAnswers'])->middleware('role:student');
+
+        /*
+        |------------------------------------------------------------------
+        | Offline lab relay (docs/offline-cbt-client.md §9.1–§9.3)
+        |------------------------------------------------------------------
+        | The relay is a staff-authenticated API consumer, not a candidate. It
+        | touches the network exactly three times: it takes delivery of an
+        | encrypted bundle the day before, collects the key on exam morning,
+        | and uploads the room afterwards. Nothing here is reachable during
+        | the paper, which is the entire point of the component.
+        |
+        | Key release is throttled and audited on every call, granted or
+        | refused: an unlock is the moment a paper becomes readable on a
+        | machine we do not control.
+        */
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            Route::get('/cbt/exams/{examId}/offline-bundles', [\App\Http\Controllers\Api\V1\CbtOfflineBundleController::class, 'index']);
+            Route::post('/cbt/exams/{examId}/offline-bundle', [\App\Http\Controllers\Api\V1\CbtOfflineBundleController::class, 'store']);
+            Route::post('/cbt/offline-bundle/{bundleId}/key', [\App\Http\Controllers\Api\V1\CbtOfflineBundleController::class, 'releaseKey'])
+                ->middleware('throttle:10,1');
+            Route::post('/cbt/offline-bundle/{bundleId}/revoke', [\App\Http\Controllers\Api\V1\CbtOfflineBundleController::class, 'revoke']);
+            Route::post('/cbt/offline-sync/batch', [\App\Http\Controllers\Api\V1\CbtOfflineBundleController::class, 'batchSync']);
+        });
 
         /*
         |------------------------------------------------------------------
@@ -483,6 +566,40 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/report-cards/templates/{id}/activate', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'activate'])->middleware('role:super_admin,school_admin');
         Route::delete('/report-cards/templates/{id}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'destroy'])->middleware('role:super_admin,school_admin');
         Route::get('/report-cards/{studentId}/{termId}', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'renderReportCard'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
+        |------------------------------------------------------------------
+        | ID cards
+        |------------------------------------------------------------------
+        |
+        | A printable PDF, not a credential (doc §3). The design half mirrors
+        | report card templates exactly — import, preview, activate — and the
+        | issuance half is its own thing: a card is issued once and printed
+        | many times, so those are separate verbs.
+        |
+        | Admin-only throughout. A teacher can see a class roster but has no
+        | business minting the identity documents for it, and the print run
+        | endpoints hand back a PDF of every child's face in a class.
+        */
+        Route::get('/id-cards/template-contract', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'contract'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/templates', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'index'])->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/templates', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'import'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/templates/{id}', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'show'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/templates/{id}/preview', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'preview'])->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/templates/{id}/activate', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'activate'])->middleware('role:super_admin,school_admin');
+        Route::delete('/id-cards/templates/{id}', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'destroy'])->middleware('role:super_admin,school_admin');
+
+        // Dry run: what a print would produce, and who it would leave out.
+        Route::post('/id-cards/preflight', [\App\Http\Controllers\Api\V1\IdCardController::class, 'preflight'])->middleware('role:super_admin,school_admin');
+
+        Route::get('/id-cards/print-runs', [\App\Http\Controllers\Api\V1\IdCardController::class, 'indexRuns'])->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/print-runs', [\App\Http\Controllers\Api\V1\IdCardController::class, 'storeRun'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/print-runs/{id}', [\App\Http\Controllers\Api\V1\IdCardController::class, 'showRun'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/print-runs/{id}/download', [\App\Http\Controllers\Api\V1\IdCardController::class, 'downloadRun'])->middleware('role:super_admin,school_admin');
+
+        Route::get('/id-cards/holders/{holderType}/{holderId}', [\App\Http\Controllers\Api\V1\IdCardController::class, 'holderCards'])->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/{id}/revoke', [\App\Http\Controllers\Api\V1\IdCardController::class, 'revoke'])->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/{id}/replace', [\App\Http\Controllers\Api\V1\IdCardController::class, 'replace'])->middleware('role:super_admin,school_admin');
 
         /*
         |------------------------------------------------------------------
@@ -572,6 +689,21 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
     // Public unauthenticated result verification route with anti-scraping rate limiting
     Route::middleware('throttle:10,1')->get('/verify-result/{token}', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'verifyResult']);
+
+    /*
+     * Public ID card verification — the QR printed on every card.
+     *
+     * Unauthenticated by necessity: the people who check cards are gatekeepers,
+     * bus drivers and receptionists, none of whom have a login, and requiring
+     * one would mean the card could only be verified by the school that issued
+     * it. The endpoint answers one question with the minimum that answers it
+     * (see IdCardController::verify), and an unknown token gets the same page
+     * as a revoked one so it cannot be walked.
+     *
+     * A looser throttle than /verify-result because a card gets scanned at a
+     * gate, repeatedly, by people who are in a hurry.
+     */
+    Route::middleware('throttle:20,1')->get('/verify-id/{token}', [\App\Http\Controllers\Api\V1\IdCardController::class, 'verify']);
 
     // OpenAPI / Swagger Documentation Spec
     Route::get('/docs/openapi.json', [\App\Http\Controllers\Api\V1\SwaggerDocController::class, 'getSpec']);

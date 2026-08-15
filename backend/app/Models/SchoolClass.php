@@ -10,5 +10,12 @@ class SchoolClass extends Model
 
     protected $table = 'classes';
 
-    protected $fillable = ['school_id', 'name', 'level_category', 'order_index'];
+    protected $fillable = ['school_id', 'name', 'level_category', 'order_index', 'is_exit_class'];
+
+    protected $casts = ['is_exit_class' => 'boolean'];
+
+    public function arms()
+    {
+        return $this->hasMany(Arm::class, 'class_id');
+    }
 }

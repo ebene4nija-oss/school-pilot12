@@ -32,3 +32,30 @@ Schedule::command('cbt:expire-attempts')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Delete ID card print-run PDFs once their download window has passed.
+ *
+ * Daily and early, because the thing being deleted is a sheet of children's
+ * faces and names sitting on disk with no remaining purpose (doc §12). Nothing
+ * depends on this having run — the download endpoint checks the expiry itself,
+ * so a missed night leaves the file unreachable rather than exposed — which is
+ * why it is a quiet 02:30 job and not a minute-by-minute one.
+ */
+Schedule::command('id-cards:sweep')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+/*
+ * Delete school data archives past their download window.
+ *
+ * Same reasoning as the ID-card sweep and the same quiet hour: each archive is
+ * a complete copy of a school's records, and the download endpoint already
+ * refuses an expired one, so a missed night leaves a file unreachable rather
+ * than exposed.
+ */
+Schedule::command('exports:sweep')
+    ->dailyAt('02:45')
+    ->withoutOverlapping()
+    ->runInBackground();

@@ -33,6 +33,8 @@ class CbtAttempt extends Model
         'integrity_flags',
         'device_fingerprint',
         'ip_address',
+        'offline_bundle_id',
+        'order_is_final',
     ];
 
     protected $casts = [
@@ -50,7 +52,19 @@ class CbtAttempt extends Model
         'raw_score' => 'decimal:2',
         'max_score' => 'decimal:2',
         'percentage' => 'decimal:2',
+        'order_is_final' => 'boolean',
     ];
+
+    /**
+     * A paper pre-issued into an offline bundle that nobody has sat yet.
+     *
+     * It exists so the relay can hand a named candidate their attempt id and
+     * question order with no network. It is deliberately *not* `in_progress`:
+     * a provisioned attempt must not burn an allowance against `max_attempts`,
+     * must not be swept by the overdue-attempt sweeper, and must be
+     * reclaimable if the exam is cancelled.
+     */
+    public const STATUS_PROVISIONED = 'provisioned';
 
     public function exam()
     {
@@ -75,6 +89,11 @@ class CbtAttempt extends Model
     public function isFinalised(): bool
     {
         return in_array($this->status, ['submitted', 'graded', 'expired', 'voided'], true);
+    }
+
+    public function isProvisioned(): bool
+    {
+        return $this->status === self::STATUS_PROVISIONED;
     }
 
     /**
