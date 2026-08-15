@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ResultPinBatch;
 use App\Models\ResultPinPriceTier;
+use App\Models\ResultPinSchoolRate;
 use App\Models\School;
+use App\Services\ResultPinPricing;
 use App\Services\ResultPinService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -14,11 +16,12 @@ use Illuminate\Support\Facades\Validator;
 /**
  * SchoolPilot's own console for result-checker PINs.
  *
- * Two jobs: publish the wholesale rate card every school buys against, and
- * issue PINs to a school that paid outside the platform — a bank transfer, or a
- * director who rang the office and settled by invoice. Those schools are the
- * majority in this market, so "we took their money offline" cannot be a dead
- * end that leaves them unable to use the feature.
+ * Three jobs: publish the wholesale rate card every school buys against, agree a
+ * discounted rate with an individual school, and issue PINs to a school that
+ * paid outside the platform — a bank transfer, or a director who rang the office
+ * and settled by invoice. Those schools are the majority in this market, so "we
+ * took their money offline" cannot be a dead end that leaves them unable to use
+ * the feature.
  *
  * Super admin only, and every grant is audited: this endpoint mints sellable
  * inventory out of nothing, which is exactly the power that needs a paper trail.
@@ -77,6 +80,115 @@ class PlatformResultPinController extends Controller
         return response()->json(['message' => 'Rate card updated.', 'tier' => $tier], 201);
     }
 
+    /** Every school currently on terms other than the published card. */
+    public function listSchoolRates(Request $request)
+    {
+        $query = ResultPinSchoolRate::with(['school:id,name,subdomain', 'setBy:id,name']);
+
+        // Lifted rates stay on file, so they are hidden unless asked for.
+        if (! $request->boolean('include_inactive')) {
+            $query->where('is_active', true);
+        }
+
+        return response()->json([
+            'currency' => 'NGN',
+            'rates' => $query->orderByDesc('id')->get(),
+        ]);
+    }
+
+    /**
+     * Agree a flat per-PIN price with one school.
+     *
+     * Replaces any rate already on file for that school — a renegotiation is a
+     * new number, not a second deal — and reactivates a previously lifted one
+     * rather than leaving two rows fighting over the same school.
+     *
+     * Only stock bought from now on is affected. Batches record the price they
+     * were bought at, so agreeing a discount today does not retrospectively
+     * discount what a school already paid, and lifting one does not bill it more.
+     */
+    public function setSchoolRate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'school_id' => 'required|integer|exists:schools,id',
+            'unit_price' => 'required|numeric|min:0',
+            // Required, not optional: a rate nobody can account for six months
+            // later is how a discount outlives the deal that justified it.
+            'notes' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $school = School::find($request->school_id);
+
+        $existing = ResultPinSchoolRate::where('school_id', $school->id)->first();
+        $previous = $existing ? $existing->only(['unit_price', 'is_active', 'notes']) : null;
+
+        $rate = ResultPinSchoolRate::updateOrCreate(
+            ['school_id' => $school->id],
+            [
+                'unit_price' => $request->unit_price,
+                'is_active' => true,
+                'notes' => $request->notes,
+                'set_by' => $request->user()->id,
+            ]
+        );
+
+        AuditLog::create([
+            'school_id' => $school->id,
+            'user_id' => $request->user()->id,
+            'action' => 'platform.result_pin_school_rate_set',
+            'auditable_type' => ResultPinSchoolRate::class,
+            'auditable_id' => $rate->id,
+            'old_values' => $previous,
+            'new_values' => $rate->only(['school_id', 'unit_price', 'is_active', 'notes']),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'message' => "{$school->name} now pays ₦{$rate->unit_price} per PIN at any order size.",
+            'rate' => $rate->load('school:id,name,subdomain'),
+        ], 201);
+    }
+
+    /**
+     * Put a school back on the published rate card.
+     *
+     * Deactivates rather than deletes: what the terms were, who agreed them and
+     * why stays on file, and setting a new rate later revives the same row.
+     */
+    public function removeSchoolRate(Request $request, $schoolId)
+    {
+        $rate = ResultPinSchoolRate::where('school_id', (int) $schoolId)->first();
+
+        if (! $rate || ! $rate->is_active) {
+            return response()->json(['error' => 'This school has no agreed rate. It already buys at card price.'], 404);
+        }
+
+        $previous = $rate->only(['unit_price', 'is_active', 'notes']);
+
+        $rate->update(['is_active' => false, 'set_by' => $request->user()->id]);
+
+        AuditLog::create([
+            'school_id' => $rate->school_id,
+            'user_id' => $request->user()->id,
+            'action' => 'platform.result_pin_school_rate_lifted',
+            'auditable_type' => ResultPinSchoolRate::class,
+            'auditable_id' => $rate->id,
+            'old_values' => $previous,
+            'new_values' => ['is_active' => false],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'message' => 'Agreed rate lifted. This school now buys at the published rate card.',
+        ]);
+    }
+
     /**
      * Issue PINs to a school that paid offline.
      *
@@ -105,13 +217,15 @@ class PlatformResultPinController extends Controller
         $quantity = (int) $request->quantity;
 
         /*
-         * The operator may override the rate — a negotiated price for a large
-         * school, or a zero-priced goodwill top-up. Falling back to the rate
-         * card keeps the common case a two-field form.
+         * The operator may override the rate for this one grant — a one-off
+         * settlement, or a zero-priced goodwill top-up. Otherwise the school's
+         * standing negotiated rate applies, and failing that the rate card, so
+         * the common case stays a two-field form and a school on a discount is
+         * charged its agreed price without anyone having to remember it.
          */
         $unitPrice = $request->unit_price !== null
             ? (string) $request->unit_price
-            : ResultPinPriceTier::priceFor($quantity);
+            : ResultPinPricing::unitPrice($school->id, $quantity);
 
         if ($unitPrice === null) {
             return response()->json([

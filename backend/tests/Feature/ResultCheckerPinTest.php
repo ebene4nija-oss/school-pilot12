@@ -753,6 +753,186 @@ class ResultCheckerPinTest extends TestCase
     }
 
     // ==================================================================
+    // A discounted rate agreed with one school
+    // ==================================================================
+
+    /** The rate SchoolPilot agreed on the phone is the rate charged online. */
+    public function test_a_school_on_an_agreed_rate_buys_at_that_price_online()
+    {
+        $this->setRate(65);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '65.00')
+            // 100 would otherwise sit in the ₦100 band.
+            ->assertJsonPath('batch.total_amount', '6500.00')
+            ->assertJsonPath('batch.negotiated_rate', true);
+    }
+
+    /**
+     * A flat agreed rate replaces the bands rather than stacking with them: the
+     * school pays what was agreed, not the volume price on top of it.
+     */
+    public function test_an_agreed_rate_overrides_the_volume_bands()
+    {
+        $this->setRate(65);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 500, 'gateway' => 'paystack'])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '65.00')
+            ->assertJsonPath('batch.total_amount', '32500.00');
+    }
+
+    /** The school is quoted its own price, not one it will not be charged. */
+    public function test_the_quote_shows_a_school_its_agreed_rate()
+    {
+        $this->as($this->admin)
+            ->getJson('/api/v1/result-pins/price-tiers')
+            ->assertOk()
+            ->assertJsonPath('negotiated', false)
+            ->assertJsonPath('unit_price', null);
+
+        $this->setRate(65);
+
+        $this->as($this->admin)
+            ->getJson('/api/v1/result-pins/price-tiers')
+            ->assertOk()
+            ->assertJsonPath('negotiated', true)
+            ->assertJsonPath('unit_price', '65.00');
+    }
+
+    /** An operator granting a batch offline need not remember the deal. */
+    public function test_a_granted_batch_falls_back_to_the_agreed_rate()
+    {
+        $this->setRate(65);
+
+        $this->as($this->platformAdmin)
+            ->postJson('/api/v1/platform/result-pins/grant', [
+                'school_id' => $this->school->id,
+                'quantity' => 100,
+                'notes' => 'Zenith transfer 15/08.',
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '65.00');
+    }
+
+    /** A one-off settlement still beats the standing rate. */
+    public function test_an_explicit_grant_price_beats_the_agreed_rate()
+    {
+        $this->setRate(65);
+
+        $this->as($this->platformAdmin)
+            ->postJson('/api/v1/platform/result-pins/grant', [
+                'school_id' => $this->school->id,
+                'quantity' => 100,
+                'unit_price' => 0,
+                'notes' => 'Goodwill top-up after the March outage.',
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '0.00');
+    }
+
+    public function test_lifting_an_agreed_rate_returns_a_school_to_the_rate_card()
+    {
+        $this->setRate(65);
+
+        $this->as($this->platformAdmin)
+            ->deleteJson("/api/v1/platform/result-pins/school-rates/{$this->school->id}")
+            ->assertOk();
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '100.00')
+            ->assertJsonPath('batch.negotiated_rate', false);
+
+        // Lifted, not erased — the terms stay on file.
+        $this->assertDatabaseHas('result_pin_school_rates', [
+            'school_id' => $this->school->id,
+            'unit_price' => 65.00,
+            'is_active' => false,
+        ]);
+    }
+
+    /** Renegotiating replaces the number; it does not leave two live deals. */
+    public function test_agreeing_a_new_rate_replaces_the_old_one()
+    {
+        $this->setRate(65);
+        $this->setRate(50);
+
+        $this->assertDatabaseCount('result_pin_school_rates', 1);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '50.00');
+    }
+
+    /** A discount for one school is not a discount for its neighbour. */
+    public function test_an_agreed_rate_does_not_leak_to_another_school()
+    {
+        $other = School::create(['name' => 'Sunrise Academy', 'slug' => 'sunrise', 'subdomain' => 'sunrise']);
+        $otherAdmin = $this->makeUser('head@sunrise.test', 'school_admin', $other->id);
+
+        $this->setRate(65);
+
+        $this->actingAs($otherAdmin, 'sanctum')
+            ->withServerVariables(['HTTP_HOST' => 'sunrise.localhost'])
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(201)
+            ->assertJsonPath('batch.unit_price', '100.00');
+    }
+
+    public function test_a_school_admin_cannot_agree_its_own_rate()
+    {
+        $this->as($this->admin)
+            ->postJson('/api/v1/platform/result-pins/school-rates', [
+                'school_id' => $this->school->id,
+                'unit_price' => 1,
+                'notes' => 'a very good deal for us',
+            ])
+            ->assertStatus(403);
+
+        $this->assertDatabaseCount('result_pin_school_rates', 0);
+    }
+
+    /** A rate nobody can account for later is a rate that outlives its deal. */
+    public function test_an_agreed_rate_requires_a_reason()
+    {
+        $this->as($this->platformAdmin)
+            ->postJson('/api/v1/platform/result-pins/school-rates', [
+                'school_id' => $this->school->id,
+                'unit_price' => 65,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('notes');
+    }
+
+    public function test_setting_an_agreed_rate_writes_an_audit_row()
+    {
+        $this->setRate(65);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'platform.result_pin_school_rate_set',
+            'school_id' => $this->school->id,
+            'user_id' => $this->platformAdmin->id,
+        ]);
+    }
+
+    private function setRate(float $unitPrice): void
+    {
+        $this->as($this->platformAdmin)
+            ->postJson('/api/v1/platform/result-pins/school-rates', [
+                'school_id' => $this->school->id,
+                'unit_price' => $unitPrice,
+                'notes' => 'Six-campus group deal agreed with the director.',
+            ])
+            ->assertStatus(201);
+    }
+
+    // ==================================================================
     // Tenant isolation
     // ==================================================================
 

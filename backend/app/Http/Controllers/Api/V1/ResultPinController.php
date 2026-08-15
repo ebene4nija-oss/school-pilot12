@@ -7,10 +7,12 @@ use App\Models\AuditLog;
 use App\Models\ResultPin;
 use App\Models\ResultPinBatch;
 use App\Models\ResultPinPriceTier;
+use App\Models\ResultPinSchoolRate;
 use App\Models\ResultRelease;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\ResultPinPricing;
 use App\Services\ResultPinService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -34,15 +36,36 @@ class ResultPinController extends Controller
         return $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
     }
 
-    /** SchoolPilot's published wholesale rate card. */
-    public function priceTiers()
+    /**
+     * What this school pays SchoolPilot per PIN.
+     *
+     * Normally the published rate card. A school on a negotiated rate is shown
+     * that number instead, and told the bands no longer apply to it — quoting it
+     * volume discounts it will not receive is how a bursar budgets for the wrong
+     * figure and queries the invoice.
+     */
+    public function priceTiers(Request $request)
     {
         $tiers = ResultPinPriceTier::where('is_active', true)
             ->orderBy('min_quantity')
             ->get(['min_quantity', 'unit_price']);
 
+        $rate = ResultPinSchoolRate::activeFor($this->schoolId($request));
+
+        if ($rate) {
+            return response()->json([
+                'currency' => 'NGN',
+                'negotiated' => true,
+                'unit_price' => $rate->unit_price,
+                'tiers' => $tiers,
+                'note' => 'Your school has an agreed rate with SchoolPilot, so you pay this price per PIN at any order size. You set your own price to parents separately.',
+            ]);
+        }
+
         return response()->json([
             'currency' => 'NGN',
+            'negotiated' => false,
+            'unit_price' => null,
             'tiers' => $tiers,
             'note' => 'Price per PIN falls as order size rises. You set your own price to parents separately.',
         ]);
@@ -98,7 +121,12 @@ class ResultPinController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $unitPrice = ResultPinPriceTier::priceFor((int) $request->quantity);
+        $schoolId = $this->schoolId($request);
+
+        // Honours a negotiated rate if SchoolPilot agreed one with this school,
+        // so buying online charges the same price as buying over the phone.
+        $quote = ResultPinPricing::quote($schoolId, (int) $request->quantity);
+        $unitPrice = $quote['unit_price'];
 
         if ($unitPrice === null) {
             return response()->json([
@@ -107,7 +135,7 @@ class ResultPinController extends Controller
         }
 
         $batch = ResultPinBatch::create([
-            'school_id' => $this->schoolId($request),
+            'school_id' => $schoolId,
             'reference' => $this->pins->generateReference('SPRB'),
             'quantity' => (int) $request->quantity,
             'unit_price' => $unitPrice,
@@ -127,6 +155,9 @@ class ResultPinController extends Controller
                 'total_amount' => $batch->total_amount,
                 'currency' => 'NGN',
                 'status' => $batch->status,
+                // So the school can see on the receipt that its agreed rate was
+                // applied, rather than having to check the arithmetic.
+                'negotiated_rate' => $quote['negotiated'],
             ],
         ], 201);
     }

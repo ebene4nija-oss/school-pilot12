@@ -658,6 +658,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'listPriceTiers']);
             Route::post('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'storePriceTier']);
+            // A discounted per-PIN price agreed with one school, which overrides
+            // the rate card for that school on every later purchase or grant.
+            Route::get('/platform/result-pins/school-rates', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'listSchoolRates']);
+            Route::post('/platform/result-pins/school-rates', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'setSchoolRate']);
+            Route::delete('/platform/result-pins/school-rates/{schoolId}', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'removeSchoolRate']);
             Route::get('/platform/result-pins/batches', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'batches']);
             // Issues sellable stock with no gateway involved — for schools that
             // paid by bank transfer or arranged it directly with SchoolPilot.
