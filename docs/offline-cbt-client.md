@@ -7,13 +7,14 @@ existing computer-lab PCs with no internet connection during the paper.
 
 Built so far — §9.1 bundle issuance, §9.2 key release, §9.3 batch sync, §9.4
 question groups, §6.3/§6.4 theory answer modes, §6.6 grouping rules, and the
-§10 parity vectors. Steps 3–12 (relay, candidate client, standalone mode, paper
-scripts, Teacher's Desk, AI suggestions, packaging, pilot) are still design
-only. See §19 for the current state of each step.
+§10 parity vectors. Steps 3–11 (relay, candidate client, paper scripts,
+Teacher's Desk, AI suggestions, packaging, pilot) are still design only. See
+§19 for the current state of each step.
 
-**A school without a network can still run this.** §3.2 defines three transport
-tiers — existing LAN, relay hotspot, and a networkless standalone mode — and
-§3.3 is honest about what the third one costs.
+**A school with no cabling can still run this.** The requirement is that the
+relay and the lab machines share a local network — wired or wireless, with or
+without internet. §3.2 covers both the case where the school has one and the
+case where the relay has to provide it.
 
 Related: [CBT authoring guide](cbt-authoring-guide.md) ·
 [Comprehensive documentation §7.8](SchoolPilot-Comprehensive-Documentation.md) ·
@@ -148,145 +149,102 @@ The per-PC model's failure mode is also the worst one: a candidate whose machine
 dies has no recoverable state, because the only copy of their answers was on the
 disk that failed.
 
-Rejected **as the default**, not forbidden. A lab with no network cannot run the
-relay model at all, and §3.3 brings the per-PC design back for exactly that case
-— with this table as the list of what it is knowingly paying.
+This rejection was revisited when the requirement to support networkless schools
+came up, and **it held**. A per-PC design means importing the paper to every
+machine and collecting answers from every machine, by hand, for every exam — an
+hour of an exam officer's time per sitting, with no recovery when one machine is
+missed. A deployment model that only works when nobody makes a mistake is not a
+deployment model. The relay stays the only architecture.
 
-### 3.2 Three transports, one architecture
+### 3.2 Two transports, one architecture
 
-Nigerian school labs vary from a properly cabled room to forty machines that
-have never been networked to anything. **All three cases must be able to run a
-paper**, so the transport is a deployment tier, not a prerequisite.
+The relay and the candidate machines have to be on the same local network. That
+is the whole requirement — **not a cable, and not the internet.** Any network
+that carries traffic between them will do, and the tiers are about who supplies
+it, not what it is made of.
 
-| Tier | The lab has | How a candidate machine gets its paper | Paper lives on |
-|---|---|---|---|
-| **A** | A switch or router the PCs already use | Existing LAN | 1 machine |
-| **B** | No LAN, but the PCs have working Wi-Fi | Relay broadcasts its own hotspot | 1 machine |
-| **C** | No usable networking at all | Sneakernet in, QR or USB out (§3.3) | Every machine |
+| Tier | Where the network comes from | Typical room size |
+|---|---|---|
+| **A** | One the school already has — a switch, a router, or **any Wi-Fi access point in range of the lab** | Whatever the lab seats |
+| **B** | The relay makes one itself, when the school has none | Constrained — §3.2.1 |
 
-**Tiers A and B are the same software.** Nothing above the socket changes: same
+**Wi-Fi is Tier A, not Tier B.** If the lab machines can see the school's
+wireless network — the office router, the admin block's AP, a MiFi someone
+brings in — they join it, the relay joins it, and the room is served. A
+consumer router handles thirty to sixty clients without complaint, so there is
+no seat limit worth designing around in this case. Tier B exists only for a
+school with *no* network anywhere, wired or wireless.
+
+Two things to verify on any Wi-Fi network before the exam, both cheap and both
+fatal if missed:
+
+- **Client isolation must be off.** Guest SSIDs commonly block client-to-client
+  traffic, which is exactly the traffic this design is made of. A candidate
+  machine that can browse the internet but cannot reach the relay has hit this,
+  and it looks like a broken app rather than a router setting.
+- **The network needs no internet at all.** It is carrying a LAN conversation.
+  A router with an expired data plan, or one never connected to a line, is a
+  perfectly good Tier A network — worth saying to schools explicitly, because
+  they will assume the opposite and rule themselves out.
+
+**Both tiers are the same software.** Nothing above the socket changes: same
 bundle, same key release, same relay-held SQLite, same batch sync, same resume
 story. Tier B is a network-configuration step at provision time, not a second
-codebase.
+codebase — which is exactly why it is the fallback, and why a per-PC mode is
+not (§3.1).
 
-**Tier C is a different mode** and a materially weaker one. It exists so that
-no school is turned away, not because it is a good way to sit an exam.
+The tier is decided per school **at onboarding, from a checklist, never on exam
+morning**. Detecting it takes five minutes: can machine 2 reach machine 1 over
+the wire; if not, do the machines see any Wi-Fi network; if so, can two of them
+reach each other on it.
 
-The tier is decided per school **at onboarding, from a checklist, not on exam
-morning**. A school that discovers its tier at 8am on paper day has already
-failed. Detecting it is a five-minute job for the person doing the install:
-can machine 2 reach machine 1 over the wire; if not, do the machines see a
-Wi-Fi network at all.
+#### 3.2.1 Tier B's ceiling
 
-**On Tier B's ceiling.** Windows' built-in Mobile Hotspot caps at eight
-connected clients, which is well short of a forty-seat room. Options, in order
-of preference: use a spare router or switch the school already owns (making it
-Tier A); sit the paper in waves of eight; or drop to Tier C. **Waves are worse
-than they look** — candidates in wave 1 walk out knowing the paper, and while
-`shuffle_questions` and `questions_per_attempt` blunt that, they do not fix it.
-Only offer waves where the bank is deep enough for genuinely disjoint subsets,
-and say so plainly to the school rather than letting them discover it.
+When the relay has to be the access point, Windows' built-in Mobile Hotspot caps
+at **eight connected clients**. That is a real limit, but it is the limit of one
+fallback path, not of Wi-Fi and not of Tier B as a whole. Answers, in order:
 
-Whether a Rust softAP implementation can raise that cap on the school's actual
-Wi-Fi adapters is worth one spike in step 4, before Tier B is promised to
-anyone — the answer is driver-dependent and cannot be assumed. Until measured,
-**plan Tier B for eight machines.**
+1. **Find any network first.** A router in the office, moved to the lab for the
+   morning, or simply an AP already in range. Costs nothing, makes the school
+   Tier A, and removes the cap entirely. This should be exhausted before Tier B
+   is even discussed — most schools that look like Tier B are Tier A schools
+   nobody asked the right question.
+2. **Raise the cap.** Driving the Wi-Fi adapter as a softAP directly, rather
+   than through the Mobile Hotspot shell, may support many more clients — the
+   answer is driver-dependent and cannot be assumed from a desk. **Spike this in
+   step 4 before Tier B is promised to any school** (§19). Until measured, plan
+   Tier B for eight.
+3. **Sit the paper in waves of eight.** Last resort, and worse than it looks —
+   wave 1 walks out knowing the paper. `shuffle_questions` and
+   `questions_per_attempt` blunt that; they do not fix it. Only offer waves where
+   the question bank is deep enough for genuinely disjoint subsets, and say so
+   plainly to the school rather than letting them find out.
 
-The answer is still never to tell a school to buy a router. Tier C is why.
+#### 3.2.2 The school that fits neither tier
 
-### 3.3 Tier C: standalone mode, and what it costs
+A lab with no wired network, no Wi-Fi reachable from the machines, and machines
+whose adapters cannot even join one **cannot run this client**, and the
+specification says so rather than inventing a mode to cover it. That school
+keeps doing what it does today — paper, or online CBT if there is a line — until
+it has a network.
 
-With no network there is no relay in the room. Each PC runs the same binary in
-`--standalone` and holds its own encrypted bundle. This reopens every row of the
-§3.1 table that the relay model closed, so it ships with its trade-offs written
-down rather than discovered.
+This should be a rare finding, and if it is coming back often, the checklist is
+being run badly. The usual causes are a guest SSID with client isolation on, or
+nobody having asked whether the machines have Wi-Fi adapters at all.
 
-**Provision — the day before.** The invigilator copies the bundle and media from
-one USB stick to each machine. Copying the ciphertext forty times weakens
-nothing: the key is not in it. This is the one place the per-PC model is no
-worse than the relay model, precisely because of §2's decision.
+This is a deliberate reversal. A per-PC standalone mode was designed to close
+this gap and then cut, because it required importing the paper to forty machines
+and collecting answers from forty machines, by hand, for every exam. That is
+around an hour of an exam officer's time per sitting with no recovery when a
+machine is missed, and it is not something a school does twice. Shipping it
+would have turned an honest "not yet" into a promise that fails in week three.
 
-**Unlock — exam morning.** There is no relay to receive a key, and lab PCs
-rarely have webcams, so neither the §5.2 network call nor the QR fallback works.
-The key is entered as a **typed unlock code** — grouped, checksummed, and short
-enough that an invigilator can type it forty times without error (§9.8).
-
-The deadline does not have to ride along with it. `server_deadline_at` is
-already inside the bundle, and because the bundle is AES-256-**GCM**, a deadline
-edited on disk makes the bundle fail to open rather than open with more time on
-the clock. The authentication tag §8.1 asks for to catch tampering is the same
-mechanism that makes Tier C's deadline trustworthy — one of the few places this
-design gets something for free.
-
-**The unlock code never travels on the USB stick.** A stick holding bundle and
-key together turns an overnight theft into a leaked paper, which is the whole
-thing §8.1 exists to prevent. Bundle the night before, code on the morning.
-
-**Sit.** Local SQLite, exactly as the relay does it, plus a mirror to the USB
-stick if one is left in the machine for the sitting. A resident stick is what
-makes a dead PC recoverable in Tier C: move the stick to a spare machine and
-resume from it.
-
-**Collect.** Two routes, and the choice follows the paper:
-
-1. **QR handoff — no extra hardware.** On submit, the client renders the
-   candidate's answers and events as a compact signed envelope, displayed as one
-   or more QR codes. The invigilator photographs each screen with the SchoolPilot
-   mobile app, which decodes them and queues them for the §9.3 batch sync. This
-   uses the phone camera the hard rule explicitly blesses, and needs nothing the
-   school does not already have.
-
-   Capacity is the constraint. A 60-question objective paper's answers compress
-   to a few hundred bytes, well inside a single QR code, with room for integrity
-   events and a signature. **Essays do not fit and must never be chunked across
-   twenty screens** — a teacher photographing twenty codes per candidate will get
-   it wrong, and a half-captured essay is worse than none.
-
-2. **USB collection.** The invigilator walks a stick machine to machine and
-   exports each attempt file. Required for on-screen essays. Slower, and it
-   assumes sticks the school may not have.
-
-**A paper with objectives on screen and theory on paper (§6.4) is Tier C's sweet
-spot** — the QR route carries it end to end, the booklets carry the theory, and
-nothing needs a network or a purchase. Steer no-LAN schools here first.
-
-**On USB sticks and the hardware rule.** The root `CLAUDE.md` bans purchased
-hardware, and forty sticks is a purchase. The line drawn here is that sticks are
-**optional in Tier C, never required**: provisioning needs one stick, which any
-school has; resident sticks and USB collection are upgrades a school may choose
-for essay papers or for dead-PC resilience. A school that buys none can still sit
-an objectives paper end to end via QR. If that ever stops being true — if the
-design starts needing a stick per seat — the design has drifted into buying
-schools hardware and should be pulled back.
-
-#### 3.3.1 What Tier C gives up
-
-| Property | Tier A/B | Tier C | Mitigation |
-|---|---|---|---|
-| Paper at rest | 1 disk | 40 disks | Same ciphertext, same key withheld — no material change |
-| Candidate PC dies | Resume from relay | Work since last export lost | Resident USB stick makes the attempt portable |
-| Deadline | Enforced by relay | Enforced by the local client | GCM-authenticated deadline in the bundle; skew logged; **the invigilator calls time in the room** |
-| Answer integrity | Relay holds the record | Machine self-reports | Envelope signed from the content key; export under invigilation |
-| Sync | One queue, one upload | 40 captures or 40 exports | QR route keeps it to one photo per candidate |
-
-Two of those are real and must be said out loud rather than buried:
-
-- **§15 says the client must never trust its own clock, and Tier C makes it do
-  exactly that.** A candidate with BIOS access who sets the clock back and
-  restarts can extend their own paper. The signed deadline means they must
-  restart to do it, and a restart mid-paper is visible to an invigilator walking
-  the room. This is deterrence and evidence, not prevention — the same honesty
-  §8.2 applies to alt-tabbing.
-- **A candidate with administrative rights can edit local SQLite before export.**
-  Signing the envelope with a key derived from the content key raises the bar,
-  but the key is on the machine during the exam and so is the candidate.
-  **Accepted, and documented** — Tier C's integrity ceiling is lower than
-  Tier A's, and a school running high-stakes exams should be told to fix its
-  network rather than sold a promise the mode cannot keep.
-
-Neither is a reason to withhold the mode. A school with no network today runs
-its exams on paper, where a candidate can also cheat and an invigilator is also
-the control. Tier C has to beat paper, not beat Tier A.
+The hard rule against purchased hardware still holds and is not in tension with
+this. It bans *this product* requiring dedicated equipment — exam appliances,
+dongles, scanners. A lab network is ordinary school IT that every computer room
+needs for every other purpose, and telling a school its lab needs a switch is
+different in kind from telling it to buy a device that exists only to run our
+exams.
 
 ---
 
@@ -296,21 +254,16 @@ the control. Tier C has to beat paper, not beat Tier A.
 |---|---|---|
 | **Relay** | Invigilator's laptop or one lab PC | Holds bundle, issues papers, stores answers and scripts, syncs |
 | **Candidate client** | Each lab PC | Renders paper, captures answers, reports events |
-| **Standalone client** | Each lab PC, Tier C only | Candidate client plus the parts of the relay it cannot do without (§3.3) |
 | **Backend additions** | Existing Laravel API | Bundle issuance, key release, batch sync, groups, scripts, marking (§9) |
-| **Mobile QR capture** | SchoolPilot mobile app | Decodes Tier C answer envelopes and feeds them to batch sync (§9.8) |
 | **Teacher's Desk** | Web portal | Marking queue for theory answers and scripts (§7) |
 
-All three desktop roles ship as **one binary in three modes** (`--relay`,
-`--standalone`, default). One codebase, one installer, one update path; a school
-that only needs a five-machine room can run relay and candidate on the same PC.
+Relay and candidate client ship as **one binary in two modes** (`--relay` /
+default). One codebase, one installer, one update path; a school that only needs
+a five-machine room can even run relay and candidate on the same PC.
 
-Standalone is deliberately built as *the candidate client with a local bundle
-store and exporter bolted on*, not as a fourth program. Everything above the
-transport — rendering, groups, theory editors, autosave, `client_sequence`,
-event capture, retention — must be shared code. Two divergent renderers is how a
-Tier C candidate ends up sitting a subtly different paper from a Tier A one, and
-§10 already explains why that class of drift is the expensive kind.
+There is no third mode. Tier B changes how the relay is reached, not what runs
+on a candidate machine, and keeping it that way is what stops the client
+sprawling into per-deployment variants (§3.2).
 
 ---
 
@@ -344,9 +297,8 @@ Candidate clients pair to the relay in this phase too (§8.4), so exam morning
 involves no configuration.
 
 **Tier B** adds one step here and only here: the relay starts its hotspot and
-the candidate machines join it once, before pairing. **Tier C** replaces this
-section entirely with the USB copy in §3.3 — same bundle, same media, no
-pairing, because there is nothing to pair to.
+the candidate machines join it once, before pairing. Everything after that is
+identical to Tier A, and this is the only section that knows the difference.
 
 ### 5.2 Unlock — exam morning, ~10 seconds of connectivity
 
@@ -361,10 +313,9 @@ picks it from disk. No hardware, and no 40-character string to retype.
 A time-lock alone is not acceptable as the gate — local clocks can be changed.
 Key release is the gate.
 
-**Tier C** has no relay to receive either form, so it uses the typed unlock code
-of §3.3. That is the one place the tiers genuinely diverge on the security path,
-and §9.8 specifies the code so that the divergence lives in one endpoint rather
-than spreading through the client.
+Tier B changes nothing here. The relay needs ten seconds of *internet*, which is
+the invigilator's phone hotspot or the school's line — unrelated to whether the
+lab itself has a network.
 
 ### 5.3 Sit — zero internet
 
@@ -383,11 +334,8 @@ A candidate whose PC dies moves to a spare machine, re-authenticates, and
 resumes: the relay holds their answers, so nothing is lost. This is the single
 biggest practical advantage of the architecture and should be tested first.
 
-**In Tier C** the same list applies with the machine playing the relay's part
-for itself, with two differences that follow from §3.3: the deadline is read
-from the bundle rather than from a live relay, and resume after a dead PC works
-only where a USB stick was resident. Everything else — SQLite persistence,
-`client_sequence`, event capture — is the same code path.
+None of this differs by tier: a hotspot is a network like any other, and the
+resume path does not know which one it is on.
 
 ### 5.4 Grade — server-side, after sync
 
@@ -414,12 +362,8 @@ events. The existing conflict rules apply unchanged (§11). Partial syncs are sa
 to retry. Once an attempt is confirmed finalised server-side, the relay may
 delete its local copy — and must, per §13.
 
-**Tier C** reaches the same endpoint by a different road: envelopes captured by
-the mobile app, or attempt files collected on a stick and loaded into any
-installed copy running `--relay`, which then syncs them normally. The batch
-payload is identical either way — one sync path server-side, three ways of
-filling it. A Tier C school still gets the §11 "synced 400, ignored 12,
-rejected 0" screen, because that reassurance is the point of it.
+The relay may have to be carried somewhere with a signal to do it, which is fine
+— it is one laptop, and §5.5 is the only phase with no time pressure on it.
 
 ---
 
@@ -541,8 +485,9 @@ Why keep the paper route at all:
 - It is the honest answer for maths and sciences, where diagrams, working and
   notation are still faster on paper than in any editor we would ship.
 - It cuts offline complexity sharply: a school can run objectives in the client
-  and theory on paper, which is a genuinely good option for a low-spec lab and a
-  fallback if §3.2's LAN question comes back badly.
+  and theory on paper, which is a genuinely good option for a low-spec lab —
+  and a shorter on-screen section is exactly what makes a Tier B room capped at
+  eight machines survivable in waves (§3.2.1).
 
 An exam may mix modes freely — objectives on screen, Section B on paper.
 
@@ -731,14 +676,11 @@ documentation is explicit that this needs a documented lawful basis under NDPA
 | Answer keys or marking rubrics extracted | Not present in the bundle at all (§5.4) | None |
 | Candidate alt-tabs to a browser | Kiosk mode, focus-loss events logged | **Deterrence and evidence, not prevention** |
 | Candidate photographs the screen | Nothing prevents this | **Accepted.** Invigilation is human |
-| Clock manipulation on candidate PC | Deadline enforced by relay, not candidate | None material on Tier A/B |
+| Clock manipulation on candidate PC | Deadline enforced by relay, not candidate | None material |
 | Paper script substituted after the exam | QR ties page to attempt; page counts reconciled | Physical chain of custody stays the school's job |
-| *Tier C:* bundle copied off a lab PC overnight | Encrypted at rest, key not yet issued | None material — same as the relay row |
-| *Tier C:* unlock code seen being typed | It opens only a bundle already on that machine, and only once the exam has opened | Accepted |
-| *Tier C:* candidate edits local SQLite before export | Envelope signed from the content key; export under invigilation | **Accepted** — §3.3.1 |
-| *Tier C:* candidate sets the BIOS clock back | Deadline is inside the GCM-authenticated bundle and cannot be edited; extending the paper requires a restart | **Deterrence and evidence** — invigilator sees the restart |
+| Candidate joins the Tier B hotspot with their own phone | The passphrase is not the access control — the relay authenticates candidates and pins TLS (§8.3) | A phone on the network is not a phone in the paper |
 
-The third, fifth, sixth and last two rows matter for how this is sold. A desktop app on a
+The third, fifth and sixth rows matter for how this is sold. A desktop app on a
 school's Windows PCs cannot truly lock down a machine, and claiming otherwise
 will eventually cost an argument with a parent over a malpractice ruling. The
 honest claim is **kiosk fullscreen, suppressed task-switching, and a logged
@@ -754,12 +696,9 @@ both a CA and trust-on-every-connect prompts.
 **This is identical on Tier B.** A relay-broadcast hotspot is still a network
 with other people's machines on it, and a WPA2 passphrase shared with a room of
 candidates is not a secret. Do not let "it's our own hotspot" become a reason to
-weaken the pinned-TLS requirement — if anything the hotspot is the weaker
-network, because its passphrase is typed in front of forty people.
-
-**Tier C has no transport to secure**, which removes this row and adds the two
-in §3.3.1 instead. The USB stick is the only thing crossing between machines,
-and it carries ciphertext only.
+weaken the pinned-TLS requirement. If anything the hotspot is the weaker network
+of the two, because its passphrase gets typed in front of forty people — pinned
+TLS is what makes that not matter.
 
 ### 8.4 Pairing
 
@@ -768,9 +707,9 @@ a short pairing code, the candidate client enters it, and the two exchange a
 long-lived device token plus the pinned certificate fingerprint. Pairing is
 staff-supervised and happens the day before, never during the exam.
 
-Tier B pairs the same way once the machines have joined the hotspot. Tier C does
-not pair at all; its equivalent staff-supervised moment is the typed unlock code
-on exam morning.
+Tier B pairs the same way, once the machines have joined the hotspot. Pairing is
+also where a Tier B room discovers it has hit the client cap (§3.2.1) — the day
+before, with time to do something about it, rather than on exam morning.
 
 ---
 
@@ -919,73 +858,7 @@ New columns on `cbt_attempt_answers`: `ai_suggested_marks` (decimal, nullable),
 ride along in the batch payload rather than getting their own endpoint. They are
 worthless without the attempt they belong to.
 
-### 9.8 Tier C: unlock codes and answer envelopes
-
-Two additions, both small, both required before any standalone client can work.
-
-**Typed unlock code.**
-
-```
-POST /api/v1/cbt/offline-bundle/{bundleId}/unlock-code
-     role: school_admin | teacher      — same authorisation and audit as §9.2
-```
-
-A 256-bit key is around 52 base32 characters. Typed once that is tolerable;
-typed forty times on exam morning it is a guaranteed transcription error and
-half an hour of an invigilator's day. So the content key is **derived from the
-code rather than being the code**:
-
-- The code is ~60 bits — twelve base32 characters, grouped `XXXX-XXXX-XXXX`,
-  with a checksum character so a mistyped code is rejected instantly rather than
-  producing a decryption failure the invigilator cannot interpret.
-- The content key is `Argon2id(code, bundle_salt)`, computed at bundle build and
-  again on the client at unlock. A deliberately slow KDF is what makes 60 bits
-  enough: offline brute force against a bundle stolen the night before is
-  infeasible at a fraction of a second per guess, and the secret is worthless
-  once the exam has been sat.
-- Use base32 without `I`, `L`, `O`, `U` — the first three because they are
-  misread as 1 and 0, the last because it turns codes into words nobody wants
-  printed on a school document.
-- Refused before `opens_at`, rate-limited and audited exactly as §9.2, and shown
-  once. §9.2's key release stays as it is for Tier A and B; this is an
-  additional representation of the same secret, not a replacement.
-
-**Answer envelope.**
-
-```
-POST /api/v1/cbt/offline-sync/envelope
-     role: school_admin | teacher
-     body: { envelopes: [ "<base45 payload>", ... ] }
-```
-
-The compact form a Tier C client renders as QR codes and the mobile app
-photographs:
-
-- CBOR, deflated, base45-encoded. Payload: `bundle_id`, `attempt_id`, answers
-  as `question_id` / `response` / `client_sequence` / `client_timestamp`,
-  events, a `submit` flag, and `part`/`of` counters.
-- Authenticated with an HMAC over the payload, keyed by
-  `HKDF(content_key, "envelope", attempt_id)`. The server holds the content key,
-  so it can verify. An envelope that fails verification is rejected loudly, not
-  quietly dropped — it means either a corrupt read or a forged one, and the
-  exam officer needs to know which candidate it was.
-- **The endpoint verifies, then delegates to the same service method as
-  `batchSync`.** No second write path for answers, for the same reason §9.6
-  refuses to build a second write path for marks.
-- Off-roster attempts are rejected by the §9.3 rule, unchanged.
-- **Cap the number of parts.** If a candidate's answers will not fit in a small
-  number of codes — three is a sensible starting point, to be confirmed against
-  real photographs on a cheap Android phone — the client must refuse the QR route
-  and tell the invigilator to collect by USB. A teacher photographing twelve
-  screens per candidate will miss one, and a silently truncated submission is the
-  worst failure this document contains.
-
-Mobile side: a capture screen that shows **captured versus expected per
-candidate**, the same received-versus-expected discipline §6.5 applies to script
-pages, and for the same reason — the missing one must be visible in the room,
-while the room is still supervised.
-
-### 9.9 Tests
+### 9.8 Tests
 
 Per the workflow rule, each new endpoint ships with tests. At minimum:
 
@@ -998,13 +871,6 @@ Per the workflow rule, each new endpoint ships with tests. At minimum:
 - An answer with `ai_suggestion_status = pending_approval` blocks release.
 - `graded_by` is never null on a released attempt.
 - Script re-upload replaces rather than duplicates a page.
-- Unlock code refused before `opens_at`, exactly as the raw key is.
-- A mistyped unlock code fails its checksum before any decryption is attempted.
-- The key derived from the unlock code opens the same bundle as the key returned
-  by §9.2 — the two representations must never drift apart.
-- An envelope with a bad HMAC is rejected, and says so.
-- A replayed envelope is idempotent, like a replayed batch.
-- An envelope for an attempt outside the bundle roster is rejected.
 
 ---
 
@@ -1132,19 +998,11 @@ sensitive under NDPA, and the data subjects are children.
 - The relay must expose a visible "purge exam data" action for the invigilator,
   and log it.
 
-**Tier C multiplies this problem by forty.** Every rule above now applies to
-every lab PC, and nobody is going to walk a lab clicking purge on forty
-machines. So:
-
-- The standalone client purges its own bundle and attempt data on the same
-  triggers, **without needing anyone to come back to the machine** — on
-  confirmed export for attempt data, on `closes_at + 7 days` for an unused
-  bundle. Automatic, because manual will not happen.
-- A collection stick holds children's answers and must be purged when the relay
-  confirms the sync. Prompt for it; do not rely on someone remembering.
-- The lab machines are shared with students on ordinary school days. Data left
-  behind is not merely retained, it is retained *on a machine the data subjects
-  themselves use*, which is worse than the laptop-in-a-bag case §13 opens with.
+Retention is one of the quieter arguments for the relay model: there is one
+machine to purge, and it belongs to a member of staff. A per-PC design would
+have spread the same obligation across forty machines that students themselves
+use on ordinary school days — retained data sitting on the data subjects' own
+hardware, which is worse than the laptop-in-a-bag case this section opens with.
 
 A laptop carrying last term's mock papers, 400 children's answers and their
 scanned scripts for months is a data-protection incident waiting to happen.
@@ -1160,14 +1018,12 @@ Retention is a feature, not cleanup.
 | Relay dies mid-exam | Restart; SQLite is the source of truth; log `relay_restarted`. **Single point of failure — see below** |
 | Power cut, whole lab | On restore, relay and clients resume; deadline honoured from `server_deadline_at` |
 | LAN drops | Candidate client shows a clear banner, buffers locally, reconnects and flushes |
-| Hotspot drops (Tier B) | Same as LAN drop; relay restarts the hotspot, clients rejoin and flush |
-| Tier B hits its client cap | Ninth machine is refused with a plain message, not a hang. Caught at pairing the day before, never on exam morning |
-| Tier C PC dies | Resume from the resident USB stick on a spare machine; with no stick, work since the last export is lost |
-| Tier C: QR won't scan | Retry at higher contrast; if it still fails, fall back to USB collection for that candidate. Never mark a candidate captured on a partial read |
+| Hotspot drops (Tier B) | Same as a LAN drop; relay restarts the hotspot, clients rejoin and flush |
+| Tier B hits its client cap | The ninth machine is refused with a plain message, not a hang. Caught at pairing the day before, never on exam morning |
 | No connectivity after exam | Relay holds queue indefinitely; sync when available; nothing expires locally |
 | Sync interrupted halfway | Retry; `supersedes()` makes it idempotent |
 | Exam closed server-side while relay offline | Sync still accepted and closed out — `syncOfflineAnswers` already saves late batches, then finalises |
-| Two relays provisioned for one exam | Must be prevented: bundle issuance records the relay identity; a second issuance requires explicit staff override. **Copying one bundle to forty Tier C machines is one issuance, not forty** — the check is on issuance, not on copies |
+| Two relays provisioned for one exam | Must be prevented: bundle issuance records the relay identity; a second issuance requires explicit staff override |
 | Script page won't match by QR | Exceptions tray, manual assignment; never discarded (§6.5) |
 | Script page never captured | Desk shows received vs expected; release blocked while marks are outstanding |
 | Booklet printed for the wrong candidate | QR mismatch surfaces at capture, not at marking |
@@ -1221,11 +1077,9 @@ equations render as raw TeX is not a paper anyone can sit"). Do not undo that.
 on older unpatched machines. The installer must bundle the evergreen bootstrapper
 and work without internet. Test on the oldest machine the pilot school has.
 
-**The tiers add no new technology.** Tier B is Windows hotspot APIs the OS
-already exposes; Tier C needs a QR encoder, an Argon2id implementation and a
-CBOR codec, all of which are ordinary Rust crates that vendor cleanly into an
-offline build. Nothing here argues against the Tauri choice, and the standalone
-mode's tiny footprint argues for it — Tier C schools have the oldest hardware.
+**Tier B adds no new technology**, only Windows networking APIs the OS already
+exposes. Whether those APIs will serve a whole room is §3.2.1's open question,
+and it is a question about drivers rather than about the framework choice.
 
 ---
 
@@ -1238,11 +1092,11 @@ mode's tiny footprint argues for it — Tier C schools have the oldest hardware.
   document a clear "More info → Run anyway" walkthrough with screenshots.
 - **Offline installation:** the installer must work from a USB stick with no
   internet. Assume that is the common case.
-- **Silent install matters more than it looks.** A Tier C deployment means
-  walking forty machines with a stick, so the installer needs an unattended
-  switch and the bundle copy needs to be one action, not a wizard. The
-  difference between a two-minute and a ten-minute per-machine routine is the
-  difference between a lab set up in an afternoon and one that is not ready.
+- **Silent install matters more than it looks.** The candidate client still has
+  to reach forty machines once, at first setup, so the installer needs an
+  unattended switch. This is a one-time cost per lab rather than a per-exam one
+  — which is precisely the line §3.1 draws between an acceptable deployment and
+  an unacceptable one.
 - **Updates:** version-check on provision (an online moment anyway). The client
   must refuse to run a bundle built for a newer bundle-format version and say so
   clearly, rather than failing obscurely at unlock.
@@ -1255,10 +1109,9 @@ mode's tiny footprint argues for it — Tier C schools have the oldest hardware.
 |---|---|
 | Parity | Shuffle vectors identical between PHP and client, including grouped papers (§10) — non-negotiable |
 | Unit | Sequence monotonicity across restart; deadline enforcement; checksum verification; word-cap enforcement |
-| Integration | Full provision → unlock → sit → sync against a real backend, with a mixed paper: objectives, a comprehension group, an on-screen essay and an on-paper theory section. **Run it once per tier** |
-| Failure injection | Kill candidate mid-essay; kill relay mid-exam; pull LAN; drop the hotspot; kill a standalone PC with and without a resident stick; skew clocks; corrupt a media file; corrupt the bundle; upload an unmatchable script page; photograph a damaged QR |
-| Scale | 40 concurrent candidates against one relay laptop, with essay-length payloads. Measure before promising a room size. Separately, measure Tier B's real client cap on the pilot school's adapters |
-| Tier C capture | QR codes photographed on a cheap Android phone, in lab lighting, off an old monitor, by someone who is not the developer. This is the tier's weakest link and the easiest thing to over-estimate from a desk |
+| Integration | Full provision → unlock → sit → sync against a real backend, with a mixed paper: objectives, a comprehension group, an on-screen essay and an on-paper theory section. **Run it on both tiers** |
+| Failure injection | Kill candidate mid-essay; kill relay mid-exam; pull the LAN; drop the hotspot; skew clocks; corrupt a media file; corrupt the bundle; upload an unmatchable script page |
+| Scale | 40 concurrent candidates against one relay laptop, with essay-length payloads. Measure before promising a room size. Separately and earlier, **measure Tier B's real client cap** on hardware the pilot school actually has (§3.2.1) |
 | Security | Bundle unreadable before key release; **no answer keys and no rubrics in bundle**; batch sync rejects off-roster attempts |
 | Marking | AI suggestion cannot reach `awarded_marks` without a decision; release blocked while `pending_approval` exists; `graded_by` always a human |
 
@@ -1285,28 +1138,20 @@ objective answers.
 3. **Relay skeleton** — auth, provision, bundle storage, SQLite, sync. No UI
    beyond a status window. Prove the round trip with a scripted fake candidate.
 4. **Candidate client** — pairing, paper rendering including groups and theory
-   editors, answer capture, resume. **Tier B lands here too**: the hotspot is a
-   provisioning step plus one spike to measure the real client cap (§3.2), not a
-   separate build.
-5. **Standalone mode [Tier C]** — §9.8 unlock codes and answer envelopes on the
-   backend, then `--standalone` on the client: local bundle store, typed unlock,
-   USB provision, QR export, and the mobile capture screen. Sequenced after
-   step 4 on purpose — standalone is the candidate client plus an exporter
-   (§4), so building it first would mean building the shared half twice.
-6. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
-7. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
-8. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part
+   editors, answer capture, resume. **Tier B lands here too**, as a provisioning
+   step rather than a separate build — and with it the softAP spike of §3.2.1,
+   which should be done *early in the step*, not at the end. It is cheap, and a
+   bad answer changes what can be sold before the UI work is sunk.
+5. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
+6. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
+7. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part
    of this document that is optional, and it should be built once marking works
    without it.
-9. **Integrity, kiosk, events.**
-10. **Failure injection and the 40-candidate scale test**, on every tier the
-    pilot schools actually use.
-11. **Packaging, installer, offline install, update path.**
-12. **Pilot** with one school on a real mock exam, with an online fallback ready
-    and an engineer physically present. If two pilot schools are available,
-    **make one of them a Tier C school** — the networkless path is the one with
-    the least design confidence behind it and the most that only contact with a
-    real lab will teach.
+8. **Integrity, kiosk, events.**
+9. **Failure injection and the 40-candidate scale test**, on both tiers.
+10. **Packaging, installer, offline install, update path.**
+11. **Pilot** with one school on a real mock exam, with an online fallback ready
+    and an engineer physically present.
 
 Steps 1–3 are where the risk is. If the pre-issued-attempt model in §9.1 does
 not survive contact with `startAttempt`'s locking and `max_attempts` accounting,
@@ -1335,34 +1180,37 @@ Two other things surfaced that the design did not anticipate, both now fixed:
   means `opens_at` is now required before an offline paper can be published or
   bundled.
 
-Steps 2, 6 and 7 deliver value to the existing online product whether or not the
-desktop client ever ships. If the project is ever paused, pause it after step 7.
+Steps 2, 5 and 6 deliver value to the existing online product whether or not the
+desktop client ever ships. If the project is ever paused, pause it after step 6.
 
 ---
 
 ## 20. Open questions
 
-1. **Which tier is each pilot school?** No longer a blocker — all three tiers are
-   supported (§3.2) — but it decides sequencing, because a Tier C pilot needs
-   step 5 before it can run at all. Still one WhatsApp message: is there a
-   switch or router; if not, do the machines have Wi-Fi.
-2. **How many candidates per room, realistically?** Sets the scale target, and on
-   Tier B decides whether the eight-client cap forces waves or Tier C.
-3. **Who is the relay operator** — the exam officer, or an IT person? Determines
+1. **Which tier is each pilot school, and how many machines?** One WhatsApp
+   message: is there a switch or router; if not, do the machines have Wi-Fi; how
+   many seats. A school that answers "neither" cannot run this client at all
+   (§3.2.2), and that is worth knowing before it is discovered on exam morning.
+2. **How many clients can the relay's hotspot actually hold?** §3.2.1. Not a
+   question for a school — a question for one afternoon with a laptop and a
+   handful of PCs, and the single measurement that decides how much of the
+   no-LAN market Tier B can serve. Do it early.
+3. **How many candidates per room, realistically?** Sets the scale target.
+4. **Who is the relay operator** — the exam officer, or an IT person? Determines
    how much the relay UI must explain itself.
-4. **Is deferred results (§5.4) acceptable** to schools running mocks, or does
+5. **Is deferred results (§5.4) acceptable** to schools running mocks, or does
    anyone genuinely need instant offline scores? If the latter, the answer-key
    threat model has to be reopened — do not do this quietly.
-5. **Do pilot schools want theory on screen or on paper?** If the honest answer
+6. **Do pilot schools want theory on screen or on paper?** If the honest answer
    is overwhelmingly paper, §6.4's paper route becomes the priority and the
    on-screen essay editor can wait.
-6. **Who marks — the subject teacher or an exam officer?** Decides whether the
+7. **Who marks — the subject teacher or an exam officer?** Decides whether the
    Desk's default scope is "my classes" or "the whole exam".
-7. **Would any school actually enable AI marking?** Worth asking before building
+8. **Would any school actually enable AI marking?** Worth asking before building
    §7.3. It is the most speculative item here and the easiest to defer.
-8. **Code-signing budget?** Decides §17.
-9. **Windows versions in the field** at the pilot school. Decides the WebView2
-   fallback story.
+9. **Code-signing budget?** Decides §17.
+10. **Windows versions in the field** at the pilot school. Decides the WebView2
+    fallback story.
 
 ---
 
