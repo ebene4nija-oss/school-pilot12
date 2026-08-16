@@ -23,17 +23,13 @@ paper and send answers back to that laptop over the school's own network.
 
 ### 1. On the relay laptop
 
-Right-click PowerShell → **Run as administrator**, then:
+Double-click **SchoolPilot-Setup.exe**. Windows will ask for administrator
+permission — say yes. When it asks what this machine is, choose **Relay**.
 
-```powershell
-cd <this folder>
-.\Install-Relay.ps1 -FingerprintOut .\fingerprint.txt
-```
-
-It prints a **fingerprint** — a long string like `e0:fc:48:3c:…`. This is how
-every lab PC recognises the real relay. It does not change. `-FingerprintOut`
-saves it onto this stick so the next step can read it automatically, which is
-what you want when you are about to walk to forty machines.
+At the end it shows a **fingerprint** — a long string like `e0:fc:48:3c:…`.
+This is how every lab PC recognises the real relay, and it does not change.
+**Write it down or photograph it now**, because you need it on every other
+machine in the room.
 
 Then sign in to your school (needs internet, once):
 
@@ -46,14 +42,13 @@ relay login --base-url https://<your-school>.schoolpilot.ng --email you@school.n
 **Every machine that will be used, not a sample.** A PC you skip is a PC that
 cannot sit the paper.
 
-With the same stick, as administrator:
+Double-click the same **SchoolPilot-Setup.exe**, choose **Exam client**, and fill
+in:
 
-```powershell
-.\Install-Candidate.ps1 -RelayUrl https://<relay-ip>:8443 -FingerprintFile .\fingerprint.txt
-```
-
-To find `<relay-ip>`, run `ipconfig` on the relay laptop and take the IPv4
-address on the lab's network.
+- **Relay address** — `https://<relay-ip>:8443`. To find `<relay-ip>`, run
+  `ipconfig` on the relay laptop and take the IPv4 address on the lab network.
+- **Relay fingerprint** — the string from step 1.
+- **Pairing code** — leave blank for now; that is step 4.
 
 This puts a **Sit Exam** shortcut on the desktop.
 
@@ -75,14 +70,12 @@ On the relay laptop:
 relay pair
 ```
 
-It shows a short code like `T7RN-DVPN` and waits. **Leave it running.** Then on
-each lab PC:
+It shows a short code like `T7RN-DVPN` and waits. **Leave it running.**
 
-```powershell
-.\Install-Candidate.ps1 -RelayUrl https://<relay-ip>:8443 `
-                        -FingerprintFile .\fingerprint.txt `
-                        -PairingCode T7RN-DVPN
-```
+On each lab PC, run **SchoolPilot-Setup.exe** again, choose **Exam client**, and
+this time enter the pairing code as well. (If you already know the code when you
+first install a machine, do steps 2 and 4 in one go and save yourself a lap of
+the room.)
 
 When the room is done, press Ctrl-C on the relay. It lists what it paired —
 check the count against the number of machines in the room.
@@ -135,11 +128,32 @@ and it should not carry them around for a term.
 
 ---
 
+## Rolling out to a whole lab at once (optional)
+
+For a school with a management tool or a login script, the installer takes
+command-line switches and needs no clicking:
+
+```powershell
+# On the relay laptop, capturing the fingerprint to a file:
+SchoolPilot-Setup.exe /VERYSILENT /ROLE=relay /FINGERPRINTOUT=D:\fingerprint.txt
+
+# On each lab PC:
+SchoolPilot-Setup.exe /VERYSILENT /ROLE=client ^
+    /RELAY=https://10.0.0.4:8443 /FINGERPRINT=<the fingerprint> /PAIR=T7RN-DVPN
+```
+
+**Check the exit code.** `0` means the machine is installed *and configured*.
+Anything else means it is not ready — a wrong fingerprint, a wrong pairing code,
+or the relay not in pairing mode — and that machine will not be able to sit the
+paper. A rollout that ignores exit codes will look finished and will not be.
+
+---
+
 ## Troubleshooting
 
 **"This machine has not been paired"** — that PC was missed on pairing day. Run
-`relay pair` on the relay and re-run `Install-Candidate.ps1` on that PC with the
-code. It takes a minute.
+`relay pair` on the relay and run the installer again on that PC with the code.
+It takes a minute.
 
 **A PC reaches the internet but not the relay** — this is almost always
 **client isolation** on a guest Wi-Fi network, which blocks machines on the same
@@ -153,8 +167,13 @@ that the fingerprint matches the relay's screen. Do **not** work around this by
 skipping the fingerprint; it is what stops a machine trusting the wrong relay.
 
 **"The exam window could not be opened"** mentioning WebView2 — that machine is
-missing the WebView2 runtime and the installer had no copy to install. See
-`webview2\PUT-WEBVIEW2-INSTALLER-HERE.txt`.
+missing the WebView2 runtime and this installer had no copy of it. Tell us; we
+will send a build with the runtime included.
+
+**"SchoolPilot is running on this machine"** — the installer will not run while
+an exam window or a relay is open, because installing would close it. Close the
+exam window, or press Ctrl-C in the relay's window, and try again. If an exam is
+actually in progress, wait until it finishes.
 
 **SmartScreen: "Windows protected your PC"** — this software is not yet
 code-signed, so Windows warns on first run. Click **More info** → **Run anyway**.

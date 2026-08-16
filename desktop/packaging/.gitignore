@@ -1,4 +1,5 @@
-# Build output. The stick is produced by Build-Package.ps1, never committed —
-# a 3 MB binary per commit, and a stale one is worse than none.
+# Build output. The installer is produced by Build-Package.ps1, never committed —
+# a 4.5 MB binary per commit, and a stale one is worse than none.
 dist/
 webview2/*.exe
+_test-only.iss

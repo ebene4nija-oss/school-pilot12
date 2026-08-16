@@ -90,6 +90,28 @@ $pin = relay init --quiet                     # on the relay laptop
 relay init --relay https://10.0.0.4:8443 --fingerprint $pin   # on each PC
 ```
 
+## Shipping it to a school
+
+`desktop/packaging` builds the installer a school actually receives — one
+`SchoolPilot-Setup-<version>.exe`, 4.5 MB, covering both roles:
+
+```powershell
+cd desktop/packaging
+.\Build-Package.ps1 -WebView2 C:\downloads\MicrosoftEdgeWebView2RuntimeInstallerX64.exe
+```
+
+Needs Inno Setup (`winget install JRSoftware.InnoSetup`). The wizard asks
+whether the machine is the relay or an exam client and configures it — including
+pairing — so nothing is typed at a command line in the lab. `/VERYSILENT` with
+`/ROLE`, `/RELAY`, `/FINGERPRINT` and `/PAIR` covers an unattended rollout, and
+a machine that installs but fails to configure exits non-zero rather than
+looking done. [`RUNBOOK.md`](packaging/RUNBOOK.md) is the document for the
+person setting up the room.
+
+Two things before a school sees it: pass `-WebView2` (older Windows 10 lab
+machines will not have the runtime, and the installer cannot fetch it in a lab),
+and the binary is unsigned, so SmartScreen warns on first run.
+
 ## Building
 
 Needs the Rust MSVC toolchain and Visual Studio Build Tools (`rusqlite` is

@@ -1,0 +1,12 @@
+Put MicrosoftEdgeWebView2RuntimeInstallerX64.exe in this folder.
+
+Get it from a machine that HAS internet:
+  https://developer.microsoft.com/microsoft-edge/webview2/
+
+Download the "Evergreen Standalone Installer" (x64), NOT the bootstrapper.
+The bootstrapper downloads at install time, which is the one thing a school
+lab cannot do.
+
+Without this, the exam window will not open on any machine that does not
+already have WebView2 - which is older Windows 10 machines, exactly the ones
+a Nigerian school lab is likely to have.
