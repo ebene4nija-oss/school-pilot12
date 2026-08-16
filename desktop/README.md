@@ -4,11 +4,12 @@ The relay half of the offline CBT client. Design and rationale live in
 [`docs/offline-cbt-client.md`](../docs/offline-cbt-client.md); this file is how
 to run and work on the code.
 
-**Status:** step 3 complete; step 4 complete but for pairing. The relay runs and
-serves over pinned TLS, a candidate can sit a whole paper — maths included — and
-`relay candidate` opens it in a fullscreen kiosk window that refuses to start
-against a relay it cannot verify. Pairing (§8.4) is the remaining piece; read
-[Not done yet](#not-done-yet) before showing this to a school.
+**Status:** step 4 complete. The relay serves over pinned TLS, lab machines are
+paired the day before, a candidate sits a whole paper — maths included — in a
+fullscreen kiosk window, and an unpaired machine cannot pull a paper at all.
+What remains of step 4 is the softAP measurement of §3.2.1, which needs a room
+rather than code. Read [Not done yet](#not-done-yet) before showing this to a
+school — kiosk still means deterrence and evidence, not prevention.
 
 ## Try it in one command
 
@@ -42,6 +43,7 @@ Only four moments touch the network, and none of them is during the exam:
 relay init                                                          # at installation
 relay login     --base-url https://kings.schoolpilot.ng --email …   # once
 relay provision --exam 42                                           # day before
+relay pair                                                          # day before, staff watching
 relay serve                                                         # ~10s on exam morning
 relay sync                                                          # afterwards
 relay purge                                                         # §13 retention
@@ -61,11 +63,24 @@ but an address and a fingerprint — no token, no school, no exam data:
 relay init --relay https://10.0.0.4:8443 --fingerprint e0:fc:48:3c:…
 ```
 
+Then, while `relay pair` is running on the relay, each machine is enrolled with
+the code on the relay's screen (§8.4):
+
+```powershell
+relay init --relay https://10.0.0.4:8443 --fingerprint e0:fc:48:3c:… `
+           --pair T7RN-DVPN --name "Lab PC 07"
+```
+
 On exam morning that machine needs no arguments at all:
 
 ```powershell
 relay candidate
 ```
+
+**Pair every machine that will be used, not a sample.** Once a relay has any
+paired machine, an unpaired one is refused — so a PC missed on setup day is a PC
+that cannot sit the paper. Pairing day is also when a room discovers its network
+blocks client-to-client traffic (§3.2), with a day left to do something.
 
 For an unattended installer (§17), `relay init --quiet` prints the fingerprint
 alone, so a script can capture it on the relay and feed it to every lab machine:
@@ -98,6 +113,7 @@ cargo test
 | `tests/unseal.rs` | Opens a bundle **PHP actually sealed** (gzip + AES-256-GCM + header-as-AAD), rejects a wrong key, a retargeted header and a future format version, and asserts no marking scheme reached the room. |
 | `tests/round_trip.rs` | The scripted fake candidate: seat → read paper → answer → change answer → event → submit → inspect the batch payload. Includes the resume-after-a-dead-PC case, which §19 says to test first. |
 | `tests/pinning.rs` | Real TLS handshakes against a real server: the pinned relay is reached, an impostor holding its own valid self-signed certificate is refused, hostname is not what is checked, and a truncated fingerprint never matches. A pin never exercised against an impostor is a comment, not a control. |
+| pairing tests | In `round_trip.rs`: the wrong code enrols nothing, a relay serving a paper refuses to pair at all, an unpaired machine is refused on *every* candidate route rather than just the first, and moving to another paired machine records `seat_changed` while reconnecting to the same one does not. |
 | unit tests | In each module — sequence monotonicity across restart, group position, HTML escaping, raw-JSON slicing. |
 
 Regenerate the sealed fixture only when the bundle format changes:
@@ -111,7 +127,7 @@ php make-sealed-bundle.php
 
 ```
 src/
-  main.rs      CLI: init, login, provision, serve, candidate, sync, status, purge
+  main.rs      CLI: init, login, provision, pair, serve, candidate, sync, status, purge
   api.rs       backend client — §9.1 issuance, §9.2 key release, §9.3 batch sync
   assets.rs    KaTeX, compiled in — there is no CDN in a lab (§16)
   bundle.rs    envelope, AES-256-GCM unseal, the paper's shape
@@ -123,6 +139,7 @@ src/
   kiosk.rs     the candidate's fullscreen window (§4's second mode)
   sync.rs      the upload walk (§5.5, §11)
   tls.rs       the relay's certificate and the candidate's pin (§8.3)
+  pairing.rs   pairing codes a person can read across a room (§8.4)
   config.rs    paths and the staff token
 ```
 
@@ -170,8 +187,11 @@ rules still agree, not to compute a paper — see the note at the top of
   task-switching, and a logged event trail" — the first and third are real and
   the second is partial. Focus loss is reported, not prevented. Say it that way
   to a school.
-- Pairing and device tokens (§8.4), booklets and script capture (step 5),
-  integrity enforcement (step 8).
+- Booklets and script capture (step 5), the Teacher's Desk (step 6), integrity
+  enforcement (step 8).
+- **The softAP client-cap measurement of §3.2.1.** Not code — a laptop, a
+  handful of PCs and an afternoon. It bounds what can be promised to a school
+  with no network of its own, and it is the last open item in step 4.
 - Media checksum verification on download — files are fetched and stored, but
   the manifest's `checksum` is recorded rather than checked.
 - On-screen `allow_working_photo` (§6.4) — a candidate cannot yet attach a photo

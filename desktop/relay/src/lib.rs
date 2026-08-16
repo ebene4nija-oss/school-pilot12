@@ -11,6 +11,7 @@ pub mod bundle;
 pub mod config;
 pub mod error;
 pub mod kiosk;
+pub mod pairing;
 pub mod paper;
 pub mod server;
 pub mod shuffle;

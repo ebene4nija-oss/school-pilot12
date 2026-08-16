@@ -1,13 +1,17 @@
 //! The relay as seen from a candidate machine, and from the invigilator's
 //! status window (§5.3).
 //!
-//! **Transport security is not finished here.** §8.3 requires relay↔candidate
-//! traffic to run over TLS with a self-signed certificate the candidate client
-//! pins at pairing time, because this connection carries live question text.
-//! Step 3 is the skeleton — plain HTTP on the LAN, proven with a scripted fake
-//! candidate — and the server refuses to bind to anything but loopback unless
-//! told otherwise, so an unfinished relay cannot quietly end up serving a real
-//! room. Pairing and pinning arrive with the candidate client in step 4.
+//! Three things gate a request here, and they answer different questions.
+//! **TLS** (§8.3) settles *which relay* the machine is talking to — the client
+//! pins the certificate, so the lab network's own security is irrelevant to us.
+//! **The device token** (§8.4) settles *which machine* is asking, so a PC
+//! nobody enrolled cannot pull a paper. **The candidate's admission number and
+//! relay code** settle *who is sitting there*, and come from inside the
+//! ciphertext, so there is nothing to attack before the exam opens.
+//!
+//! None of the three is identity in the sense that matters at the seat: §21 is
+//! explicit that a candidate's identity is established by the invigilator, the
+//! same way it is on paper.
 
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
@@ -29,6 +33,13 @@ pub struct AppState {
     pub paper: RwLock<Option<Paper>>,
     pub bundle_id: String,
     pub exam_title: String,
+    /// The pairing code, when the relay is in pairing mode (§8.4).
+    ///
+    /// `None` during an exam, and that is the point: pairing "happens the day
+    /// before, never during the exam". A relay serving a paper cannot enrol a
+    /// new machine, so a device appearing mid-exam is a machine that was paired
+    /// when staff were watching, or it is nothing at all.
+    pub pairing_code: RwLock<Option<String>>,
 }
 
 impl AppState {
@@ -51,6 +62,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/assets/katex/katex.min.js", get(crate::assets::katex_js))
         .route("/assets/katex/fonts/:name", get(crate::assets::katex_font))
         .route("/relay/v1/status", get(status_json))
+        .route("/relay/v1/pair", post(pair))
         .route("/relay/v1/session", post(session))
         .route("/relay/v1/paper", get(candidate_paper))
         .route("/relay/v1/answers", post(record_answer))
@@ -143,6 +155,107 @@ fn fail(status: StatusCode, message: impl Into<String>) -> axum::response::Respo
     Refusal(status, message.into()).into_response()
 }
 
+// ----------------------------------------------------------------------
+// Pairing (§8.4)
+// ----------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct PairRequest {
+    pairing_code: String,
+    device_name: String,
+}
+
+/// Enrol one candidate machine, while staff are watching.
+async fn pair(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<PairRequest>,
+) -> axum::response::Response {
+    let expected = state.pairing_code.read().ok().and_then(|code| code.clone());
+
+    let Some(expected) = expected else {
+        return fail(
+            StatusCode::CONFLICT,
+            "This relay is not in pairing mode. Pairing is done the day before an exam, with \
+             `relay pair`, never during a paper.",
+        );
+    };
+
+    // Both sides through the same normaliser. Case, spacing and the dash are
+    // presentation — a code read off one screen and typed into another must not
+    // fail on a capital letter, and the relay's own displayed form carries a
+    // dash the candidate machine has no reason to reproduce.
+    let matches = crate::pairing::normalise(&request.pairing_code)
+        == crate::pairing::normalise(&expected);
+
+    if !matches {
+        return fail(
+            StatusCode::UNAUTHORIZED,
+            "That pairing code is not the one on the relay's screen.",
+        );
+    }
+
+    if request.device_name.trim().is_empty() {
+        return fail(StatusCode::UNPROCESSABLE_ENTITY, "This machine needs a name.");
+    }
+
+    let token = random_token();
+    let store = state.store.lock().expect("store lock");
+
+    match store.pair_device(request.device_name.trim(), &token) {
+        Ok(device_id) => Json(serde_json::json!({
+            "device_id": device_id,
+            "device_token": token,
+            "device_name": request.device_name.trim(),
+        }))
+        .into_response(),
+        Err(error) => fail(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()),
+    }
+}
+
+/// A long-lived device token: 32 bytes of OS randomness, hex.
+fn random_token() -> String {
+    let mut bytes = [0u8; 32];
+    getrandom::getrandom(&mut bytes).expect("the OS always has randomness");
+
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+/// The paired machine behind this request, or the refusal to send back.
+///
+/// **Enforced only once a relay has paired machines.** A relay with an empty
+/// device table is a demo or a development run, and refusing every request
+/// there would make `relay demo` useless while protecting nothing. The moment
+/// a school pairs its first PC (§8.4 says pair every machine, not a sample),
+/// unpaired traffic stops being accepted.
+fn authenticate_device(
+    state: &AppState,
+    headers: &axum::http::HeaderMap,
+) -> std::result::Result<Option<String>, Refusal> {
+    let store = state.store.lock().expect("store lock");
+
+    let paired = store.device_count().unwrap_or(0);
+
+    if paired == 0 {
+        return Ok(None);
+    }
+
+    let token = headers
+        .get("x-relay-device")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+
+    match store.authenticate_device(token) {
+        Ok(Some((device_id, _name))) => Ok(Some(device_id)),
+        Ok(None) => Err(Refusal(
+            StatusCode::UNAUTHORIZED,
+            "This machine has not been paired with the relay for this exam. Tell the \
+             invigilator — it needs pairing, and pairing is done before the paper starts."
+                .into(),
+        )),
+        Err(error) => Err(Refusal(StatusCode::INTERNAL_SERVER_ERROR, error.to_string())),
+    }
+}
+
 /// Resolve credentials to a roster entry, or the refusal to send back.
 fn authenticate(
     state: &AppState,
@@ -190,8 +303,14 @@ struct SessionResponse {
 
 async fn session(
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
     Json(credentials): Json<Credentials>,
 ) -> axum::response::Response {
+    let device = match authenticate_device(&state, &headers) {
+        Ok(device) => device,
+        Err(refusal) => return refusal.into_response(),
+    };
+
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
         Err(refusal) => return refusal.into_response(),
@@ -204,15 +323,32 @@ async fn session(
 
     let (resumed, question_count) = {
         let store = state.store.lock().expect("store lock");
-        let resumed = match store.seat(entry.attempt_id) {
-            Ok(resumed) => resumed,
-            Err(error) => return fail(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()),
+
+        let (resumed, moved_seat) = match &device {
+            Some(device_id) => match store.seat_at_device(entry.attempt_id, device_id) {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    return fail(StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+                }
+            },
+            None => match store.seat(entry.attempt_id) {
+                Ok(resumed) => (resumed, false),
+                Err(error) => {
+                    return fail(StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+                }
+            },
         };
 
         if resumed {
             // §12: a resumed attempt is evidence for whoever reviews the room
             // later. Recorded, never acted on automatically.
             let _ = store.record_event(entry.attempt_id, "resumed", None);
+        }
+
+        if moved_seat {
+            // The dead-PC recovery of §5.3, seen from the relay: same
+            // candidate, different machine. Evidence, not an accusation.
+            let _ = store.record_event(entry.attempt_id, "seat_changed", None);
         }
 
         (resumed, entry.question_order.len())
@@ -231,8 +367,13 @@ async fn session(
 
 async fn candidate_paper(
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
     Query(credentials): Query<Credentials>,
 ) -> axum::response::Response {
+    if let Err(refusal) = authenticate_device(&state, &headers) {
+        return refusal.into_response();
+    }
+
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
         Err(refusal) => return refusal.into_response(),
@@ -261,8 +402,13 @@ struct AnswerRequest {
 
 async fn record_answer(
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
     Json(request): Json<AnswerRequest>,
 ) -> axum::response::Response {
+    if let Err(refusal) = authenticate_device(&state, &headers) {
+        return refusal.into_response();
+    }
+
     let entry = match authenticate(&state, &request.credentials) {
         Ok(entry) => entry,
         Err(refusal) => return refusal.into_response(),
@@ -329,8 +475,13 @@ const RELAY_REPORTABLE: &[&str] = &[
 
 async fn record_event(
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
     Json(request): Json<EventRequest>,
 ) -> axum::response::Response {
+    if let Err(refusal) = authenticate_device(&state, &headers) {
+        return refusal.into_response();
+    }
+
     let entry = match authenticate(&state, &request.credentials) {
         Ok(entry) => entry,
         Err(refusal) => return refusal.into_response(),
@@ -353,8 +504,13 @@ async fn record_event(
 
 async fn submit(
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
     Json(credentials): Json<Credentials>,
 ) -> axum::response::Response {
+    if let Err(refusal) = authenticate_device(&state, &headers) {
+        return refusal.into_response();
+    }
+
     let entry = match authenticate(&state, &credentials) {
         Ok(entry) => entry,
         Err(refusal) => return refusal.into_response(),

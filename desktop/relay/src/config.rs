@@ -130,6 +130,13 @@ pub struct CandidateConfig {
     pub relay_url: String,
     /// The relay certificate this machine will accept and no other (§8.3).
     pub fingerprint: Option<String>,
+    /// This machine's long-lived device token, from pairing (§8.4).
+    #[serde(default)]
+    pub device_token: Option<String>,
+    /// What the relay calls this machine, so an invigilator reading the paired
+    /// list sees "Lab PC 07" rather than an opaque id.
+    #[serde(default)]
+    pub device_name: Option<String>,
 }
 
 /// Resolved paths for one relay installation.
@@ -342,6 +349,8 @@ mod tests {
             .save_candidate(&CandidateConfig {
                 relay_url: "https://10.0.0.4:8443".into(),
                 fingerprint: Some("ab:cd:ef".into()),
+                device_token: Some("tok".into()),
+                device_name: Some("Lab PC 07".into()),
             })
             .unwrap();
 
@@ -356,14 +365,24 @@ mod tests {
         // Structural, not incidental: §3 keeps the paper and its credentials on
         // one machine, and a lab PC that had a field for a token would
         // eventually be given one.
-        let json = serde_json::to_string(&CandidateConfig {
+        let value = serde_json::to_value(CandidateConfig {
             relay_url: "https://10.0.0.4:8443".into(),
             fingerprint: Some("ab:cd".into()),
+            device_token: Some("tok".into()),
+            device_name: Some("Lab PC 07".into()),
         })
         .unwrap();
 
-        for absent in ["token", "school_id", "base_url", "staff_name"] {
-            assert!(!json.contains(absent), "candidate config carries `{absent}`");
+        let keys: Vec<&String> = value.as_object().unwrap().keys().collect();
+
+        // By key, not by substring: `device_token` is this machine's own
+        // pairing credential (§8.4) and belongs here. What must never appear is
+        // a *staff* token, the school binding, or anything about an exam.
+        for absent in ["token", "school_id", "base_url", "staff_name", "relay_identity"] {
+            assert!(
+                !keys.iter().any(|key| key.as_str() == absent),
+                "candidate config carries `{absent}`; keys are {keys:?}"
+            );
         }
     }
 

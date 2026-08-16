@@ -114,7 +114,7 @@ const LOCKDOWN: &str = r#"
 /// relay is refused outright rather than trusted blindly: an exam client that
 /// silently accepts any certificate is worse than one that will not start,
 /// because the failure is invisible.
-pub fn run(relay_url: &str, fingerprint: Option<&str>) -> Result<()> {
+pub fn run(relay_url: &str, fingerprint: Option<&str>, device_token: Option<&str>) -> Result<()> {
     let relay = relay_url.trim_end_matches('/').to_string();
     let secure = relay.starts_with("https://");
 
@@ -173,6 +173,7 @@ pub fn run(relay_url: &str, fingerprint: Option<&str>) -> Result<()> {
     }))?;
 
     let proxy_relay = relay.clone();
+    let proxy_token = device_token.map(str::to_string);
 
     let start = format!("{SCHEME}://localhost/sit");
 
@@ -202,9 +203,10 @@ pub fn run(relay_url: &str, fingerprint: Option<&str>) -> Result<()> {
             move |_webview_id: wry::WebViewId, request: Request<Vec<u8>>, responder: RequestAsyncResponder| {
                 let client = client.clone();
                 let relay = proxy_relay.clone();
+                let token = proxy_token.clone();
 
                 handle.spawn(async move {
-                    responder.respond(dispatch(&client, &relay, request).await);
+                    responder.respond(dispatch(&client, &relay, token.as_deref(), request).await);
                 });
             },
         )
@@ -254,6 +256,7 @@ pub fn run(relay_url: &str, fingerprint: Option<&str>) -> Result<()> {
 async fn dispatch(
     client: &reqwest::Client,
     relay: &str,
+    device_token: Option<&str>,
     request: Request<Vec<u8>>,
 ) -> Response<Cow<'static, [u8]>> {
     let path = request.uri().path().to_string();
@@ -271,7 +274,7 @@ async fn dispatch(
     }
 
     if path.starts_with("/relay/v1/") {
-        return proxy(client, relay, request).await;
+        return proxy(client, relay, device_token, request).await;
     }
 
     Response::builder()
@@ -285,6 +288,7 @@ async fn dispatch(
 async fn proxy(
     client: &reqwest::Client,
     relay: &str,
+    device_token: Option<&str>,
     request: Request<Vec<u8>>,
 ) -> Response<Cow<'static, [u8]>> {
     let target = match request.uri().query() {
@@ -303,6 +307,13 @@ async fn proxy(
     // WebView2's own noise onto the relay for no benefit.
     if let Some(content_type) = request.headers().get("content-type") {
         outgoing = outgoing.header("content-type", content_type);
+    }
+
+    // §8.4: which machine is asking. Added here rather than in the page, so a
+    // token cannot be read out of the DOM or a devtools console by whoever is
+    // sitting in front of it.
+    if let Some(token) = device_token {
+        outgoing = outgoing.header("x-relay-device", token);
     }
 
     let body = request.into_body();
@@ -433,7 +444,7 @@ mod tests {
             ("/assets/katex/fonts/KaTeX_Main-Regular.woff2", "font/woff2"),
         ] {
             let request = Request::builder().uri(path).body(Vec::new()).unwrap();
-            let response = dispatch(&client, unreachable, request).await;
+            let response = dispatch(&client, unreachable, None, request).await;
 
             assert_eq!(response.status(), 200, "{path} did not serve");
             assert!(!response.body().is_empty(), "{path} served nothing");
@@ -450,7 +461,7 @@ mod tests {
 
         for path in ["/etc/passwd", "/relay/v2/anything", "/../ui.rs", "/status"] {
             let request = Request::builder().uri(path).body(Vec::new()).unwrap();
-            let response = dispatch(&client, "https://127.0.0.1:1", request).await;
+            let response = dispatch(&client, "https://127.0.0.1:1", None, request).await;
 
             assert_eq!(response.status(), 404, "`{path}` was served");
         }
@@ -471,7 +482,7 @@ mod tests {
             .body(b"{}".to_vec())
             .unwrap();
 
-        let response = dispatch(&client, "https://127.0.0.1:1", request).await;
+        let response = dispatch(&client, "https://127.0.0.1:1", None, request).await;
 
         assert_eq!(response.status(), 502);
 

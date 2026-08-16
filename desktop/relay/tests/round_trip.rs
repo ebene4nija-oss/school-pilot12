@@ -41,6 +41,7 @@ fn state() -> Arc<AppState> {
         bundle_id: sealed.envelope.bundle_id.clone(),
         exam_title: paper.exam.title.clone(),
         paper: RwLock::new(Some(paper)),
+        pairing_code: RwLock::new(None),
     })
 }
 
@@ -374,4 +375,188 @@ fn urlencode(value: &str) -> String {
             other => format!("%{:02X}", other as u32),
         })
         .collect()
+}
+
+// ----------------------------------------------------------------------
+// Pairing (§8.4)
+// ----------------------------------------------------------------------
+
+/// A relay in pairing mode: no paper, a code on screen.
+fn pairing_state(code: &str) -> Arc<AppState> {
+    let state = state();
+
+    *state.paper.write().unwrap() = None;
+    *state.pairing_code.write().unwrap() = Some(code.to_string());
+
+    state
+}
+
+async fn post_with_device(
+    state: &Arc<AppState>,
+    path: &str,
+    token: &str,
+    body: serde_json::Value,
+) -> (StatusCode, serde_json::Value) {
+    let response = router(Arc::clone(state))
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(path)
+                .header("content-type", "application/json")
+                .header("x-relay-device", token)
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+
+    (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+}
+
+#[tokio::test]
+async fn a_machine_pairs_with_the_code_on_the_relays_screen() {
+    let state = pairing_state("ACDE-FGHJ");
+
+    let (status, paired) = post(
+        &state,
+        "/relay/v1/pair",
+        serde_json::json!({ "pairing_code": "ACDE-FGHJ", "device_name": "Lab PC 07" }),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK, "pair: {paired}");
+    assert!(paired["device_token"].as_str().unwrap().len() >= 32);
+    assert_eq!(paired["device_name"], "Lab PC 07");
+
+    // Typed the way a person types it, off a screen, across a room.
+    let (status, _) = post(
+        &state,
+        "/relay/v1/pair",
+        serde_json::json!({ "pairing_code": "acdefghj", "device_name": "Lab PC 08" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "a lowercased, undashed code must still pair");
+}
+
+#[tokio::test]
+async fn the_wrong_pairing_code_enrols_nothing() {
+    let state = pairing_state("ACDE-FGHJ");
+
+    let (status, refused) = post(
+        &state,
+        "/relay/v1/pair",
+        serde_json::json!({ "pairing_code": "ACDE-FGHK", "device_name": "Someone else's PC" }),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "{refused}");
+    assert_eq!(state.store.lock().unwrap().device_count().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn a_relay_serving_a_paper_will_not_pair_a_machine() {
+    // §8.4: "Pairing is staff-supervised and happens the day before, never
+    // during the exam." Structural here rather than a rule to remember — a
+    // serving relay simply has no pairing code.
+    let state = state();
+
+    let (status, refused) = post(
+        &state,
+        "/relay/v1/pair",
+        serde_json::json!({ "pairing_code": "ACDE-FGHJ", "device_name": "A late arrival" }),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::CONFLICT, "{refused}");
+    assert!(refused["error"].as_str().unwrap().contains("never during a paper"));
+}
+
+#[tokio::test]
+async fn once_a_room_is_paired_an_unpaired_machine_cannot_sit_the_paper() {
+    let state = state();
+
+    // Before pairing, a relay serves anyone — this is the demo path, and
+    // refusing it would protect nothing.
+    let (status, _) = post(&state, "/relay/v1/session", credentials()).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // The school pairs its room.
+    let token = {
+        let store = state.store.lock().unwrap();
+        let token = "a".repeat(64);
+        store.pair_device("Lab PC 07", &token).unwrap();
+        token
+    };
+
+    // Now an unpaired machine is refused, and told what to do about it.
+    let (status, refused) = post(&state, "/relay/v1/session", credentials()).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "{refused}");
+    assert!(refused["error"].as_str().unwrap().contains("not been paired"));
+
+    // And the paired one is not.
+    let (status, session) = post_with_device(&state, "/relay/v1/session", &token, credentials()).await;
+    assert_eq!(status, StatusCode::OK, "{session}");
+    assert_eq!(session["attempt_id"], 9001);
+
+    // Every candidate-facing route is gated, not just the first one.
+    for (path, body) in [
+        ("/relay/v1/answers", serde_json::json!({ "question_id": 201, "response": "A" })),
+        ("/relay/v1/events", serde_json::json!({ "event_type": "focus_lost" })),
+        ("/relay/v1/submit", serde_json::json!({})),
+    ] {
+        let mut request = credentials();
+        for (key, value) in body.as_object().unwrap() {
+            request[key] = value.clone();
+        }
+
+        let (status, _) = post(&state, path, request).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "`{path}` served an unpaired machine");
+    }
+
+    let (status, _) = get(
+        &state,
+        &format!("/relay/v1/paper?admission_number={}&relay_code={CODE}", urlencode(ADMISSION)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "the paper itself must be gated");
+}
+
+#[tokio::test]
+async fn moving_to_another_paired_machine_records_seat_changed() {
+    // §12 `seat_changed`, which is only knowable now that machines have
+    // identities. The dead-PC recovery of §5.3, seen from the relay.
+    let state = state();
+
+    let (first, second) = {
+        let store = state.store.lock().unwrap();
+        let first = "a".repeat(64);
+        let second = "b".repeat(64);
+        store.pair_device("Lab PC 07", &first).unwrap();
+        store.pair_device("Lab PC 12", &second).unwrap();
+        (first, second)
+    };
+
+    post_with_device(&state, "/relay/v1/session", &first, credentials()).await;
+
+    // Same machine again: a reconnect, not a move.
+    post_with_device(&state, "/relay/v1/session", &first, credentials()).await;
+
+    {
+        let store = state.store.lock().unwrap();
+        let pending = store.pending_uploads(&state.bundle_id).unwrap();
+        let moves = pending[0].events.iter().filter(|e| e.event_type == "seat_changed").count();
+        assert_eq!(moves, 0, "returning to the same seat is not a seat change");
+    }
+
+    // The machine dies; the candidate moves.
+    post_with_device(&state, "/relay/v1/session", &second, credentials()).await;
+
+    let store = state.store.lock().unwrap();
+    let pending = store.pending_uploads(&state.bundle_id).unwrap();
+    let moves = pending[0].events.iter().filter(|e| e.event_type == "seat_changed").count();
+
+    assert_eq!(moves, 1, "a candidate resuming on another machine must be recorded");
 }

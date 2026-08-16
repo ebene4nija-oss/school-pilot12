@@ -1,9 +1,9 @@
 # Offline CBT Client — Design & Build Specification
 
-**Status:** §19 steps 1–3 are built and tested, and step 4 is done but for
-pairing — a candidate can sit a whole paper, maths and all, in a fullscreen
-kiosk window, over TLS whose certificate the client pins. Pairing (§8.4) and the
-softAP spike (§3.2.1) are what remain of it; see §19.
+**Status:** §19 steps 1–4 are built and tested. A candidate sits a whole paper,
+maths and all, in a fullscreen kiosk window, over TLS whose certificate the
+client pins, on a machine paired the day before. The softAP measurement of
+§3.2.1 is the one open item in step 4 and needs a room rather than code.
 **Target:** a desktop application that runs a published CBT exam on a school's
 existing computer-lab PCs with no internet connection during the paper.
 **Owner:** unassigned. **Last updated:** 2026-08-15.
@@ -746,6 +746,25 @@ a short pairing code, the candidate client enters it, and the two exchange a
 long-lived device token plus the pinned certificate fingerprint. Pairing is
 staff-supervised and happens the day before, never during the exam.
 
+**Built, and split across two moments rather than one.** The fingerprint is
+delivered at installation (`relay init`, §17) and the device token at pairing
+(`relay pair` on the relay, `relay init --pair <code>` on each machine). Both
+still happen before exam day, which is what the section was protecting; putting
+the fingerprint earlier means an installer can carry it unattended, and pairing
+then only has to be witnessed rather than transcribed.
+
+The relay stores a digest of each device token, never the token: a stolen relay
+disk must not yield working device credentials, and the relay only ever needs to
+check one. The pairing code uses an alphabet with no `0`/`O`, `1`/`I`/`L`,
+`5`/`S` or `8`/`B`, because the real interface is an invigilator reading it
+aloud across a room.
+
+Enforcement is all-or-nothing per relay: with no paired machines, any machine is
+served — the demo and development path — and from the first paired machine
+onward, an unpaired one is refused everywhere. That is what makes "pair every
+machine that will be used, not a sample" a rule the software keeps rather than
+one a person has to remember.
+
 Pairing is the same on both tiers, once the machines are on the network. It is
 also the moment a room discovers a problem with that network — a client cap
 reached (§3.2.1), or client isolation silently blocking peer traffic (§3.2) —
@@ -1225,9 +1244,19 @@ objective answers.
    privileges for. Of §8.2's three claims, the first and third are real and the
    middle one is partial; focus loss is reported, not prevented.
 
-   Still outstanding for the step: pairing (§8.4), and the softAP client-cap
-   spike of §3.2.1, which needs a room and a handful of machines rather than
-   code.
+   **Pairing is done** (§8.4): `relay pair` shows a short code in an alphabet
+   with no `0`/`O` or `1`/`I`, each machine is enrolled with
+   `relay init --pair`, and the relay stores a digest of the device token
+   rather than the token. Once a relay has paired any machine, an unpaired one
+   is refused on every candidate route — which is what makes "pair every
+   machine, not a sample" enforceable rather than advisory. A relay serving a
+   paper has no pairing code at all, so "never during the exam" is structural.
+   Device identity also makes §12's `seat_changed` real: a candidate resuming
+   on a different machine is recorded, while reconnecting on the same one is
+   not.
+
+   Still outstanding for the step: the softAP client-cap spike of §3.2.1, which
+   needs a room and a handful of machines rather than code.
 5. **Paper scripts [platform]** — §9.5 booklets, capture, matching, exceptions.
 6. **Teacher's Desk [platform]** — §9.6 queue and marking, manual only.
 7. **AI suggestions** — §7.3 and §7.4, behind the flag, last. It is the only part

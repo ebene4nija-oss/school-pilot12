@@ -24,6 +24,16 @@ pub struct Store {
     conn: Connection,
 }
 
+/// Hex SHA-256, used for device tokens at rest (§8.4).
+fn sha256_hex(value: &str) -> String {
+    use sha2::{Digest, Sha256};
+
+    Sha256::digest(value.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 #[derive(Debug, Clone)]
 pub struct StoredBundle {
     pub bundle_id: String,
@@ -145,12 +155,128 @@ impl Store {
                 verified    INTEGER NOT NULL DEFAULT 0
             );
 
+            -- §8.4. Paired the day before, never during the exam. The token is
+            -- stored as a digest: a stolen relay disk must not yield working
+            -- device credentials, and the relay only ever needs to *check* one.
+            CREATE TABLE IF NOT EXISTS devices (
+                device_id     TEXT PRIMARY KEY,
+                device_name   TEXT NOT NULL,
+                token_sha256  TEXT NOT NULL,
+                paired_at     TEXT NOT NULL,
+                last_seen_at  TEXT
+            );
+
             CREATE INDEX IF NOT EXISTS answers_unsynced ON answers(attempt_id, synced);
             CREATE INDEX IF NOT EXISTS events_unsynced  ON events(attempt_id, synced);
             "#,
         )?;
 
+        // Additive, and tolerated if it is already there: relays exist in the
+        // field with this table and no such column, and a failed migration on
+        // exam morning is worse than a duplicate-column error nobody reads.
+        let _ = self
+            .conn
+            .execute("ALTER TABLE attempts ADD COLUMN last_device_id TEXT", []);
+
         Ok(())
+    }
+
+    // ------------------------------------------------------------------
+    // Devices (§8.4)
+    // ------------------------------------------------------------------
+
+    /// Record a paired machine and return its device id.
+    ///
+    /// Re-pairing a machine of the same name replaces its token rather than
+    /// adding a second row — a lab PC re-imaged the week before an exam is
+    /// ordinary, and leaving its old row behind would make the paired count an
+    /// unreliable check against "did we pair every machine?" (§8.4).
+    pub fn pair_device(&self, device_name: &str, token: &str) -> Result<String> {
+        let device_id = format!("dev_{}", &sha256_hex(token)[..16]);
+
+        self.conn.execute(
+            "DELETE FROM devices WHERE device_name = ?1",
+            params![device_name],
+        )?;
+
+        self.conn.execute(
+            "INSERT INTO devices (device_id, device_name, token_sha256, paired_at)
+             VALUES (?1, ?2, ?3, datetime('now'))
+             ON CONFLICT(device_id) DO UPDATE SET
+                device_name = excluded.device_name,
+                token_sha256 = excluded.token_sha256,
+                paired_at = excluded.paired_at",
+            params![device_id, device_name, sha256_hex(token)],
+        )?;
+
+        Ok(device_id)
+    }
+
+    /// Which paired machine is this, if any?
+    pub fn authenticate_device(&self, token: &str) -> Result<Option<(String, String)>> {
+        let found: Option<(String, String)> = self
+            .conn
+            .query_row(
+                "SELECT device_id, device_name FROM devices WHERE token_sha256 = ?1",
+                params![sha256_hex(token)],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+
+        if let Some((device_id, _)) = &found {
+            self.conn.execute(
+                "UPDATE devices SET last_seen_at = datetime('now') WHERE device_id = ?1",
+                params![device_id],
+            )?;
+        }
+
+        Ok(found)
+    }
+
+    /// Copy paired machines from another store.
+    ///
+    /// For `relay demo`, which runs in memory (§13: a demo must not leave a
+    /// school's laptop holding a SQLite file of invented children) but must
+    /// still behave like the real thing. Without this a demo accepts every
+    /// machine in the room regardless of pairing, which is the opposite of what
+    /// a school is being shown.
+    pub fn copy_devices_from(&self, source: &Store) -> Result<usize> {
+        let mut statement = source
+            .conn
+            .prepare("SELECT device_id, device_name, token_sha256, paired_at FROM devices")?;
+
+        let rows: Vec<(String, String, String, String)> = statement
+            .query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        for (device_id, device_name, token_sha256, paired_at) in &rows {
+            self.conn.execute(
+                "INSERT OR REPLACE INTO devices
+                     (device_id, device_name, token_sha256, paired_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![device_id, device_name, token_sha256, paired_at],
+            )?;
+        }
+
+        Ok(rows.len())
+    }
+
+    pub fn device_count(&self) -> Result<i64> {
+        Ok(self.conn.query_row("SELECT COUNT(*) FROM devices", [], |row| row.get(0))?)
+    }
+
+    pub fn devices(&self) -> Result<Vec<(String, String, Option<String>)>> {
+        let mut statement = self.conn.prepare(
+            "SELECT device_name, paired_at, last_seen_at FROM devices ORDER BY device_name",
+        )?;
+
+        let rows = statement
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(rows)
     }
 
     // ------------------------------------------------------------------
@@ -321,6 +447,36 @@ impl Store {
         )?;
 
         Ok(false)
+    }
+
+    /// Seat a candidate, noting which machine they are at.
+    ///
+    /// Returns `(resumed, moved_seat)`. `moved_seat` is the §12 `seat_changed`
+    /// case: the attempt is being continued from a different paired device than
+    /// last time, which is exactly the dead-PC recovery §5.3 is built around —
+    /// evidence for whoever reviews the room later, never grounds for anything
+    /// automatic.
+    pub fn seat_at_device(&self, attempt_id: i64, device_id: &str) -> Result<(bool, bool)> {
+        let previous: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT last_device_id FROM attempts WHERE attempt_id = ?1",
+                params![attempt_id],
+                |row| row.get(0),
+            )
+            .optional()?
+            .flatten();
+
+        let resumed = self.seat(attempt_id)?;
+
+        self.conn.execute(
+            "UPDATE attempts SET last_device_id = ?2 WHERE attempt_id = ?1",
+            params![attempt_id, device_id],
+        )?;
+
+        let moved = matches!(previous, Some(before) if before != device_id);
+
+        Ok((resumed, moved))
     }
 
     pub fn mark_submitted(&self, attempt_id: i64) -> Result<()> {

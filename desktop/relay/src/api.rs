@@ -294,3 +294,62 @@ impl Api {
         Ok(serde_json::from_str(&body)?)
     }
 }
+
+/// Pair a candidate machine with a relay (§8.4).
+///
+/// Deliberately not a method on [`Api`]: this call goes to the *relay* on the
+/// lab network, not to the backend, and it carries no staff token. A candidate
+/// machine has no business holding one, and putting this beside the backend
+/// calls would eventually let it.
+pub async fn pair_device(
+    relay_url: &str,
+    fingerprint: Option<&str>,
+    pairing_code: &str,
+    device_name: &str,
+) -> Result<String> {
+    let relay = relay_url.trim_end_matches('/');
+
+    // The same pin the exam itself will use. Pairing over an unverified
+    // connection would hand a device token to whatever answered, so an https
+    // relay needs its fingerprint here exactly as it does later.
+    let client = match (relay.starts_with("https://"), fingerprint) {
+        (true, Some(pin)) => crate::tls::pinned_client(pin)?,
+        (true, None) => {
+            return Err(RelayError::Tls(
+                "pairing with an https relay needs --fingerprint, or this machine would be \
+                 trusting whatever answered"
+                    .into(),
+            ))
+        }
+        (false, _) => reqwest::Client::builder()
+            .timeout(Duration::from_secs(20))
+            .build()
+            .map_err(|error| RelayError::Tls(error.to_string()))?,
+    };
+
+    let response = client
+        .post(format!("{relay}/relay/v1/pair"))
+        .json(&json!({ "pairing_code": pairing_code, "device_name": device_name }))
+        .send()
+        .await?;
+
+    let status = response.status();
+    let body = response.text().await.unwrap_or_default();
+
+    if !status.is_success() {
+        let message = serde_json::from_str::<serde_json::Value>(&body)
+            .ok()
+            .and_then(|value| value.get("error")?.as_str().map(str::to_string))
+            .unwrap_or(body);
+
+        return Err(RelayError::Server { status: status.as_u16(), message });
+    }
+
+    let parsed: serde_json::Value = serde_json::from_str(&body)?;
+
+    parsed
+        .get("device_token")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| RelayError::Protocol("the relay returned no device token".into()))
+}

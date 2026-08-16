@@ -1,18 +1,22 @@
 //! SchoolPilot lab relay.
 //!
-//! Build order step 3 (docs/offline-cbt-client.md §19): auth, provision, bundle
-//! storage, SQLite, sync, and no UI beyond a status window. The candidate
-//! client, pairing and pinned TLS are step 4.
+//! Build order step 4 (docs/offline-cbt-client.md §19), complete but for the
+//! softAP measurement of §3.2.1.
 //!
 //! The shape of a school's exam day, in commands:
 //!
 //! ```text
+//!   relay init                                                 # at installation
 //!   relay login      --base-url https://kings.schoolpilot.ng   # once
 //!   relay provision  --exam 42                                 # the day before
+//!   relay pair                                                 # the day before
 //!   relay serve                                                # exam morning
 //!   relay sync                                                 # afterwards
 //!   relay purge                                                # §13
 //! ```
+//!
+//! And on each lab machine: `relay init --relay … --fingerprint … --pair …`
+//! once, then `relay candidate` on the morning, with no arguments.
 //!
 //! Only `login`, `provision`, the unlock at the start of `serve`, and `sync`
 //! need connectivity. Nothing during the paper does, which is the entire point.
@@ -27,6 +31,16 @@ use schoolpilot_relay::config::Paths;
 use schoolpilot_relay::error::{RelayError, Result};
 use schoolpilot_relay::store::Store;
 use schoolpilot_relay::{bundle, kiosk, server, sync};
+
+/// What to call this machine when pairing, if nobody said.
+///
+/// The hostname is what a school's own asset label usually matches, so an
+/// invigilator checking the paired list against the room recognises the names.
+fn machine_name() -> String {
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unnamed-machine".to_string())
+}
 
 #[derive(Parser)]
 #[command(name = "relay", version, about = "SchoolPilot lab relay")]
@@ -59,6 +73,13 @@ enum Command {
         /// The relay's fingerprint, from `relay init` on the relay laptop.
         #[arg(long)]
         fingerprint: Option<String>,
+        /// Pair this machine with the relay now, using the code shown by
+        /// `relay pair` (§8.4). Needs the relay to be in pairing mode.
+        #[arg(long)]
+        pair: Option<String>,
+        /// What the relay should call this machine. Defaults to the hostname.
+        #[arg(long)]
+        name: Option<String>,
         /// Print the fingerprint alone, for an installer script to capture.
         #[arg(long)]
         quiet: bool,
@@ -87,6 +108,20 @@ enum Command {
         /// only: two relays serving one paper is a split brain (§14).
         #[arg(long)]
         override_existing: bool,
+    },
+
+    /// Enrol the lab machines. The day before, with staff watching (§8.4).
+    ///
+    /// Shows a short pairing code and waits. On each candidate machine run
+    /// `relay init --relay … --pair <code>`. Pair every machine that will be
+    /// used, not a sample — this is also when a room finds out its network
+    /// blocks client-to-client traffic, with a day to do something about it.
+    Pair {
+        #[arg(long)]
+        port: Option<u16>,
+        /// Bind beyond loopback, which pairing from other machines needs.
+        #[arg(long, default_value_t = true)]
+        lan: bool,
     },
 
     /// Serve the room. Fetches the key, opens the paper into memory, and does
@@ -183,7 +218,7 @@ async fn run() -> Result<()> {
     let mut config = paths.load()?;
 
     match cli.command {
-        Command::Init { relay, fingerprint, quiet } => {
+        Command::Init { relay, fingerprint, pair, name, quiet } => {
             match relay {
                 // A candidate machine. It gets an address and a fingerprint and
                 // nothing else — no token, no school, no exam data.
@@ -196,19 +231,47 @@ async fn run() -> Result<()> {
                         ));
                     }
 
+                    let device_name = name.unwrap_or_else(machine_name);
+
+                    // §8.4: the device token is exchanged now, with staff
+                    // present, not on exam morning.
+                    let paired = match &pair {
+                        Some(code) => Some(
+                            schoolpilot_relay::api::pair_device(
+                                &relay_url,
+                                fingerprint.as_deref(),
+                                code,
+                                &device_name,
+                            )
+                            .await?,
+                        ),
+                        None => None,
+                    };
+
                     paths.save_candidate(&schoolpilot_relay::config::CandidateConfig {
                         relay_url: relay_url.clone(),
                         fingerprint: fingerprint.clone(),
+                        device_token: paired.clone(),
+                        device_name: Some(device_name.clone()),
                     })?;
 
                     if !quiet {
                         println!("\n  This machine is set up to sit exams from {relay_url}.");
+                        println!("  The relay knows it as \"{device_name}\".");
 
                         match &fingerprint {
                             Some(pin) => println!("  It will accept only certificate {pin}."),
                             None => println!(
                                 "  WARNING: no fingerprint, so this machine cannot verify the \
                                  relay. Plain http only — never a real paper."
+                            ),
+                        }
+
+                        match &paired {
+                            Some(_) => println!("  Paired with the relay."),
+                            None => println!(
+                                "  NOT paired. Run `relay pair` on the relay, then repeat this \
+                                 with --pair <code> (§8.4)."
                             ),
                         }
 
@@ -244,6 +307,48 @@ async fn run() -> Result<()> {
                         );
                     }
                 }
+            }
+        }
+
+        Command::Pair { port, lan } => {
+            let identity = schoolpilot_relay::tls::RelayIdentity::load_or_create(&paths.home())?;
+            let store = Store::open(&paths.database())?;
+
+            let code = schoolpilot_relay::pairing::code();
+
+            let addr = SocketAddr::new(
+                if lan { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) },
+                port.unwrap_or(config.port),
+            );
+
+            println!("\n  Pairing code:   {code}\n");
+            println!("  On each candidate machine, once:\n");
+            println!("    relay init --relay https://<this machine>:{} \\", addr.port());
+            println!("      --fingerprint {} \\", identity.fingerprint);
+            println!("      --pair {code}\n");
+            println!("  Already paired: {} machine(s).", store.device_count()?);
+            println!("  Pair every machine that will be used, not a sample (§8.4).");
+            println!("  Press Ctrl-C when the room is done.\n");
+
+            // No paper, so nothing to serve even if something asked: pairing
+            // mode carries the pairing code and an empty `paper`, which is what
+            // makes "pairing never happens during an exam" structural rather
+            // than a rule somebody has to remember.
+            let state = Arc::new(server::AppState {
+                store: Mutex::new(store),
+                exam_title: "Pairing".to_string(),
+                bundle_id: String::new(),
+                paper: RwLock::new(None),
+                pairing_code: RwLock::new(Some(code)),
+            });
+
+            let tls = schoolpilot_relay::tls::server_config(&identity).await?;
+            server::serve_tls(Arc::clone(&state), addr, tls).await?;
+
+            let paired = state.store.lock().expect("store lock").devices()?;
+            println!("\n  {} machine(s) paired:", paired.len());
+            for (name, paired_at, _) in paired {
+                println!("    {name:<24} {paired_at}");
             }
         }
 
@@ -432,6 +537,8 @@ async fn run() -> Result<()> {
                 exam_title: opened.exam.title.clone(),
                 bundle_id: stored.bundle_id.clone(),
                 paper: RwLock::new(Some(opened)),
+                // Never during an exam (§8.4).
+                pairing_code: RwLock::new(None),
             });
 
             // The one thing the invigilator has to carry to the candidate
@@ -502,6 +609,17 @@ async fn run() -> Result<()> {
             store.save_bundle(&sealed)?;
             store.save_roster(&sealed.envelope.bundle_id, &opened.roster)?;
 
+            // If this laptop has paired a room, the demo enforces that pairing
+            // too. A demo that let every machine in would be showing a school
+            // something the real thing does not do (§8.4).
+            if paths.database().exists() {
+                let paired = store.copy_devices_from(&Store::open(&paths.database())?)?;
+
+                if paired > 0 {
+                    println!("\n  {paired} paired machine(s) carried in; unpaired machines will be refused.");
+                }
+            }
+
             let addr = SocketAddr::new(
                 if lan { IpAddr::V4(Ipv4Addr::UNSPECIFIED) } else { IpAddr::V4(Ipv4Addr::LOCALHOST) },
                 port.unwrap_or(config.port),
@@ -531,6 +649,8 @@ async fn run() -> Result<()> {
                 exam_title: opened.exam.title.clone(),
                 bundle_id: sealed.envelope.bundle_id.clone(),
                 paper: RwLock::new(Some(opened)),
+                // Never during an exam (§8.4).
+                pairing_code: RwLock::new(None),
             });
 
             if tls {
@@ -573,10 +693,11 @@ async fn run() -> Result<()> {
                     )
                 })?;
 
-            let fingerprint =
-                fingerprint.or_else(|| installed.and_then(|c| c.fingerprint));
+            let fingerprint = fingerprint
+                .or_else(|| installed.as_ref().and_then(|c| c.fingerprint.clone()));
+            let device_token = installed.and_then(|c| c.device_token);
 
-            kiosk::run(&relay, fingerprint.as_deref())?;
+            kiosk::run(&relay, fingerprint.as_deref(), device_token.as_deref())?;
         }
 
         Command::Status => {
