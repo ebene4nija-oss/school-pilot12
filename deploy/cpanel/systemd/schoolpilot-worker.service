@@ -1,0 +1,48 @@
+# The Laravel queue worker.
+#
+# Report cards, ID-card runs, school data exports and every SMS/WhatsApp
+# notification are queued jobs. Without this unit running they sit in the
+# database forever and the school sees a spinner that never resolves — the
+# request itself succeeds, so nothing in the API logs looks wrong.
+#
+#   install -m 0644 systemd/schoolpilot-worker.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now schoolpilot-worker
+#
+# Do not replace this with a cron entry that runs `queue:work`. Cron cannot
+# hold a long-lived process, and overlapping invocations process the same job
+# twice — which for a notification job means the parent gets the message twice
+# and for a fee reminder means twice about money.
+
+[Unit]
+Description=SchoolPilot queue worker
+After=network.target
+
+[Service]
+Type=simple
+User=schoolpilot
+Group=schoolpilot
+WorkingDirectory=/home/schoolpilot/current/backend
+
+# --max-time recycles the process hourly. A long-lived PHP worker accumulates
+# memory and, worse, keeps a stale copy of the code in memory after a deploy;
+# deploy.sh also calls queue:restart, and this is the backstop for that.
+#
+# --tries=3 matters for payment webhooks and notifications: a transient
+# Paystack or SMS-gateway timeout should retry, not drop the job silently.
+ExecStart=/opt/cpanel/ea-php82/root/usr/bin/php artisan queue:work \
+    --sleep=3 --tries=3 --max-time=3600 --max-jobs=500
+
+Restart=always
+RestartSec=5
+
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=append:/home/schoolpilot/logs/worker.log
+StandardError=append:/home/schoolpilot/logs/worker.error.log
+
+[Install]
+WantedBy=multi-user.target

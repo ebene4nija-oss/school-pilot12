@@ -1,0 +1,5 @@
+# These files are checked out onto a Linux server and executed there.
+# A CRLF checkout on Windows makes every script fail with
+# "bad interpreter: /usr/bin/env bash^M", and systemd silently ignores unit
+# directives with a trailing CR. Force LF regardless of core.autocrlf.
+* text eol=lf

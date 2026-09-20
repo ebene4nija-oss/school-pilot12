@@ -3,6 +3,7 @@
 /node_modules/
 /.next/
 /build/
+/dist/
 /out/
 /.dart_tool/
 /.pub-cache/

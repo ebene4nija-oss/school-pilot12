@@ -1,0 +1,51 @@
+# The Next.js admin portal.
+#
+# next.config.ts sets output: "standalone", so this runs the traced server
+# bundle directly — there is no `npm start` and no node_modules install on the
+# server. build-release.sh produces .next/standalone; deploy.sh puts it in
+# place.
+#
+#   install -m 0644 systemd/schoolpilot-web.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now schoolpilot-web
+
+[Unit]
+Description=SchoolPilot web portal (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=schoolpilot
+Group=schoolpilot
+WorkingDirectory=/home/schoolpilot/current/web/.next/standalone
+
+# Loopback only. This server has no authentication of its own — every check
+# happens in Laravel — so it must be reachable solely through the Apache vhost
+# that fronts it. Binding 0.0.0.0 here publishes the admin portal on a port
+# with no TLS and no WAF in front of it.
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+Environment=NODE_ENV=production
+
+# Public build-time config lives in the bundle already. Anything secret the
+# portal needs at runtime goes here, not in the repo.
+EnvironmentFile=-/home/schoolpilot/shared/web.env
+
+ExecStart=/usr/bin/node server.js
+
+Restart=always
+RestartSec=5
+
+# A restart loop caused by a bad release should stop, not hammer the box
+# through the night. After 5 failures in 60s systemd gives up and the unit
+# shows as failed, which is what the health check should be watching.
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=append:/home/schoolpilot/logs/web.log
+StandardError=append:/home/schoolpilot/logs/web.error.log
+
+[Install]
+WantedBy=multi-user.target
