@@ -44,7 +44,7 @@ x-backend-env: &backend-env
   MAIL_PORT: ${MAIL_PORT:-587}
   MAIL_USERNAME: ${MAIL_USERNAME:-}
   MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@schoolpilot.ng}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@schoolpilot.org.ng}
 
 services:
   nginx:

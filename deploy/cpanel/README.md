@@ -34,7 +34,7 @@ Postgres 16        Redis 7        scheduler:    cron, every minute
 
 **One hostname serves both applications.** That is load-bearing, not
 cosmetic. The web portal's session cookie is httpOnly and same-origin. Moving
-the API to `api.schoolpilot.ng` breaks authentication and forces you into
+the API to `api.schoolpilot.org.ng` breaks authentication and forces you into
 credentialed CORS or into putting the token somewhere JavaScript can read it.
 
 ---
@@ -70,7 +70,7 @@ error.
 ### 1.2 The cPanel account
 
 **WHM → Create a New Account**: username `schoolpilot`, domain
-`schoolpilot.ng`, PHP 8.2, and enable **SSH access** and **shell access**
+`schoolpilot.org.ng`, PHP 8.2, and enable **SSH access** and **shell access**
 (the deploy scripts need them).
 
 Then create the directory layout:
@@ -139,9 +139,9 @@ simpler and easier to reason about at 7am on exam day.
 SchoolPilot resolves the school from the request host, so every tenant is a
 subdomain.
 
-1. DNS: an `A` record for `schoolpilot.ng` **and** a wildcard `*.schoolpilot.ng`,
+1. DNS: an `A` record for `schoolpilot.org.ng` **and** a wildcard `*.schoolpilot.org.ng`,
    both pointing at this server.
-2. **cPanel → Domains → Create A New Domain**: `*.schoolpilot.ng`, with the
+2. **cPanel → Domains → Create A New Domain**: `*.schoolpilot.org.ng`, with the
    same document root as the main domain (set in §1.7).
 
 ### 1.7 Document root
@@ -150,9 +150,9 @@ Point both the main domain and the wildcard at the release symlink, so a
 deploy never has to touch Apache:
 
 ```
-# /var/cpanel/userdata/schoolpilot/schoolpilot.ng
+# /var/cpanel/userdata/schoolpilot/schoolpilot.org.ng
 #   documentroot: /home/schoolpilot/current/backend/public
-# ...and the same in the _SSL variant, and in both files for *.schoolpilot.ng
+# ...and the same in the _SSL variant, and in both files for *.schoolpilot.org.ng
 ```
 
 ```bash
@@ -173,8 +173,8 @@ Two options:
 
 - **`acme.sh` with DNS-01** against your DNS provider's API:
   ```bash
-  acme.sh --issue -d schoolpilot.ng -d '*.schoolpilot.ng' --dns dns_cf
-  acme.sh --deploy -d schoolpilot.ng --deploy-hook cpanel_uapi
+  acme.sh --issue -d schoolpilot.org.ng -d '*.schoolpilot.org.ng' --dns dns_cf
+  acme.sh --deploy -d schoolpilot.org.ng --deploy-hook cpanel_uapi
   ```
 - **A purchased wildcard certificate**, installed via WHM → SSL/TLS →
   Install an SSL Certificate.
@@ -186,7 +186,7 @@ entire platform offline for every school at once.
 
 ```bash
 for tree in std ssl; do
-  for dom in schoolpilot.ng "*.schoolpilot.ng"; do
+  for dom in schoolpilot.org.ng "*.schoolpilot.org.ng"; do
     install -D -m 0644 apache/schoolpilot.conf \
       "/etc/apache2/conf.d/userdata/$tree/2_4/schoolpilot/$dom/schoolpilot.conf"
   done
@@ -243,7 +243,7 @@ columns unreadable permanently.
 ```bash
 # your machine
 ./deploy/cpanel/build-release.sh
-scp dist/schoolpilot-<sha>.tar.gz schoolpilot@schoolpilot.ng:~/uploads/
+scp dist/schoolpilot-<sha>.tar.gz schoolpilot@schoolpilot.org.ng:~/uploads/
 
 # the server, as root
 deploy/cpanel/deploy.sh /home/schoolpilot/uploads/schoolpilot-<sha>.tar.gz
@@ -285,18 +285,28 @@ way the previous one cannot read, restore the pre-deploy dump
 systemctl status schoolpilot-web schoolpilot-worker   # both active
 crontab -u schoolpilot -l                             # scheduler present
 
-curl -sI https://schoolpilot.ng/api/v1/health         # 200, from Laravel
-curl -sI https://demo.schoolpilot.ng/                 # 200, valid cert on a subdomain
+# Laravel liveness. /up, not /api/v1/health — see the note below.
+curl -sI https://schoolpilot.org.ng/up                    # 200, from Laravel
+curl -sI https://schoolpilot.org.ng/                      # 200, from Next.js
 
-# The tenant Host header survives the proxy — if this resolves to the wrong
-# school, ProxyPreserveHost is off and every tenant has collapsed into one.
-curl -s https://demo.schoolpilot.ng/api/v1/health
+# Tenant routing, against a school that actually exists. The Host header has
+# to survive the proxy hop: if this 404s, or returns another school's data,
+# ProxyPreserveHost is off and every tenant has collapsed into one.
+curl -sI https://<real-subdomain>.schoolpilot.org.ng/     # 200, valid cert
+curl -s  https://<real-subdomain>.schoolpilot.org.ng/api/v1/health
 
 # A queued job actually completes end to end.
 sudo -u schoolpilot php /home/schoolpilot/current/backend/artisan queue:work --once
 
 /home/schoolpilot/current/deploy/cpanel/backup-db.sh  # and restore it once
 ```
+
+> **`/api/v1/health` returns 404 on the apex domain, and that is correct.**
+> Every route under `/api/v1/` passes through `TenantResolutionMiddleware`,
+> which reads the first label of the host as a school subdomain. On
+> `schoolpilot.org.ng` that label is `schoolpilot`, no such school exists, and
+> the middleware 404s. Use `/up` for untenanted liveness checks and a real
+> school subdomain for tenant checks. `deploy.sh` does exactly this.
 
 Then work through [`LAUNCH.md`](../../LAUNCH.md) §1 — live payment keys, one
 real SMS and one real WhatsApp message, AI budget caps, admin 2FA enrolment,
@@ -316,6 +326,8 @@ and only last `AUTH_REQUIRE_ADMIN_2FA=true`.
 | Cert warning on tenant subdomains only | No wildcard cert — AutoSSL cannot issue one. §1.8. |
 | 500 right after deploy, fine before | Stale `config:cache` against old paths. `php artisan config:clear` then redeploy. |
 | Uploads fail at ~2MB | `upload_max_filesize` not raised in MultiPHP INI Editor. §1.1. |
+| `/up` returns the Next.js 404 page | `ProxyPass /up !` missing from the vhost — deploys will hang in maintenance mode. §1.9. |
+| `/api/v1/health` 404s on the apex | By design — it is tenant-scoped. See §3. |
 
 ---
 

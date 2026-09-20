@@ -34,7 +34,7 @@ machine in the room.
 Then sign in to your school (needs internet, once):
 
 ```powershell
-relay login --base-url https://<your-school>.schoolpilot.ng --email you@school.ng
+relay login --base-url https://<your-school>.schoolpilot.org.ng --email you@school.ng
 ```
 
 ### 2. On every lab PC

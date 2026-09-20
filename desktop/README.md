@@ -41,7 +41,7 @@ Only four moments touch the network, and none of them is during the exam:
 
 ```
 relay init                                                          # at installation
-relay login     --base-url https://kings.schoolpilot.ng --email …   # once
+relay login     --base-url https://kings.schoolpilot.org.ng --email …   # once
 relay provision --exam 42                                           # day before
 relay pair                                                          # day before, staff watching
 relay serve                                                         # ~10s on exam morning

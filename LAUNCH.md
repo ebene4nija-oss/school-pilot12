@@ -17,7 +17,7 @@ Items are ordered so that each one is actually doable when you reach it —
       (`docker compose run --rm backend php artisan key:generate --show`) and
       `POSTGRES_PASSWORD`, then `docker compose up -d --build`. Compose refuses
       to start without those two rather than booting with a default.
-- [ ] **Subdomain Wildcard DNS**: Ensure `*.schoolpilot.ng` resolves to the backend production load balancer.
+- [ ] **Subdomain Wildcard DNS**: Ensure `*.schoolpilot.org.ng` resolves to the backend production load balancer.
 - [ ] **SSL / TLS**: Wildcard SSL certificate active for all tenant subdomains.
       `docker/nginx/conf.d/schoolpilot.conf` terminates plain HTTP on :80; put
       the certificate on your load balancer or add a TLS server block there.

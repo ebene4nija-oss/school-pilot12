@@ -6,7 +6,7 @@
 # You can also paste these into cPanel > Cron Jobs, but keeping them in the
 # repo means the next person to rebuild this box gets them.
 
-MAILTO=ops@schoolpilot.ng
+MAILTO=ops@schoolpilot.org.ng
 PATH=/opt/cpanel/ea-php82/root/usr/bin:/usr/local/bin:/usr/bin:/bin
 
 # --- Laravel scheduler -----------------------------------------------------

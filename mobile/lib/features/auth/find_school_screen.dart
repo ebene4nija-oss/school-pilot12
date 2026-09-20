@@ -125,7 +125,7 @@ class _FindSchoolScreenState extends ConsumerState<FindSchoolScreen> {
                       content: const Text(
                         'It is in the invite SMS or email your school sent you, '
                         'and in the web address your school uses — the part '
-                        'before .schoolpilot.ng.\n\n'
+                        'before .schoolpilot.org.ng.\n\n'
                         'Your school office can also tell you.',
                       ),
                       actions: [

@@ -51,12 +51,12 @@ ln -sfn "$SHARED/storage"     "$TARGET/backend/storage"
 
 say "Maintenance mode"
 # --secret lets you verify the new release yourself before letting schools
-# back in: visit https://schoolpilot.ng/<secret> to bypass the splash screen.
+# back in: visit https://schoolpilot.org.ng/<secret> to bypass the splash screen.
 # --retry tells well-behaved clients (and the mobile app) to come back rather
 # than treat this as a hard failure.
 SECRET=$(openssl rand -hex 16)
 sudo -u $USER "$PHP" "$CURRENT/backend/artisan" down --retry=60 --secret="$SECRET" 2>/dev/null || true
-echo "    bypass URL: https://schoolpilot.ng/$SECRET"
+echo "    bypass URL: https://schoolpilot.org.ng/$SECRET"
 
 say "Migrations"
 # --force because this is a non-interactive shell and Laravel otherwise
@@ -92,8 +92,14 @@ say "Health check"
 # Ask through the public hostname, not 127.0.0.1: this is the only step that
 # exercises TLS, the tenant Host header and the Apache proxy split together,
 # which is where a cPanel deploy actually goes wrong.
+#
+# /up, not /api/v1/health. Everything under /api/v1/ runs through
+# TenantResolutionMiddleware, which reads the first label of the host as a
+# school subdomain — so this URL on the apex domain resolves "schoolpilot",
+# finds no such school and returns 404 by design. Probing it here would fail
+# every deploy and leave the platform sitting in maintenance mode.
 for i in $(seq 1 15); do
-    if curl -fsS -o /dev/null "https://schoolpilot.ng/api/v1/health"; then
+    if curl -fsS -o /dev/null "https://schoolpilot.org.ng/up"; then
         echo "    API healthy"
         break
     fi
@@ -101,7 +107,14 @@ for i in $(seq 1 15); do
     sleep 2
 done
 
-curl -fsS -o /dev/null "https://schoolpilot.ng/" \
+# The tenant path, exercised separately. TENANT_SUBDOMAIN should name a school
+# that actually exists; unset, this step is skipped rather than guessed at.
+if [ -n "${TENANT_SUBDOMAIN:-}" ]; then
+    curl -fsS -o /dev/null "https://$TENANT_SUBDOMAIN.schoolpilot.org.ng/api/v1/health"         || { echo "fatal: tenant routing broken for $TENANT_SUBDOMAIN — staying in maintenance mode" >&2; exit 1; }
+    echo "    tenant routing healthy ($TENANT_SUBDOMAIN)"
+fi
+
+curl -fsS -o /dev/null "https://schoolpilot.org.ng/" \
     || { echo "fatal: web portal did not come up — staying in maintenance mode" >&2; exit 1; }
 echo "    web portal healthy"
 

@@ -41,7 +41,7 @@ PGPASSWORD="$DB_PASSWORD" pg_dump \
 # Encrypt to the ops public key. Symmetric encryption with a passphrase stored
 # on the same box would protect nothing if the box is what gets taken.
 gpg --batch --yes --trust-model always \
-    --recipient ops@schoolpilot.ng \
+    --recipient ops@schoolpilot.org.ng \
     --encrypt "$DUMP"
 shred -u "$DUMP"
 

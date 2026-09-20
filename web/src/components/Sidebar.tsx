@@ -112,7 +112,7 @@ export default function Sidebar() {
 
       <div className="border-t border-slate-800 px-2 pt-4 text-xs text-slate-500">
         <p className="font-semibold text-slate-400">Greenfield Academy</p>
-        <p>subdomain: greenfield.schoolpilot.ng</p>
+        <p>subdomain: greenfield.schoolpilot.org.ng</p>
       </div>
     </aside>
   );
