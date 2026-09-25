@@ -40,6 +40,10 @@ say "Unpacking $TARBALL"
 mkdir -p "$TARGET"
 tar -xzf "$TARBALL" -C "$TARGET" --strip-components=1
 chown -R $USER:$USER "$TARGET"
+# Builds made on Windows carry world-writable modes; normalise them.
+find "$TARGET" -type d -exec chmod 755 {} +
+find "$TARGET" -type f -exec chmod 644 {} +
+chmod 755 "$TARGET"/deploy/cpanel/*.sh
 
 say "Linking shared state"
 # .env and storage/ are per-server, not per-release. storage/ in particular
@@ -79,6 +83,7 @@ say "Switching current -> $STAMP"
 # /home/schoolpilotorg/current/backend/public, so nothing in the vhost changes
 # between deploys and Apache needs no restart.
 ln -sfn "$TARGET" "$CURRENT"
+chown -h $USER:$USER "$CURRENT"
 
 say "Restarting services"
 # queue:restart asks running workers to finish the job in hand and exit;
@@ -87,6 +92,7 @@ say "Restarting services"
 sudo -u $USER "$PHP" "$CURRENT/backend/artisan" queue:restart
 systemctl restart schoolpilot-worker
 systemctl restart schoolpilot-web
+systemctl restart schoolpilot-api
 
 say "Health check"
 # Ask through the public hostname, not 127.0.0.1: this is the only step that
@@ -131,5 +137,6 @@ echo
 echo "To roll back:"
 echo "  ln -sfn \$(ls -1dt $RELEASES/*/ | sed -n 2p) $CURRENT"
 echo "  systemctl restart schoolpilot-web schoolpilot-worker"
+systemctl restart schoolpilot-api
 echo "Note: rolling back does NOT undo migrations. Restore the pre-deploy"
 echo "backup if the new release changed the schema incompatibly."

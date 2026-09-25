@@ -1,0 +1,19 @@
+[Unit]
+Description=SchoolPilot internal API for the web app (loopback only)
+After=network.target
+
+[Service]
+Type=simple
+User=schoolpilotorg
+Group=schoolpilotorg
+WorkingDirectory=/home/schoolpilotorg/current/backend
+Environment=PHP_CLI_SERVER_WORKERS=4
+ExecStart=/opt/cpanel/ea-php82/root/usr/bin/php artisan serve --host=127.0.0.1 --port=8000 --no-reload
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+StandardOutput=append:/home/schoolpilotorg/logs/api.log
+StandardError=append:/home/schoolpilotorg/logs/api.error.log
+
+[Install]
+WantedBy=multi-user.target
