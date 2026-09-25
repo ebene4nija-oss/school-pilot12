@@ -93,7 +93,21 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: 'The server did not return a session token. Please contact support.' };
   }
 
-  const role: SessionRole | null = payload?.user?.user_profile?.role ?? payload?.role ?? null;
+  /*
+   * `user.role` is where the login endpoint actually puts it — AuthController
+   * flattens the profile into the user object on this response only.
+   *
+   * This read `user.user_profile.role` and fell back to a top-level `role`,
+   * neither of which the payload has, so the role cookie was never written.
+   * Nothing complained: the cookie only decides which nav links render, so the
+   * portal signed you in and then showed the sidebar of someone with no role —
+   * and a super admin was never redirected to their own console, because the
+   * check for that reads the same missing cookie.
+   *
+   * The other two shapes are kept as fallbacks; `/user` returns the nested one.
+   */
+  const role: SessionRole | null =
+    payload?.user?.role ?? payload?.user?.user_profile?.role ?? payload?.role ?? null;
 
   await createSession(token, role, subdomain);
 
