@@ -40,7 +40,11 @@ say "Unpacking $TARBALL"
 mkdir -p "$TARGET"
 tar -xzf "$TARBALL" -C "$TARGET" --strip-components=1
 chown -R $USER:$USER "$TARGET"
-# Builds made on Windows carry world-writable modes; normalise them.
+
+# Releases built on Windows arrive world-writable: NTFS carries no POSIX mode,
+# so tar records 0777/0666 for everything. Apache's suEXEC and PHP-FPM refuse to
+# run a script that group- or world-writable, which reads as a blank page or a
+# 500 with nothing useful in the vhost log.
 find "$TARGET" -type d -exec chmod 755 {} +
 find "$TARGET" -type f -exec chmod 644 {} +
 chmod 755 "$TARGET"/deploy/cpanel/*.sh
@@ -83,6 +87,9 @@ say "Switching current -> $STAMP"
 # /home/schoolpilotorg/current/backend/public, so nothing in the vhost changes
 # between deploys and Apache needs no restart.
 ln -sfn "$TARGET" "$CURRENT"
+# The link itself is created by root, so it ends up root-owned even though
+# everything it points at belongs to the account. `sudo -u $USER` writes through
+# it for the rest of this script, and the cPanel user needs to own it.
 chown -h $USER:$USER "$CURRENT"
 
 say "Restarting services"
@@ -92,6 +99,23 @@ say "Restarting services"
 sudo -u $USER "$PHP" "$CURRENT/backend/artisan" queue:restart
 systemctl restart schoolpilot-worker
 systemctl restart schoolpilot-web
+
+# schoolpilot-api runs `artisan serve` with its working directory inside the
+# release that was live when it started, so it keeps serving the *previous*
+# release's code until restarted. Leaving this out is silent and convincing:
+# /up is served by Apache and reports healthy, while every page the web portal
+# renders is talking to the old API — so new endpoints 404 and the release looks
+# broken in a way the health checks below would not catch.
+#
+# Fatal rather than a warning if the unit is missing. The alternative is
+# finishing a deploy that serves stale code, which is the bug this replaced.
+if ! systemctl list-unit-files schoolpilot-api.service --no-legend | grep -q .; then
+    echo "fatal: schoolpilot-api.service is not installed — the web portal would" >&2
+    echo "       keep calling the previous release. Install it and re-run:" >&2
+    echo "         install -m 0644 $TARGET/deploy/cpanel/systemd/schoolpilot-api.service /etc/systemd/system/" >&2
+    echo "         systemctl daemon-reload && systemctl enable --now schoolpilot-api" >&2
+    exit 1
+fi
 systemctl restart schoolpilot-api
 
 say "Health check"
@@ -136,7 +160,7 @@ echo "deployed $(cat "$CURRENT/RELEASE" 2>/dev/null || echo "$STAMP")"
 echo
 echo "To roll back:"
 echo "  ln -sfn \$(ls -1dt $RELEASES/*/ | sed -n 2p) $CURRENT"
-echo "  systemctl restart schoolpilot-web schoolpilot-worker"
-systemctl restart schoolpilot-api
+echo "  chown -h $USER:$USER $CURRENT"
+echo "  systemctl restart schoolpilot-web schoolpilot-worker schoolpilot-api"
 echo "Note: rolling back does NOT undo migrations. Restore the pre-deploy"
 echo "backup if the new release changed the schema incompatibly."

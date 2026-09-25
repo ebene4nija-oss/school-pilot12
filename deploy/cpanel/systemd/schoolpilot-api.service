@@ -1,3 +1,23 @@
+# The internal Laravel API that the Next.js web portal calls.
+#
+# Bound to loopback only, and deliberately not reachable from the internet:
+# Apache already serves the public API at /api on the document root. This unit
+# exists for the server-to-server hop.
+#
+#   install -m 0644 systemd/schoolpilot-api.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now schoolpilot-api
+#
+# Why it is needed at all: Next.js renders server-side and names the school in
+# an `X-School-Subdomain` header. Laravel honours that header only for requests
+# addressed to localhost or 127.0.0.1 — otherwise any client could claim to be
+# any school — so the web app needs a loopback address to call. Without this
+# unit the portal falls back to localhost:8000, nothing answers, and every
+# login fails with "Could not reach the school server" while the public API is
+# perfectly healthy.
+#
+# This ran as a hand-written unit on the server for a while, which meant a
+# rebuilt box silently lost it. It belongs in the repo.
+
 [Unit]
 Description=SchoolPilot internal API for the web app (loopback only)
 After=network.target
@@ -7,11 +27,27 @@ Type=simple
 User=schoolpilotorg
 Group=schoolpilotorg
 WorkingDirectory=/home/schoolpilotorg/current/backend
+
+# `artisan serve` is single-request by default, and the web portal makes several
+# API calls per page render — one blocking request per page would serialise the
+# whole portal behind the slowest query on it.
 Environment=PHP_CLI_SERVER_WORKERS=4
-ExecStart=/opt/cpanel/ea-php82/root/usr/bin/php artisan serve --host=127.0.0.1 --port=8000 --no-reload
+
+# --no-reload: the file watcher is for development. In production the process
+# is restarted by deploy.sh, and a watcher over a release directory on a busy
+# box is wasted inotify.
+ExecStart=/opt/cpanel/ea-php82/root/usr/bin/php artisan serve \
+    --host=127.0.0.1 --port=8000 --no-reload
+
 Restart=always
 RestartSec=5
+
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
 NoNewPrivileges=true
+PrivateTmp=true
+
 StandardOutput=append:/home/schoolpilotorg/logs/api.log
 StandardError=append:/home/schoolpilotorg/logs/api.error.log
 
