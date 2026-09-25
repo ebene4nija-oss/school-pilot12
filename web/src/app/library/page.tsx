@@ -163,7 +163,7 @@ export default function LibraryPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -236,10 +236,10 @@ export default function LibraryPage() {
             </form>
 
             {scanned && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="font-semibold text-slate-900">{scanned.title}</p>
-                <p className="text-sm text-slate-600">{scanned.author}</p>
-                <p className="mt-2 text-sm text-slate-700">
+              <div className="mt-4 rounded-lg border border-line-soft bg-surface-sunken p-4">
+                <p className="font-semibold text-brand">{scanned.title}</p>
+                <p className="text-sm text-ink-muted">{scanned.author}</p>
+                <p className="mt-2 text-sm text-ink">
                   {scanned.available_copies} of {scanned.total_copies} copy/copies available
                 </p>
               </div>
@@ -286,9 +286,9 @@ export default function LibraryPage() {
               <Table columns={['Title', 'Author', 'Barcode', 'Available', 'On loan', 'Overdue']}>
                 {books.map((book) => (
                   <tr key={book.id}>
-                    <Cell className="font-medium text-slate-900">
+                    <Cell className="font-medium text-brand">
                       {book.title}
-                      {book.isbn && <span className="block text-xs text-slate-500">ISBN {book.isbn}</span>}
+                      {book.isbn && <span className="block text-xs text-ink-muted">ISBN {book.isbn}</span>}
                     </Cell>
                     <Cell>{book.author}</Cell>
                     <Cell className="font-mono text-xs">{book.barcode}</Cell>

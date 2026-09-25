@@ -117,7 +117,7 @@ function MathSpan({ tex, display }: { tex: string; display: boolean }) {
   }, [tex, display]);
 
   if (html === null) {
-    return <code className="text-red-600">{tex}</code>;
+    return <code className="text-negative">{tex}</code>;
   }
 
   // KaTeX output is generated locally from a server-validated expression in
@@ -208,10 +208,10 @@ export function QuestionMedia({
               width={asset.width ?? undefined}
               height={asset.height ?? undefined}
               loading="eager"
-              className="max-w-full h-auto rounded border border-gray-200 bg-white"
+              className="max-w-full h-auto rounded border border-line-soft bg-white"
             />
             {asset.caption && (
-              <figcaption className="mt-1 text-xs text-gray-600">{asset.caption}</figcaption>
+              <figcaption className="mt-1 text-xs text-ink-muted">{asset.caption}</figcaption>
             )}
           </figure>
         ))}

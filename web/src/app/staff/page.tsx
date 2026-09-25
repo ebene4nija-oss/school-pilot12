@@ -100,7 +100,7 @@ export default function StaffPage() {
                 <Table columns={['Staff', 'Type', 'Dates', 'Days', '']}>
                   {pending.map((r) => (
                     <tr key={r.id}>
-                      <Cell className="font-medium text-slate-900">{r.staff_name ?? `Staff #${r.id}`}</Cell>
+                      <Cell className="font-medium text-brand">{r.staff_name ?? `Staff #${r.id}`}</Cell>
                       <Cell className="capitalize">{r.leave_type}</Cell>
                       <Cell>
                         {r.start_date} → {r.end_date}
@@ -133,7 +133,7 @@ export default function StaffPage() {
                 <Table columns={['Staff', 'Type', 'Dates', 'Status']}>
                   {decided.map((r) => (
                     <tr key={r.id}>
-                      <Cell className="font-medium text-slate-900">{r.staff_name ?? `Staff #${r.id}`}</Cell>
+                      <Cell className="font-medium text-brand">{r.staff_name ?? `Staff #${r.id}`}</Cell>
                       <Cell className="capitalize">{r.leave_type}</Cell>
                       <Cell>
                         {r.start_date} → {r.end_date}
@@ -158,9 +158,9 @@ export default function StaffPage() {
             ) : (
               <ul className="space-y-3">
                 {offToday.map((entry, i) => (
-                  <li key={i} className="rounded-lg bg-slate-50 px-3 py-2.5">
-                    <p className="text-sm font-medium text-slate-900">{entry.staff_name ?? 'Staff member'}</p>
-                    <p className="text-xs text-slate-500">
+                  <li key={i} className="rounded-lg bg-surface-sunken px-3 py-2.5">
+                    <p className="text-sm font-medium text-brand">{entry.staff_name ?? 'Staff member'}</p>
+                    <p className="text-xs text-ink-muted">
                       <span className="capitalize">{entry.leave_type ?? 'leave'}</span>
                       {entry.end_date ? ` · back after ${entry.end_date}` : ''}
                     </p>

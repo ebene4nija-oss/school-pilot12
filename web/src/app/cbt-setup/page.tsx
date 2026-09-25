@@ -110,7 +110,7 @@ export default function CbtSetupPage() {
       subtitle="Create exams, publish them to a class, and close them when the window ends."
     >
       <ErrorNote message={error} />
-      {notice && <p className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
+      {notice && <p className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card title="New exam" className="h-fit">
@@ -150,9 +150,9 @@ export default function CbtSetupPage() {
               {creating ? 'Creating…' : 'Create draft'}
             </Button>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-muted">
               Questions support images and LaTeX — see the authoring guide in{' '}
-              <code className="rounded bg-slate-100 px-1">docs/cbt-authoring-guide.md</code>.
+              <code className="rounded bg-surface-sunken px-1">docs/cbt-authoring-guide.md</code>.
             </p>
           </form>
         </Card>
@@ -169,7 +169,7 @@ export default function CbtSetupPage() {
 
                 return (
                   <tr key={exam.id}>
-                    <Cell className="font-medium text-slate-900">{exam.title}</Cell>
+                    <Cell className="font-medium text-brand">{exam.title}</Cell>
                     <Cell>{exam.subject ?? '—'}</Cell>
                     <Cell>{exam.question_count ?? 0}</Cell>
                     <Cell>{exam.duration_minutes ? `${exam.duration_minutes} min` : '—'}</Cell>

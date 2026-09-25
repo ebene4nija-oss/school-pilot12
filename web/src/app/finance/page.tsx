@@ -335,13 +335,13 @@ export default function FeesPage() {
   const structures = fees?.data ?? [];
 
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen">
+    <div className="flex bg-canvas text-ink min-h-screen">
       <Sidebar />
       <main className="flex-1 p-8">
         <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">Fees &amp; Finance Management</h1>
-            <p className="text-slate-400 text-sm">
+            <h1 className="text-2xl font-bold text-ink">Fees &amp; Finance Management</h1>
+            <p className="text-ink-muted text-sm">
               Fee structures, automated invoicing, and defaulter tracking
             </p>
           </div>
@@ -350,7 +350,7 @@ export default function FeesPage() {
             <select
               value={termId ?? ''}
               onChange={(e) => handleTermChange(e.target.value)}
-              className="px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:border-emerald-500 focus:outline-none"
+              className="px-3 py-2.5 bg-surface border border-line-soft rounded-lg text-sm text-ink focus:border-brand focus:outline-none"
             >
               {(fees?.terms ?? []).map((term) => (
                 <option key={term.id} value={term.id}>
@@ -362,7 +362,7 @@ export default function FeesPage() {
 
             <button
               onClick={startCreate}
-              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 font-semibold text-slate-950 rounded-lg text-sm transition"
+              className="px-4 py-2.5 bg-brand hover:bg-brand-soft font-semibold text-white rounded-lg text-sm transition"
             >
               + Create Fee Structure
             </button>
@@ -370,15 +370,15 @@ export default function FeesPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-lg text-sm text-rose-300">
+          <div className="mb-6 p-4 bg-negative-soft border border-negative/30 rounded-lg text-sm text-negative">
             {error}
           </div>
         )}
 
         {notice && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300 flex justify-between gap-4">
+          <div className="mb-6 p-4 bg-positive-soft border border-positive/30 rounded-lg text-sm text-positive flex justify-between gap-4">
             <span>{notice}</span>
-            <button onClick={() => setNotice(null)} className="text-emerald-500 hover:text-emerald-300">
+            <button onClick={() => setNotice(null)} className="text-positive hover:text-positive">
               ✕
             </button>
           </div>
@@ -386,26 +386,26 @@ export default function FeesPage() {
 
         {/* Summary tiles — derived from outstanding invoices, not invented. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Invoiced (unsettled)</span>
-            <h2 className="text-2xl font-extrabold text-white mt-1">{naira(invoiced)}</h2>
-            <span className="text-xs text-slate-400 mt-2 block">
+          <div className="bg-surface border border-line-soft p-5 rounded-xl">
+            <span className="text-xs font-semibold text-ink-muted uppercase">Invoiced (unsettled)</span>
+            <h2 className="text-2xl font-extrabold text-ink mt-1">{naira(invoiced)}</h2>
+            <span className="text-xs text-ink-muted mt-2 block">
               {debtors?.summary.invoices_outstanding ?? 0} open invoice(s)
             </span>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Part-paid so far</span>
-            <h2 className="text-2xl font-extrabold text-emerald-400 mt-1">{naira(collected)}</h2>
-            <span className="text-xs text-slate-400 mt-2 block">Against open invoices</span>
+          <div className="bg-surface border border-line-soft p-5 rounded-xl">
+            <span className="text-xs font-semibold text-ink-muted uppercase">Part-paid so far</span>
+            <h2 className="text-2xl font-extrabold text-positive mt-1">{naira(collected)}</h2>
+            <span className="text-xs text-ink-muted mt-2 block">Against open invoices</span>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Outstanding balance</span>
-            <h2 className="text-2xl font-extrabold text-rose-400 mt-1">
+          <div className="bg-surface border border-line-soft p-5 rounded-xl">
+            <span className="text-xs font-semibold text-ink-muted uppercase">Outstanding balance</span>
+            <h2 className="text-2xl font-extrabold text-negative mt-1">
               {naira(debtors?.summary.total_outstanding ?? 0)}
             </h2>
-            <span className="text-xs text-rose-400 mt-2 block">
+            <span className="text-xs text-negative mt-2 block">
               {debtors?.summary.defaulting_students ?? 0} student(s) owing
             </span>
           </div>
@@ -413,29 +413,29 @@ export default function FeesPage() {
 
         {/* Builder form */}
         {showForm && (
-          <div className="mb-8 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg font-bold text-white mb-4">
+          <div className="mb-8 bg-surface border border-line-soft p-6 rounded-xl shadow-lg">
+            <h2 className="text-lg font-bold text-ink mb-4">
               {form.id ? 'Edit Fee' : 'New Fee'} — {currentTerm?.name ?? 'current term'}
             </h2>
 
             <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Fee Title</label>
+                <label className="block text-xs font-semibold text-ink-muted mb-1">Fee Title</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="e.g. Tuition, Lab / ICT, Development Levy"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
                   required
                 />
                 {fieldErrors.title && (
-                  <p className="text-xs text-rose-400 mt-1">{fieldErrors.title[0]}</p>
+                  <p className="text-xs text-negative mt-1">{fieldErrors.title[0]}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Amount (₦)</label>
+                <label className="block text-xs font-semibold text-ink-muted mb-1">Amount (₦)</label>
                 <input
                   type="number"
                   min="0"
@@ -443,20 +443,20 @@ export default function FeesPage() {
                   value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   placeholder="45000"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
                   required
                 />
                 {fieldErrors.amount && (
-                  <p className="text-xs text-rose-400 mt-1">{fieldErrors.amount[0]}</p>
+                  <p className="text-xs text-negative mt-1">{fieldErrors.amount[0]}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Applies To</label>
+                <label className="block text-xs font-semibold text-ink-muted mb-1">Applies To</label>
                 <select
                   value={form.class_id}
                   onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
                 >
                   <option value="">Whole school</option>
                   {(fees?.classes ?? []).map((c) => (
@@ -468,7 +468,7 @@ export default function FeesPage() {
               </div>
 
               <div className="flex items-end">
-                <label className="flex items-center gap-2 text-sm text-slate-300 pb-2">
+                <label className="flex items-center gap-2 text-sm text-ink pb-2">
                   <input
                     type="checkbox"
                     checked={form.is_mandatory}
@@ -476,7 +476,7 @@ export default function FeesPage() {
                     className="accent-emerald-500 w-4 h-4"
                   />
                   Compulsory
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-ink-faint">
                     (optional fees are never auto-billed)
                   </span>
                 </label>
@@ -486,7 +486,7 @@ export default function FeesPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-bold rounded-lg text-sm transition"
+                  className="flex-1 py-2 bg-brand hover:bg-brand-soft disabled:opacity-50 text-white font-bold rounded-lg text-sm transition"
                 >
                   {saving ? 'Saving…' : form.id ? 'Update Fee' : 'Save Fee'}
                 </button>
@@ -496,7 +496,7 @@ export default function FeesPage() {
                     setShowForm(false);
                     setForm(emptyForm);
                   }}
-                  className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-sm transition"
+                  className="px-6 py-2 bg-surface-raised hover:bg-surface-raised text-ink font-semibold rounded-lg text-sm transition"
                 >
                   Cancel
                 </button>
@@ -506,24 +506,24 @@ export default function FeesPage() {
         )}
 
         {/* Fee structure definitions */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg mb-8">
-          <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-            <h3 className="font-semibold text-white">Fee Structure Definitions</h3>
-            <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full">
+        <div className="bg-surface border border-line-soft rounded-xl overflow-hidden shadow-lg mb-8">
+          <div className="p-4 border-b border-line-soft flex justify-between items-center">
+            <h3 className="font-semibold text-ink">Fee Structure Definitions</h3>
+            <span className="text-xs bg-surface-raised text-ink px-2.5 py-1 rounded-full">
               {structures.length} defined
             </span>
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm text-slate-400">Loading fee structures…</div>
+            <div className="p-8 text-center text-sm text-ink-muted">Loading fee structures…</div>
           ) : structures.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-400">
+            <div className="p-8 text-center text-sm text-ink-muted">
               No fees defined for this term yet. Create one to start billing.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
+              <table className="w-full text-left text-sm text-ink">
+                <thead className="bg-canvas text-ink-muted text-xs font-semibold uppercase">
                   <tr>
                     <th className="p-3.5">Fee</th>
                     <th className="p-3.5">Applies To</th>
@@ -533,44 +533,44 @@ export default function FeesPage() {
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-line-soft">
                   {structures.map((fee) => (
-                    <tr key={fee.id} className="hover:bg-slate-800/50 transition">
-                      <td className="p-3.5 font-medium text-white">{fee.title}</td>
+                    <tr key={fee.id} className="hover:bg-surface-sunken transition">
+                      <td className="p-3.5 font-medium text-ink">{fee.title}</td>
                       <td className="p-3.5">
                         {fee.scope === 'school_wide' ? (
-                          <span className="text-slate-400">Whole school</span>
+                          <span className="text-ink-muted">Whole school</span>
                         ) : (
                           fee.class
                         )}
                       </td>
-                      <td className="p-3.5 font-bold text-emerald-400">
+                      <td className="p-3.5 font-bold text-positive">
                         {fee.amount.toLocaleString()}
                       </td>
                       <td className="p-3.5">
                         <span
                           className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
                             fee.is_mandatory
-                              ? 'bg-slate-800 text-slate-300 border-slate-700'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              ? 'bg-surface-raised text-ink border-line'
+                              : 'bg-caution-soft text-caution border-accent/20'
                           }`}
                         >
                           {fee.is_mandatory ? 'Compulsory' : 'Optional'}
                         </span>
                       </td>
-                      <td className="p-3.5 text-xs text-slate-400">
+                      <td className="p-3.5 text-xs text-ink-muted">
                         {fee.invoiced_lines > 0 ? `${fee.invoiced_lines} invoice(s)` : '—'}
                       </td>
                       <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
                         <button
                           onClick={() => startEdit(fee)}
-                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-xs font-medium transition"
+                          className="px-3 py-1 bg-surface-raised hover:bg-surface-raised text-ink rounded-md text-xs font-medium transition"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(fee)}
-                          className="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-md text-xs font-medium transition"
+                          className="px-3 py-1 bg-negative-soft hover:opacity-90/20 text-negative border border-negative/20 rounded-md text-xs font-medium transition"
                         >
                           Remove
                         </button>
@@ -584,22 +584,22 @@ export default function FeesPage() {
         </div>
 
         {/* What each class actually pays, and the button that bills it */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg mb-8">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="font-semibold text-white">Raise Invoices</h3>
-            <p className="text-xs text-slate-400 mt-1">
+        <div className="bg-surface border border-line-soft rounded-xl overflow-hidden shadow-lg mb-8">
+          <div className="p-4 border-b border-line-soft">
+            <h3 className="font-semibold text-ink">Raise Invoices</h3>
+            <p className="text-xs text-ink-muted mt-1">
               Bills every active student for {currentTerm?.name ?? 'the selected term'}. Safe to run
               more than once — a student already billed for a fee is never charged twice.
             </p>
           </div>
 
-          <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end border-b border-slate-800">
+          <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end border-b border-line-soft">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Scope</label>
+              <label className="block text-xs font-semibold text-ink-muted mb-1">Scope</label>
               <select
                 value={generateClassId}
                 onChange={(e) => setGenerateClassId(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
               >
                 <option value="">All classes</option>
                 {(fees?.classes ?? []).map((c) => (
@@ -611,14 +611,14 @@ export default function FeesPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
+              <label className="block text-xs font-semibold text-ink-muted mb-1">
                 Payment Deadline
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
               />
             </div>
 
@@ -626,33 +626,33 @@ export default function FeesPage() {
               <button
                 onClick={handleGenerate}
                 disabled={generating || structures.length === 0}
-                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold rounded-lg text-sm transition"
+                className="w-full py-2.5 bg-brand hover:bg-brand-soft disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition"
               >
                 {generating ? 'Raising invoices…' : 'Generate Invoices for Term'}
               </button>
             </div>
           </div>
 
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
+          <table className="w-full text-left text-sm text-ink">
+            <thead className="bg-canvas text-ink-muted text-xs font-semibold uppercase">
               <tr>
                 <th className="p-3.5">Class Level</th>
                 <th className="p-3.5">Compulsory Fees</th>
                 <th className="p-3.5 text-right">Total Payable (₦)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-line-soft">
               {(fees?.by_class ?? []).map((row) => (
-                <tr key={row.class_id} className="hover:bg-slate-800/50 transition">
-                  <td className="p-3.5 font-medium text-white">{row.class}</td>
-                  <td className="p-3.5 text-xs text-slate-400">
+                <tr key={row.class_id} className="hover:bg-surface-sunken transition">
+                  <td className="p-3.5 font-medium text-ink">{row.class}</td>
+                  <td className="p-3.5 text-xs text-ink-muted">
                     {row.lines.length === 0
                       ? 'No fees defined'
                       : row.lines
                           .map((l) => `${l.title} ${naira(l.amount)}`)
                           .join('  ·  ')}
                   </td>
-                  <td className="p-3.5 text-right font-bold text-emerald-400">
+                  <td className="p-3.5 text-right font-bold text-positive">
                     {row.total_payable.toLocaleString()}
                   </td>
                 </tr>
@@ -662,28 +662,28 @@ export default function FeesPage() {
         </div>
 
         {/* Defaulters */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-          <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-            <h3 className="font-semibold text-rose-400">Fee Defaulters List</h3>
+        <div className="bg-surface border border-line-soft rounded-xl overflow-hidden shadow-lg">
+          <div className="p-4 border-b border-line-soft flex justify-between items-center">
+            <h3 className="font-semibold text-negative">Fee Defaulters List</h3>
             {debtors && (
-              <span className="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full">
+              <span className="text-xs bg-negative-soft text-negative border border-negative/20 px-2.5 py-1 rounded-full">
                 {naira(debtors.summary.total_outstanding)} outstanding
               </span>
             )}
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm text-slate-400">Loading debtor list…</div>
+            <div className="p-8 text-center text-sm text-ink-muted">Loading debtor list…</div>
           ) : !debtors || debtors.defaulters.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-400">
+            <div className="p-8 text-center text-sm text-ink-muted">
               Nobody is owing. Either every bill is settled, or invoices have not been raised yet.
             </div>
           ) : (
             <>
               {/* Reminder controls */}
-              <div className="p-4 border-b border-slate-800 flex flex-wrap gap-4 items-end">
+              <div className="p-4 border-b border-line-soft flex flex-wrap gap-4 items-end">
                 <div>
-                  <span className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <span className="block text-xs font-semibold text-ink-muted mb-1.5">
                     Send by
                   </span>
                   <div className="flex gap-2">
@@ -694,8 +694,8 @@ export default function FeesPage() {
                         onClick={() => toggleChannel(channel)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition border ${
                           channels.includes(channel)
-                            ? 'bg-emerald-500 text-slate-950 border-emerald-500'
-                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800'
+                            ? 'bg-brand text-white border-brand'
+                            : 'bg-canvas text-ink border-line-soft hover:bg-surface-sunken'
                         }`}
                       >
                         {channel}
@@ -708,7 +708,7 @@ export default function FeesPage() {
                 </div>
 
                 <div className="flex-1 min-w-[220px]">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-ink-muted mb-1.5">
                     Add a note (optional)
                   </label>
                   <input
@@ -717,14 +717,14 @@ export default function FeesPage() {
                     onChange={(e) => setReminderNote(e.target.value)}
                     maxLength={300}
                     placeholder="e.g. Kindly see the bursar before Friday."
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
                   />
                 </div>
 
                 <button
                   onClick={handleRemind}
                   disabled={reminding || channels.length === 0}
-                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition"
+                  className="px-4 py-2 bg-negative hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition"
                   title={channels.length === 0 ? 'Choose at least one channel' : undefined}
                 >
                   {reminding
@@ -734,7 +734,7 @@ export default function FeesPage() {
               </div>
 
               {unreachable.length > 0 && (
-                <div className="p-4 bg-amber-500/10 border-b border-amber-500/30 text-xs text-amber-300">
+                <div className="p-4 bg-caution-soft border-b border-accent/30 text-xs text-caution">
                   <strong className="block mb-1">
                     {unreachable.length} family/families could not be messaged — chase these by
                     phone:
@@ -748,8 +748,8 @@ export default function FeesPage() {
               )}
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
+                <table className="w-full text-left text-sm text-ink">
+                  <thead className="bg-canvas text-ink-muted text-xs font-semibold uppercase">
                     <tr>
                       <th className="p-3.5 w-10">
                         <input
@@ -768,9 +768,9 @@ export default function FeesPage() {
                       <th className="p-3.5">Contact</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody className="divide-y divide-line-soft">
                     {debtors.defaulters.map((row) => (
-                      <tr key={row.invoice_id} className="hover:bg-slate-800/50 transition">
+                      <tr key={row.invoice_id} className="hover:bg-surface-sunken transition">
                         <td className="p-3.5">
                           <input
                             type="checkbox"
@@ -780,25 +780,25 @@ export default function FeesPage() {
                             className="accent-emerald-500 w-4 h-4"
                           />
                         </td>
-                        <td className="p-3.5 font-medium text-white">
+                        <td className="p-3.5 font-medium text-ink">
                           {row.student_name}
-                          <span className="block text-xs text-slate-500 font-mono">
+                          <span className="block text-xs text-ink-faint font-mono">
                             {row.admission_number}
                           </span>
                         </td>
                         <td className="p-3.5">{row.class ?? '—'}</td>
-                        <td className="p-3.5 font-mono text-xs text-slate-400">
+                        <td className="p-3.5 font-mono text-xs text-ink-muted">
                           {row.invoice_number}
                         </td>
-                        <td className="p-3.5 font-bold text-rose-400">{naira(row.balance)}</td>
+                        <td className="p-3.5 font-bold text-negative">{naira(row.balance)}</td>
                         <td className="p-3.5">
                           <span
                             className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
                               row.days_overdue > 60
-                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                ? 'bg-negative-soft text-negative border-negative/20'
                                 : row.days_overdue > 0
-                                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                  : 'bg-slate-800 text-slate-400 border-slate-700'
+                                  ? 'bg-caution-soft text-caution border-accent/20'
+                                  : 'bg-surface-raised text-ink-muted border-line'
                             }`}
                           >
                             {AGEING_LABELS[row.ageing_bucket] ?? row.ageing_bucket}
@@ -806,25 +806,25 @@ export default function FeesPage() {
                         </td>
                         <td className="p-3.5 text-xs">
                           {row.contacts.length === 0 ? (
-                            <span className="text-slate-500">No contact on file</span>
+                            <span className="text-ink-faint">No contact on file</span>
                           ) : (
                             row.contacts.map((contact, index) => (
                               <span key={index} className="block mb-1 last:mb-0">
-                                <span className="text-slate-300">{contact.name}</span>
+                                <span className="text-ink">{contact.name}</span>
                                 {contact.relationship === 'student' && (
-                                  <span className="text-slate-500"> (student)</span>
+                                  <span className="text-ink-faint"> (student)</span>
                                 )}
                                 {contact.phone ? (
                                   // Tappable: the bursar's next action after
                                   // reading this row is usually to dial it.
                                   <a
                                     href={`tel:${contact.phone}`}
-                                    className="block font-mono text-emerald-400 hover:text-emerald-300"
+                                    className="block font-mono text-positive hover:text-positive"
                                   >
                                     {contact.phone}
                                   </a>
                                 ) : (
-                                  <span className="block text-amber-400">No phone number</span>
+                                  <span className="block text-caution">No phone number</span>
                                 )}
                               </span>
                             ))

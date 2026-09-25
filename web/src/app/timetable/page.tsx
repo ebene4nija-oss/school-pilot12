@@ -119,7 +119,7 @@ export default function TimetablePage() {
     >
       <ErrorNote message={error} />
       {notice && (
-        <p className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>
+        <p className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>
       )}
 
       {loading ? (
@@ -133,7 +133,7 @@ export default function TimetablePage() {
               <Table columns={['Version', 'Created', 'Clashes', 'Status', '']}>
                 {versions.map((v) => (
                   <tr key={v.id}>
-                    <Cell className="font-medium text-slate-900">{v.label ?? `Version ${v.id}`}</Cell>
+                    <Cell className="font-medium text-brand">{v.label ?? `Version ${v.id}`}</Cell>
                     <Cell>{v.created_at?.slice(0, 16).replace('T', ' ') ?? '—'}</Cell>
                     <Cell>
                       {/* A draft with clashes can still be published, but the
@@ -176,7 +176,7 @@ export default function TimetablePage() {
                       {s.start_time && s.end_time ? `${s.start_time}–${s.end_time}` : (s.period ?? '—')}
                     </Cell>
                     <Cell>{s.class_name ?? '—'}</Cell>
-                    <Cell className="font-medium text-slate-900">{s.subject ?? '—'}</Cell>
+                    <Cell className="font-medium text-brand">{s.subject ?? '—'}</Cell>
                     <Cell>{s.teacher ?? '—'}</Cell>
                   </tr>
                 ))}

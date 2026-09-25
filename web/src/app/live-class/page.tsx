@@ -207,7 +207,7 @@ export default function LiveClassPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -357,29 +357,29 @@ export default function LiveClassPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={STATUS_TONE[session.status]}>{session.status}</Badge>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-ink-muted">
                         {PROVIDER_LABEL[session.provider]}
                       </span>
                       {[session.class, session.arm, session.subject].filter(Boolean).length > 0 && (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-ink-muted">
                           · {[session.class, session.arm, session.subject].filter(Boolean).join(' · ')}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="mt-1 text-base font-semibold text-slate-900">{session.title}</h3>
+                    <h3 className="mt-1 text-base font-semibold text-brand">{session.title}</h3>
 
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-ink-muted">
                       {session.teacher ? `${session.teacher} · ` : ''}
                       {formatWhen(session.scheduled_for)} · {session.duration_minutes} min
                     </p>
 
                     {session.description && (
-                      <p className="mt-2 text-sm text-slate-600">{session.description}</p>
+                      <p className="mt-2 text-sm text-ink-muted">{session.description}</p>
                     )}
 
                     {session.meeting_id && (
-                      <p className="mt-2 text-xs text-slate-500">
+                      <p className="mt-2 text-xs text-ink-muted">
                         Meeting ID {session.meeting_id}
                         {session.passcode && ` · passcode ${session.passcode}`}
                       </p>
@@ -392,12 +392,12 @@ export default function LiveClassPage() {
                         href={session.meeting_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                        className="rounded-lg bg-brand px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-soft"
                       >
                         Join
                       </a>
                     ) : (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-ink-muted">
                         The link appears shortly before the lesson starts.
                       </span>
                     )}

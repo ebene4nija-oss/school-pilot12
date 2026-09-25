@@ -276,17 +276,17 @@ export default function SchoolDashboard() {
                   {pending.map((item) => (
                     <li
                       key={item.score_entry_id}
-                      className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-lg border border-line-soft bg-surface-sunken p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-brand">
                             {item.student_name}
                             {item.class && (
-                              <span className="font-normal text-slate-500"> · {item.class}</span>
+                              <span className="font-normal text-ink-muted"> · {item.class}</span>
                             )}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-ink-muted">
                             {item.subject} · {item.term}
                             {item.grade && ` · ${item.grade}`}
                           </p>
@@ -300,7 +300,7 @@ export default function SchoolDashboard() {
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
                             rows={3}
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                            className="w-full rounded-lg border border-line px-3 py-2 text-sm text-brand outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                             aria-label={`Edit the comment for ${item.student_name}`}
                           />
                           <div className="flex justify-end gap-2">
@@ -323,7 +323,7 @@ export default function SchoolDashboard() {
                         </div>
                       ) : (
                         <>
-                          <p className="mt-2 text-sm italic text-slate-700">
+                          <p className="mt-2 text-sm italic text-ink">
                             {item.comment ?? 'No comment text was generated.'}
                           </p>
                           <div className="mt-3 flex flex-wrap justify-end gap-2">
@@ -359,7 +359,7 @@ export default function SchoolDashboard() {
               )}
 
               {pendingTotal > pending.length && (
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-ink-muted">
                   Showing {pending.length} of {pendingTotal}.
                 </p>
               )}
@@ -381,7 +381,7 @@ export default function SchoolDashboard() {
               </dl>
               <Link
                 href="/cbt-setup"
-                className="mt-4 inline-block text-sm font-medium text-blue-700 hover:underline"
+                className="mt-4 inline-block text-sm font-medium text-info hover:underline"
               >
                 Manage CBT exams →
               </Link>
@@ -403,8 +403,8 @@ export default function SchoolDashboard() {
                     return (
                       <li key={row.class_name} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="font-medium text-slate-800">{row.class_name}</span>
-                          <span className="text-slate-600">{average.toFixed(1)}%</span>
+                          <span className="font-medium text-ink">{row.class_name}</span>
+                          <span className="text-ink-muted">{average.toFixed(1)}%</span>
                         </div>
                         <Meter
                           value={average}
@@ -449,8 +449,8 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <dt className="text-slate-600">{label}</dt>
-      <dd className={tone === 'amber' ? 'font-semibold text-amber-700' : 'font-semibold text-slate-900'}>
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className={tone === 'amber' ? 'font-semibold text-caution' : 'font-semibold text-brand'}>
         {value}
       </dd>
     </div>

@@ -44,9 +44,9 @@ export default function AnalyticsPage() {
           {scalars.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {scalars.map(([key, value]) => (
-                <div key={key} className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{humanise(key)}</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{format(key, value)}</p>
+                <div key={key} className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-line-soft">
+                  <p className="text-xs uppercase tracking-wide text-ink-muted">{humanise(key)}</p>
+                  <p className="mt-2 text-2xl font-semibold text-brand">{format(key, value)}</p>
                 </div>
               ))}
             </div>
@@ -75,7 +75,7 @@ function Breakdown({ value }: { value: unknown }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[30rem] text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-line-soft text-xs uppercase tracking-wide text-ink-muted">
                 {columns.map((c) => (
                   <th key={c} className="px-3 py-2 font-medium">
                     {humanise(c)}
@@ -83,11 +83,11 @@ function Breakdown({ value }: { value: unknown }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {(value as Json[]).map((row, i) => (
                 <tr key={i}>
                   {columns.map((c) => (
-                    <td key={c} className="px-3 py-2.5 text-slate-700">
+                    <td key={c} className="px-3 py-2.5 text-ink">
                       {format(c, row[c])}
                     </td>
                   ))}
@@ -100,7 +100,7 @@ function Breakdown({ value }: { value: unknown }) {
     }
 
     return (
-      <ul className="list-inside list-disc text-sm text-slate-700">
+      <ul className="list-inside list-disc text-sm text-ink">
         {value.map((v, i) => (
           <li key={i}>{String(v)}</li>
         ))}
@@ -111,9 +111,9 @@ function Breakdown({ value }: { value: unknown }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
       {Object.entries(value as Json).map(([k, v]) => (
-        <div key={k} className="rounded-lg bg-slate-50 px-3 py-2.5">
-          <dt className="text-xs uppercase tracking-wide text-slate-500">{humanise(k)}</dt>
-          <dd className="mt-0.5 text-sm font-medium text-slate-900">{format(k, v)}</dd>
+        <div key={k} className="rounded-lg bg-surface-sunken px-3 py-2.5">
+          <dt className="text-xs uppercase tracking-wide text-ink-muted">{humanise(k)}</dt>
+          <dd className="mt-0.5 text-sm font-medium text-brand">{format(k, v)}</dd>
         </div>
       ))}
     </dl>

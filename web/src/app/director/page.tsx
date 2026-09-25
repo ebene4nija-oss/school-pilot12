@@ -183,10 +183,10 @@ export default function DirectorConsole() {
                 {insights.map((item, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+                    className="flex items-start gap-3 rounded-lg border border-line-soft bg-surface-sunken p-3"
                   >
                     <Badge tone={item.kind === 'Attrition' ? 'red' : 'amber'}>{item.kind}</Badge>
-                    <p className="text-sm text-slate-700">{describe(item.body)}</p>
+                    <p className="text-sm text-ink">{describe(item.body)}</p>
                   </li>
                 ))}
               </ul>
@@ -204,8 +204,8 @@ export default function DirectorConsole() {
                 <div className="space-y-4">
                   <div>
                     <div className="mb-1 flex justify-between text-sm">
-                      <span className="text-slate-700">Collected</span>
-                      <span className="font-semibold text-emerald-700">
+                      <span className="text-ink">Collected</span>
+                      <span className="font-semibold text-positive">
                         {nairaAmount(revenue.total_collected)} ({revenue.fee_recovery_rate_percentage}%)
                       </span>
                     </div>
@@ -223,27 +223,27 @@ export default function DirectorConsole() {
 
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-slate-600">Billed</dt>
-                      <dd className="font-medium text-slate-900">
+                      <dt className="text-ink-muted">Billed</dt>
+                      <dd className="font-medium text-brand">
                         {nairaAmount(revenue.total_invoiced)}
                       </dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-slate-600">Outstanding</dt>
-                      <dd className="font-medium text-red-700">{nairaAmount(outstanding)}</dd>
+                      <dt className="text-ink-muted">Outstanding</dt>
+                      <dd className="font-medium text-negative">{nairaAmount(outstanding)}</dd>
                     </div>
                   </dl>
 
                   {debtors?.summary.by_ageing && Object.keys(debtors.summary.by_ageing).length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+                      <p className="mb-2 text-xs uppercase tracking-wide text-ink-muted">
                         How overdue
                       </p>
                       <ul className="space-y-1 text-sm">
                         {Object.entries(debtors.summary.by_ageing).map(([bucket, info]) => (
                           <li key={bucket} className="flex justify-between">
-                            <span className="text-slate-600">{bucket}</span>
-                            <span className="text-slate-900">{info.invoices} invoice(s)</span>
+                            <span className="text-ink-muted">{bucket}</span>
+                            <span className="text-brand">{info.invoices} invoice(s)</span>
                           </li>
                         ))}
                       </ul>
@@ -252,7 +252,7 @@ export default function DirectorConsole() {
 
                   <Link
                     href="/finance"
-                    className="inline-block text-sm font-medium text-blue-700 hover:underline"
+                    className="inline-block text-sm font-medium text-info hover:underline"
                   >
                     Fees &amp; finance →
                   </Link>
@@ -271,8 +271,8 @@ export default function DirectorConsole() {
                     return (
                       <li key={row.class_name} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="font-medium text-slate-800">{row.class_name}</span>
-                          <span className="text-slate-600">{average.toFixed(1)}%</span>
+                          <span className="font-medium text-ink">{row.class_name}</span>
+                          <span className="text-ink-muted">{average.toFixed(1)}%</span>
                         </div>
                         <Meter
                           value={average}
@@ -300,14 +300,14 @@ export default function DirectorConsole() {
               <Table columns={['Student', 'Class', 'Outstanding', 'Overdue', 'Ageing']}>
                 {topDebtors.map((row) => (
                   <tr key={row.invoice_id}>
-                    <Cell className="font-medium text-slate-900">
+                    <Cell className="font-medium text-brand">
                       {row.student_name ?? 'Unknown'}
                       {row.admission_number && (
-                        <span className="block text-xs text-slate-500">{row.admission_number}</span>
+                        <span className="block text-xs text-ink-muted">{row.admission_number}</span>
                       )}
                     </Cell>
                     <Cell>{row.class ?? '—'}</Cell>
-                    <Cell className="font-semibold text-red-700">{nairaAmount(row.balance)}</Cell>
+                    <Cell className="font-semibold text-negative">{nairaAmount(row.balance)}</Cell>
                     <Cell>{row.days_overdue > 0 ? `${row.days_overdue} day(s)` : 'Not yet due'}</Cell>
                     <Cell className="text-xs">{row.ageing_bucket}</Cell>
                   </tr>

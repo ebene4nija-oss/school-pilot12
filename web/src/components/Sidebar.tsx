@@ -37,7 +37,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   {
     items: [
       { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
-      { href: '/super-admin', icon: '🛡️', label: 'Operator console', roles: ['super_admin'], className: 'text-indigo-700 font-semibold' },
+      { href: '/super-admin', icon: '🛡️', label: 'Operator console', roles: ['super_admin'], className: 'font-semibold' },
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },
     ],
   },
@@ -75,7 +75,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Administration',
     items: [
       { href: '/security', icon: '🔐', label: 'Security', roles: ['school_admin'] },
-      { href: '/director', icon: '👑', label: 'Director console', roles: ['school_admin'], className: 'text-amber-700 font-semibold' },
+      { href: '/director', icon: '👑', label: 'Director console', roles: ['school_admin'], className: 'font-semibold' },
     ],
   },
 ];
@@ -133,13 +133,13 @@ export default function Sidebar() {
   const inspecting = me?.is_platform_operator && me.school !== null;
 
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-4 text-slate-700">
+    <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between bg-brand p-4 text-white/75">
       <div>
         <div className="mb-6 flex items-center space-x-3 px-2">
           <Image src="/brand/mark-white.png" alt="" width={32} height={32} className="h-8 w-8" priority />
           <div>
-            <h1 className="font-bold leading-none text-slate-900">SchoolPilot</h1>
-            <span className="text-xs text-slate-500">K-12 Management</span>
+            <h1 className="font-headline font-bold leading-none text-white">SchoolPilot</h1>
+            <span className="text-xs text-white/60">K-12 Management</span>
           </div>
         </div>
 
@@ -150,15 +150,15 @@ export default function Sidebar() {
           operator ends up changing the wrong school's data.
         */}
         {inspecting && (
-          <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-indigo-700">
+          <div className="mb-4 rounded-lg border border-accent/30 bg-white/10 p-3">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-accent">
               Viewing as operator
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-indigo-900">{me?.school?.name}</p>
+            <p className="mt-0.5 text-sm font-semibold text-white">{me?.school?.name}</p>
             <button
               onClick={leaveSchool}
               disabled={leaving}
-              className="mt-2 text-xs font-medium text-indigo-700 underline hover:text-indigo-900 disabled:opacity-60"
+              className="mt-2 text-xs font-medium text-white/80 underline hover:text-white disabled:opacity-60"
             >
               {leaving ? 'Leaving…' : 'Leave this school'}
             </button>
@@ -170,9 +170,19 @@ export default function Sidebar() {
             const items = section.items.filter((item) => {
               if (!item.roles) return true;
               if (!role) return false;
-              // An operator inside a school gets that school's screens too;
-              // outside one, only the console.
-              if (role === 'super_admin') return inspecting ? item.roles.includes('school_admin') : item.roles.includes('super_admin');
+
+              /*
+               * An operator always keeps their own console, and gains the
+               * school's screens while inside one. The previous version swapped
+               * the two sets, so stepping into a school hid the console — the
+               * way back out was a link the operator could no longer see.
+               */
+              if (role === 'super_admin') {
+                return (
+                  item.roles.includes('super_admin') ||
+                  (inspecting && item.roles.includes('school_admin'))
+                );
+              }
 
               return item.roles.includes(role);
             });
@@ -182,7 +192,7 @@ export default function Sidebar() {
             return (
               <div key={section.heading ?? i} className="space-y-1">
                 {section.heading && (
-                  <p className="px-3 pb-1 text-[0.65rem] uppercase tracking-wider text-slate-400">
+                  <p className="px-3 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-white/40">
                     {section.heading}
                   </p>
                 )}
@@ -197,7 +207,9 @@ export default function Sidebar() {
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
                       className={`flex items-center space-x-3 rounded-lg px-3 py-2.5 transition ${
-                        active ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-50 hover:text-slate-900'
+                        active
+                          ? 'bg-accent font-semibold text-accent-ink'
+                          : 'hover:bg-white/10 hover:text-white'
                       } ${item.className ?? ''}`}
                     >
                       <span aria-hidden="true">{item.icon}</span>
@@ -211,10 +223,10 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-6 border-t border-slate-200 px-2 pt-4 text-xs text-slate-500">
+      <div className="mt-6 border-t border-white/15 px-2 pt-4 text-xs text-white/60">
         {me ? (
           <>
-            <p className="font-semibold text-slate-700">{me.name}</p>
+            <p className="font-semibold text-white">{me.name}</p>
             {me.school ? (
               <p className="truncate" title={`${me.school.subdomain}.schoolpilot.org.ng`}>
                 {me.school.name}
@@ -224,11 +236,11 @@ export default function Sidebar() {
             )}
           </>
         ) : (
-          <p className="text-slate-400">Loading…</p>
+          <p className="text-white/40">Loading…</p>
         )}
 
         <form action={logout} className="mt-3">
-          <button type="submit" className="font-medium text-slate-600 underline hover:text-slate-900">
+          <button type="submit" className="font-medium text-white/70 underline hover:text-white">
             Sign out
           </button>
         </form>

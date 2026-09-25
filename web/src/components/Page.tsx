@@ -24,13 +24,13 @@ export function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-canvas text-ink">
       <Sidebar />
-      <main className="flex-1 overflow-x-hidden p-8">
+      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+            <h1 className="font-headline text-2xl font-bold text-brand">{title}</h1>
+            {subtitle && <p className="mt-1 text-sm text-ink-muted">{subtitle}</p>}
           </div>
           {actions}
         </header>
@@ -52,9 +52,9 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 ${className}`}>
-      {title && <h2 className="text-sm font-semibold text-slate-900">{title}</h2>}
-      {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+    <section className={`rounded-xl bg-surface p-5 shadow-sm ring-1 ring-line-soft ${className}`}>
+      {title && <h2 className="font-headline text-sm font-semibold text-brand">{title}</h2>}
+      {description && <p className="mt-1 text-sm text-ink-muted">{description}</p>}
       <div className={title || description ? 'mt-4' : ''}>{children}</div>
     </section>
   );
@@ -65,7 +65,7 @@ export function ErrorNote({ message }: { message: string | null }) {
   if (!message) return null;
 
   return (
-    <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+    <p role="alert" className="mb-6 rounded-lg border border-negative/20 bg-negative-soft px-4 py-3 text-sm text-negative">
       {message}
     </p>
   );
@@ -73,14 +73,14 @@ export function ErrorNote({ message }: { message: string | null }) {
 
 export function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+    <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
       {children}
     </p>
   );
 }
 
 export function Loading() {
-  return <p className="text-sm text-slate-500">Loading…</p>;
+  return <p className="text-sm text-ink-muted">Loading…</p>;
 }
 
 /**
@@ -98,7 +98,7 @@ export function Table({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[36rem] text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <tr className="border-b border-line-soft text-xs uppercase tracking-wide text-ink-faint">
             {columns.map((c) => (
               <th key={c} className="px-3 py-2 font-medium">
                 {c}
@@ -106,22 +106,22 @@ export function Table({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">{children}</tbody>
+        <tbody className="divide-y divide-line-soft">{children}</tbody>
       </table>
     </div>
   );
 }
 
 export function Cell({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-3 py-2.5 text-slate-700 ${className}`}>{children}</td>;
+  return <td className={`px-3 py-2.5 text-ink ${className}`}>{children}</td>;
 }
 
 const BADGE_TONES: Record<string, string> = {
-  green: 'bg-emerald-50 text-emerald-700',
-  amber: 'bg-amber-50 text-amber-800',
-  red: 'bg-red-50 text-red-700',
-  slate: 'bg-slate-100 text-slate-600',
-  blue: 'bg-blue-50 text-blue-700',
+  green: 'bg-positive-soft text-positive',
+  amber: 'bg-caution-soft text-caution',
+  red: 'bg-negative-soft text-negative',
+  slate: 'bg-surface-raised text-ink-muted',
+  blue: 'bg-info-soft text-info',
 };
 
 export function Badge({ tone = 'slate', children }: { tone?: keyof typeof BADGE_TONES; children: React.ReactNode }) {
@@ -136,11 +136,14 @@ export function Button({
   variant = 'primary',
   className = '',
   ...props
-}: { variant?: 'primary' | 'secondary' | 'danger' } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { variant?: 'primary' | 'secondary' | 'accent' | 'danger' } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const styles = {
-    primary: 'bg-slate-900 text-white hover:bg-slate-800',
-    secondary: 'border border-slate-300 text-slate-700 hover:bg-slate-50',
-    danger: 'bg-red-600 text-white hover:bg-red-500',
+    primary: 'bg-brand text-white hover:bg-brand-soft',
+    secondary: 'border border-line bg-surface text-ink hover:bg-surface-sunken',
+    // Amber is reserved for the single most important action on a screen.
+    // Used on more than one, it stops meaning anything.
+    accent: 'bg-accent text-accent-ink hover:bg-accent-strong',
+    danger: 'bg-negative text-white hover:opacity-90',
   }[variant];
 
   return (
@@ -160,14 +163,14 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
       {children}
     </label>
   );
 }
 
 export const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900';
+  'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20';
 
 /** Naira, not $ — see CLAUDE.md. */
 export function naira(kobo: number): string {
@@ -204,19 +207,22 @@ export function StatTile({
   hint?: React.ReactNode;
   tone?: 'slate' | 'green' | 'amber' | 'red' | 'blue';
 }) {
-  const accent = {
-    slate: 'text-slate-900',
-    green: 'text-emerald-700',
-    amber: 'text-amber-700',
-    red: 'text-red-700',
-    blue: 'text-blue-700',
+  // The rule down the left edge is what makes a row of tiles scannable: the
+  // figures differ in kind, not just in value, and colour says which is which
+  // before the label is read.
+  const { text, rule } = {
+    slate: { text: 'text-brand', rule: 'border-l-brand' },
+    green: { text: 'text-positive', rule: 'border-l-positive' },
+    amber: { text: 'text-caution', rule: 'border-l-accent' },
+    red: { text: 'text-negative', rule: 'border-l-negative' },
+    blue: { text: 'text-info', rule: 'border-l-brand-tint' },
   }[tone];
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${accent}`}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    <div className={`rounded-xl border-l-4 bg-surface p-5 shadow-sm ring-1 ring-line-soft ${rule}`}>
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">{label}</p>
+      <p className={`font-headline mt-2 text-2xl font-bold ${text}`}>{value}</p>
+      {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
     </div>
   );
 }
@@ -225,15 +231,18 @@ export function StatTile({
 export function Meter({ value, tone = 'slate' }: { value: number; tone?: 'slate' | 'green' | 'amber' | 'red' }) {
   const pct = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
   const fill = {
-    slate: 'bg-slate-900',
-    green: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-    red: 'bg-red-500',
+    slate: 'bg-brand',
+    green: 'bg-positive',
+    amber: 'bg-accent',
+    red: 'bg-negative',
   }[tone];
 
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200" role="presentation">
-      <div className={`h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} />
+    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-raised" role="presentation">
+      <div
+        className={`h-full rounded-full transition-[width] duration-500 ${fill}`}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }

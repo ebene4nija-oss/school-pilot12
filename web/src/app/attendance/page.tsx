@@ -258,7 +258,7 @@ export default function AttendancePage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -337,7 +337,7 @@ export default function AttendancePage() {
                     return (
                       <tr key={row.student_id}>
                         <Cell className="font-mono text-xs">{row.admission_number ?? '—'}</Cell>
-                        <Cell className="font-medium text-slate-900">{row.name ?? 'Unnamed'}</Cell>
+                        <Cell className="font-medium text-brand">{row.name ?? 'Unnamed'}</Cell>
                         <Cell>
                           <button
                             onClick={() =>
@@ -352,7 +352,7 @@ export default function AttendancePage() {
                             <Badge tone={STATUS_TONE[status]}>{status}</Badge>
                           </button>
                         </Cell>
-                        <Cell className="text-xs text-slate-500">
+                        <Cell className="text-xs text-ink-muted">
                           {row.already_marked ? `Saved as ${row.status}` : 'Not yet saved'}
                         </Cell>
                       </tr>
@@ -364,7 +364,7 @@ export default function AttendancePage() {
                   <Button onClick={save} disabled={saving || !termId}>
                     {saving ? 'Saving…' : 'Save register'}
                   </Button>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-ink-muted">
                     Saving twice is safe — the same register is never recorded twice.
                   </span>
                 </div>
@@ -381,11 +381,11 @@ export default function AttendancePage() {
             </Button>
 
             {qrToken && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Token</p>
-                <code className="mt-1 block break-all text-xs text-slate-800">{qrToken}</code>
+              <div className="mt-4 rounded-lg border border-line-soft bg-surface-sunken p-4">
+                <p className="text-xs uppercase tracking-wide text-ink-muted">Token</p>
+                <code className="mt-1 block break-all text-xs text-ink">{qrToken}</code>
                 {qrExpiresIn !== null && (
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-ink-muted">
                     Valid for {Math.round(qrExpiresIn / 60)} minute(s), then issue another. Each scan
                     spends the token once.
                   </p>

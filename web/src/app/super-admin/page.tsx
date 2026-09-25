@@ -247,10 +247,10 @@ export default function SuperAdminConsole() {
               >
                 {schools.map((school) => (
                   <tr key={school.id}>
-                    <Cell className="font-medium text-slate-900">
+                    <Cell className="font-medium text-brand">
                       {school.name}
                       {school.email && (
-                        <span className="block text-xs text-slate-500">{school.email}</span>
+                        <span className="block text-xs text-ink-muted">{school.email}</span>
                       )}
                     </Cell>
                     <Cell className="font-mono text-xs">{school.subdomain}</Cell>
@@ -296,7 +296,7 @@ export default function SuperAdminConsole() {
               </Table>
             )}
 
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-ink-muted">
               Suspending a school blocks access without deleting anything: the roll, results and
               payment history all stay as they are.
             </p>

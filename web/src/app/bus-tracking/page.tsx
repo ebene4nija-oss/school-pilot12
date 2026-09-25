@@ -144,7 +144,7 @@ export default function TransportPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -221,13 +221,13 @@ export default function TransportPage() {
               <Table columns={['Bus', 'Route', 'Driver', 'Last position', 'Reported']}>
                 {buses.map((bus) => (
                   <tr key={bus.id}>
-                    <Cell className="font-medium text-slate-900">{bus.bus_number}</Cell>
-                    <Cell>{bus.route_name ?? <span className="text-slate-400">No route set</span>}</Cell>
+                    <Cell className="font-medium text-brand">{bus.bus_number}</Cell>
+                    <Cell>{bus.route_name ?? <span className="text-ink-faint">No route set</span>}</Cell>
                     <Cell>
                       {bus.driver_name}
                       <a
                         href={`tel:${bus.driver_phone}`}
-                        className="block text-xs text-blue-700 hover:underline"
+                        className="block text-xs text-info hover:underline"
                       >
                         {bus.driver_phone}
                       </a>
@@ -238,12 +238,12 @@ export default function TransportPage() {
                           href={`https://www.google.com/maps?q=${bus.current_lat},${bus.current_lng}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-blue-700 hover:underline"
+                          className="text-info hover:underline"
                         >
                           {bus.current_lat.toFixed(5)}, {bus.current_lng.toFixed(5)}
                         </a>
                       ) : (
-                        <span className="text-slate-400">Never reported</span>
+                        <span className="text-ink-faint">Never reported</span>
                       )}
                     </Cell>
                     <Cell>
@@ -254,7 +254,7 @@ export default function TransportPage() {
                           ) : (
                             <Badge tone="amber">Stale</Badge>
                           )}
-                          <span className="ml-2 text-xs text-slate-500">{ago(bus.last_ping_at)}</span>
+                          <span className="ml-2 text-xs text-ink-muted">{ago(bus.last_ping_at)}</span>
                         </>
                       ) : (
                         <Badge tone="slate">No signal</Badge>
@@ -266,7 +266,7 @@ export default function TransportPage() {
             )}
           </Card>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             Positions are sent by the driver&apos;s phone, so a bus out of network coverage shows its
             last known fix. &ldquo;Stale&rdquo; means nothing has been heard for over ten minutes —
             treat the position as historic, not current.

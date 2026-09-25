@@ -17,26 +17,26 @@ export default function ForgotPasswordPage() {
   const [state, formAction, pending] = useActionState(requestPasswordReset, initialState);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <main className="flex min-h-screen items-center justify-center bg-surface-sunken px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-line-soft">
         {state.sent ? (
           <>
-            <h1 className="text-xl font-semibold text-slate-900">Check your email</h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <h1 className="text-xl font-semibold text-brand">Check your email</h1>
+            <p className="mt-2 text-sm text-ink-muted">
               If that address has an account, a link to set a new password is on its way to it.
               The link expires in an hour.
             </p>
             <Link
               href="/login"
-              className="mt-6 block rounded-lg bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-slate-800"
+              className="mt-6 block rounded-lg bg-brand px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-brand-soft"
             >
               Back to sign in
             </Link>
           </>
         ) : (
           <>
-            <h1 className="text-xl font-semibold text-slate-900">Forgot your password?</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <h1 className="text-xl font-semibold text-brand">Forgot your password?</h1>
+            <p className="mt-1 text-sm text-ink-muted">
               Enter the email address your school has on file and we will send you a link to set a
               new one.
             </p>
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
               />
 
               {state.error && (
-                <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p role="alert" className="rounded-lg bg-negative-soft px-3 py-2 text-sm text-negative">
                   {state.error}
                 </p>
               )}
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={pending}
-                className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-60"
               >
                 {pending ? 'Sending…' : 'Send reset link'}
               </button>
@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
 
             <Link
               href="/login"
-              className="mt-4 block text-center text-sm text-slate-500 hover:text-slate-900"
+              className="mt-4 block text-center text-sm text-ink-muted hover:text-brand"
             >
               Back to sign in
             </Link>
@@ -98,7 +98,7 @@ function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={name} className="block text-sm font-medium text-ink">
         {label}
       </label>
       <input
@@ -107,11 +107,11 @@ function Field({
         required
         aria-invalid={errors ? true : undefined}
         aria-describedby={errors ? `${name}-error` : undefined}
-        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+        className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-brand outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
         {...props}
       />
       {errors && (
-        <p id={`${name}-error`} className="mt-1 text-xs text-red-600">
+        <p id={`${name}-error`} className="mt-1 text-xs text-negative">
           {errors[0]}
         </p>
       )}

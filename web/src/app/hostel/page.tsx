@@ -182,7 +182,7 @@ export default function HostelPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -302,7 +302,7 @@ export default function HostelPage() {
               <Table columns={['Hostel', 'Room', 'Occupancy', 'Status']}>
                 {rooms.map((room) => (
                   <tr key={room.id}>
-                    <Cell className="font-medium text-slate-900">{room.hostel_name}</Cell>
+                    <Cell className="font-medium text-brand">{room.hostel_name}</Cell>
                     <Cell className="font-mono text-xs">{room.room_number}</Cell>
                     <Cell>
                       {room.occupied} of {room.capacity} bed(s)
@@ -329,10 +329,10 @@ export default function HostelPage() {
               <Table columns={['Student', 'Hostel', 'Room', 'Bed', '']}>
                 {assignments.map((a) => (
                   <tr key={a.id}>
-                    <Cell className="font-medium text-slate-900">
+                    <Cell className="font-medium text-brand">
                       {a.student_name}
                       {a.admission_number && (
-                        <span className="block text-xs text-slate-500">{a.admission_number}</span>
+                        <span className="block text-xs text-ink-muted">{a.admission_number}</span>
                       )}
                     </Cell>
                     <Cell>{a.hostel_name}</Cell>

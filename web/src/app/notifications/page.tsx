@@ -107,7 +107,7 @@ export default function NotificationsPage() {
   return (
     <PageShell title="Notifications" subtitle="Send a message and see what actually got delivered.">
       <ErrorNote message={error} />
-      {notice && <p className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
+      {notice && <p className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card title="Send a broadcast" className="xl:col-span-1 h-fit">
@@ -144,10 +144,10 @@ export default function NotificationsPage() {
             </Field>
 
             <fieldset>
-              <legend className="mb-2 text-sm font-medium text-slate-700">Channels</legend>
+              <legend className="mb-2 text-sm font-medium text-ink">Channels</legend>
               <div className="space-y-2">
                 {CHANNELS.map((c) => (
-                  <label key={c.id} className="flex items-start gap-2.5 rounded-lg bg-slate-50 px-3 py-2">
+                  <label key={c.id} className="flex items-start gap-2.5 rounded-lg bg-surface-sunken px-3 py-2">
                     <input
                       type="checkbox"
                       checked={selected.includes(c.id)}
@@ -155,8 +155,8 @@ export default function NotificationsPage() {
                       className="mt-1"
                     />
                     <span>
-                      <span className="block text-sm font-medium text-slate-800">{c.label}</span>
-                      <span className="block text-xs text-slate-500">{c.hint}</span>
+                      <span className="block text-sm font-medium text-ink">{c.label}</span>
+                      <span className="block text-xs text-ink-muted">{c.hint}</span>
                     </span>
                   </label>
                 ))}
@@ -176,11 +176,11 @@ export default function NotificationsPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {totals.map((t) => (
-                  <div key={t.channel} className="rounded-lg bg-slate-50 p-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">{t.channel}</p>
-                    <p className="mt-1 text-2xl font-semibold text-slate-900">{t.total ?? 0}</p>
+                  <div key={t.channel} className="rounded-lg bg-surface-sunken p-3">
+                    <p className="text-xs uppercase tracking-wide text-ink-muted">{t.channel}</p>
+                    <p className="mt-1 text-2xl font-semibold text-brand">{t.total ?? 0}</p>
                     {(t.failed ?? 0) > 0 && (
-                      <p className="mt-1 text-xs font-medium text-red-600">{t.failed} failed</p>
+                      <p className="mt-1 text-xs font-medium text-negative">{t.failed} failed</p>
                     )}
                   </div>
                 ))}
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
               <Table columns={['When', 'Channel', 'To', 'Status', 'Message']}>
                 {history.map((row) => (
                   <tr key={row.id}>
-                    <Cell className="whitespace-nowrap text-xs text-slate-500">
+                    <Cell className="whitespace-nowrap text-xs text-ink-muted">
                       {row.created_at?.slice(0, 16).replace('T', ' ') ?? '—'}
                     </Cell>
                     <Cell className="capitalize">{row.channel}</Cell>
@@ -213,9 +213,9 @@ export default function NotificationsPage() {
                       )}
                     </Cell>
                     <Cell>
-                      <span className="line-clamp-2 text-slate-700">{row.body ?? '—'}</span>
+                      <span className="line-clamp-2 text-ink">{row.body ?? '—'}</span>
                       {row.failure_reason && (
-                        <span className="mt-0.5 block text-xs text-red-600">{row.failure_reason}</span>
+                        <span className="mt-0.5 block text-xs text-negative">{row.failure_reason}</span>
                       )}
                     </Cell>
                   </tr>

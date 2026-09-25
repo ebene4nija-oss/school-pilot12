@@ -99,25 +99,25 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-surface-sunken">
       <Sidebar />
 
       <main className="flex-1 p-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Security</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-brand">Security</h1>
+          <p className="mt-1 text-sm text-ink-muted">
             Two-factor authentication for your administrator account.
           </p>
         </header>
 
         {error && (
-          <p role="alert" className="mb-6 max-w-2xl rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p role="alert" className="mb-6 max-w-2xl rounded-lg bg-negative-soft px-4 py-3 text-sm text-negative">
             {error}
           </p>
         )}
 
         {loading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-ink-muted">Loading…</p>
         ) : (
           <div className="max-w-2xl space-y-6">
             <StatusCard status={status} />
@@ -127,13 +127,13 @@ export default function SecurityPage() {
 
             {!status?.confirmed && !setup && (
               <Card title="Turn on two-factor authentication">
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-muted">
                   You will need an authenticator app — Google Authenticator, Authy, or the
                   one built into your password manager.
                 </p>
 
                 <form onSubmit={begin} className="mt-4 space-y-3">
-                  <label className="block text-sm font-medium text-slate-700" htmlFor="password">
+                  <label className="block text-sm font-medium text-ink" htmlFor="password">
                     Confirm your password
                   </label>
                   <input
@@ -143,12 +143,12 @@ export default function SecurityPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                    className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                   />
                   <button
                     type="submit"
                     disabled={busy}
-                    className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                    className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:opacity-60"
                   >
                     {busy ? 'Working…' : 'Begin setup'}
                   </button>
@@ -163,20 +163,20 @@ export default function SecurityPage() {
                   <img
                     src={setup.qr_code}
                     alt="Two-factor setup QR code"
-                    className="h-48 w-48 rounded-lg border border-slate-200 bg-white p-2"
+                    className="h-48 w-48 rounded-lg border border-line-soft bg-white p-2"
                   />
                 )}
 
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-4 text-sm text-ink-muted">
                   Setting this up on the phone you are reading this on? Type the key in
                   by hand instead:
                 </p>
-                <code className="mt-2 block break-all rounded-lg bg-slate-100 px-3 py-2 font-mono text-sm text-slate-800">
+                <code className="mt-2 block break-all rounded-lg bg-surface-sunken px-3 py-2 font-mono text-sm text-ink">
                   {setup.secret}
                 </code>
 
                 <form onSubmit={confirm} className="mt-5 space-y-3">
-                  <label className="block text-sm font-medium text-slate-700" htmlFor="code">
+                  <label className="block text-sm font-medium text-ink" htmlFor="code">
                     Enter the 6-digit code it shows
                   </label>
                   <input
@@ -187,12 +187,12 @@ export default function SecurityPage() {
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    className="w-40 rounded-lg border border-slate-300 px-3 py-2 font-mono text-lg tracking-widest outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                    className="w-40 rounded-lg border border-line px-3 py-2 font-mono text-lg tracking-widest outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
                   />
                   <button
                     type="submit"
                     disabled={busy}
-                    className="block rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                    className="block rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:opacity-60"
                   >
                     {busy ? 'Checking…' : 'Confirm and turn on'}
                   </button>
@@ -210,11 +210,11 @@ function StatusCard({ status }: { status: Status | null }) {
   const on = status?.confirmed;
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-line-soft">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-900">Two-factor authentication</p>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="text-sm font-medium text-brand">Two-factor authentication</p>
+          <p className="mt-0.5 text-sm text-ink-muted">
             {on
               ? `On — ${status?.recovery_codes_remaining ?? 0} recovery codes left`
               : 'Off — your password is the only thing protecting this school’s records'}
@@ -222,7 +222,7 @@ function StatusCard({ status }: { status: Status | null }) {
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            on ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+            on ? 'bg-positive-soft text-positive' : 'bg-caution-soft text-caution'
           }`}
         >
           {on ? 'Active' : 'Not set up'}
@@ -230,7 +230,7 @@ function StatusCard({ status }: { status: Status | null }) {
       </div>
 
       {status?.required && !on && (
-        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="mt-3 rounded-lg bg-caution-soft px-3 py-2 text-sm text-caution">
           Your school requires two-factor authentication. Until you finish setting it up,
           the rest of the admin portal stays locked.
         </p>
@@ -241,16 +241,16 @@ function StatusCard({ status }: { status: Status | null }) {
 
 function RecoveryCodes({ codes, onDismiss }: { codes: string[]; onDismiss: () => void }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-2 ring-amber-300">
-      <h2 className="text-sm font-semibold text-slate-900">Save your recovery codes</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-2 ring-accent/40">
+      <h2 className="text-sm font-semibold text-brand">Save your recovery codes</h2>
+      <p className="mt-1 text-sm text-ink-muted">
         Each code works once, and gets you in if you lose your phone. This is the only
         time they will be shown — print them, or write them somewhere safe.
       </p>
 
-      <ul className="mt-4 grid grid-cols-2 gap-2 font-mono text-sm text-slate-800">
+      <ul className="mt-4 grid grid-cols-2 gap-2 font-mono text-sm text-ink">
         {codes.map((c) => (
-          <li key={c} className="rounded-lg bg-slate-100 px-3 py-2 text-center">
+          <li key={c} className="rounded-lg bg-surface-sunken px-3 py-2 text-center">
             {c}
           </li>
         ))}
@@ -258,7 +258,7 @@ function RecoveryCodes({ codes, onDismiss }: { codes: string[]; onDismiss: () =>
 
       <button
         onClick={onDismiss}
-        className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="mt-4 rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-surface-sunken"
       >
         I have saved them
       </button>
@@ -268,8 +268,8 @@ function RecoveryCodes({ codes, onDismiss }: { codes: string[]; onDismiss: () =>
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+    <section className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-line-soft">
+      <h2 className="text-sm font-semibold text-brand">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );

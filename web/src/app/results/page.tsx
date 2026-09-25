@@ -300,7 +300,7 @@ export default function ResultsPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -337,7 +337,7 @@ export default function ResultsPage() {
             </div>
 
             {scheme && (
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-ink-muted">
                 Marking scheme <strong>{scheme.name}</strong>: first CA out of {scheme.first_ca_weight},
                 second CA out of {scheme.second_ca_weight}, exam out of {scheme.exam_weight}.
               </p>
@@ -359,13 +359,13 @@ export default function ResultsPage() {
                 aria-current={tab === key ? 'page' : undefined}
                 className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
                   tab === key
-                    ? 'bg-slate-900 text-white'
-                    : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                    ? 'bg-brand text-white'
+                    : 'border border-line text-ink hover:bg-surface-sunken'
                 }`}
               >
                 {label}
                 {key === 'comments' && pending.length > 0 && (
-                  <span className="ml-2 rounded-full bg-amber-100 px-2 text-xs text-amber-800">
+                  <span className="ml-2 rounded-full bg-caution-soft px-2 text-xs text-caution">
                     {pending.length}
                   </span>
                 )}
@@ -385,10 +385,10 @@ export default function ResultsPage() {
                 >
                   {sheet.broadsheet.map((row) => (
                     <tr key={row.student_id}>
-                      <Cell className="font-medium text-slate-900">
+                      <Cell className="font-medium text-brand">
                         {row.student_name}
                         {row.admission_number && (
-                          <span className="block text-xs text-slate-500">{row.admission_number}</span>
+                          <span className="block text-xs text-ink-muted">{row.admission_number}</span>
                         )}
                       </Cell>
 
@@ -401,11 +401,11 @@ export default function ResultsPage() {
                               <>
                                 {score.total_score ?? '—'}
                                 {score.grade && (
-                                  <span className="ml-1 text-xs text-slate-500">{score.grade}</span>
+                                  <span className="ml-1 text-xs text-ink-muted">{score.grade}</span>
                                 )}
                               </>
                             ) : (
-                              <span className="text-slate-300">—</span>
+                              <span className="text-line">—</span>
                             )}
                           </Cell>
                         );
@@ -524,7 +524,7 @@ export default function ResultsPage() {
                 </Button>
               </form>
 
-              <p className="mt-4 text-xs text-slate-500">
+              <p className="mt-4 text-xs text-ink-muted">
                 A matching export is available from the same screen the scores came from, so the
                 column order is the one this school already uses.
               </p>
@@ -543,15 +543,15 @@ export default function ResultsPage() {
                   {pending.map((item) => (
                     <li
                       key={item.score_entry_id}
-                      className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-lg border border-line-soft bg-surface-sunken p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-brand">
                             {item.student_name}
-                            {item.class && <span className="font-normal text-slate-500"> · {item.class}</span>}
+                            {item.class && <span className="font-normal text-ink-muted"> · {item.class}</span>}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-ink-muted">
                             {item.subject} · {item.term}
                             {item.grade && ` · ${item.grade}`}
                           </p>
@@ -588,7 +588,7 @@ export default function ResultsPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="mt-2 text-sm italic text-slate-700">
+                          <p className="mt-2 text-sm italic text-ink">
                             {item.comment ?? 'No comment text was generated.'}
                           </p>
                           <div className="mt-3 flex flex-wrap justify-end gap-2">

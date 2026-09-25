@@ -124,7 +124,7 @@ export default function ClinicLogPage() {
       <ErrorNote message={error} />
 
       {notice && (
-        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
       )}
@@ -197,10 +197,10 @@ export default function ClinicLogPage() {
           <Table columns={['Student', 'Symptoms', 'Treatment', 'Nurse', 'When']}>
             {visits.map((visit) => (
               <tr key={visit.id}>
-                <Cell className="font-medium text-slate-900">
+                <Cell className="font-medium text-brand">
                   {visit.student_name}
                   {visit.admission_number && (
-                    <span className="block text-xs text-slate-500">{visit.admission_number}</span>
+                    <span className="block text-xs text-ink-muted">{visit.admission_number}</span>
                   )}
                 </Cell>
                 <Cell>{visit.symptoms}</Cell>
@@ -213,7 +213,7 @@ export default function ClinicLogPage() {
         )}
       </Card>
 
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-ink-muted">
         This log holds only what happened at the visit. A student&apos;s stored medical details are
         on their own record and are not listed here.
       </p>
