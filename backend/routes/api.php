@@ -116,6 +116,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/assessment/score', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'enterScores'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/assessment/score/{id}/ai-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'generateAiComment'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/assessment/score/{id}/review-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'reviewAiComment'])->middleware('role:super_admin,school_admin,teacher');
+        // The review queue itself. Without a way to read it, the approval gate
+        // on AI comments existed only on the write side.
+        Route::get('/assessment/ai-comments/pending', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'pendingAiComments'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/assessment/broadsheet', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'getBroadsheet'])->middleware('role:super_admin,school_admin,teacher');
 
         // Configurable CA weighting (§7.7) — schools each split CA vs exam
@@ -656,6 +659,21 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         // SchoolPilot platform operators only.
         Route::middleware('role:super_admin')->group(function () {
+            /*
+             * The operator console's own data.
+             *
+             * A super admin has no school, so the school-side dashboards are
+             * not merely unhelpful to them — `/analytics/principal` scopes to a
+             * null `school_id` and reports a platform operator an entire
+             * school's worth of zeroes. These endpoints answer the operator's
+             * actual questions: how many tenants, how much AI spend, which
+             * school is asking for help.
+             */
+            Route::get('/platform/overview', [\App\Http\Controllers\Api\V1\PlatformController::class, 'overview']);
+            Route::get('/platform/schools', [\App\Http\Controllers\Api\V1\PlatformController::class, 'schools']);
+            Route::get('/platform/schools/{schoolId}', [\App\Http\Controllers\Api\V1\PlatformController::class, 'show']);
+            Route::post('/platform/schools/{schoolId}/status', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setStatus']);
+
             Route::get('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'listPriceTiers']);
             Route::post('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'storePriceTier']);
             // A discounted per-PIN price agreed with one school, which overrides
@@ -670,10 +688,44 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         });
 
         Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin');
+
+        /*
+         * Transport, library, hostel and clinic.
+         *
+         * These five features had a write endpoint each and no way to read
+         * anything back, so the portal's pages for them were built on invented
+         * arrays and none of what a school entered was ever visible again.
+         */
+        Route::get('/transport/buses', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'buses'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/transport/buses', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeBus'])->middleware('role:super_admin,school_admin');
         Route::post('/transport/bus/{busId}/gps-ping', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'updateBusLocation'])->middleware('role:super_admin,school_admin,teacher');
+
+        Route::get('/library/books', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'books'])->middleware('role:super_admin,school_admin,teacher,student');
+        Route::post('/library/books', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeBook'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/library/scan-barcode', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'scanBookBarcode'])->middleware('role:super_admin,school_admin,teacher,student');
+
+        Route::get('/hostel/rooms', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'rooms'])->middleware('role:super_admin,school_admin,teacher');
+        Route::post('/hostel/rooms', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeRoom'])->middleware('role:super_admin,school_admin');
+        Route::get('/hostel/bed-assignments', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'bedAssignments'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/hostel/assign-bed', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'assignBed'])->middleware('role:super_admin,school_admin');
+        Route::delete('/hostel/bed-assignments/{assignmentId}', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'releaseBed'])->middleware('role:super_admin,school_admin');
+
+        /*
+         * The clinic log is health data about a child. Teachers can record a
+         * visit — they are who walks a child to the nurse — but reading the log
+         * back is restricted to the school's administrators (doc §12).
+         */
+        Route::get('/health/clinic-visits', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'clinicVisits'])->middleware('role:super_admin,school_admin');
         Route::post('/health/clinic-visit', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'recordClinicVisit'])->middleware('role:super_admin,school_admin,teacher');
+
+        /*
+         * Virtual classrooms. SchoolPilot stores the schedule and the joining
+         * link; the call itself runs in whatever the school already uses.
+         */
+        Route::get('/live-classes', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'index']);
+        Route::post('/live-classes', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'store'])->middleware('role:super_admin,school_admin,teacher');
+        Route::put('/live-classes/{id}', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'update'])->middleware('role:super_admin,school_admin,teacher');
+        Route::delete('/live-classes/{id}', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'destroy'])->middleware('role:super_admin,school_admin,teacher');
 
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return response()->json($request->user()->load('userProfile'));

@@ -202,6 +202,98 @@ class AssessmentController extends Controller
         ]);
     }
 
+    /**
+     * The AI comments waiting on a human.
+     *
+     * This is the queue behind the hard rule that no AI-generated remark ever
+     * reaches a report card unreviewed. The rule was enforced on the write side
+     * — a comment is created as `pending_approval` and `reviewAiComment` is the
+     * only way out of it — but there was no way to *read* the queue, so the
+     * admin dashboard showed a hardcoded list of invented students and the real
+     * pending comments were unreachable from the portal. A gate nobody can see
+     * through is a gate that gets worked around at term end.
+     */
+    public function pendingAiComments(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $role = $user->userProfile?->role;
+
+        $query = ScoreEntry::where('score_entries.school_id', $schoolId)
+            ->where('score_entries.ai_comment_status', 'pending_approval')
+            ->join('students', 'score_entries.student_id', '=', 'students.id')
+            ->join('users', 'students.user_id', '=', 'users.id')
+            ->leftJoin('classes', 'students.class_id', '=', 'classes.id')
+            ->leftJoin('arms', 'students.arm_id', '=', 'arms.id')
+            ->join('subjects', 'score_entries.subject_id', '=', 'subjects.id')
+            ->join('terms', 'score_entries.term_id', '=', 'terms.id')
+            ->select([
+                'score_entries.id',
+                'score_entries.student_id',
+                'score_entries.teacher_comment',
+                'score_entries.total_score',
+                'score_entries.grade',
+                'score_entries.updated_at',
+                'users.name as student_name',
+                'students.admission_number',
+                'classes.name as class_name',
+                'arms.name as arm_name',
+                'subjects.name as subject_name',
+                'terms.id as term_id',
+                'terms.name as term_name',
+            ]);
+
+        /*
+         * A teacher sees only the subjects they teach. Approving a remark is a
+         * professional judgement about a child's work, so it belongs to the
+         * person who taught them — not to whoever opens the queue first.
+         */
+        if ($role === 'teacher') {
+            $query->whereIn('score_entries.subject_id', function ($sub) use ($user) {
+                $sub->select('subject_id')
+                    ->from('teacher_subjects')
+                    ->where('teacher_id', $user->id);
+            });
+        }
+
+        if ($termId = $request->query('term_id')) {
+            $query->where('score_entries.term_id', $termId);
+        }
+
+        if ($classId = $request->query('class_id')) {
+            $query->where('students.class_id', $classId);
+        }
+
+        $entries = $query->orderBy('score_entries.updated_at')->paginate(
+            min((int) $request->query('per_page', 25), 100)
+        );
+
+        return response()->json([
+            'data' => collect($entries->items())->map(fn ($entry) => [
+                'score_entry_id' => (int) $entry->id,
+                'student_id' => (int) $entry->student_id,
+                'student_name' => $entry->student_name,
+                'admission_number' => $entry->admission_number,
+                'class' => trim(($entry->class_name ?? '').' '.($entry->arm_name ?? '')) ?: null,
+                'subject' => $entry->subject_name,
+                'term_id' => (int) $entry->term_id,
+                'term' => $entry->term_name,
+                'total_score' => (float) $entry->total_score,
+                'grade' => $entry->grade,
+                'comment' => $entry->teacher_comment,
+                'generated_at' => $entry->updated_at
+                    ? \Illuminate\Support\Carbon::parse($entry->updated_at)->toIso8601String()
+                    : null,
+            ]),
+            'meta' => [
+                'current_page' => $entries->currentPage(),
+                'last_page' => $entries->lastPage(),
+                'per_page' => $entries->perPage(),
+                'total' => $entries->total(),
+            ],
+        ]);
+    }
+
     public function reviewAiComment(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
