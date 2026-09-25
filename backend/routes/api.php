@@ -670,6 +670,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
              * school is asking for help.
              */
             Route::get('/platform/overview', [\App\Http\Controllers\Api\V1\PlatformController::class, 'overview']);
+            // The migration queue an operator actually works, across schools.
+            Route::get('/platform/school-migrations', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'queue']);
+            Route::put('/platform/school-migrations/{id}', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'update']);
             Route::get('/platform/schools', [\App\Http\Controllers\Api\V1\PlatformController::class, 'schools']);
             Route::get('/platform/schools/{schoolId}', [\App\Http\Controllers\Api\V1\PlatformController::class, 'show']);
             Route::post('/platform/schools/{schoolId}/status', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setStatus']);
@@ -722,13 +725,61 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * Virtual classrooms. SchoolPilot stores the schedule and the joining
          * link; the call itself runs in whatever the school already uses.
          */
+        /*
+         * Assisted data migration. The self-service path is the bulk CSV
+         * importer; this is the staffed one the portal advertised behind a form
+         * that recorded nothing.
+         */
+        Route::get('/school-migration', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'index'])->middleware('role:super_admin,school_admin');
+        Route::post('/school-migration', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'store'])->middleware('role:super_admin,school_admin');
+        Route::post('/school-migration/{id}/cancel', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'cancel'])->middleware('role:super_admin,school_admin');
+
         Route::get('/live-classes', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'index']);
         Route::post('/live-classes', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'store'])->middleware('role:super_admin,school_admin,teacher');
         Route::put('/live-classes/{id}', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'update'])->middleware('role:super_admin,school_admin,teacher');
         Route::delete('/live-classes/{id}', [\App\Http\Controllers\Api\V1\LiveClassController::class, 'destroy'])->middleware('role:super_admin,school_admin,teacher');
 
+        /*
+         * Who is signed in, and which school they are acting on.
+         *
+         * The school is included because every page's chrome needs its name and
+         * had nowhere to get it: the portal's sidebar hardcoded "Greenfield
+         * Academy" for every tenant, so each school saw another school's name
+         * on every screen.
+         *
+         * `school` is the *acting* school, which for a platform operator using
+         * the school picker is the tenant they are inspecting rather than their
+         * own (they have none). `is_platform_operator` tells the client which of
+         * those it is looking at, so the chrome can say so plainly instead of
+         * presenting a borrowed school as the operator's own.
+         */
         Route::get('/user', function (\Illuminate\Http\Request $request) {
-            return response()->json($request->user()->load('userProfile'));
+            $user = $request->user()->load('userProfile');
+            $tenant = app(\App\Support\TenantContext::class);
+            $role = $user->userProfile?->role;
+
+            $schoolId = $tenant->schoolId() ?? $user->userProfile?->school_id;
+
+            $school = $schoolId
+                ? $tenant->withoutScoping(fn () => \App\Models\School::find($schoolId))
+                : null;
+
+            return response()->json([
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'user_profile' => $user->userProfile,
+                'role' => $role,
+                'is_platform_operator' => $role === 'super_admin',
+                'school' => $school ? [
+                    'id' => $school->id,
+                    'name' => $school->name,
+                    'subdomain' => $school->subdomain,
+                    'status' => $school->status,
+                    'ai_enabled' => (bool) $school->ai_enabled,
+                    'result_checker_enabled' => (bool) $school->result_checker_enabled,
+                ] : null,
+            ]);
         });
     });
 

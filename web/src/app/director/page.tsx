@@ -1,172 +1,345 @@
 'use client';
 
-import React from 'react';
-import Sidebar from '@/components/Sidebar';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { fetchApi } from '@/lib/api';
+import {
+  Badge,
+  Card,
+  Cell,
+  Empty,
+  ErrorNote,
+  Loading,
+  Meter,
+  PageShell,
+  StatTile,
+  Table,
+  nairaAmount,
+} from '@/components/Page';
 
-export default function SchoolDirectorDashboard() {
+/**
+ * The proprietor's view of the school.
+ *
+ * This page was entirely fictional: ₦48,650,000 collected, "160 Defaulters
+ * Flagged", two invented families with outstanding balances, and two "AI
+ * Executive Insights" written as static HTML. Its buttons called `alert()`.
+ *
+ * Every figure now comes from `/analytics/principal` and `/finance/defaulters`,
+ * and the insight feed is the rule-based one the API actually computes. Where
+ * there is no data the page says so rather than showing a plausible number.
+ */
+
+interface Principal {
+  population: { active: number; total: number; by_status: Record<string, number> };
+  revenue: {
+    total_collected: number;
+    total_invoiced: number;
+    fee_recovery_rate_percentage: number;
+  };
+  attendance_today: { present_count: number; marked_count: number; rate_percentage: number };
+  best_performing_classes: { class_name: string; average_score: number | string }[];
+  insights?: {
+    grade_drops?: Insight[];
+    revenue_forecast?: Record<string, unknown> | null;
+    attrition_risk?: Insight[];
+  };
+}
+
+/** The insight services are free-form, so nothing here assumes a field list. */
+type Insight = Record<string, unknown>;
+
+interface Defaulters {
+  summary: {
+    defaulting_students: number;
+    invoices_outstanding: number;
+    total_outstanding: number;
+    by_ageing?: Record<string, { invoices: number; amount?: number }>;
+  };
+  data?: DefaulterRow[];
+}
+
+interface DefaulterRow {
+  invoice_id: number;
+  student_id: number;
+  student_name: string | null;
+  admission_number: string | null;
+  class: string | null;
+  balance: number;
+  days_overdue: number;
+  ageing_bucket: string;
+}
+
+export default function DirectorConsole() {
+  const [principal, setPrincipal] = useState<Principal | null>(null);
+  const [debtors, setDebtors] = useState<Defaulters | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [stats, owing] = await Promise.all([
+          fetchApi<Principal>('/analytics/principal'),
+          // A school with nothing billed yet is not an error.
+          fetchApi<Defaulters>('/finance/defaulters').catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        setPrincipal(stats);
+        setDebtors(owing);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Could not load the director console.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const revenue = principal?.revenue;
+  const outstanding = debtors?.summary.total_outstanding ?? 0;
+  const insights = [
+    ...(principal?.insights?.grade_drops ?? []).map((i) => ({ kind: 'Academic' as const, body: i })),
+    ...(principal?.insights?.attrition_risk ?? []).map((i) => ({ kind: 'Attrition' as const, body: i })),
+  ];
+
+  // Top balances first — a proprietor chases the largest debt, not the oldest.
+  const topDebtors = [...(debtors?.data ?? [])].sort((a, b) => b.balance - a.balance).slice(0, 8);
+
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        {/* Top Header */}
-        <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md">EXECUTIVE EXECUTIVE CONSOLE</span>
-              <h1 className="text-2xl font-bold text-white">School Director & Proprietor Dashboard</h1>
-            </div>
-            <p className="text-slate-400 text-sm mt-1">Grace Land International Group of Schools — Financial Health, Enrollment Metrics, and AI Executive Insights</p>
+    <PageShell
+      title="Director console"
+      subtitle="Enrolment, fee collection and risk for the whole school."
+    >
+      <ErrorNote message={error} />
+
+      {loading ? (
+        <Loading />
+      ) : !principal ? (
+        <Empty>No figures yet.</Empty>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile
+              label="Students on the roll"
+              value={principal.population.active.toLocaleString('en-NG')}
+              hint={`${principal.population.total.toLocaleString('en-NG')} records including leavers`}
+            />
+            <StatTile
+              label="Fees collected"
+              value={nairaAmount(revenue?.total_collected ?? 0)}
+              tone="green"
+              hint={
+                revenue && revenue.total_invoiced > 0
+                  ? `${revenue.fee_recovery_rate_percentage}% of ${nairaAmount(revenue.total_invoiced)} billed`
+                  : 'Nothing billed yet'
+              }
+            />
+            <StatTile
+              label="Outstanding"
+              value={debtors ? nairaAmount(outstanding) : '—'}
+              tone={outstanding > 0 ? 'red' : 'green'}
+              hint={
+                debtors
+                  ? `${debtors.summary.defaulting_students} student(s) across ${debtors.summary.invoices_outstanding} invoice(s)`
+                  : 'No invoices raised yet'
+              }
+            />
+            <StatTile
+              label="Attendance today"
+              value={
+                principal.attendance_today.marked_count > 0
+                  ? `${principal.attendance_today.rate_percentage}%`
+                  : 'Not marked'
+              }
+              tone={principal.attendance_today.marked_count > 0 ? 'blue' : 'slate'}
+              hint={
+                principal.attendance_today.marked_count > 0
+                  ? `${principal.attendance_today.present_count.toLocaleString('en-NG')} of ${principal.attendance_today.marked_count.toLocaleString('en-NG')} marked`
+                  : 'No register taken yet today'
+              }
+            />
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="text-xs bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg">
-              📅 Term 1, 2025/2026 Session
-            </span>
-            <button
-              onClick={() => alert('Exporting Director Executive Board Briefing PDF...')}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-lg text-xs transition"
+
+          <Card
+            title="Risk feed"
+            description="Rule-based alerts computed from this school's own scores and payment history."
+          >
+            {insights.length === 0 ? (
+              <Empty>
+                No alerts. These appear once there is enough score and payment history to compare
+                against.
+              </Empty>
+            ) : (
+              <ul className="space-y-2">
+                {insights.map((item, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <Badge tone={item.kind === 'Attrition' ? 'red' : 'amber'}>{item.kind}</Badge>
+                    <p className="text-sm text-slate-700">{describe(item.body)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card
+              title="Fee collection"
+              description="Against what has actually been billed this term."
             >
-              📊 Export Board Briefing
-            </button>
+              {!revenue || revenue.total_invoiced === 0 ? (
+                <Empty>Nothing has been billed yet, so there is nothing to collect against.</Empty>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="text-slate-700">Collected</span>
+                      <span className="font-semibold text-emerald-700">
+                        {nairaAmount(revenue.total_collected)} ({revenue.fee_recovery_rate_percentage}%)
+                      </span>
+                    </div>
+                    <Meter
+                      value={revenue.fee_recovery_rate_percentage}
+                      tone={
+                        revenue.fee_recovery_rate_percentage >= 80
+                          ? 'green'
+                          : revenue.fee_recovery_rate_percentage >= 50
+                            ? 'amber'
+                            : 'red'
+                      }
+                    />
+                  </div>
+
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-slate-600">Billed</dt>
+                      <dd className="font-medium text-slate-900">
+                        {nairaAmount(revenue.total_invoiced)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-slate-600">Outstanding</dt>
+                      <dd className="font-medium text-red-700">{nairaAmount(outstanding)}</dd>
+                    </div>
+                  </dl>
+
+                  {debtors?.summary.by_ageing && Object.keys(debtors.summary.by_ageing).length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+                        How overdue
+                      </p>
+                      <ul className="space-y-1 text-sm">
+                        {Object.entries(debtors.summary.by_ageing).map(([bucket, info]) => (
+                          <li key={bucket} className="flex justify-between">
+                            <span className="text-slate-600">{bucket}</span>
+                            <span className="text-slate-900">{info.invoices} invoice(s)</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <Link
+                    href="/finance"
+                    className="inline-block text-sm font-medium text-blue-700 hover:underline"
+                  >
+                    Fees &amp; finance →
+                  </Link>
+                </div>
+              )}
+            </Card>
+
+            <Card title="Class averages" description="Mean score across every entry, best first.">
+              {principal.best_performing_classes.length === 0 ? (
+                <Empty>No scores have been entered yet.</Empty>
+              ) : (
+                <ul className="space-y-3">
+                  {principal.best_performing_classes.map((row) => {
+                    const average = Number(row.average_score) || 0;
+
+                    return (
+                      <li key={row.class_name} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium text-slate-800">{row.class_name}</span>
+                          <span className="text-slate-600">{average.toFixed(1)}%</span>
+                        </div>
+                        <Meter
+                          value={average}
+                          tone={average >= 70 ? 'green' : average >= 50 ? 'amber' : 'red'}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Card>
           </div>
+
+          <Card
+            title="Largest outstanding balances"
+            description={
+              topDebtors.length > 0
+                ? 'Chase these from Fees & finance, where reminders are sent and contacts are recorded.'
+                : undefined
+            }
+          >
+            {topDebtors.length === 0 ? (
+              <Empty>No outstanding balances.</Empty>
+            ) : (
+              <Table columns={['Student', 'Class', 'Outstanding', 'Overdue', 'Ageing']}>
+                {topDebtors.map((row) => (
+                  <tr key={row.invoice_id}>
+                    <Cell className="font-medium text-slate-900">
+                      {row.student_name ?? 'Unknown'}
+                      {row.admission_number && (
+                        <span className="block text-xs text-slate-500">{row.admission_number}</span>
+                      )}
+                    </Cell>
+                    <Cell>{row.class ?? '—'}</Cell>
+                    <Cell className="font-semibold text-red-700">{nairaAmount(row.balance)}</Cell>
+                    <Cell>{row.days_overdue > 0 ? `${row.days_overdue} day(s)` : 'Not yet due'}</Cell>
+                    <Cell className="text-xs">{row.ageing_bucket}</Cell>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
         </div>
-
-        {/* 1. Executive Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-slate-400 text-xs font-medium uppercase">Total Student Population</span>
-            <div className="text-2xl font-bold text-white mt-1">1,248</div>
-            <span className="text-emerald-400 text-[11px] font-semibold">↑ +12.4% vs Last Term</span>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-slate-400 text-xs font-medium uppercase">Termly Tuition Collections</span>
-            <div className="text-2xl font-bold text-emerald-400 mt-1">₦ 48,650,000</div>
-            <span className="text-slate-400 text-[11px]">84% of Total Billed Revenue</span>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-slate-400 text-xs font-medium uppercase">Outstanding Fee Defaults</span>
-            <div className="text-2xl font-bold text-rose-400 mt-1">₦ 9,280,000</div>
-            <span className="text-rose-400 text-[11px] font-semibold">160 Defaulters Flagged</span>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-            <span className="text-slate-400 text-xs font-medium uppercase">Average Daily Attendance</span>
-            <div className="text-2xl font-bold text-amber-400 mt-1">96.8 %</div>
-            <span className="text-emerald-400 text-[11px] font-semibold">Staff Check-in Rate: 98%</span>
-          </div>
-        </div>
-
-        {/* 2. AI Rule-Based Insights Feed */}
-        <div className="mb-8 bg-slate-900 border border-amber-500/30 p-6 rounded-xl shadow-lg">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="material-symbols-outlined text-amber-400">auto_awesome</span>
-            <h2 className="text-lg font-bold text-white">AI Rule-Based Executive Insights & Risk Feed</h2>
-          </div>
-
-          <div className="space-y-3">
-            <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 flex items-start space-x-3">
-              <span className="text-amber-400 font-bold text-xs mt-0.5">⚠️ FEE DEFAULT RISK:</span>
-              <div className="text-xs text-slate-300">
-                <strong>JSS 3 Stream</strong> shows a 22% fee default rate higher than historical average. Recommendation: Dispatch automated WhatsApp reminders prior to CBT exams.
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 flex items-start space-x-3">
-              <span className="text-emerald-400 font-bold text-xs mt-0.5">📈 ACADEMIC EXCELLENCE:</span>
-              <div className="text-xs text-slate-300">
-                <strong>SS 2 Science Department</strong> achieved an overall 88.4% mean score in CA Assessments, outperforming last session by +6.2%.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Financial & Defaulters Snapshot */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Revenue Breakdown */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h3 className="font-semibold text-white mb-4">Term Revenue Breakdown by Class</h3>
-            <div className="space-y-4 text-xs text-slate-300">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span>Senior Secondary (SS1 - SS3)</span>
-                  <span className="font-bold text-emerald-400">₦ 24,100,000 (92% Collected)</span>
-                </div>
-                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[92%]"></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span>Junior Secondary (JSS1 - JSS3)</span>
-                  <span className="font-bold text-amber-400">₦ 18,300,000 (78% Collected)</span>
-                </div>
-                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full w-[78%]"></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span>Nursery & Primary Sections</span>
-                  <span className="font-bold text-emerald-400">₦ 6,250,000 (85% Collected)</span>
-                </div>
-                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[85%]"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Top Defaulters List */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-semibold text-white">Top Outstanding Accounts</h3>
-              <span className="text-xs text-rose-400 font-bold">160 Defaulters Total</span>
-            </div>
-
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-semibold">
-                <tr>
-                  <th className="p-3">Student</th>
-                  <th className="p-3">Class</th>
-                  <th className="p-3">Outstanding</th>
-                  <th className="p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                <tr>
-                  <td className="p-3 font-medium text-white">Chidimma Okoro</td>
-                  <td className="p-3">JSS 2 Gold</td>
-                  <td className="p-3 font-bold text-rose-400">₦ 145,000</td>
-                  <td className="p-3">
-                    <button
-                      onClick={() => alert('Sending automated WhatsApp fee reminder to guardian...')}
-                      className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded font-bold hover:bg-amber-500/20"
-                    >
-                      WhatsApp Alert
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-medium text-white">Tunde Bakare</td>
-                  <td className="p-3">SS 1 Science</td>
-                  <td className="p-3 font-bold text-rose-400">₦ 120,000</td>
-                  <td className="p-3">
-                    <button
-                      onClick={() => alert('Sending automated WhatsApp fee reminder to guardian...')}
-                      className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded font-bold hover:bg-amber-500/20"
-                    >
-                      WhatsApp Alert
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-    </div>
+      )}
+    </PageShell>
   );
+}
+
+/**
+ * Render one insight without assuming its shape.
+ *
+ * The insight services return different keys per rule and have changed before;
+ * a hardcoded field list would silently drop a new alert, which for a risk feed
+ * is the one failure that matters.
+ */
+function describe(insight: Insight): string {
+  if (typeof insight === 'string') return insight;
+
+  const preferred = ['message', 'summary', 'description', 'detail', 'note'];
+
+  for (const key of preferred) {
+    const value = insight[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+
+  return Object.entries(insight)
+    .filter(([, v]) => v !== null && typeof v !== 'object')
+    .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`)
+    .join(' · ');
 }

@@ -29,6 +29,10 @@ const STRIPPED_REQUEST_HEADERS = new Set([
   'transfer-encoding',
   'upgrade',
   'cookie',
+  // Set here from the session, never passed through from the page. Otherwise a
+  // school-side user could name a school on a request by hand and the value
+  // would arrive looking exactly like the operator console's own.
+  'x-platform-school',
 ]);
 
 const STRIPPED_RESPONSE_HEADERS = new Set([
@@ -61,6 +65,15 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   outgoing.set('Authorization', `Bearer ${session.token}`);
   outgoing.set('Accept', 'application/json');
   if (subdomain) outgoing.set('X-School-Subdomain', subdomain);
+
+  /*
+   * The operator console's school picker. `getSession` returns this only for a
+   * super admin, and the API honours the header only for a super admin, so the
+   * check exists in both places rather than relying on either alone.
+   */
+  if (session.role === 'super_admin' && session.viewingSchoolId) {
+    outgoing.set('X-Platform-School', session.viewingSchoolId);
+  }
 
   const method = request.method;
   const body = method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer();

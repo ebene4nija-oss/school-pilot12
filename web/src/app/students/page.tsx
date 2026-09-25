@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi, uploadApi } from '@/lib/api';
 import type { Student } from '@/types/api';
@@ -29,8 +29,21 @@ type ClassOption = {
   arms?: { id: number; name: string }[];
 };
 
+type MigrationRequest = {
+  id: number;
+  previous_system: string;
+  source_format: string;
+  status: 'submitted' | 'in_progress' | 'completed' | 'cancelled';
+  submitted_at: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  operator_notes: string | null;
+  is_overdue: boolean;
+};
+
 export default function StudentsPage() {
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [rosterError, setRosterError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'roster' | 'single' | 'bulk_students' | 'migration'>('roster');
   
@@ -53,31 +66,73 @@ export default function StudentsPage() {
   // Migration State
   const [prevSchoolName, setPrevSchoolName] = useState('');
   const [sourceSystem, setSourceSystem] = useState('excel');
+  const [migrationNotes, setMigrationNotes] = useState('');
   const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [migrationBusy, setMigrationBusy] = useState(false);
+  const [migration, setMigration] = useState<MigrationRequest | null>(null);
 
-  const loadStudents = async () => {
-    try {
-      setLoading(true);
-      // The endpoint paginates, so the rows are under `data`; older
-      // deployments returned a bare array.
-      const data = await fetchApi<{ data?: Student[] } | Student[]>('/students');
-      setStudents(Array.isArray(data) ? data : (data.data ?? []));
-    } catch (err) {
-      console.error('Failed to load live students:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /**
+   * Fetches the roster and returns it; the caller owns the state.
+   *
+   * The endpoint paginates, so the rows are under `data`; older deployments
+   * returned a bare array.
+   */
+  const fetchStudents = useCallback(async () => {
+    const data = await fetchApi<{ data?: Student[] } | Student[]>('/students');
+
+    return Array.isArray(data) ? data : (data.data ?? []);
+  }, []);
+
+  const loadStudents = useCallback(async () => {
+    setStudents(await fetchStudents());
+  }, [fetchStudents]);
 
   useEffect(() => {
-    loadStudents();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const roster = await fetchStudents();
+        if (!cancelled) setStudents(roster);
+      } catch (err) {
+        // Shown, not swallowed into console.error: an admin staring at an empty
+        // roster needs to know the request failed rather than assume the school
+        // has no students.
+        if (!cancelled) {
+          setRosterError(err instanceof Error ? err.message : 'Could not load the roster.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
     // Classes and their arms drive the "import this whole file into JSS 1 Gold"
     // picker, so a register with no class column can still be placed.
     fetchApi<{ data?: ClassOption[] }>('/classes')
-      .then((res) => setClasses(res.data ?? []))
-      .catch(() => setClasses([]));
-  }, []);
+      .then((res) => {
+        if (!cancelled) setClasses(res.data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setClasses([]);
+      });
+
+    // Any migration already in flight, so the tab shows its real state instead
+    // of an empty form that would be refused as a duplicate.
+    fetchApi<{ data?: MigrationRequest[] }>('/school-migration')
+      .then((res) => {
+        const open = (res.data ?? []).find((r) =>
+          ['submitted', 'in_progress'].includes(r.status),
+        );
+
+        if (!cancelled && open) setMigration(open);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchStudents]);
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +149,8 @@ export default function StudentsPage() {
       setActiveTab('roster');
       loadStudents();
     } catch (err) {
-      alert('Failed to save student record to backend API');
+      // The page has an error surface; an alert() box is not one.
+      setRosterError(err instanceof Error ? err.message : 'Could not save that student.');
     }
   };
 
@@ -150,13 +206,59 @@ export default function StudentsPage() {
     }
   };
 
+  /**
+   * Submit a real migration request.
+   *
+   * This used to be a `setTimeout` that told the school "Successfully queued"
+   * without recording anything or telling anybody — a staffed commitment with a
+   * 24-hour deadline that reached nobody who could honour it.
+   */
   const handleSchoolMigration = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMigrationStatus('Initiating 24-hour fast migration pipeline...');
-    setTimeout(() => {
-      setMigrationStatus(`Successfully queued migration from ${prevSchoolName || 'Previous School'} via ${sourceSystem.toUpperCase()} parser! Our migration engineers will verify records within 24 hours.`);
-      loadStudents();
-    }, 1200);
+    setMigrationBusy(true);
+    setMigrationStatus(null);
+    setMigrationError(null);
+
+    try {
+      const res = await fetchApi<{ message: string; data: MigrationRequest }>('/school-migration', {
+        method: 'POST',
+        body: JSON.stringify({
+          previous_system: prevSchoolName,
+          source_format: sourceSystem,
+          notes: migrationNotes.trim() || null,
+        }),
+      });
+
+      setMigration(res.data);
+      setMigrationStatus(
+        res.data.due_at
+          ? `Request received. SchoolPilot aims to complete this by ${new Date(res.data.due_at).toLocaleString('en-NG')}.`
+          : 'Request received.',
+      );
+    } catch (err) {
+      setMigrationError(
+        err instanceof Error ? err.message : 'That migration request could not be submitted.',
+      );
+    } finally {
+      setMigrationBusy(false);
+    }
+  };
+
+  const cancelMigration = async () => {
+    if (!migration) return;
+
+    setMigrationBusy(true);
+    setMigrationError(null);
+
+    try {
+      await fetchApi(`/school-migration/${migration.id}/cancel`, { method: 'POST' });
+      setMigration(null);
+      setMigrationStatus('Migration request cancelled.');
+    } catch (err) {
+      setMigrationError(err instanceof Error ? err.message : 'That request could not be cancelled.');
+    } finally {
+      setMigrationBusy(false);
+    }
   };
 
   return (
@@ -203,6 +305,15 @@ export default function StudentsPage() {
             </button>
           </div>
         </div>
+
+        {rosterError && (
+          <p
+            role="alert"
+            className="mb-6 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"
+          >
+            {rosterError}
+          </p>
+        )}
 
         {/* 1. Single Student Registration Form */}
         {activeTab === 'single' && (
@@ -416,11 +527,58 @@ export default function StudentsPage() {
         {activeTab === 'migration' && (
           <div className="mb-8 bg-slate-900 border border-amber-500/30 p-6 rounded-xl shadow-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md">FREE 24-HOUR MIGRATION</span>
-              <h2 className="text-lg font-bold text-white">Migrate School from Competitor / Paper / Excel</h2>
+              <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md">ASSISTED MIGRATION</span>
+              <h2 className="text-lg font-bold text-white">Migrate from a previous portal, spreadsheet or paper</h2>
             </div>
-            <p className="text-slate-400 text-xs mb-6">Switching off an old school portal? Upload your current database or spreadsheet backup. Our migration pipeline handles full data transformation within 24 hours at ₦0 cost.</p>
-            
+            <p className="text-slate-400 text-xs mb-6">
+              Ask SchoolPilot to bring your existing records across. If your data is already a CSV,
+              the Bulk CSV tab does it yourself, immediately, with a preview before anything is
+              created.
+            </p>
+
+            {migrationError && (
+              <p role="alert" className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
+                {migrationError}
+              </p>
+            )}
+
+            {migration ? (
+              <div className="rounded-lg border border-amber-500/30 bg-slate-950 p-4 text-xs text-slate-300">
+                <p className="font-bold text-white">
+                  Request open — {migration.status.replace('_', ' ')}
+                  {migration.is_overdue && <span className="ml-2 text-rose-400">overdue</span>}
+                </p>
+                <dl className="mt-3 space-y-1">
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Previous system</dt>
+                    <dd>{migration.previous_system}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Submitted</dt>
+                    <dd>{migration.submitted_at ? new Date(migration.submitted_at).toLocaleString('en-NG') : '—'}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Target completion</dt>
+                    <dd>{migration.due_at ? new Date(migration.due_at).toLocaleString('en-NG') : '—'}</dd>
+                  </div>
+                </dl>
+
+                {migration.operator_notes && (
+                  <p className="mt-3 border-t border-slate-800 pt-3 text-slate-400">
+                    <span className="font-semibold text-slate-300">Update from SchoolPilot: </span>
+                    {migration.operator_notes}
+                  </p>
+                )}
+
+                <button
+                  onClick={cancelMigration}
+                  disabled={migrationBusy}
+                  className="mt-4 rounded-lg border border-slate-700 px-3 py-1.5 font-semibold text-slate-300 transition hover:bg-slate-900 disabled:opacity-60"
+                >
+                  {migrationBusy ? 'Cancelling…' : 'Cancel this request'}
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSchoolMigration} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Previous School / Portal Name</label>
@@ -441,19 +599,36 @@ export default function StudentsPage() {
                   onChange={(e) => setSourceSystem(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-amber-500 focus:outline-none"
                 >
-                  <option value="excel">Excel / CSV Spreadsheets</option>
-                  <option value="sql_dump">Database SQL Dump (.sql)</option>
-                  <option value="competitor_portal">Rival Portal Export (Edves / SAFSMS / QuickSchools)</option>
+                  <option value="excel">Excel / CSV spreadsheets</option>
+                  <option value="sql_dump">Database dump (.sql)</option>
+                  <option value="competitor_portal">Export from another portal</option>
+                  <option value="paper">Paper records</option>
+                  <option value="other">Something else</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  Anything we should know (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={migrationNotes}
+                  onChange={(e) => setMigrationNotes(e.target.value)}
+                  placeholder="How many students, which years, anything unusual about the data"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm focus:border-amber-500 focus:outline-none"
+                />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-sm transition"
+                disabled={migrationBusy || !prevSchoolName.trim()}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-sm transition disabled:opacity-60"
               >
-                Submit 24-Hour Free Migration Package
+                {migrationBusy ? 'Submitting…' : 'Request migration help'}
               </button>
             </form>
+            )}
 
             {migrationStatus && (
               <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-300">
@@ -489,12 +664,13 @@ export default function StudentsPage() {
                 {students.map((student) => (
                   <tr key={student.id} className="hover:bg-slate-800/50 transition">
                     <td className="p-3.5 font-mono text-emerald-400 text-xs">{student.admission_number || `SP-${student.id}`}</td>
-                    <td className="p-3.5 font-medium text-white">{student.user ? student.user.name : student.name}</td>
-                    <td className="p-3.5 text-xs text-slate-400">{student.user ? student.user.email : student.email}</td>
+                    {/* Flat on the resource: the endpoint folds the user in. */}
+                    <td className="p-3.5 font-medium text-white">{student.name ?? '—'}</td>
+                    <td className="p-3.5 text-xs text-slate-400">{student.email ?? '—'}</td>
                     <td className="p-3.5 capitalize">{student.gender}</td>
                     <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium rounded-md">
-                        {student.status || 'Active'}
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium rounded-md capitalize">
+                        {student.status ?? 'active'}
                       </span>
                     </td>
                   </tr>

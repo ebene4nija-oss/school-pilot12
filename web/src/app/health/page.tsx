@@ -1,56 +1,237 @@
 'use client';
 
-import React, { useState } from 'react';
-import Sidebar from '@/components/Sidebar';
+import React, { useCallback, useEffect, useState } from 'react';
+import { fetchApi } from '@/lib/api';
+import {
+  Button,
+  Card,
+  Cell,
+  Empty,
+  ErrorNote,
+  Field,
+  Loading,
+  PageShell,
+  Table,
+  inputClass,
+} from '@/components/Page';
 
-export default function HealthPage() {
-  const [visits] = useState([
-    { id: 1, studentName: 'Abebe Bikila', symptoms: 'Mild fever & headache', treatment: 'Paracetamol 500mg administered', nurse: 'Nurse Grace', visitedAt: 'Today, 10:30 AM' },
-    { id: 2, studentName: 'Chidimma Okoro', symptoms: 'Minor sports scrape on elbow', treatment: 'Cleaned with antiseptic & bandaged', nurse: 'Nurse Grace', visitedAt: 'Yesterday, 02:15 PM' },
-  ]);
+/**
+ * The school clinic log.
+ *
+ * Was a static list of two invented children and their invented ailments. The
+ * write endpoint existed; nothing could read the log back, so whatever a nurse
+ * recorded was never visible again.
+ *
+ * Deliberately narrow (doc §12): who was seen, what was done, by whom, when. It
+ * does not show — and the endpoint does not return — the stored medical record,
+ * blood group or allergy list. Those are held for an emergency, not for a
+ * browsable list.
+ */
+
+interface Visit {
+  id: number;
+  student_id: number;
+  student_name: string;
+  admission_number: string | null;
+  symptoms: string;
+  treatment: string;
+  attending_nurse: string;
+  visited_at: string | null;
+}
+
+/** As `/students` returns one: the user relation is already flattened. */
+interface StudentOption {
+  id: number;
+  admission_number: string | null;
+  name?: string | null;
+}
+
+export default function ClinicLogPage() {
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const [studentId, setStudentId] = useState('');
+  const [symptoms, setSymptoms] = useState('');
+  const [treatment, setTreatment] = useState('');
+  const [nurse, setNurse] = useState('');
+
+  const load = useCallback(async () => {
+    const res = await fetchApi<{ data: Visit[] }>('/health/clinic-visits');
+    setVisits(res.data ?? []);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await load();
+        const roll = await fetchApi<{ data?: StudentOption[] }>('/students').catch(() => null);
+        setStudents(roll?.data ?? []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not load the clinic log.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [load]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await fetchApi('/health/clinic-visit', {
+        method: 'POST',
+        body: JSON.stringify({
+          student_id: Number(studentId),
+          symptoms: symptoms.trim(),
+          treatment: treatment.trim(),
+          attending_nurse: nurse.trim(),
+        }),
+      });
+
+      setNotice('Visit recorded.');
+      setSymptoms('');
+      setTreatment('');
+      setStudentId('');
+      setShowForm(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That visit could not be recorded.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const nameOf = (s: StudentOption) => s.name ?? `Student #${s.id}`;
 
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">School Health & Clinic Log</h1>
-            <p className="text-slate-400 text-sm">Medical visit logs, treatments, and student health records</p>
-          </div>
-          <button className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 font-bold text-slate-950 rounded-lg text-sm transition">
-            + Log Clinic Visit
-          </button>
-        </div>
+    <PageShell
+      title="Clinic log"
+      subtitle="Visits to the school clinic: who was seen, and what was done."
+      actions={
+        <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
+          {showForm ? 'Cancel' : 'Log a visit'}
+        </Button>
+      }
+    >
+      <ErrorNote message={error} />
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="font-semibold text-white">Recent Clinic Visits Log</h3>
-          </div>
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
-              <tr>
-                <th className="p-3.5">Student Name</th>
-                <th className="p-3.5">Reported Symptoms</th>
-                <th className="p-3.5">Treatment Given</th>
-                <th className="p-3.5">Attending Nurse</th>
-                <th className="p-3.5">Timestamp</th>
+      {notice && (
+        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {notice}
+        </p>
+      )}
+
+      {showForm && (
+        <Card title="Log a clinic visit" className="mb-6">
+          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <Field label="Student">
+              <select
+                required
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select a student…</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {nameOf(s)}
+                    {s.admission_number ? ` (${s.admission_number})` : ''}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Attending nurse">
+              <input
+                required
+                value={nurse}
+                onChange={(e) => setNurse(e.target.value)}
+                className={inputClass}
+                placeholder="Name of the nurse on duty"
+              />
+            </Field>
+
+            <Field label="Reported symptoms">
+              <textarea
+                required
+                rows={3}
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+
+            <Field label="Treatment given">
+              <textarea
+                required
+                rows={3}
+                value={treatment}
+                onChange={(e) => setTreatment(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+
+            <div className="sm:col-span-2">
+              <Button type="submit" disabled={saving || !studentId}>
+                {saving ? 'Saving…' : 'Record visit'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      <Card title="Recent visits">
+        {loading ? (
+          <Loading />
+        ) : visits.length === 0 ? (
+          <Empty>No clinic visits recorded yet.</Empty>
+        ) : (
+          <Table columns={['Student', 'Symptoms', 'Treatment', 'Nurse', 'When']}>
+            {visits.map((visit) => (
+              <tr key={visit.id}>
+                <Cell className="font-medium text-slate-900">
+                  {visit.student_name}
+                  {visit.admission_number && (
+                    <span className="block text-xs text-slate-500">{visit.admission_number}</span>
+                  )}
+                </Cell>
+                <Cell>{visit.symptoms}</Cell>
+                <Cell>{visit.treatment}</Cell>
+                <Cell>{visit.attending_nurse}</Cell>
+                <Cell className="whitespace-nowrap text-xs">{when(visit.visited_at)}</Cell>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {visits.map((visit) => (
-                <tr key={visit.id} className="hover:bg-slate-800/50 transition">
-                  <td className="p-3.5 font-medium text-white">{visit.studentName}</td>
-                  <td className="p-3.5 text-rose-400">{visit.symptoms}</td>
-                  <td className="p-3.5 text-emerald-400">{visit.treatment}</td>
-                  <td className="p-3.5">{visit.nurse}</td>
-                  <td className="p-3.5 text-xs text-slate-400">{visit.visitedAt}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </main>
-    </div>
+            ))}
+          </Table>
+        )}
+      </Card>
+
+      <p className="mt-4 text-xs text-slate-500">
+        This log holds only what happened at the visit. A student&apos;s stored medical details are
+        on their own record and are not listed here.
+      </p>
+    </PageShell>
   );
+}
+
+function when(iso: string | null): string {
+  if (!iso) return '—';
+
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return date.toLocaleString('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }

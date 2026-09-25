@@ -1,92 +1,293 @@
 'use client';
 
-import React, { useState } from 'react';
-import Sidebar from '@/components/Sidebar';
+import React, { useCallback, useEffect, useState } from 'react';
+import { fetchApi } from '@/lib/api';
+import {
+  Badge,
+  Button,
+  Card,
+  Cell,
+  Empty,
+  ErrorNote,
+  Field,
+  Loading,
+  PageShell,
+  StatTile,
+  Table,
+  inputClass,
+} from '@/components/Page';
 
-export default function BusTrackingPage() {
-  const [buses] = useState([
-    { id: 1, routeName: 'Lekki Phase 1 Route', busNumber: 'BUS-001', driver: 'Driver John', phone: '08012345678', lat: 6.458985, lng: 3.424355, status: 'Active (On Route)', lastPing: '2 mins ago' },
-    { id: 2, routeName: 'Ikeja / Maryland Route', busNumber: 'BUS-002', driver: 'Driver Samuel', phone: '08087654321', lat: 6.59651, lng: 3.34209, status: 'Inactive', lastPing: '1 hour ago' },
-  ]);
+/**
+ * The bus fleet and where it is.
+ *
+ * Was two invented buses with hardcoded Lagos coordinates under an animated
+ * "● Live Broadcasting" badge and a fake radar — a page that claimed to be
+ * tracking vehicles that did not exist.
+ *
+ * Positions come from the driver's own phone (doc §3 — no purchased trackers),
+ * which is why this page leads with how old each fix is. A coordinate with no
+ * timestamp beside it reads as live when it may be hours stale, and a parent
+ * ringing about a late bus is the wrong person to discover that.
+ */
+
+interface Bus {
+  id: number;
+  bus_number: string;
+  driver_name: string;
+  driver_phone: string;
+  route_id: number | null;
+  route_name: string | null;
+  is_active: boolean;
+  current_lat: number | null;
+  current_lng: number | null;
+  last_ping_at: string | null;
+  position_is_fresh: boolean;
+}
+
+export default function TransportPage() {
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const [busNumber, setBusNumber] = useState('');
+  const [driverName, setDriverName] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [routeName, setRouteName] = useState('');
+
+  /** Returns the fleet; the caller owns the state. */
+  const fetchFleet = useCallback(
+    async () => (await fetchApi<{ data: Bus[] }>('/transport/buses')).data ?? [],
+    [],
+  );
+
+  const load = useCallback(async () => {
+    setBuses(await fetchFleet());
+  }, [fetchFleet]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const fleet = await fetchFleet();
+        if (!cancelled) setBuses(fleet);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Could not load the fleet.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void refresh();
+
+    /*
+     * Positions change while the page is open, so it refreshes itself. Every
+     * 30s: a driver's phone pings far less often than that, and polling harder
+     * would only cost a school on a metered connection.
+     */
+    const timer = setInterval(() => void refresh(), 30_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [fetchFleet]);
+
+  async function registerBus(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await fetchApi('/transport/buses', {
+        method: 'POST',
+        body: JSON.stringify({
+          bus_number: busNumber.trim(),
+          driver_name: driverName.trim(),
+          driver_phone: driverPhone.trim(),
+          route_name: routeName.trim() || null,
+        }),
+      });
+
+      setNotice(`${busNumber.trim()} registered.`);
+      setBusNumber('');
+      setDriverName('');
+      setDriverPhone('');
+      setRouteName('');
+      setShowForm(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That bus could not be registered.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const live = buses.filter((b) => b.position_is_fresh).length;
 
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-xs font-bold uppercase">
-                Hardware-Free GPS (Driver Phone)
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-white mt-1">Bus Fleet GPS Tracking</h1>
-            <p className="text-slate-400 text-sm">Real-time driver phone GPS location broadcasting for parents and school ops</p>
+    <PageShell
+      title="Transport"
+      subtitle="Buses, routes and the last position each driver's phone reported."
+      actions={
+        <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
+          {showForm ? 'Cancel' : 'Register a bus'}
+        </Button>
+      }
+    >
+      <ErrorNote message={error} />
+
+      {notice && (
+        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {notice}
+        </p>
+      )}
+
+      {loading ? (
+        <Loading />
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatTile label="Buses" value={buses.length} />
+            <StatTile
+              label="Reporting now"
+              value={live}
+              tone={live > 0 ? 'green' : 'slate'}
+              hint="A fix in the last 10 minutes"
+            />
+            <StatTile
+              label="On a route"
+              value={buses.filter((b) => b.is_active).length}
+              hint="Marked active by the driver"
+            />
           </div>
-          <button className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 font-bold text-slate-950 rounded-lg text-sm transition">
-            + Register New Bus Route
-          </button>
+
+          {showForm && (
+            <Card title="Register a bus">
+              <form onSubmit={registerBus} className="grid gap-4 sm:grid-cols-2">
+                <Field label="Bus number">
+                  <input
+                    required
+                    value={busNumber}
+                    onChange={(e) => setBusNumber(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. BUS-001"
+                  />
+                </Field>
+                <Field label="Route (optional)">
+                  <input
+                    value={routeName}
+                    onChange={(e) => setRouteName(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. Lekki Phase 1"
+                  />
+                </Field>
+                <Field label="Driver">
+                  <input
+                    required
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Driver's phone">
+                  <input
+                    required
+                    value={driverPhone}
+                    onChange={(e) => setDriverPhone(e.target.value)}
+                    className={inputClass}
+                    placeholder="The phone that reports the bus's position"
+                  />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Button type="submit" disabled={busy}>
+                    {busy ? 'Saving…' : 'Register bus'}
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          <Card title="Fleet">
+            {buses.length === 0 ? (
+              <Empty>No buses registered yet.</Empty>
+            ) : (
+              <Table columns={['Bus', 'Route', 'Driver', 'Last position', 'Reported']}>
+                {buses.map((bus) => (
+                  <tr key={bus.id}>
+                    <Cell className="font-medium text-slate-900">{bus.bus_number}</Cell>
+                    <Cell>{bus.route_name ?? <span className="text-slate-400">No route set</span>}</Cell>
+                    <Cell>
+                      {bus.driver_name}
+                      <a
+                        href={`tel:${bus.driver_phone}`}
+                        className="block text-xs text-blue-700 hover:underline"
+                      >
+                        {bus.driver_phone}
+                      </a>
+                    </Cell>
+                    <Cell className="font-mono text-xs">
+                      {bus.current_lat !== null && bus.current_lng !== null ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${bus.current_lat},${bus.current_lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-700 hover:underline"
+                        >
+                          {bus.current_lat.toFixed(5)}, {bus.current_lng.toFixed(5)}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">Never reported</span>
+                      )}
+                    </Cell>
+                    <Cell>
+                      {bus.last_ping_at ? (
+                        <>
+                          {bus.position_is_fresh ? (
+                            <Badge tone="green">Live</Badge>
+                          ) : (
+                            <Badge tone="amber">Stale</Badge>
+                          )}
+                          <span className="ml-2 text-xs text-slate-500">{ago(bus.last_ping_at)}</span>
+                        </>
+                      ) : (
+                        <Badge tone="slate">No signal</Badge>
+                      )}
+                    </Cell>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
+
+          <p className="text-xs text-slate-500">
+            Positions are sent by the driver&apos;s phone, so a bus out of network coverage shows its
+            last known fix. &ldquo;Stale&rdquo; means nothing has been heard for over ten minutes —
+            treat the position as historic, not current.
+          </p>
         </div>
-
-        {/* Live GPS Broadcast Map Mock */}
-        <div className="mb-8 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-white">Live Route Radar</h2>
-            <span className="text-xs font-mono text-emerald-400 animate-pulse">● Live Broadcasting</span>
-          </div>
-
-          <div className="h-64 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-emerald-500/5 flex items-center justify-center">
-              <div className="w-48 h-48 rounded-full border border-emerald-500/20 animate-ping"></div>
-            </div>
-
-            <div className="z-10 text-center">
-              <span className="text-4xl mb-2 block">🚌</span>
-              <p className="text-sm font-bold text-white">BUS-001 (Lekki Phase 1 Route)</p>
-              <p className="text-xs font-mono text-emerald-400">Lat: 6.458985, Lng: 3.424355</p>
-              <p className="text-xs text-slate-500 mt-1">Broadcasted from Driver John's App GPS</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="font-semibold text-white">Active Bus Fleet Roster</h3>
-          </div>
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
-              <tr>
-                <th className="p-3.5">Bus Code</th>
-                <th className="p-3.5">Route Name</th>
-                <th className="p-3.5">Driver & Contact</th>
-                <th className="p-3.5">Current GPS Status</th>
-                <th className="p-3.5">Last Ping</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {buses.map((bus) => (
-                <tr key={bus.id} className="hover:bg-slate-800/50 transition">
-                  <td className="p-3.5 font-mono text-emerald-400 text-xs">{bus.busNumber}</td>
-                  <td className="p-3.5 font-medium text-white">{bus.routeName}</td>
-                  <td className="p-3.5">{bus.driver} ({bus.phone})</td>
-                  <td className="p-3.5">
-                    <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
-                        bus.status.includes('Active')
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
-                      }`}
-                    >
-                      {bus.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-xs text-slate-400">{bus.lastPing}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </main>
-    </div>
+      )}
+    </PageShell>
   );
+}
+
+/** How long ago, in the plainest words that fit a table cell. */
+function ago(iso: string): string {
+  const then = new Date(iso).getTime();
+
+  if (Number.isNaN(then)) return '';
+
+  const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3600)} hr ago`;
+
+  return `${Math.floor(seconds / 86_400)} day(s) ago`;
 }

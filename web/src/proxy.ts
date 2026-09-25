@@ -33,6 +33,28 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  /*
+   * Keep a platform operator off a school's own dashboard.
+   *
+   * `/` scopes to the acting user's school, and a super admin has none — the
+   * endpoint behind it would report them an entire school's worth of zeroes,
+   * which reads as "this school has no students" rather than "you are on the
+   * wrong screen". Login already routes them to the console; this catches the
+   * bookmark, the back button and the typed URL.
+   *
+   * An operator who has stepped into a school through the picker does have an
+   * acting school, so they are left alone. As above, this is routing and not
+   * authorization: the cookies are forgeable and the API re-checks every call.
+   */
+  if (pathname === '/') {
+    const role = request.cookies.get('sp_role')?.value;
+    const viewing = request.cookies.get('sp_view_school')?.value;
+
+    if (role === 'super_admin' && !viewing) {
+      return NextResponse.redirect(new URL('/super-admin', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

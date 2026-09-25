@@ -1,290 +1,628 @@
 'use client';
 
-import React, { useState } from 'react';
-import Sidebar from '@/components/Sidebar';
+import React, { useCallback, useEffect, useState } from 'react';
+import { fetchApi, uploadApi } from '@/lib/api';
+import {
+  Badge,
+  Button,
+  Card,
+  Cell,
+  Empty,
+  ErrorNote,
+  Field,
+  Loading,
+  PageShell,
+  Table,
+  inputClass,
+} from '@/components/Page';
+
+/**
+ * Scores, the broadsheet, and the AI comment queue.
+ *
+ * The old page invented three children with invented marks, "parsed" a pasted
+ * CSV into local state that no endpoint ever saw, and displayed a pre-written
+ * AI comment about a student who does not exist. Nothing was saved anywhere.
+ *
+ * The CA weighting shown here is the school's own active scheme, not a fixed
+ * 20/20/60: the API rejects a mark above the scheme's ceiling, so the form has
+ * to know what that ceiling is rather than letting a teacher type 60 into a
+ * field worth 40.
+ */
+
+type Tab = 'broadsheet' | 'enter' | 'import' | 'comments';
+
+interface CaScheme {
+  name: string;
+  first_ca_weight: number;
+  second_ca_weight: number;
+  exam_weight: number;
+}
+
+interface BroadsheetScore {
+  subject_id?: number;
+  subject?: string;
+  first_ca?: number;
+  second_ca?: number;
+  exam?: number;
+  total_score?: number;
+  grade?: string | null;
+}
+
+interface BroadsheetRow {
+  student_id: number;
+  student_name: string;
+  admission_number: string | null;
+  scores: BroadsheetScore[];
+  total_score: number;
+  average: number;
+  position_in_class: number | null;
+}
+
+interface Broadsheet {
+  class_id: number;
+  term_id: number;
+  ca_scheme: CaScheme;
+  broadsheet: BroadsheetRow[];
+}
+
+interface PendingComment {
+  score_entry_id: number;
+  student_name: string;
+  class: string | null;
+  subject: string;
+  term: string;
+  grade: string | null;
+  comment: string | null;
+}
+
+interface Option {
+  id: number;
+  name: string;
+  is_current?: boolean;
+}
 
 export default function ResultsPage() {
-  const [activeTab, setActiveTab] = useState<'broadsheet' | 'bulk_import' | 'report_card'>('broadsheet');
+  const [tab, setTab] = useState<Tab>('broadsheet');
 
-  const [scores, setScores] = useState([
-    { id: 1, name: 'Abebe Bikila', adm: 'ADM-001', ca1: 18, ca2: 17, exam: 54, total: 89, grade: 'A1', status: 'Approved' },
-    { id: 2, name: 'Chidimma Okoro', adm: 'ADM-002', ca1: 15, ca2: 14, exam: 45, total: 74, grade: 'B2', status: 'Pending Review' },
-    { id: 3, name: 'Tunde Bakare', adm: 'ADM-003', ca1: 12, ca2: 10, exam: 38, total: 60, grade: 'C4', status: 'Approved' },
-  ]);
+  const [classes, setClasses] = useState<Option[]>([]);
+  const [terms, setTerms] = useState<Option[]>([]);
+  const [subjects, setSubjects] = useState<Option[]>([]);
+  const [classId, setClassId] = useState('');
+  const [termId, setTermId] = useState('');
 
-  const [aiComment, setAiComment] = useState(
-    'Abebe Bikila has demonstrated outstanding academic comprehension in Mathematics this term. Recommended to continue practicing advanced equations.'
+  const [sheet, setSheet] = useState<Broadsheet | null>(null);
+  const [pending, setPending] = useState<PendingComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingSheet, setLoadingSheet] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Single score entry
+  const [studentId, setStudentId] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [firstCa, setFirstCa] = useState('');
+  const [secondCa, setSecondCa] = useState('');
+  const [exam, setExam] = useState('');
+
+  // CSV import
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  // Comment review
+  const [editing, setEditing] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cls, trm, subj] = await Promise.all([
+          fetchApi<{ data?: Option[] }>('/classes'),
+          fetchApi<{ data?: Option[] }>('/terms'),
+          fetchApi<{ data?: Option[] }>('/subjects').catch(() => null),
+        ]);
+
+        const classList = cls.data ?? [];
+        const termList = trm.data ?? [];
+
+        setClasses(classList);
+        setTerms(termList);
+        setSubjects(subj?.data ?? []);
+
+        if (classList[0]) setClassId(String(classList[0].id));
+
+        const current = termList.find((t) => t.is_current) ?? termList[0];
+        if (current) setTermId(String(current.id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not load classes and terms.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  /** Fetchers return data; callers own the state. */
+  const fetchSheet = useCallback(
+    async () =>
+      fetchApi<Broadsheet>(`/assessment/broadsheet?class_id=${classId}&term_id=${termId}`),
+    [classId, termId],
   );
 
-  // Bulk Broadsheet Import
-  const [broadsheetCsv, setBroadsheetCsv] = useState('');
-  const [importNotice, setImportNotice] = useState<string | null>(null);
+  const fetchPending = useCallback(
+    async () =>
+      (await fetchApi<{ data: PendingComment[] }>('/assessment/ai-comments/pending')).data ?? [],
+    [],
+  );
 
-  const handleBulkBroadsheetImport = (e: React.FormEvent) => {
+  const loadSheet = useCallback(async () => {
+    setSheet(await fetchSheet());
+  }, [fetchSheet]);
+
+  const loadPending = useCallback(async () => {
+    setPending(await fetchPending());
+  }, [fetchPending]);
+
+  useEffect(() => {
+    if (!classId || !termId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setLoadingSheet(true);
+      setError(null);
+
+      try {
+        const next = await fetchSheet();
+        if (!cancelled) setSheet(next);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Could not load the broadsheet.');
+          setSheet(null);
+        }
+      } finally {
+        if (!cancelled) setLoadingSheet(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [classId, termId, fetchSheet]);
+
+  useEffect(() => {
+    if (tab !== 'comments') return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const queue = await fetchPending();
+        if (!cancelled) setPending(queue);
+      } catch {
+        // A teacher with no queue is normal; the tab shows its empty state.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, fetchPending]);
+
+  async function saveScore(e: React.FormEvent) {
     e.preventDefault();
-    if (!broadsheetCsv) return;
+    await run(async () => {
+      await fetchApi('/assessment/score', {
+        method: 'POST',
+        body: JSON.stringify({
+          term_id: Number(termId),
+          student_id: Number(studentId),
+          subject_id: Number(subjectId),
+          first_ca: firstCa === '' ? null : Number(firstCa),
+          second_ca: secondCa === '' ? null : Number(secondCa),
+          exam: exam === '' ? null : Number(exam),
+        }),
+      });
 
-    const parsed = broadsheetCsv.trim().split('\n').map((line, idx) => {
-      const parts = line.split(',').map(p => p.trim());
-      const ca1 = parseInt(parts[2]) || 15;
-      const ca2 = parseInt(parts[3]) || 15;
-      const exam = parseInt(parts[4]) || 45;
-      const total = ca1 + ca2 + exam;
-      return {
-        id: scores.length + idx + 1,
-        name: parts[0] || `Student ${idx + 1}`,
-        adm: parts[1] || `ADM-${100 + idx}`,
-        ca1,
-        ca2,
-        exam,
-        total,
-        grade: total >= 75 ? 'A1' : total >= 70 ? 'B2' : total >= 60 ? 'C4' : 'C6',
-        status: 'Pending Review'
-      };
+      setNotice('Score saved.');
+      setFirstCa('');
+      setSecondCa('');
+      setExam('');
+      await loadSheet();
     });
+  }
 
-    setScores([...scores, ...parsed]);
-    setImportNotice(`Successfully imported ${parsed.length} broadsheet score rows!`);
-    setBroadsheetCsv('');
-    setActiveTab('broadsheet');
-  };
+  async function importScores(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!csvFile) return;
+
+    await run(async () => {
+      const form = new FormData();
+      form.append('file', csvFile);
+      form.append('term_id', termId);
+
+      // Multipart, not a JSON array: the endpoint takes a real uploaded file.
+      const res = await uploadApi<{ message?: string; imported?: number }>(
+        '/teacher/import-scores',
+        form,
+      );
+
+      setNotice(res.message ?? `Imported ${res.imported ?? 0} score(s).`);
+      setCsvFile(null);
+      await loadSheet();
+    });
+  }
+
+  async function review(id: number, action: 'approve' | 'edit' | 'reject', edited?: string) {
+    await run(async () => {
+      await fetchApi(`/assessment/score/${id}/review-comment`, {
+        method: 'POST',
+        body: JSON.stringify(action === 'edit' ? { action, edited_comment: edited } : { action }),
+      });
+
+      setEditing(null);
+      setDraft('');
+      await loadPending();
+    });
+  }
+
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await action();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That action could not be completed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const scheme = sheet?.ca_scheme;
+
+  // Subject columns are taken from whatever the broadsheet returned, so a
+  // school with nine subjects is not truncated to a fixed three.
+  const subjectColumns = Array.from(
+    new Set((sheet?.broadsheet ?? []).flatMap((row) => row.scores.map((s) => s.subject ?? ''))),
+  ).filter(Boolean);
+
+  const students = (sheet?.broadsheet ?? []).map((row) => ({
+    id: row.student_id,
+    label: `${row.student_name}${row.admission_number ? ` (${row.admission_number})` : ''}`,
+  }));
 
   return (
-    <div className="flex bg-slate-950 text-slate-100 min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Assessment, Broadsheet & Report Cards</h1>
-            <p className="text-slate-400 text-sm">Continuous Assessment entry, Bulk Broadsheet CSV Import, and Branded QR Verification PDF Report Cards</p>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setActiveTab('broadsheet')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'broadsheet' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              📊 Broadsheet View
-            </button>
-            <button
-              onClick={() => setActiveTab('bulk_import')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'bulk_import' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              📁 Bulk Broadsheet Import
-            </button>
-            <button
-              onClick={() => setActiveTab('report_card')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'report_card' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              📜 Branded Report Card Preview
-            </button>
-          </div>
-        </div>
+    <PageShell
+      title="Results"
+      subtitle="Enter scores, read the broadsheet, and review AI comments before anything is printed."
+    >
+      <ErrorNote message={error} />
 
-        {/* 1. Bulk Broadsheet CSV Import */}
-        {activeTab === 'bulk_import' && (
-          <div className="mb-8 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg font-bold text-white mb-2">Bulk Broadsheet Score CSV Import</h2>
-            <p className="text-slate-400 text-xs mb-4">Paste whole-class score entries in format: <code className="text-emerald-400 bg-slate-950 px-1.5 py-0.5 rounded">StudentName, AdmissionNo, CA1(20), CA2(20), Exam(60)</code></p>
-            <form onSubmit={handleBulkBroadsheetImport}>
-              <textarea
-                value={broadsheetCsv}
-                onChange={(e) => setBroadsheetCsv(e.target.value)}
-                placeholder="Amina Bello, ADM-004, 18, 19, 52&#10;Koffi Annan, ADM-005, 14, 15, 42"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none h-32 mb-4 font-mono text-xs"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-sm transition"
-              >
-                Compile & Import Broadsheet Scores
-              </button>
-            </form>
-          </div>
-        )}
+      {notice && (
+        <p role="status" className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {notice}
+        </p>
+      )}
 
-        {/* 2. Branded PDF Report Card Preview */}
-        {activeTab === 'report_card' && (
-          <div className="mb-8 bg-slate-900 border border-amber-500/30 p-8 rounded-xl shadow-xl max-w-4xl mx-auto">
-            <div className="border-4 border-amber-500/20 p-6 rounded-lg bg-slate-950">
-              {/* Header */}
-              <div className="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-amber-400">GRACE LAND INTERNATIONAL COLLEGE</h2>
-                  <p className="text-xs text-slate-400">Official Student Termly Academic Progress Report</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-bold">
-                    Term 1, 2025/2026 Session
-                  </span>
-                </div>
-              </div>
-
-              {/* Student Biodata Snapshot */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs mb-6 bg-slate-900 p-4 rounded-lg border border-slate-800">
-                <div><span className="text-slate-400">Name:</span> <strong className="text-white block">Abebe Bikila</strong></div>
-                <div><span className="text-slate-400">Admission No:</span> <strong className="text-emerald-400 block font-mono">ADM-001</strong></div>
-                <div><span className="text-slate-400">Class:</span> <strong className="text-white block">JSS 1 Gold</strong></div>
-                <div><span className="text-slate-400">Class Position:</span> <strong className="text-amber-400 block font-bold">1st out of 34</strong></div>
-              </div>
-
-              {/* Academic Performance Table */}
-              <table className="w-full text-left text-xs text-slate-300 mb-6 border border-slate-800">
-                <thead className="bg-slate-900 text-slate-400 font-semibold uppercase">
-                  <tr>
-                    <th className="p-2 border-b border-slate-800">Subject</th>
-                    <th className="p-2 border-b border-slate-800">CA1 (20)</th>
-                    <th className="p-2 border-b border-slate-800">CA2 (20)</th>
-                    <th className="p-2 border-b border-slate-800">Exam (60)</th>
-                    <th className="p-2 border-b border-slate-800">Total (100)</th>
-                    <th className="p-2 border-b border-slate-800">Grade</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr>
-                    <td className="p-2 font-medium text-white">Mathematics</td>
-                    <td className="p-2">18</td>
-                    <td className="p-2">17</td>
-                    <td className="p-2">54</td>
-                    <td className="p-2 font-bold text-emerald-400">89</td>
-                    <td className="p-2 font-bold">A1</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 font-medium text-white">English Language</td>
-                    <td className="p-2">16</td>
-                    <td className="p-2">18</td>
-                    <td className="p-2">51</td>
-                    <td className="p-2 font-bold text-emerald-400">85</td>
-                    <td className="p-2 font-bold">A1</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 font-medium text-white">Basic Science</td>
-                    <td className="p-2">15</td>
-                    <td className="p-2">16</td>
-                    <td className="p-2">48</td>
-                    <td className="p-2 font-bold text-emerald-400">79</td>
-                    <td className="p-2 font-bold">A1</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* Approved Teacher Remark */}
-              <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 mb-6">
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Approved Class Teacher Remark</h4>
-                <p className="text-xs text-slate-300 italic">"{aiComment}"</p>
-              </div>
-
-              {/* QR Authenticity Token Stamp */}
-              <div className="flex justify-between items-center border-t border-slate-800 pt-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-white text-slate-950 flex items-center justify-center font-mono font-bold text-[10px] rounded p-1 text-center leading-tight">
-                    [QR CODE SCAN]
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    <span className="text-emerald-400 font-bold block">VERIFIED AUTHENTIC</span>
-                    Signed Token: <code className="text-slate-300">SP_VERIFY_99812A</code>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => alert('Downloading official stamped PDF report card...')}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition"
-                >
-                  📥 Download Official PDF Report Card
-                </button>
-              </div>
+      {loading ? (
+        <Loading />
+      ) : classes.length === 0 || terms.length === 0 ? (
+        <Empty>
+          Set up classes and terms before entering results. Both live under the setup checklist.
+        </Empty>
+      ) : (
+        <div className="space-y-6">
+          <Card title="Class and term">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Class">
+                <select value={classId} onChange={(e) => setClassId(e.target.value)} className={inputClass}>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Term">
+                <select value={termId} onChange={(e) => setTermId(e.target.value)} className={inputClass}>
+                  {terms.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.is_current ? ' (current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
-          </div>
-        )}
 
-        {/* 3. Broadsheet Table View */}
-        {activeTab === 'broadsheet' && (
-          <>
-            {importNotice && (
-              <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-300">
-                {importNotice}
-              </div>
+            {scheme && (
+              <p className="mt-3 text-xs text-slate-500">
+                Marking scheme <strong>{scheme.name}</strong>: first CA out of {scheme.first_ca_weight},
+                second CA out of {scheme.second_ca_weight}, exam out of {scheme.exam_weight}.
+              </p>
             )}
+          </Card>
 
-            {/* AI Comment Approval Box */}
-            <div className="mb-8 bg-slate-900 border border-emerald-500/30 p-6 rounded-xl shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md">
-                  🤖 AI Generated Teacher Remark (Pending Approval)
-                </span>
-                <span className="text-xs text-slate-400">Student: Abebe Bikila (JSS 1 Gold)</span>
-              </div>
+          <nav className="flex flex-wrap gap-2" aria-label="Results sections">
+            {(
+              [
+                ['broadsheet', 'Broadsheet'],
+                ['enter', 'Enter a score'],
+                ['import', 'Import scores'],
+                ['comments', 'Comments awaiting review'],
+              ] as [Tab, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                aria-current={tab === key ? 'page' : undefined}
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  tab === key
+                    ? 'bg-slate-900 text-white'
+                    : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {label}
+                {key === 'comments' && pending.length > 0 && (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 text-xs text-amber-800">
+                    {pending.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
 
-              <textarea
-                value={aiComment}
-                onChange={(e) => setAiComment(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none mb-4 h-20"
-              />
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => alert('Remark approved and locked for report card PDF!')}
-                  className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 font-bold text-slate-950 rounded-lg text-xs transition"
+          {tab === 'broadsheet' && (
+            <Card title="Broadsheet">
+              {loadingSheet ? (
+                <Loading />
+              ) : !sheet || sheet.broadsheet.length === 0 ? (
+                <Empty>No scores entered for this class and term yet.</Empty>
+              ) : (
+                <Table
+                  columns={['Student', ...subjectColumns, 'Total', 'Average', 'Position']}
                 >
-                  ✓ Approve Remark for Report Card
-                </button>
-              </div>
-            </div>
+                  {sheet.broadsheet.map((row) => (
+                    <tr key={row.student_id}>
+                      <Cell className="font-medium text-slate-900">
+                        {row.student_name}
+                        {row.admission_number && (
+                          <span className="block text-xs text-slate-500">{row.admission_number}</span>
+                        )}
+                      </Cell>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                <h3 className="font-semibold text-white">JSS 1 Mathematics Broadsheet</h3>
-                <span className="text-xs text-slate-400">CA Scheme: CA1 (20%) + CA2 (20%) + Exam (60%)</span>
-              </div>
+                      {subjectColumns.map((subject) => {
+                        const score = row.scores.find((s) => s.subject === subject);
 
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-xs font-semibold uppercase">
-                  <tr>
-                    <th className="p-3.5">Admission No</th>
-                    <th className="p-3.5">Student Name</th>
-                    <th className="p-3.5">CA 1 (20)</th>
-                    <th className="p-3.5">CA 2 (20)</th>
-                    <th className="p-3.5">Exam (60)</th>
-                    <th className="p-3.5">Total (100)</th>
-                    <th className="p-3.5">Grade</th>
-                    <th className="p-3.5">AI Comment Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {scores.map((score) => (
-                    <tr key={score.id} className="hover:bg-slate-800/50 transition">
-                      <td className="p-3.5 font-mono text-emerald-400 text-xs">{score.adm}</td>
-                      <td className="p-3.5 font-medium text-white">{score.name}</td>
-                      <td className="p-3.5">{score.ca1}</td>
-                      <td className="p-3.5">{score.ca2}</td>
-                      <td className="p-3.5">{score.exam}</td>
-                      <td className="p-3.5 font-bold text-emerald-400">{score.total}</td>
-                      <td className="p-3.5 font-bold">{score.grade}</td>
-                      <td className="p-3.5">
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
-                            score.status === 'Approved'
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          }`}
-                        >
-                          {score.status}
-                        </span>
-                      </td>
+                        return (
+                          <Cell key={subject}>
+                            {score ? (
+                              <>
+                                {score.total_score ?? '—'}
+                                {score.grade && (
+                                  <span className="ml-1 text-xs text-slate-500">{score.grade}</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </Cell>
+                        );
+                      })}
+
+                      <Cell>{row.total_score}</Cell>
+                      <Cell>{row.average}%</Cell>
+                      <Cell>{row.position_in_class ?? '—'}</Cell>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+                </Table>
+              )}
+            </Card>
+          )}
+
+          {tab === 'enter' && (
+            <Card
+              title="Enter a score"
+              description="Saving again for the same student, subject and term updates that entry rather than adding a second one."
+            >
+              <form onSubmit={saveScore} className="grid gap-4 sm:grid-cols-2">
+                <Field label="Student">
+                  <select
+                    required
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Select a student…</option>
+                    {students.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Subject">
+                  <select
+                    required
+                    value={subjectId}
+                    onChange={(e) => setSubjectId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Select a subject…</option>
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label={`First CA${scheme ? ` (out of ${scheme.first_ca_weight})` : ''}`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={scheme?.first_ca_weight}
+                    value={firstCa}
+                    onChange={(e) => setFirstCa(e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field label={`Second CA${scheme ? ` (out of ${scheme.second_ca_weight})` : ''}`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={scheme?.second_ca_weight}
+                    value={secondCa}
+                    onChange={(e) => setSecondCa(e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field label={`Exam${scheme ? ` (out of ${scheme.exam_weight})` : ''}`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={scheme?.exam_weight}
+                    value={exam}
+                    onChange={(e) => setExam(e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <div className="sm:col-span-2">
+                  <Button type="submit" disabled={busy || !studentId || !subjectId}>
+                    {busy ? 'Saving…' : 'Save score'}
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          {tab === 'import' && (
+            <Card
+              title="Import scores"
+              description="Upload the CSV exported from this school's own score sheet. The file is uploaded as a file — not pasted text — because that is what the endpoint reads."
+            >
+              <form onSubmit={importScores} className="space-y-4">
+                <Field label="CSV file">
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Button type="submit" disabled={busy || !csvFile}>
+                  {busy ? 'Uploading…' : 'Import'}
+                </Button>
+              </form>
+
+              <p className="mt-4 text-xs text-slate-500">
+                A matching export is available from the same screen the scores came from, so the
+                column order is the one this school already uses.
+              </p>
+            </Card>
+          )}
+
+          {tab === 'comments' && (
+            <Card
+              title="Comments awaiting review"
+              description="An AI-written remark never reaches a report card until a teacher approves or edits it here."
+            >
+              {pending.length === 0 ? (
+                <Empty>Nothing waiting for review.</Empty>
+              ) : (
+                <ul className="space-y-3">
+                  {pending.map((item) => (
+                    <li
+                      key={item.score_entry_id}
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {item.student_name}
+                            {item.class && <span className="font-normal text-slate-500"> · {item.class}</span>}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {item.subject} · {item.term}
+                            {item.grade && ` · ${item.grade}`}
+                          </p>
+                        </div>
+                        <Badge tone="amber">Pending</Badge>
+                      </div>
+
+                      {editing === item.score_entry_id ? (
+                        <div className="mt-3 space-y-2">
+                          <textarea
+                            rows={3}
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            className={inputClass}
+                            aria-label={`Edit the comment for ${item.student_name}`}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                setEditing(null);
+                                setDraft('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              disabled={busy || !draft.trim()}
+                              onClick={() => review(item.score_entry_id, 'edit', draft.trim())}
+                            >
+                              Save &amp; approve
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="mt-2 text-sm italic text-slate-700">
+                            {item.comment ?? 'No comment text was generated.'}
+                          </p>
+                          <div className="mt-3 flex flex-wrap justify-end gap-2">
+                            <Button
+                              variant="secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                setEditing(item.score_entry_id);
+                                setDraft(item.comment ?? '');
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="danger"
+                              disabled={busy}
+                              onClick={() => review(item.score_entry_id, 'reject')}
+                            >
+                              Reject
+                            </Button>
+                            <Button disabled={busy} onClick={() => review(item.score_entry_id, 'approve')}>
+                              Approve
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
+    </PageShell>
   );
 }

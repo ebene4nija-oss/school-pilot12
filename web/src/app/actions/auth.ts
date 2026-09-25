@@ -2,7 +2,14 @@
 
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { createSession, destroySession, getSession, type SessionRole } from '@/lib/session';
+import {
+  createSession,
+  destroySession,
+  getSession,
+  landingPathFor,
+  setViewedSchool,
+  type SessionRole,
+} from '@/lib/session';
 
 /**
  * Login and logout, as Server Actions.
@@ -90,7 +97,31 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   await createSession(token, role, subdomain);
 
-  redirect('/');
+  /*
+   * A platform operator goes to their own console, not to a school's dashboard.
+   *
+   * Every login — including the super admin's — goes through a school, because
+   * the tenant is read from the host. That does not make the school they signed
+   * in through *their* school: a super admin has no school, so the school
+   * dashboard would report them zeroes across the board.
+   */
+  redirect(landingPathFor(role));
+}
+
+/**
+ * Pick which tenant the operator console is looking at.
+ *
+ * Writing the cookie is all this does; the API decides whether to honour the
+ * matching header, and only does so for a super admin.
+ */
+export async function viewSchool(schoolId: number | null): Promise<void> {
+  const session = await getSession();
+
+  if (!session || session.role !== 'super_admin') {
+    return;
+  }
+
+  await setViewedSchool(schoolId === null ? null : String(schoolId));
 }
 
 export async function logout(): Promise<void> {

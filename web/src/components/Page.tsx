@@ -173,3 +173,67 @@ export const inputClass =
 export function naira(kobo: number): string {
   return `₦${(kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+/**
+ * Naira from a value that is already in Naira.
+ *
+ * Separate from `naira` because that one takes kobo. Several endpoints report
+ * money in Naira directly (`Payment.amount`, `cost_naira`), and feeding one of
+ * those to `naira()` divides a school's termly collections by a hundred — a
+ * wrong number that looks entirely plausible on a dashboard.
+ */
+export function nairaAmount(value: number): string {
+  return `₦${Number(value ?? 0).toLocaleString('en-NG', { maximumFractionDigits: 0 })}`;
+}
+
+/**
+ * One headline figure.
+ *
+ * `hint` is for what the number means, never for invented movement: the old
+ * dashboard tiles carried captions like "+4.2% from last term" beside
+ * hardcoded values, with nothing anywhere computing a comparison.
+ */
+export function StatTile({
+  label,
+  value,
+  hint,
+  tone = 'slate',
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+  tone?: 'slate' | 'green' | 'amber' | 'red' | 'blue';
+}) {
+  const accent = {
+    slate: 'text-slate-900',
+    green: 'text-emerald-700',
+    amber: 'text-amber-700',
+    red: 'text-red-700',
+    blue: 'text-blue-700',
+  }[tone];
+
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={`mt-2 text-2xl font-semibold ${accent}`}>{value}</p>
+      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}
+
+/** A labelled progress bar. Width is clamped so bad data cannot overflow it. */
+export function Meter({ value, tone = 'slate' }: { value: number; tone?: 'slate' | 'green' | 'amber' | 'red' }) {
+  const pct = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+  const fill = {
+    slate: 'bg-slate-900',
+    green: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+  }[tone];
+
+  return (
+    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200" role="presentation">
+      <div className={`h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}

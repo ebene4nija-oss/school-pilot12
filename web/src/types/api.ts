@@ -6,15 +6,34 @@ export interface User {
   school_id?: number | null;
 }
 
+/**
+ * A student as the API returns one.
+ *
+ * Mirrors StudentResource, not the Eloquent model: the endpoint flattens the
+ * user relation, so `name` and `email` arrive at the top level and there is no
+ * nested `user`. This previously described the model instead, so the roster
+ * read `student.user.name` — always undefined — and fell through to a
+ * `student.name` the type did not admit existed.
+ *
+ * Medical fields are deliberately absent; they have their own endpoint (§12).
+ */
 export interface Student {
   id: number;
-  school_id: number;
-  user_id: number;
+  admission_number?: string | null;
+  name?: string | null;
+  email?: string | null;
   class_id?: number | null;
+  class?: string | null;
   arm_id?: number | null;
-  admission_number?: string;
+  arm?: string | null;
+  date_of_birth?: string | null;
   gender: 'male' | 'female' | 'other';
-  user?: User;
+  status?: 'active' | 'graduated' | 'transferred' | 'suspended';
+  state_of_origin?: string | null;
+  lga?: string | null;
+  religion?: string | null;
+  previous_school?: string | null;
+  passport_photo_path?: string | null;
 }
 
 export interface ScoreEntry {
