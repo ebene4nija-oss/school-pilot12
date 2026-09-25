@@ -33,8 +33,32 @@ say "Backing up the database before migrating"
 # Migrations are the one step in this script that cannot be undone by moving a
 # symlink. Take the backup first, every time, including for the deploy you are
 # sure contains no migrations.
-sudo -u $USER "$HOME_DIR/current/deploy/cpanel/backup-db.sh" 2>/dev/null \
-    || echo "warning: pre-deploy backup skipped (first deploy?)" >&2
+#
+# A failure here stops the deploy. It used to be swallowed — stderr to
+# /dev/null and a "skipped (first deploy?)" note whatever the real reason —
+# which is how this platform ran for its first day of deploys with no working
+# backup at all and nobody any the wiser. The message was even reassuring.
+#
+# The genuine first-deploy case is the one where `current` does not exist yet;
+# that is detected rather than assumed. Anything else is a real failure, and
+# migrating without a backup is the one irreversible thing here.
+if [ ! -e "$CURRENT/deploy/cpanel/backup-db.sh" ]; then
+    echo "    no previous release — nothing to back up yet"
+elif sudo -u $USER "$CURRENT/deploy/cpanel/backup-db.sh"; then
+    echo "    backup taken"
+elif [ "${SKIP_PREDEPLOY_BACKUP:-0}" = "1" ]; then
+    echo "warning: backup failed and SKIP_PREDEPLOY_BACKUP=1 — continuing without one" >&2
+else
+    cat >&2 <<EOF
+fatal: the pre-deploy backup failed, and the next step migrates the database.
+
+Fix the backup first — see deploy/cpanel/backup-db.sh, which prints what it
+needs. To deploy anyway, knowing there is no restore point:
+
+  SKIP_PREDEPLOY_BACKUP=1 $0 $TARBALL
+EOF
+    exit 1
+fi
 
 say "Unpacking $TARBALL"
 mkdir -p "$TARGET"
@@ -147,6 +171,38 @@ fi
 curl -fsS -o /dev/null "https://schoolpilot.org.ng/" \
     || { echo "fatal: web portal did not come up — staying in maintenance mode" >&2; exit 1; }
 echo "    web portal healthy"
+
+# The portal's own API path, which is the check this script was missing.
+#
+# Everything above can pass while the admin portal is completely blind: /up is
+# served by Apache straight from Laravel, and / is the Next.js shell, which
+# renders its chrome before it fetches anything. The portal reaches Laravel
+# through a route handler of its own at /api/backend/*, and that path begins
+# with /api — so the vhost rule that hands /api to Laravel had been claiming it,
+# and Laravel answered "route not found" to every data request the portal made.
+# Both checks above were green throughout.
+#
+# Unauthenticated, so there is no token to manage here. The proxy answers 401
+# as JSON when there is no session, which is a perfectly good signal: it proves
+# the request reached Next.js rather than Laravel. A 404 means Apache is routing
+# it to the wrong application again.
+PORTAL_API_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "https://schoolpilot.org.ng/api/backend/user" || echo 000)
+
+case "$PORTAL_API_STATUS" in
+    401|200)
+        echo "    portal API path healthy (HTTP $PORTAL_API_STATUS)"
+        ;;
+    404)
+        echo "fatal: /api/backend is being served by Laravel, not the portal." >&2
+        echo "       The vhost needs its /api/backend rule ABOVE 'ProxyPass /api !'." >&2
+        echo "       See deploy/cpanel/apache/schoolpilot.conf. Staying in maintenance mode." >&2
+        exit 1
+        ;;
+    *)
+        echo "fatal: portal API path returned HTTP $PORTAL_API_STATUS — staying in maintenance mode" >&2
+        exit 1
+        ;;
+esac
 
 say "Lifting maintenance mode"
 sudo -u $USER "$PHP" "$CURRENT/backend/artisan" up

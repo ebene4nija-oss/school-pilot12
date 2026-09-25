@@ -32,3 +32,11 @@ Thumbs.db
 
 # The Stitch export archive — the unpacked folder next to it is what we read.
 docs/*.zip
+
+# Build output. Committed once by accident and it cost this repo 3.4 GB:
+# `desktop/relay/target` alone was 3,809 files of Rust debug binaries, which
+# made `git push` time out against GitHub with HTTP 408 and took the whole
+# product history offline. Both directories are regenerated — `cargo build`
+# and desktop/packaging/Build-Package.ps1 — and neither belongs in history.
+desktop/relay/target/
+desktop/packaging/dist/
