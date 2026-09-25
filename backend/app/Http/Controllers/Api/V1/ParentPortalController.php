@@ -36,7 +36,7 @@ class ParentPortalController extends Controller
     public function children(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $guardian = Guardian::where('school_id', $schoolId)
             ->where('user_id', $user->id)
@@ -90,7 +90,7 @@ class ParentPortalController extends Controller
     public function getStudentFeed(Request $request, $studentId)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->with(['user'])->findOrFail($studentId);
 
@@ -178,7 +178,7 @@ class ParentPortalController extends Controller
     public function behaviorHistory(Request $request, $studentId)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
 
@@ -198,7 +198,7 @@ class ParentPortalController extends Controller
      */
     public function storeHomework(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'class_id'   => ['required', \Illuminate\Validation\Rule::exists('classes', 'id')->where('school_id', $schoolId)],
@@ -233,7 +233,7 @@ class ParentPortalController extends Controller
      */
     public function storePickupAuthorization(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'student_id'              => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
@@ -269,7 +269,7 @@ class ParentPortalController extends Controller
      */
     public function storeBehaviorReport(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'student_id'    => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
@@ -316,7 +316,7 @@ class ParentPortalController extends Controller
      */
     public function storeCalendarEvent(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'title'       => 'required|string|max:255',

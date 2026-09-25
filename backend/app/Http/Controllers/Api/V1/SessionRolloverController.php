@@ -28,17 +28,13 @@ class SessionRolloverController extends Controller
     {
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     /**
      * What would happen, without anything happening.
      */
     public function preview(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'from_session_id' => [
@@ -85,7 +81,7 @@ class SessionRolloverController extends Controller
      */
     public function commit(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'from_session_id' => [
@@ -189,7 +185,7 @@ class SessionRolloverController extends Controller
      */
     public function exitStudent(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:transfer_out,withdraw,graduate',
@@ -258,7 +254,7 @@ class SessionRolloverController extends Controller
      */
     public function enrollments(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
 

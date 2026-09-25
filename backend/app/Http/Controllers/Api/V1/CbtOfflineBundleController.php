@@ -37,18 +37,6 @@ class CbtOfflineBundleController extends Controller
     ) {
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()?->userProfile;
-
-        if ($profile && $profile->school_id) {
-            return (int) $profile->school_id;
-        }
-
-        $tenant = $request->attributes->get('tenant_school');
-
-        return $tenant ? (int) $tenant->id : null;
-    }
 
     // ==================================================================
     // §9.1 Bundle issuance
@@ -64,7 +52,7 @@ class CbtOfflineBundleController extends Controller
      */
     public function store(Request $request, $examId)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($examId);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($examId);
         $this->authorize('view', $exam);
 
         $validated = $request->validate([
@@ -122,7 +110,7 @@ class CbtOfflineBundleController extends Controller
     /** What has been issued for this exam, and what state it is in. */
     public function index(Request $request, $examId)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($examId);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($examId);
         $this->authorize('view', $exam);
 
         $bundles = CbtOfflineBundle::where('exam_id', $exam->id)
@@ -157,7 +145,7 @@ class CbtOfflineBundleController extends Controller
      */
     public function releaseKey(Request $request, $bundleId)
     {
-        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId($request))
+        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId())
             ->where('bundle_id', $bundleId)
             ->firstOrFail();
 
@@ -212,7 +200,7 @@ class CbtOfflineBundleController extends Controller
      */
     public function revoke(Request $request, $bundleId)
     {
-        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId($request))
+        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId())
             ->where('bundle_id', $bundleId)
             ->firstOrFail();
 
@@ -280,7 +268,7 @@ class CbtOfflineBundleController extends Controller
             'attempts.*.submit' => 'nullable|boolean',
         ]);
 
-        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId($request))
+        $bundle = CbtOfflineBundle::where('school_id', $this->schoolId())
             ->where('bundle_id', $validated['bundle_id'])
             ->firstOrFail();
 

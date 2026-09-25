@@ -31,10 +31,6 @@ class FeeStructureController extends Controller
     {
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     /**
      * What this school charges, plus the totals a bursar actually quotes.
@@ -48,7 +44,7 @@ class FeeStructureController extends Controller
      */
     public function index(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $request->validate([
             'term_id' => ['nullable', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
@@ -109,7 +105,7 @@ class FeeStructureController extends Controller
 
     public function store(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate($this->rules($schoolId));
 
@@ -142,7 +138,7 @@ class FeeStructureController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $fee = FeeStructure::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate($this->rules($schoolId));
@@ -176,7 +172,7 @@ class FeeStructureController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $fee = FeeStructure::where('school_id', $schoolId)->findOrFail($id);
 
         $retained = InvoiceItem::where('fee_structure_id', $fee->id)->count();
@@ -202,7 +198,7 @@ class FeeStructureController extends Controller
      */
     public function generateInvoices(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'term_id' => ['required', Rule::exists('terms', 'id')->where('school_id', $schoolId)],

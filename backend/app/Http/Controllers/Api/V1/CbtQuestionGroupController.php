@@ -31,22 +31,10 @@ class CbtQuestionGroupController extends Controller
     {
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()?->userProfile;
-
-        if ($profile && $profile->school_id) {
-            return (int) $profile->school_id;
-        }
-
-        $tenant = $request->attributes->get('tenant_school');
-
-        return $tenant ? (int) $tenant->id : null;
-    }
 
     public function index(Request $request)
     {
-        $query = CbtQuestionGroup::where('school_id', $this->schoolId($request))
+        $query = CbtQuestionGroup::where('school_id', $this->schoolId())
             ->with('subject:id,name')
             ->withCount('questions');
 
@@ -67,7 +55,7 @@ class CbtQuestionGroupController extends Controller
 
     public function show(Request $request, $id)
     {
-        $group = CbtQuestionGroup::where('school_id', $this->schoolId($request))
+        $group = CbtQuestionGroup::where('school_id', $this->schoolId())
             ->with('subject:id,name')
             ->findOrFail($id);
 
@@ -85,7 +73,7 @@ class CbtQuestionGroupController extends Controller
 
     public function store(Request $request, MathContentService $maths)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'subject_id' => ['nullable', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
@@ -114,7 +102,7 @@ class CbtQuestionGroupController extends Controller
 
     public function update(Request $request, $id, MathContentService $maths)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $group = CbtQuestionGroup::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -169,7 +157,7 @@ class CbtQuestionGroupController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $group = CbtQuestionGroup::where('school_id', $schoolId)->findOrFail($id);
 
         $attached = QuestionBankItem::where('school_id', $schoolId)->where('group_id', $group->id)->get();

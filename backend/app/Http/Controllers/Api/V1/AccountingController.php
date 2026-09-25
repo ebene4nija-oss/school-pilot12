@@ -19,7 +19,7 @@ class AccountingController extends Controller
      */
     public function processPayroll(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'staff_id'     => ['required', \Illuminate\Validation\Rule::exists('users', 'id')],
@@ -63,7 +63,7 @@ class AccountingController extends Controller
      */
     public function storeVendor(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'name'           => 'required|string|max:255',
@@ -91,7 +91,7 @@ class AccountingController extends Controller
      */
     public function recordExpense(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'vendor_id'      => ['nullable', \Illuminate\Validation\Rule::exists('vendors', 'id')->where('school_id', $schoolId)],
@@ -123,7 +123,7 @@ class AccountingController extends Controller
      */
     public function logPettyCash(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'type'       => 'required|in:disbursement,replenishment',
@@ -156,7 +156,7 @@ class AccountingController extends Controller
      */
     public function storeBudget(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'term_id'          => ['nullable', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
@@ -182,7 +182,7 @@ class AccountingController extends Controller
      */
     public function getIncomeReport(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $totalFeeIncome = Payment::where('school_id', $schoolId)->where('status', 'successful')->sum('amount');
         $totalExpenses = Expense::where('school_id', $schoolId)->where('status', 'paid')->sum('amount');

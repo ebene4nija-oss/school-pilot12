@@ -36,7 +36,7 @@ class AcademicStructureController extends Controller
      */
     public function classes(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $armsByClass = Arm::where('school_id', $schoolId)
             ->orderBy('name')
@@ -82,7 +82,7 @@ class AcademicStructureController extends Controller
      */
     public function terms(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $sessions = AcademicSession::where('school_id', $schoolId)->get()->keyBy('id');
 
@@ -158,10 +158,4 @@ class AcademicStructureController extends Controller
             ?? $terms->first(fn (Term $term) => $term->start_date && $term->start_date->lte($today));
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()->userProfile;
-
-        return $profile ? (int) $profile->school_id : null;
-    }
 }

@@ -51,7 +51,7 @@ class FinanceController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $invoice = Invoice::where('school_id', $schoolId)->with('student')->findOrFail($request->invoice_id);
 
@@ -161,7 +161,7 @@ class FinanceController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($request->invoice_id);
 
@@ -372,7 +372,7 @@ class FinanceController extends Controller
     public function downloadInvoicePdf(Request $request, $id)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $invoice = Invoice::where('school_id', $schoolId)->with(['student.user'])->findOrFail($id);
 
@@ -389,7 +389,7 @@ class FinanceController extends Controller
     public function downloadPaymentReceipt(Request $request, $id)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $payment = Payment::where('school_id', $schoolId)->with(['invoice.student.user'])->findOrFail($id);
 
@@ -410,7 +410,7 @@ class FinanceController extends Controller
      */
     public function reconcileBankTransfer(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'payment_id' => 'required_without:reference',

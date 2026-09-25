@@ -26,12 +26,6 @@ use Illuminate\Validation\Rule;
  */
 class ClassTeacherController extends Controller
 {
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()?->userProfile;
-
-        return $profile?->school_id;
-    }
 
     /**
      * Assignments for a session, defaulting to the current one.
@@ -41,7 +35,7 @@ class ClassTeacherController extends Controller
      */
     public function index(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $sessionId = $request->query('session_id');
 
         if ($sessionId) {
@@ -129,7 +123,7 @@ class ClassTeacherController extends Controller
      */
     public function store(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'session_id' => [
@@ -235,7 +229,7 @@ class ClassTeacherController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $assignment = ClassTeacherAssignment::where('school_id', $schoolId)->findOrFail($id);
 
@@ -265,7 +259,7 @@ class ClassTeacherController extends Controller
      */
     public function myClasses(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $userId = $request->user()->id;
 
         $sessionId = $request->query('session_id')

@@ -80,7 +80,7 @@ class StudentController extends Controller
         }
 
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $resets = app(PasswordResetService::class);
 
@@ -158,7 +158,7 @@ class StudentController extends Controller
     public function show(Request $request, $id)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)
             ->with(['user:id,name,email', 'currentClass:id,name', 'currentArm:id,name'])
@@ -185,7 +185,7 @@ class StudentController extends Controller
     public function medical(Request $request, $id)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->with('user:id,name')->findOrFail($id);
 
@@ -207,7 +207,7 @@ class StudentController extends Controller
     public function update(Request $request, $id)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
 
@@ -293,7 +293,7 @@ class StudentController extends Controller
     public function promote(Request $request)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         /*
          * Every id is scoped to the acting admin's school.
@@ -452,7 +452,7 @@ class StudentController extends Controller
     public function classHistory(Request $request, $id)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
 
@@ -479,7 +479,7 @@ class StudentController extends Controller
     public function importPreview(Request $request, StudentImportService $importer)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:csv,txt|max:5120',
@@ -538,7 +538,7 @@ class StudentController extends Controller
     public function importCommit(Request $request, StudentImportService $importer)
     {
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'token' => 'required|string',
@@ -618,7 +618,7 @@ class StudentController extends Controller
         }
 
         $admin = $request->user();
-        $schoolId = $admin->userProfile ? $admin->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $analysis = $importer->analyse($request->file('file'), $schoolId, [
             'require_class' => false,

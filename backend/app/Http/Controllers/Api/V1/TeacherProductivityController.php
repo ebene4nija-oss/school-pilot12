@@ -18,7 +18,7 @@ class TeacherProductivityController extends Controller
      */
     public function bulkGrading(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'term_id' => ['required', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
@@ -100,7 +100,7 @@ class TeacherProductivityController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $file = $request->file('file');
         $rows = array_map('str_getcsv', file($file->getRealPath()));
         $header = array_shift($rows);
@@ -162,7 +162,7 @@ class TeacherProductivityController extends Controller
      */
     public function exportScoresCsv(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'term_id' => 'required|exists:terms,id',
@@ -209,7 +209,7 @@ class TeacherProductivityController extends Controller
      */
     public function copyPreviousTermLessonPlans(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'source_class_id' => 'required|exists:classes,id',
@@ -249,7 +249,7 @@ class TeacherProductivityController extends Controller
      */
     public function duplicateExam(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'subject_id' => 'required|exists:subjects,id',

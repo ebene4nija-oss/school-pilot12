@@ -19,10 +19,6 @@ use Illuminate\Validation\Rule;
  */
 class JobStatusController extends Controller
 {
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     /**
      * Progress of a queued batch.
@@ -39,7 +35,7 @@ class JobStatusController extends Controller
             return response()->json(['error' => 'No such job batch.'], 404);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         if ($schoolId && ! str_ends_with($batch->name, ":school:{$schoolId}")) {
             return response()->json(['error' => 'No such job batch.'], 404);
@@ -63,7 +59,7 @@ class JobStatusController extends Controller
     public function cancel(Request $request, string $batchId)
     {
         $batch = Bus::findBatch($batchId);
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         if (! $batch || ($schoolId && ! str_ends_with($batch->name, ":school:{$schoolId}"))) {
             return response()->json(['error' => 'No such job batch.'], 404);
@@ -82,7 +78,7 @@ class JobStatusController extends Controller
      */
     public function generateReportCards(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'term_id' => ['required', Rule::exists('terms', 'id')->where('school_id', $schoolId)],

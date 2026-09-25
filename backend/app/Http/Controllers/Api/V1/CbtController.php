@@ -68,7 +68,7 @@ class CbtController extends Controller
         try {
             $asset = $this->media->store(
                 $validated['file'],
-                $this->schoolId($request),
+                $this->schoolId(),
                 $request->user()->id,
                 $validated['alt_text'],
                 $validated['caption'] ?? null
@@ -85,7 +85,7 @@ class CbtController extends Controller
 
     public function listMedia(Request $request)
     {
-        $assets = CbtMediaAsset::where('school_id', $this->schoolId($request))
+        $assets = CbtMediaAsset::where('school_id', $this->schoolId())
             ->orderByDesc('id')
             ->paginate(min((int) $request->input('per_page', 30), 100));
 
@@ -101,7 +101,7 @@ class CbtController extends Controller
      */
     public function destroyMedia(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $asset = CbtMediaAsset::where('school_id', $schoolId)->findOrFail($id);
 
         $inUse = QuestionBankItem::where('school_id', $schoolId)
@@ -122,18 +122,6 @@ class CbtController extends Controller
         return response()->json(['message' => 'Image deleted']);
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()?->userProfile;
-
-        if ($profile && $profile->school_id) {
-            return (int) $profile->school_id;
-        }
-
-        $tenant = $request->attributes->get('tenant_school');
-
-        return $tenant ? (int) $tenant->id : null;
-    }
 
     /** The Student row behind an authenticated student user. */
     private function currentStudent(Request $request): ?Student
@@ -147,7 +135,7 @@ class CbtController extends Controller
 
     public function listQuestions(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $query = QuestionBankItem::where('school_id', $schoolId)->with(['subject:id,name', 'group:id,title']);
 
@@ -203,7 +191,7 @@ class CbtController extends Controller
 
     public function storeQuestion(Request $request, MathContentService $maths)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
@@ -264,7 +252,7 @@ class CbtController extends Controller
 
     public function updateQuestion(Request $request, $id, MathContentService $maths)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $question = QuestionBankItem::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -464,7 +452,7 @@ class CbtController extends Controller
 
     public function destroyQuestion(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $question = QuestionBankItem::where('school_id', $schoolId)->findOrFail($id);
 
         if (CbtExamQuestion::where('question_id', $question->id)->exists()) {
@@ -483,7 +471,7 @@ class CbtController extends Controller
     /** Bulk import — the realistic way a bank of 500 WAEC questions arrives. */
     public function importQuestions(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
@@ -540,7 +528,7 @@ class CbtController extends Controller
 
     public function listExams(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $profile = $request->user()->userProfile;
 
         $query = CbtExam::where('school_id', $schoolId)
@@ -565,7 +553,7 @@ class CbtController extends Controller
 
     public function storeExam(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
@@ -604,7 +592,7 @@ class CbtController extends Controller
 
     public function showExam(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('view', $exam);
 
         $exam->load(['subject:id,name', 'examQuestions.question:id,question,question_type,topic,difficulty,marks']);
@@ -618,7 +606,7 @@ class CbtController extends Controller
 
     public function updateExam(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('manage', $exam);
 
         $validated = $request->validate([
@@ -690,7 +678,7 @@ class CbtController extends Controller
 
     public function attachQuestions(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('manage', $exam);
 
         if ($exam->status === 'published') {
@@ -730,7 +718,7 @@ class CbtController extends Controller
 
     public function detachQuestion(Request $request, $id, $questionId)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('manage', $exam);
 
         if ($exam->status === 'published') {
@@ -747,7 +735,7 @@ class CbtController extends Controller
 
     public function publishExam(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('manage', $exam);
 
         $attached = CbtExamQuestion::where('exam_id', $exam->id)->count();
@@ -797,7 +785,7 @@ class CbtController extends Controller
 
     public function closeExam(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('manage', $exam);
 
         // Anyone still sitting is submitted and graded rather than left
@@ -1210,7 +1198,7 @@ class CbtController extends Controller
     /** Whole-cohort view: how the class did, and which questions misfired. */
     public function examResults(Request $request, $id)
     {
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($id);
         $this->authorize('view', $exam);
 
         $attempts = CbtAttempt::where('exam_id', $exam->id)
@@ -1348,7 +1336,7 @@ class CbtController extends Controller
             return $this->candidateOfflinePackage($request, $examId);
         }
 
-        $exam = CbtExam::where('school_id', $this->schoolId($request))->findOrFail($examId);
+        $exam = CbtExam::where('school_id', $this->schoolId())->findOrFail($examId);
         $this->authorize('view', $exam);
 
         if (! $exam->allow_offline) {

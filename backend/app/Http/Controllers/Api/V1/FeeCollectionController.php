@@ -26,10 +26,6 @@ use Illuminate\Validation\Rule;
  */
 class FeeCollectionController extends Controller
 {
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     /**
      * The debtor list.
@@ -40,7 +36,7 @@ class FeeCollectionController extends Controller
      */
     public function defaulters(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $request->validate([
             'term_id' => ['nullable', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
@@ -188,7 +184,7 @@ class FeeCollectionController extends Controller
      */
     public function remindDefaulters(Request $request, FeeReminderService $reminders)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'invoice_ids' => 'nullable|array|min:1|max:1000',
@@ -274,7 +270,7 @@ class FeeCollectionController extends Controller
      */
     public function createInstallmentPlan(Request $request, $invoiceId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($invoiceId);
 
         $validated = $request->validate([
@@ -326,7 +322,7 @@ class FeeCollectionController extends Controller
     /** The plan on an invoice, with overdue tranches flagged against today. */
     public function installmentPlan(Request $request, $invoiceId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($invoiceId);
 
         $installments = PaymentInstallment::where('invoice_id', $invoice->id)
@@ -353,7 +349,7 @@ class FeeCollectionController extends Controller
     public function listScholarships(Request $request)
     {
         return response()->json([
-            'data' => Scholarship::where('school_id', $this->schoolId($request))->orderBy('name')->get(),
+            'data' => Scholarship::where('school_id', $this->schoolId())->orderBy('name')->get(),
         ]);
     }
 
@@ -366,7 +362,7 @@ class FeeCollectionController extends Controller
      */
     public function applyDiscount(Request $request, $invoiceId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'scholarship_id' => ['required', Rule::exists('scholarships', 'id')->where('school_id', $schoolId)],
@@ -424,7 +420,7 @@ class FeeCollectionController extends Controller
     /** One family's position across every invoice — what a parent sees. */
     public function studentStatement(Request $request, $studentId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
 
         $this->authorize('view', $student);

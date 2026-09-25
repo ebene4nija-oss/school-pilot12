@@ -336,7 +336,7 @@ class ResultCheckerController extends Controller
     public function myPins(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $pins = ResultPin::withoutGlobalScopes()
             ->where('school_id', $schoolId)

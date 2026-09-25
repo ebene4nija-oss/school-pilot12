@@ -17,10 +17,6 @@ use Illuminate\Validation\Rule;
  */
 class StaffHrController extends Controller
 {
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     private function isAdmin(Request $request): bool
     {
@@ -39,7 +35,7 @@ class StaffHrController extends Controller
     /** Apply for leave. Staff apply for themselves; admins may file on behalf. */
     public function requestLeave(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'leave_type' => ['required', Rule::in(LeaveRequest::TYPES)],
@@ -102,7 +98,7 @@ class StaffHrController extends Controller
     /** My own requests, or the whole school's for an admin. */
     public function listLeave(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $query = LeaveRequest::where('school_id', $schoolId)
             ->with(['staff.user:id,name', 'decider:id,name']);
@@ -134,7 +130,7 @@ class StaffHrController extends Controller
      */
     public function decideLeave(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'decision' => 'required|in:approved,rejected',
@@ -182,7 +178,7 @@ class StaffHrController extends Controller
     /** Who is off on a given day — what a head teacher checks when covering classes. */
     public function leaveCalendar(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $date = $request->filled('date')
             ? Carbon::parse($request->input('date'))->toDateString()
@@ -224,7 +220,7 @@ class StaffHrController extends Controller
             }
         }
 
-        $staff = Staff::where('school_id', $this->schoolId($request))->findOrFail($staffId);
+        $staff = Staff::where('school_id', $this->schoolId())->findOrFail($staffId);
         $staff->update(['leave_allocations' => $validated['allocations']]);
 
         return response()->json([
@@ -240,7 +236,7 @@ class StaffHrController extends Controller
      */
     public function employmentRecord(Request $request, $staffId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $staff = Staff::where('school_id', $schoolId)->with('user:id,name')->findOrFail($staffId);
 
         if (! $this->isAdmin($request) && (int) $staff->user_id !== (int) $request->user()->id) {
@@ -287,7 +283,7 @@ class StaffHrController extends Controller
             ], 422);
         }
 
-        $staff = Staff::where('school_id', $this->schoolId($request))->findOrFail($staffId);
+        $staff = Staff::where('school_id', $this->schoolId())->findOrFail($staffId);
 
         $history = $staff->employment_history ?? [];
         $history[] = $validated;

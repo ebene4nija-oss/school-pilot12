@@ -23,14 +23,10 @@ class SchoolDataExportController extends Controller
     /** One archive a day. Building one reads most of the database. */
     private const DAILY_LIMIT = 1;
 
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     public function index(Request $request)
     {
-        $exports = SchoolDataExport::where('school_id', $this->schoolId($request))
+        $exports = SchoolDataExport::where('school_id', $this->schoolId())
             ->with('requestedBy:id,name')
             ->latest()
             ->limit(20)
@@ -42,7 +38,7 @@ class SchoolDataExportController extends Controller
 
     public function store(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'include_medical' => 'nullable|boolean',
@@ -99,14 +95,14 @@ class SchoolDataExportController extends Controller
 
     public function show(Request $request, $id)
     {
-        $export = SchoolDataExport::where('school_id', $this->schoolId($request))->findOrFail($id);
+        $export = SchoolDataExport::where('school_id', $this->schoolId())->findOrFail($id);
 
         return response()->json(['export' => $this->present($export)]);
     }
 
     public function download(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $export = SchoolDataExport::where('school_id', $schoolId)->findOrFail($id);
 

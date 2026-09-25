@@ -26,7 +26,7 @@ class AssessmentController extends Controller
     public function enterScores(Request $request, GradingService $grading)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $scheme = CaScheme::activeFor($schoolId);
 
@@ -97,7 +97,7 @@ class AssessmentController extends Controller
 
     public function listCaSchemes(Request $request)
     {
-        $schoolId = $request->user()->userProfile?->school_id;
+        $schoolId = $this->schoolId();
 
         return response()->json([
             'active' => CaScheme::activeFor($schoolId),
@@ -107,7 +107,7 @@ class AssessmentController extends Controller
 
     public function storeCaScheme(Request $request)
     {
-        $schoolId = $request->user()->userProfile?->school_id;
+        $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
@@ -161,7 +161,7 @@ class AssessmentController extends Controller
      */
     public function activateCaScheme(Request $request, $id)
     {
-        $schoolId = $request->user()->userProfile?->school_id;
+        $schoolId = $this->schoolId();
         $scheme = CaScheme::where('school_id', $schoolId)->findOrFail($id);
 
         DB::transaction(function () use ($schoolId, $scheme) {
@@ -179,7 +179,7 @@ class AssessmentController extends Controller
     public function generateAiComment(Request $request, $id)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $entry = ScoreEntry::where('school_id', $schoolId)->with(['student.user', 'subject'])->findOrFail($id);
 
@@ -216,7 +216,7 @@ class AssessmentController extends Controller
     public function pendingAiComments(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $role = $user->userProfile?->role;
 
         $query = ScoreEntry::where('score_entries.school_id', $schoolId)
@@ -306,7 +306,7 @@ class AssessmentController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $entry = ScoreEntry::where('school_id', $schoolId)->findOrFail($id);
 
@@ -342,7 +342,7 @@ class AssessmentController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $students = Student::where('school_id', $schoolId)
             ->where('class_id', $request->class_id)

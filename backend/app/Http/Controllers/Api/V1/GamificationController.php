@@ -14,7 +14,7 @@ class GamificationController extends Controller
     private function getSchoolId(Request $request)
     {
         if ($request->user() && $request->user()->userProfile && $request->user()->userProfile->school_id) {
-            return $request->user()->userProfile->school_id;
+            return $this->schoolId();
         }
 
         $tenant = $request->attributes->get('tenant_school');

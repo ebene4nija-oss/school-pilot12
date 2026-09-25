@@ -28,7 +28,7 @@ class AnalyticsController extends Controller
      */
     public function getPrincipalDashboard(Request $request, SchoolInsightsService $insights)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         // Revenue & Financial Metrics
         $totalCollectedRevenue = Payment::where('school_id', $schoolId)->where('status', 'successful')->sum('amount');
@@ -132,7 +132,7 @@ class AnalyticsController extends Controller
      */
     public function getTeacherDashboard(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $teacherId = $request->user()->id;
 
         /*
@@ -275,7 +275,7 @@ class AnalyticsController extends Controller
      */
     public function getParentDashboard(Request $request, $studentId)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->with('user')->findOrFail($studentId);
 
@@ -334,7 +334,7 @@ class AnalyticsController extends Controller
      */
     public function getStudentDashboard(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)
             ->where('user_id', $request->user()->id)

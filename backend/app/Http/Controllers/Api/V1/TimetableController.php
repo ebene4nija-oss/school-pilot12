@@ -33,7 +33,7 @@ class TimetableController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user && $user->userProfile ? $user->userProfile->school_id : 1;
+        $schoolId = $this->schoolId();
 
         $result = $this->solver->generateTimetable(
             $schoolId,
@@ -64,7 +64,7 @@ class TimetableController extends Controller
     public function versions(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user && $user->userProfile ? $user->userProfile->school_id : 1;
+        $schoolId = $this->schoolId();
 
         $versions = TimetableVersion::where('school_id', $schoolId)
             ->withCount('entries')
@@ -79,7 +79,7 @@ class TimetableController extends Controller
     public function publish(Request $request, $id)
     {
         $user = $request->user();
-        $schoolId = $user && $user->userProfile ? $user->userProfile->school_id : 1;
+        $schoolId = $this->schoolId();
 
         $version = TimetableVersion::where('school_id', $schoolId)->where('id', $id)->firstOrFail();
 
@@ -99,7 +99,7 @@ class TimetableController extends Controller
     public function view(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user && $user->userProfile ? $user->userProfile->school_id : 1;
+        $schoolId = $this->schoolId();
 
         $versionId = $request->query('version_id');
         $classId = $request->query('class_id');

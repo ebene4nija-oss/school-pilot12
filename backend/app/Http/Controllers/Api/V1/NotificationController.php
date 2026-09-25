@@ -145,7 +145,7 @@ class NotificationController extends Controller
      */
     public function broadcast(Request $request, NotificationService $notifications)
     {
-        $schoolId = $request->user()->userProfile?->school_id;
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'user_ids' => 'required|array|min:1|max:1000',
@@ -208,7 +208,7 @@ class NotificationController extends Controller
     /** What this school has sent — the answer to "why is the SMS bill this size". */
     public function history(Request $request)
     {
-        $schoolId = $request->user()->userProfile?->school_id;
+        $schoolId = $this->schoolId();
 
         $query = NotificationLog::where('school_id', $schoolId)->with('user:id,name');
 
@@ -343,7 +343,7 @@ class NotificationController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $recipientPhone = $request->phone;
         $recipientName = 'Parent';
 
@@ -401,7 +401,7 @@ class NotificationController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $student = Student::where('school_id', $schoolId)->with(['user'])->findOrFail($request->student_id);
 
         $recipientPhone = $request->phone;

@@ -21,22 +21,18 @@ class Phase1And2Controller extends Controller
      */
     private function getSchoolId(Request $request)
     {
-        $tenant = app(TenantContext::class);
+        // Tenant first, then the acting user's profile — see Controller::schoolId().
+        $schoolId = $this->schoolId();
 
-        if ($tenant->hasSchool()) {
-            return $tenant->schoolId();
+        if ($schoolId !== null) {
+            return $schoolId;
         }
 
-        if ($request->user() && $request->user()->userProfile && $request->user()->userProfile->school_id) {
-            return $request->user()->userProfile->school_id;
-        }
-
+        // Request attributes are the older path, kept for the routes that are
+        // resolved by host rather than by an authenticated profile.
         $tenantSchool = $request->attributes->get('tenant_school');
-        if ($tenantSchool) {
-            return $tenantSchool->id;
-        }
 
-        return $request->attributes->get('school_id');
+        return $tenantSchool ? $tenantSchool->id : $request->attributes->get('school_id');
     }
 
     // 1. Scholarships & Installments

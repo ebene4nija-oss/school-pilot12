@@ -31,10 +31,6 @@ class ResultPinController extends Controller
     {
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
-    }
 
     /**
      * What this school pays SchoolPilot per PIN.
@@ -50,7 +46,7 @@ class ResultPinController extends Controller
             ->orderBy('min_quantity')
             ->get(['min_quantity', 'unit_price']);
 
-        $rate = ResultPinSchoolRate::activeFor($this->schoolId($request));
+        $rate = ResultPinSchoolRate::activeFor($this->schoolId());
 
         if ($rate) {
             return response()->json([
@@ -73,7 +69,7 @@ class ResultPinController extends Controller
 
     public function inventory(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $school = School::find($schoolId);
 
         $counts = ResultPin::withoutGlobalScopes()
@@ -121,7 +117,7 @@ class ResultPinController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         // Honours a negotiated rate if SchoolPilot agreed one with this school,
         // so buying online charges the same price as buying over the phone.
@@ -165,7 +161,7 @@ class ResultPinController extends Controller
     public function batches(Request $request)
     {
         $batches = ResultPinBatch::withoutGlobalScopes()
-            ->where('school_id', $this->schoolId($request))
+            ->where('school_id', $this->schoolId())
             ->withCount([
                 'pins as pins_available' => fn ($q) => $q->where('status', 'available'),
                 'pins as pins_used' => fn ($q) => $q->where('status', 'used'),
@@ -187,7 +183,7 @@ class ResultPinController extends Controller
      */
     public function revealBatch(Request $request, $id)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $batch = ResultPinBatch::withoutGlobalScopes()
             ->where('school_id', $schoolId)
@@ -250,7 +246,7 @@ class ResultPinController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $pin = ResultPin::withoutGlobalScopes()
             ->where('school_id', $schoolId)
@@ -312,7 +308,7 @@ class ResultPinController extends Controller
             ], 422);
         }
 
-        $school = School::find($this->schoolId($request));
+        $school = School::find($this->schoolId());
         $school->result_checker_enabled = $request->boolean('result_checker_enabled');
         $school->result_pin_retail_price = $request->retail_price;
         $school->save();
@@ -340,7 +336,7 @@ class ResultPinController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $student = Student::withoutGlobalScopes()
             ->where('school_id', $schoolId)
@@ -402,7 +398,7 @@ class ResultPinController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $term = Term::withoutGlobalScopes()->where('school_id', $schoolId)->find($request->term_id);
 
@@ -447,7 +443,7 @@ class ResultPinController extends Controller
     public function releases(Request $request)
     {
         $releases = ResultRelease::withoutGlobalScopes()
-            ->where('school_id', $this->schoolId($request))
+            ->where('school_id', $this->schoolId())
             ->with(['term', 'schoolClass'])
             ->orderByDesc('id')
             ->get();
@@ -458,7 +454,7 @@ class ResultPinController extends Controller
     /** Sales ledger: what the school earned from result PINs. */
     public function salesReport(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $query = ResultPin::withoutGlobalScopes()
             ->where('school_id', $schoolId)

@@ -21,10 +21,6 @@ use Illuminate\Support\Facades\DB;
  */
 class HomeworkSubmissionController extends Controller
 {
-    private function schoolId(Request $request): ?int
-    {
-        return $request->user()?->userProfile?->school_id;
-    }
 
     private function currentStudent(Request $request): ?Student
     {
@@ -48,7 +44,7 @@ class HomeworkSubmissionController extends Controller
     {
         $user = $request->user();
         $role = $user->userProfile?->role;
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $query = Homework::where('school_id', $schoolId)
             ->with(['subject:id,name', 'teacher:id,name', 'schoolClass:id,name']);
@@ -199,7 +195,7 @@ class HomeworkSubmissionController extends Controller
     {
         $user = $request->user();
 
-        $guardian = \App\Models\Guardian::where('school_id', $this->schoolId($request))
+        $guardian = \App\Models\Guardian::where('school_id', $this->schoolId())
             ->where('user_id', $user->id)
             ->first();
 
@@ -306,7 +302,7 @@ class HomeworkSubmissionController extends Controller
      */
     public function index(Request $request, $homeworkId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $homework = Homework::where('school_id', $schoolId)->findOrFail($homeworkId);
 
         $this->authorizeMarking($request, $homework);
@@ -354,7 +350,7 @@ class HomeworkSubmissionController extends Controller
     /** Mark one submission. */
     public function grade(Request $request, $submissionId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $submission = HomeworkSubmission::where('school_id', $schoolId)->findOrFail($submissionId);
         $homework = Homework::where('school_id', $schoolId)->findOrFail($submission->homework_id);
@@ -390,7 +386,7 @@ class HomeworkSubmissionController extends Controller
     /** Mark a whole class in one request — the realistic teacher workflow. */
     public function bulkGrade(Request $request, $homeworkId)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $homework = Homework::where('school_id', $schoolId)->findOrFail($homeworkId);
 
         $this->authorizeMarking($request, $homework);

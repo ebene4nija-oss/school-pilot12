@@ -20,7 +20,7 @@ class AiStudioController extends Controller
      */
     public function updateAiSettings(Request $request)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $school = \App\Models\School::findOrFail($schoolId);
 
         $validator = Validator::make($request->all(), [
@@ -79,7 +79,7 @@ class AiStudioController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
@@ -102,7 +102,7 @@ class AiStudioController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
@@ -124,7 +124,7 @@ class AiStudioController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
@@ -146,7 +146,7 @@ class AiStudioController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
@@ -159,7 +159,7 @@ class AiStudioController extends Controller
 
     public function summarizePerformance(Request $request, $studentId)
     {
-        $schoolId = $request->user()->userProfile ? $request->user()->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {

@@ -26,7 +26,7 @@ class AttendanceController extends Controller
     public function generateQrToken(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         if (! $schoolId) {
             return response()->json(['message' => 'No school context for this user.'], 403);
@@ -71,7 +71,7 @@ class AttendanceController extends Controller
     public function markBulkAttendance(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'term_id' => ['required', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
@@ -150,7 +150,7 @@ class AttendanceController extends Controller
     public function classRegister(Request $request)
     {
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $validated = $request->validate([
             'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
@@ -200,7 +200,7 @@ class AttendanceController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
 
         $claims = $this->qrTokens->verify($request->qr_token);
 
@@ -256,7 +256,7 @@ class AttendanceController extends Controller
         }
 
         $user = $request->user();
-        $schoolId = $user->userProfile ? $user->userProfile->school_id : null;
+        $schoolId = $this->schoolId();
         $school = $schoolId ? School::find($schoolId) : null;
 
         if (! $school) {

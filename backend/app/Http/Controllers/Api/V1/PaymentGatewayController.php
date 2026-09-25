@@ -50,7 +50,7 @@ class PaymentGatewayController extends Controller
     /** What is connected, for the finance settings screen. */
     public function index(Request $request)
     {
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $configured = SchoolPaymentGateway::where('school_id', $schoolId)
             ->get()
@@ -116,7 +116,7 @@ class PaymentGatewayController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
         $secret = $request->input('secret_key');
 
         $existing = SchoolPaymentGateway::where('school_id', $schoolId)
@@ -174,7 +174,7 @@ class PaymentGatewayController extends Controller
             return response()->json(['message' => 'Unknown payment gateway.'], 404);
         }
 
-        $schoolId = $this->schoolId($request);
+        $schoolId = $this->schoolId();
 
         $row = SchoolPaymentGateway::where('school_id', $schoolId)
             ->where('gateway', $gateway)
@@ -221,10 +221,4 @@ class PaymentGatewayController extends Controller
         return $isTest ? 'test' : 'live';
     }
 
-    private function schoolId(Request $request): ?int
-    {
-        $profile = $request->user()->userProfile;
-
-        return $profile ? (int) $profile->school_id : null;
-    }
 }
