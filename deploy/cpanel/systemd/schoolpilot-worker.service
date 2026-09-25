@@ -19,9 +19,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=schoolpilot
-Group=schoolpilot
-WorkingDirectory=/home/schoolpilot/current/backend
+User=schoolpilotorg
+Group=schoolpilotorg
+WorkingDirectory=/home/schoolpilotorg/current/backend
 
 # --max-time recycles the process hourly. A long-lived PHP worker accumulates
 # memory and, worse, keeps a stale copy of the code in memory after a deploy;
@@ -41,8 +41,8 @@ StartLimitIntervalSec=60
 NoNewPrivileges=true
 PrivateTmp=true
 
-StandardOutput=append:/home/schoolpilot/logs/worker.log
-StandardError=append:/home/schoolpilot/logs/worker.error.log
+StandardOutput=append:/home/schoolpilotorg/logs/worker.log
+StandardError=append:/home/schoolpilotorg/logs/worker.error.log
 
 [Install]
 WantedBy=multi-user.target

@@ -1,7 +1,7 @@
 # SchoolPilot crontab for the `schoolpilot` cPanel user.
 #
-# Install with:  crontab -u schoolpilot deploy/cpanel/cron/schoolpilot.cron
-# Verify with:   crontab -u schoolpilot -l
+# Install with:  crontab -u schoolpilotorg deploy/cpanel/cron/schoolpilot.cron
+# Verify with:   crontab -u schoolpilotorg -l
 #
 # You can also paste these into cPanel > Cron Jobs, but keeping them in the
 # repo means the next person to rebuild this box gets them.
@@ -18,7 +18,7 @@ PATH=/opt/cpanel/ea-php82/root/usr/bin:/usr/local/bin:/usr/bin:/bin
 # cbt:expire-attempts is the one that hurts if this is missing: it closes CBT
 # attempts whose time has run out. Without the scheduler an exam never ends on
 # its own, and the failure is invisible until a student's paper stays open.
-* * * * * cd /home/schoolpilot/current/backend && php artisan schedule:run >> /home/schoolpilot/logs/schedule.log 2>&1
+* * * * * cd /home/schoolpilotorg/current/backend && php artisan schedule:run >> /home/schoolpilotorg/logs/schedule.log 2>&1
 
 # --- Nightly database backup (LAUNCH.md §2) --------------------------------
 #
@@ -29,7 +29,7 @@ PATH=/opt/cpanel/ea-php82/root/usr/bin:/usr/local/bin:/usr/bin:/bin
 # 02:00 UTC = 03:00 WAT, per LAUNCH.md. RPO is 1 hour, which a nightly dump
 # alone does not meet — enable Postgres WAL archiving as well before the RPO
 # claim is true.
-0 2 * * * /home/schoolpilot/current/deploy/cpanel/backup-db.sh >> /home/schoolpilot/logs/backup.log 2>&1
+0 2 * * * /home/schoolpilotorg/current/deploy/cpanel/backup-db.sh >> /home/schoolpilotorg/logs/backup.log 2>&1
 
 # --- Log rotation guard ----------------------------------------------------
 #
@@ -37,4 +37,4 @@ PATH=/opt/cpanel/ea-php82/root/usr/bin:/usr/local/bin:/usr/bin:/bin
 # never rotates. On a school-hours traffic pattern that file reaches gigabytes
 # and fills the partition, which takes down Postgres before it takes down PHP.
 # Set LOG_CHANNEL=daily in .env as well; this is the cleanup for it.
-30 3 * * * find /home/schoolpilot/current/backend/storage/logs -name '*.log' -mtime +14 -delete
+30 3 * * * find /home/schoolpilotorg/current/backend/storage/logs -name '*.log' -mtime +14 -delete

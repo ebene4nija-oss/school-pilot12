@@ -24,7 +24,7 @@ Work through this file first, then that checklist.
       /api/  /storage/                                 everything else
              |                                               |
       PHP 8.2 (ea-php82)                          Node -> 127.0.0.1:3000
-   /home/schoolpilot/current/backend/public       Next.js standalone server
+   /home/schoolpilotorg/current/backend/public       Next.js standalone server
              |                                    (schoolpilot-web.service)
              |
    +---------+---------+          queue worker: schoolpilot-worker.service
@@ -76,9 +76,9 @@ error.
 Then create the directory layout:
 
 ```bash
-sudo -u schoolpilot mkdir -p /home/schoolpilot/{releases,shared/storage,logs,backups,uploads}
-sudo -u schoolpilot cp -r /path/to/repo/backend/storage/. /home/schoolpilot/shared/storage/
-sudo -u schoolpilot chmod -R 775 /home/schoolpilot/shared/storage
+sudo -u schoolpilotorg mkdir -p /home/schoolpilotorg/{releases,shared/storage,logs,backups,uploads}
+sudo -u schoolpilotorg cp -r /path/to/repo/backend/storage/. /home/schoolpilotorg/shared/storage/
+sudo -u schoolpilotorg chmod -R 775 /home/schoolpilotorg/shared/storage
 ```
 
 `shared/storage` holds generated report-card PDFs and ID-card runs. It lives
@@ -150,8 +150,8 @@ Point both the main domain and the wildcard at the release symlink, so a
 deploy never has to touch Apache:
 
 ```
-# /var/cpanel/userdata/schoolpilot/schoolpilot.org.ng
-#   documentroot: /home/schoolpilot/current/backend/public
+# /var/cpanel/userdata/schoolpilotorg/schoolpilot.org.ng
+#   documentroot: /home/schoolpilotorg/current/backend/public
 # ...and the same in the _SSL variant, and in both files for *.schoolpilot.org.ng
 ```
 
@@ -188,10 +188,10 @@ entire platform offline for every school at once.
 for tree in std ssl; do
   for dom in schoolpilot.org.ng "*.schoolpilot.org.ng"; do
     install -D -m 0644 apache/schoolpilot.conf \
-      "/etc/apache2/conf.d/userdata/$tree/2_4/schoolpilot/$dom/schoolpilot.conf"
+      "/etc/apache2/conf.d/userdata/$tree/2_4/schoolpilotorg/$dom/schoolpilot.conf"
   done
 done
-/scripts/ensure_vhost_includes --user=schoolpilot
+/scripts/ensure_vhost_includes --user=schoolpilotorg
 /scripts/rebuildhttpdconf && systemctl restart httpd
 ```
 
@@ -209,7 +209,7 @@ install -m 0644 systemd/*.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable schoolpilot-web schoolpilot-worker
 
-crontab -u schoolpilot cron/schoolpilot.cron
+crontab -u schoolpilotorg cron/schoolpilot.cron
 ```
 
 Both units matter more than they look:
@@ -223,10 +223,10 @@ Both units matter more than they look:
 ### 1.11 Environment file
 
 ```bash
-cp .env.production.example /home/schoolpilot/shared/backend.env
-chown schoolpilot:schoolpilot /home/schoolpilot/shared/backend.env
-chmod 600 /home/schoolpilot/shared/backend.env
-$EDITOR /home/schoolpilot/shared/backend.env
+cp .env.production.example /home/schoolpilotorg/shared/backend.env
+chown schoolpilotorg:schoolpilotorg /home/schoolpilotorg/shared/backend.env
+chmod 600 /home/schoolpilotorg/shared/backend.env
+$EDITOR /home/schoolpilotorg/shared/backend.env
 ```
 
 Read the `APP_KEY` comment in that file before filling it in. If this platform
@@ -246,7 +246,7 @@ columns unreadable permanently.
 scp dist/schoolpilot-<sha>.tar.gz schoolpilot@schoolpilot.org.ng:~/uploads/
 
 # the server, as root
-deploy/cpanel/deploy.sh /home/schoolpilot/uploads/schoolpilot-<sha>.tar.gz
+deploy/cpanel/deploy.sh /home/schoolpilotorg/uploads/schoolpilot-<sha>.tar.gz
 ```
 
 Builds happen on your machine, never on the server. `composer install` and
@@ -269,13 +269,13 @@ five releases stay on disk.
 ### Rollback
 
 ```bash
-ln -sfn $(ls -1dt /home/schoolpilot/releases/*/ | sed -n 2p) /home/schoolpilot/current
+ln -sfn $(ls -1dt /home/schoolpilotorg/releases/*/ | sed -n 2p) /home/schoolpilotorg/current
 systemctl restart schoolpilot-web schoolpilot-worker
 ```
 
 This does **not** undo migrations. If the bad release changed the schema in a
 way the previous one cannot read, restore the pre-deploy dump
-(`/home/schoolpilot/backups/`) as well.
+(`/home/schoolpilotorg/backups/`) as well.
 
 ---
 
@@ -283,7 +283,7 @@ way the previous one cannot read, restore the pre-deploy dump
 
 ```bash
 systemctl status schoolpilot-web schoolpilot-worker   # both active
-crontab -u schoolpilot -l                             # scheduler present
+crontab -u schoolpilotorg -l                             # scheduler present
 
 # Laravel liveness. /up, not /api/v1/health — see the note below.
 curl -sI https://schoolpilot.org.ng/up                    # 200, from Laravel
@@ -296,9 +296,9 @@ curl -sI https://<real-subdomain>.schoolpilot.org.ng/     # 200, valid cert
 curl -s  https://<real-subdomain>.schoolpilot.org.ng/api/v1/health
 
 # A queued job actually completes end to end.
-sudo -u schoolpilot php /home/schoolpilot/current/backend/artisan queue:work --once
+sudo -u schoolpilotorg php /home/schoolpilotorg/current/backend/artisan queue:work --once
 
-/home/schoolpilot/current/deploy/cpanel/backup-db.sh  # and restore it once
+/home/schoolpilotorg/current/deploy/cpanel/backup-db.sh  # and restore it once
 ```
 
 > **`/api/v1/health` returns 404 on the apex domain, and that is correct.**

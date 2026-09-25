@@ -3,7 +3,7 @@
 # Activate an uploaded release on the cPanel server. Run as root (it restarts
 # systemd units); the application files stay owned by the cPanel user.
 #
-#   sudo deploy/cpanel/deploy.sh /home/schoolpilot/uploads/schoolpilot-abc1234.tar.gz
+#   sudo deploy/cpanel/deploy.sh /home/schoolpilotorg/uploads/schoolpilot-abc1234.tar.gz
 #
 # Releases are unpacked beside each other and switched by moving one symlink,
 # so a bad release is undone by moving it back — see rollback at the bottom.
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 TARBALL="${1:?usage: deploy.sh /path/to/schoolpilot-<sha>.tar.gz}"
-USER=schoolpilot
+USER=schoolpilotorg
 HOME_DIR=/home/$USER
 RELEASES=$HOME_DIR/releases
 SHARED=$HOME_DIR/shared
@@ -76,7 +76,7 @@ sudo -u $USER "$PHP" "$TARGET/backend/artisan" storage:link
 
 say "Switching current -> $STAMP"
 # The atomic step. The Apache document root points at
-# /home/schoolpilot/current/backend/public, so nothing in the vhost changes
+# /home/schoolpilotorg/current/backend/public, so nothing in the vhost changes
 # between deploys and Apache needs no restart.
 ln -sfn "$TARGET" "$CURRENT"
 

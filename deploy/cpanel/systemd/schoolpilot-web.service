@@ -14,9 +14,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=schoolpilot
-Group=schoolpilot
-WorkingDirectory=/home/schoolpilot/current/web/.next/standalone
+User=schoolpilotorg
+Group=schoolpilotorg
+WorkingDirectory=/home/schoolpilotorg/current/web/.next/standalone
 
 # Loopback only. This server has no authentication of its own — every check
 # happens in Laravel — so it must be reachable solely through the Apache vhost
@@ -28,7 +28,7 @@ Environment=NODE_ENV=production
 
 # Public build-time config lives in the bundle already. Anything secret the
 # portal needs at runtime goes here, not in the repo.
-EnvironmentFile=-/home/schoolpilot/shared/web.env
+EnvironmentFile=-/home/schoolpilotorg/shared/web.env
 
 ExecStart=/usr/bin/node server.js
 
@@ -44,8 +44,8 @@ StartLimitIntervalSec=60
 NoNewPrivileges=true
 PrivateTmp=true
 
-StandardOutput=append:/home/schoolpilot/logs/web.log
-StandardError=append:/home/schoolpilot/logs/web.error.log
+StandardOutput=append:/home/schoolpilotorg/logs/web.log
+StandardError=append:/home/schoolpilotorg/logs/web.error.log
 
 [Install]
 WantedBy=multi-user.target

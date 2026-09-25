@@ -13,14 +13,14 @@
 set -euo pipefail
 
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-BACKUP_DIR=/home/schoolpilot/backups
+BACKUP_DIR=/home/schoolpilotorg/backups
 RETAIN_DAYS=14
 
 # Credentials come from the app's own .env so there is one place to rotate
 # them. `set -a` exports everything it reads.
 set -a
 # shellcheck disable=SC1091
-source /home/schoolpilot/shared/backend.env
+source /home/schoolpilotorg/shared/backend.env
 set +a
 
 mkdir -p "$BACKUP_DIR"
