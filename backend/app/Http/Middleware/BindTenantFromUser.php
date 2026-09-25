@@ -49,6 +49,15 @@ class BindTenantFromUser
                     // for that school and nothing leaks in from the others.
                     $this->tenant->setSchoolId($viewing);
                 } else {
+                    /*
+                     * Clear the host-resolved school before marking unscoped.
+                     * TenantResolutionMiddleware has already set one — an
+                     * operator signs in through the internal `admin` subdomain,
+                     * which is a real row in `schools` — and leaving it in place
+                     * makes the context say two contradictory things at once:
+                     * unscoped, yet inside a school.
+                     */
+                    $this->tenant->setSchoolId(null);
                     $this->tenant->markUnscoped();
                 }
             } elseif ($profile->school_id) {

@@ -32,6 +32,24 @@ abstract class Controller
     {
         $tenant = app(TenantContext::class);
 
+        /*
+         * An explicitly unscoped request has no acting school, whatever else is
+         * lying around on the context.
+         *
+         * This check is not redundant. TenantResolutionMiddleware runs before
+         * authentication and resolves a school from the host, and a platform
+         * operator signs in through one — the internal `admin` subdomain — so
+         * by the time BindTenantFromUser marks them unscoped there is already a
+         * school id set, and `markUnscoped()` does not clear it. Reading
+         * `hasSchool()` alone therefore reported an operator as being *inside*
+         * the school they merely signed in through: the portal greeted them
+         * with that school's dashboard and named it in the chrome, instead of
+         * their own console.
+         */
+        if ($tenant->isUnscoped()) {
+            return null;
+        }
+
         if ($tenant->hasSchool()) {
             return $tenant->schoolId();
         }

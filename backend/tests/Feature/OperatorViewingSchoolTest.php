@@ -181,4 +181,52 @@ class OperatorViewingSchoolTest extends TestCase
             ->assertOk()
             ->assertJsonPath('population.active', 3);
     }
+
+    /**
+     * Signing in through the internal `admin` subdomain must not put the
+     * operator *inside* that school.
+     *
+     * TenantResolutionMiddleware runs before authentication and resolves a
+     * school from the host, so by the time the operator is known there is
+     * already a school id on the context, and `markUnscoped()` does not clear
+     * it. The portal consequently greeted a platform operator with SchoolPilot
+     * HQ's dashboard and named that school in the chrome, instead of showing
+     * their own console.
+     */
+    public function test_signing_in_through_a_subdomain_does_not_put_an_operator_inside_it(): void
+    {
+        $hq = School::create([
+            'name' => 'SchoolPilot HQ', 'slug' => 'admin',
+            'subdomain' => 'admin', 'status' => 'active',
+        ]);
+        $this->enrol($hq, 2);
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->getJson('/api/v1/user', ['X-School-Subdomain' => 'admin'])
+            ->assertOk()
+            ->assertJsonPath('is_platform_operator', true)
+            // Not "SchoolPilot HQ".
+            ->assertJsonPath('school', null);
+    }
+
+    /**
+     * And the school dashboard says so rather than crashing or, worse,
+     * returning a tidy page of zeroes that reads as an empty school.
+     */
+    public function test_the_school_dashboard_refuses_an_operator_with_no_school_chosen(): void
+    {
+        $this->actingAs($this->operator, 'sanctum')
+            ->getJson('/api/v1/analytics/principal', ['X-School-Subdomain' => 'admin'])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Choose a school to see its dashboard. Platform-wide figures are on the operator console.');
+    }
+
+    /** The operator console still answers across every tenant. */
+    public function test_the_operator_console_answers_while_unscoped(): void
+    {
+        $this->actingAs($this->operator, 'sanctum')
+            ->getJson('/api/v1/platform/overview', ['X-School-Subdomain' => 'admin'])
+            ->assertOk()
+            ->assertJsonPath('students.active', 10);
+    }
 }

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import {
   Badge,
@@ -75,10 +76,13 @@ interface PendingComment {
 interface CurrentUser {
   name: string;
   email: string;
+  is_platform_operator?: boolean;
+  school?: { id: number; name: string } | null;
   user_profile?: { role?: string; school_id?: number | null } | null;
 }
 
 export default function SchoolDashboard() {
+  const router = useRouter();
   const [data, setData] = useState<PrincipalDashboard | null>(null);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pending, setPending] = useState<PendingComment[]>([]);
@@ -104,10 +108,24 @@ export default function SchoolDashboard() {
 
     (async () => {
       try {
-        const [dashboard, me] = await Promise.all([
-          fetchApi<PrincipalDashboard>('/analytics/principal'),
-          fetchApi<CurrentUser>('/user').catch(() => null),
-        ]);
+        /*
+         * Who is asking, before what to show them.
+         *
+         * A platform operator has no school, so this page cannot answer for
+         * them — the endpoint below refuses, by design. They belong on their
+         * own console. The proxy redirect normally catches this, but it reads
+         * the role cookie, and this does not depend on one being present.
+         */
+        const me = await fetchApi<CurrentUser>('/user').catch(() => null);
+
+        if (cancelled) return;
+
+        if (me?.is_platform_operator && !me.school) {
+          router.replace('/super-admin');
+          return;
+        }
+
+        const dashboard = await fetchApi<PrincipalDashboard>('/analytics/principal');
 
         if (cancelled) return;
 
@@ -129,7 +147,7 @@ export default function SchoolDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [loadQueue]);
+  }, [loadQueue, router]);
 
   async function review(id: number, action: 'approve' | 'edit' | 'reject', editedComment?: string) {
     setBusyId(id);

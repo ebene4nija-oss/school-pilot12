@@ -60,9 +60,25 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   /*
-   * Everything except Next's own assets and the API proxy. The proxy route
-   * returns a 401 as JSON rather than a redirect, because a fetch following a
-   * 302 to an HTML login page produces a confusing parse error at the caller.
+   * Everything except Next's own assets, the API proxy, and static files.
+   *
+   * The proxy route returns a 401 as JSON rather than a redirect, because a
+   * fetch following a 302 to an HTML login page produces a confusing parse
+   * error at the caller.
+   *
+   * The trailing extension group is what keeps `/brand/logo.png` and the
+   * generated `/icon.png` out of the guard. Without it every static file was
+   * redirected to /login, which is not merely a wasted hop: `next/image`
+   * fetches the source server-side and without cookies, so it received an HTML
+   * login page where a PNG should have been and answered 400 — "The requested
+   * resource isn't a valid image". The logo never rendered on any page, for
+   * anyone, signed in or not.
+   *
+   * These files are public by nature — a logo and a favicon are served to
+   * anyone who loads the sign-in page anyway — so exempting them gives nothing
+   * away.
    */
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/backend).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/backend|.*\\.(?:png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|webmanifest)$).*)',
+  ],
 };

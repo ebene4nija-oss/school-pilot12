@@ -30,6 +30,22 @@ class AnalyticsController extends Controller
     {
         $schoolId = $this->schoolId();
 
+        /*
+         * This is a school's dashboard, and a platform operator has no school.
+         *
+         * Answering anyway is what caused the 500: SchoolInsightsService
+         * type-hints `int $schoolId`, so a null arrived as a TypeError. Saying
+         * so plainly is better than either crashing or — worse — returning a
+         * tidy page of zeroes, which reads as a school that has enrolled nobody
+         * and billed nothing rather than as the wrong question.
+         */
+        if ($schoolId === null) {
+            return response()->json([
+                'message' => 'Choose a school to see its dashboard. Platform-wide figures are on the operator console.',
+                'operator_console' => '/api/v1/platform/overview',
+            ], 409);
+        }
+
         // Revenue & Financial Metrics
         $totalCollectedRevenue = Payment::where('school_id', $schoolId)->where('status', 'successful')->sum('amount');
         $totalInvoicedAmount = Invoice::where('school_id', $schoolId)->sum('total_amount');
