@@ -86,6 +86,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin'] },
       { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'] },
+      { href: '/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['school_admin'] },
       { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher'] },
       { href: '/bus-tracking', icon: '🚌', label: 'Transport', roles: ['school_admin', 'teacher'] },
       { href: '/health', icon: '🩺', label: 'Clinic log', roles: ['school_admin', 'nurse'] },
