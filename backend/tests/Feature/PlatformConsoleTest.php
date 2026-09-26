@@ -324,4 +324,148 @@ class PlatformConsoleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('schools.total', 0);
     }
+
+    // ------------------------------------------------------------ provisioning
+
+    private function provision(array $overrides = []): array
+    {
+        return array_merge([
+            'name' => 'Sunrise Academy',
+            'subdomain' => 'sunrise',
+            'email' => 'head@sunrise.test',
+            'admin_name' => 'Mrs Adeyemi',
+            'admin_email' => 'adeyemi@sunrise.test',
+        ], $overrides);
+    }
+
+    /**
+     * Onboarding, which nothing could do before: there was no endpoint at all,
+     * and the only school on the platform had been inserted by hand with SQL.
+     */
+    public function test_an_operator_can_onboard_a_school(): void
+    {
+        $response = $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision())
+            ->assertCreated()
+            ->assertJsonPath('school.subdomain', 'sunrise')
+            // Trial unless stated: a school being set up has not agreed a plan.
+            ->assertJsonPath('school.status', 'trial');
+
+        $this->assertDatabaseHas('schools', [
+            'subdomain' => 'sunrise',
+            'is_platform' => false,
+        ]);
+
+        // And it shows up as a tenant immediately.
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->getJson('/api/v1/platform/schools?search=sunrise')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1);
+
+        $this->assertNotEmpty($response->json('administrator.temporary_password'));
+    }
+
+    /**
+     * A school with nobody who can sign in is a row, not a tenant.
+     */
+    public function test_onboarding_creates_the_schools_first_administrator(): void
+    {
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision())
+            ->assertCreated()
+            ->assertJsonPath('administrator.email', 'adeyemi@sunrise.test');
+
+        $admin = User::where('email', 'adeyemi@sunrise.test')->firstOrFail();
+        $school = School::where('subdomain', 'sunrise')->firstOrFail();
+
+        $this->assertDatabaseHas('user_profiles', [
+            'user_id' => $admin->id,
+            'school_id' => $school->id,
+            'role' => 'school_admin',
+        ]);
+    }
+
+    /** That administrator can actually sign in to the school just created. */
+    public function test_the_new_administrator_can_sign_in(): void
+    {
+        $password = $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision())
+            ->assertCreated()
+            ->json('administrator.temporary_password');
+
+        $this->postJson('/api/v1/auth/login', [
+            'subdomain' => 'sunrise',
+            'email' => 'adeyemi@sunrise.test',
+            'password' => $password,
+        ], ['X-School-Subdomain' => 'sunrise'])->assertOk();
+    }
+
+    /**
+     * Handing a school the operator's own subdomain would take the console
+     * offline, and there would be no console left to undo it from.
+     */
+    public function test_reserved_subdomains_are_refused(): void
+    {
+        foreach (['admin', 'www', 'api', 'app'] as $reserved) {
+            $this->actingAs($this->superAdmin, 'sanctum')
+                ->postJson('/api/v1/platform/schools', $this->provision([
+                    'subdomain' => $reserved,
+                    'admin_email' => "admin@{$reserved}.test",
+                ]))
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('subdomain');
+        }
+    }
+
+    public function test_a_subdomain_must_be_a_valid_hostname_label(): void
+    {
+        foreach (['Sun Rise', 'sunrise_academy', '-sunrise', 'sunrise-', 'SUNRISE'] as $bad) {
+            $this->actingAs($this->superAdmin, 'sanctum')
+                ->postJson('/api/v1/platform/schools', $this->provision(['subdomain' => $bad]))
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('subdomain');
+        }
+    }
+
+    public function test_a_subdomain_cannot_be_taken_twice(): void
+    {
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision(['subdomain' => 'greenfield']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('subdomain');
+    }
+
+    /** Nothing half-created when the administrator's email is already taken. */
+    public function test_a_failed_provision_leaves_no_orphan_school(): void
+    {
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision([
+                'admin_email' => 'admin@greenfield.test',
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('admin_email');
+
+        $this->assertDatabaseMissing('schools', ['subdomain' => 'sunrise']);
+    }
+
+    public function test_provisioning_is_audited(): void
+    {
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision())
+            ->assertCreated();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'platform.school.provisioned',
+            'user_id' => $this->superAdmin->id,
+        ]);
+    }
+
+    public function test_a_school_admin_cannot_onboard_a_school(): void
+    {
+        $this->actingAs($this->schoolAdmin, 'sanctum')
+            ->postJson('/api/v1/platform/schools', $this->provision())
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('schools', ['subdomain' => 'sunrise']);
+    }
 }

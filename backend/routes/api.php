@@ -674,6 +674,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/school-migrations', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'queue']);
             Route::put('/platform/school-migrations/{id}', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'update']);
             Route::get('/platform/schools', [\App\Http\Controllers\Api\V1\PlatformController::class, 'schools']);
+            // Onboarding a school, which nothing could do before: the only
+            // tenant on the platform had been inserted by hand with SQL.
+            Route::post('/platform/schools', [\App\Http\Controllers\Api\V1\PlatformController::class, 'store']);
             Route::get('/platform/schools/{schoolId}', [\App\Http\Controllers\Api\V1\PlatformController::class, 'show']);
             Route::post('/platform/schools/{schoolId}/status', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setStatus']);
 

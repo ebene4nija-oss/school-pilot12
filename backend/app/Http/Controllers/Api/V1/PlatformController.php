@@ -9,10 +9,14 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\PasswordResetService;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 /**
  * The SchoolPilot operator's own console.
@@ -205,6 +209,136 @@ class PlatformController extends Controller
                     'total' => $schools->total(),
                 ],
             ]);
+        });
+    }
+
+    /**
+     * Onboard a school.
+     *
+     * There was no way to do this at all: no endpoint, no command, nothing. The
+     * only school on the platform had been inserted with raw SQL from the
+     * runbook, and the console told an operator "the first tenant appears here
+     * once it is created" while offering no means of creating one.
+     *
+     * A school and its first administrator are made together, in one
+     * transaction. A school with nobody who can sign in to it is not an
+     * onboarded school — it is a row — and leaving the operator to create the
+     * admin as a second step is how a half-provisioned tenant ends up sitting
+     * there looking finished.
+     */
+    public function store(Request $request, PasswordResetService $resets)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            /*
+             * The subdomain becomes a hostname and a tenant key, so it is
+             * constrained to what DNS allows and cannot collide with the
+             * platform's own names. `admin` is where the operator signs in;
+             * handing it to a school would take the console offline.
+             */
+            'subdomain' => [
+                'required', 'string', 'min:2', 'max:40',
+                'regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/',
+                'unique:schools,subdomain',
+                Rule::notIn(['admin', 'www', 'api', 'app', 'mail', 'ftp', 'cpanel', 'webmail', 'localhost']),
+            ],
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:32',
+            'address' => 'nullable|string|max:500',
+            'status' => 'nullable|in:active,trial',
+            'admin_name' => 'required|string|max:255',
+            'admin_email' => 'required|email|max:255|unique:users,email',
+        ], [
+            'subdomain.regex' => 'A subdomain may use lowercase letters, numbers and hyphens, and cannot start or end with a hyphen.',
+            'subdomain.not_in' => 'That subdomain is reserved by the platform.',
+        ]);
+
+        return $this->tenant->withoutScoping(function () use ($validated, $request, $resets) {
+            $result = DB::transaction(function () use ($validated, $request) {
+                $school = School::create([
+                    'name' => $validated['name'],
+                    'slug' => $validated['subdomain'],
+                    'subdomain' => $validated['subdomain'],
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
+                    'address' => $validated['address'] ?? null,
+                    'status' => $validated['status'] ?? 'trial',
+                    'is_platform' => false,
+                ]);
+
+                /*
+                 * A temporary password rather than a blank account. It is
+                 * returned once, to the operator, and never stored in the clear
+                 * — the school is expected to use the setup link, and this is
+                 * the fallback for the common case here of mail not being
+                 * configured yet.
+                 */
+                $temporaryPassword = bin2hex(random_bytes(12));
+
+                $admin = User::create([
+                    'name' => $validated['admin_name'],
+                    'email' => $validated['admin_email'],
+                    'password' => Hash::make($temporaryPassword),
+                ]);
+
+                $admin->userProfile()->create([
+                    'school_id' => $school->id,
+                    'role' => 'school_admin',
+                ]);
+
+                AuditLog::create([
+                    'school_id' => $school->id,
+                    'user_id' => $request->user()->id,
+                    'action' => 'platform.school.provisioned',
+                    'auditable_type' => School::class,
+                    'auditable_id' => $school->id,
+                    'new_values' => [
+                        'subdomain' => $school->subdomain,
+                        'status' => $school->status,
+                        'admin_email' => $admin->email,
+                    ],
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                ]);
+
+                return [$school, $admin, $temporaryPassword];
+            });
+
+            [$school, $admin, $temporaryPassword] = $result;
+
+            /*
+             * Try to send the school's administrator a setup link. Mail is not
+             * configured on every deployment, and a provisioned school must not
+             * be rolled back because a message could not be sent — so a failure
+             * here is reported alongside the temporary password rather than
+             * thrown.
+             */
+            $invited = false;
+
+            try {
+                $resets->sendSetupLink($admin, $school, true);
+                $invited = true;
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            return response()->json([
+                'message' => "{$school->name} is ready.",
+                'school' => [
+                    'id' => $school->id,
+                    'name' => $school->name,
+                    'subdomain' => $school->subdomain,
+                    'status' => $school->status,
+                    'sign_in_url' => "https://{$school->subdomain}.schoolpilot.org.ng/login",
+                ],
+                'administrator' => [
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    // Shown once. It is not retrievable afterwards.
+                    'temporary_password' => $temporaryPassword,
+                    'setup_email_sent' => $invited,
+                ],
+            ], 201);
         });
     }
 
