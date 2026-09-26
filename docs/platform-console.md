@@ -151,11 +151,25 @@ Below the AI settings, **Today's AI spend** lists each school's calls and cost t
 
 ### SMS
 
+Each school sends SMS from **its own account**, connected on that school's Notifications screen: either a phone-based SMS gateway (the school's own Android phone and SIM send the messages, so parents see the school's number) or a Termii account. Its key is stored encrypted in `school_sms_gateways` and never shown back. The platform key below is only the **fallback** for schools that have not connected one; leave it empty if SchoolPilot should never pay for a school's texts.
+
 | Setting | Type | Config path |
 |---|---|---|
-| SMS provider API key (Termii) | secret | `services.sms.api_key` |
-| SMS sender ID (≤ 11 characters, registered with the provider) | text | `services.sms.sender_id` |
+| Fallback SMS provider API key (Termii) | secret | `services.sms.api_key` |
+| Fallback SMS sender ID (≤ 11 characters, registered with the provider) | text | `services.sms.sender_id` |
 | Send password links by SMS too | on/off | `services.sms.password_links` |
+
+### Email
+
+Email goes out through one SMTP account for the whole platform, so one school's spam complaint damages every school's delivery. Each school therefore has a **daily email limit**; the Messaging page (`/super-admin/messaging`) shows what each school sent today and lets you change one school's limit or switch its email off. Password-reset and account-setup emails are never held back.
+
+| Setting | Type | Config path |
+|---|---|---|
+| Mail delivery (`smtp`, or `log` for testing only) | choice | `mail.default` |
+| SMTP server, port, connection security | text / number / choice | `mail.mailers.smtp.host`, `.port`, `.scheme` |
+| SMTP username and password | text / secret | `mail.mailers.smtp.username`, `.password` |
+| Send-from address and name | email / text | `mail.from.address`, `mail.from.name` |
+| Emails per school per day (0 = no limit) | number | `schoolpilot.email_daily_limit` |
 
 ### WhatsApp
 
@@ -179,7 +193,7 @@ The service-account file is checked on save: it must be JSON containing `client_
 |---|---|
 | AI stub mode (`services.anthropic.stub`) | Serves canned report-card remarks containing a real child's name, indistinguishable from genuine output. Not something to toggle from a browser. |
 | Payment gateway keys (Paystack, Flutterwave) | Per school, already encrypted in `school_payment_gateways`, and owned by the school whose account receives the money. Managed from that school's Fees & Finance screen. |
-| `APP_KEY`, database credentials, mail transport | Server-level; changing them from inside the app they run could lock the app out of itself. Stay in `backend.env`. |
+| `APP_KEY`, database credentials | Server-level; changing them from inside the app they run could lock the app out of itself. Stay in `backend.env`. |
 
 Any key not in this registry is refused with `422`.
 
@@ -190,6 +204,22 @@ Any key not in this registry is refused with `422`.
 Notices from SchoolPilot to **school administrators**: maintenance, releases, policy changes. Each has a title, a message, a kind (information or warning), an audience (every school or one school) and an end time. School admins see live ones at the top of their dashboard. Publishing and withdrawing are audited.
 
 They never go to parents, teachers or students. Those are the school's contacts, not SchoolPilot's; messaging them directly would make SchoolPilot the data controller for their details (NDPA, doc §12). A school that wants to pass a notice on uses its own Notifications screen. Not yet shown in the mobile app.
+
+---
+
+## 4b. AI remarks — `/super-admin/ai-remarks`
+
+How schools review AI report-card remark drafts, per school: drafts generated, approved as written, edited, rejected, still waiting (and the oldest wait), and the **rework rate** — the share of reviewed drafts a teacher changed or threw away. A high rate means the drafts are not saving teachers time; a long wait means nobody is reviewing them. Counts only: no remark text and no student names. Read-only — a remark is approved by a teacher, never from here. Reviews made before 26 Sep 2026 have no recorded outcome and are not split into edited / as written.
+
+## 4c. Backups & data requests — `/super-admin/compliance`
+
+- **Backups.** Read from what `deploy/cpanel/backup-db.sh` leaves on the server (`BACKUP_DIR`, `BACKUP_LOG`): healthy, overdue (no success in 26 hours), failing (an error after the last success), or not visible. Shows whether the last run was copied off the server (`BACKUP_S3_BUCKET`) and the encrypted files kept. The page never takes, restores or decrypts a backup.
+- **Restore tests.** Record each monthly restore test here (date, restored fine or not, notes). It goes in the audit log. The script cannot know a restore was tried.
+- **Data requests.** Data exports schools asked for (status, whether medical data was included, the requester's role) and parental-consent withdrawals per school. No child or parent names. There is no deletion-request workflow yet; the page says so.
+
+## 4d. Module switches — on School detail
+
+Per school, SchoolPilot switches CBT, virtual classes, transport, hostel, library and the clinic log on or off. A module that is off disappears from the school's menu and its API refuses requests (`403`, `module_disabled`). Unset means on. Audited as `platform.school.modules_changed`. AI as a whole stays on its own switch; within it, the school chooses which AI tools it uses on its **AI features** screen, and cannot turn AI back on once SchoolPilot has turned it off.
 
 ---
 
