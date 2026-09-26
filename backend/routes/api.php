@@ -753,6 +753,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             // Issues sellable stock with no gateway involved — for schools that
             // paid by bank transfer or arranged it directly with SchoolPilot.
             Route::post('/platform/result-pins/grant', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'grantBatch']);
+            // Per school: bought, paid, sold on, used, still in stock, owed.
+            Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);
         });
 
         Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin');
@@ -771,8 +773,6 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/library/books', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'books'])->middleware('role:super_admin,school_admin,teacher,student');
         Route::post('/library/books', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeBook'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/library/scan-barcode', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'scanBookBarcode'])->middleware('role:super_admin,school_admin,teacher,student');
-            // Per school: bought, paid, sold on, used, still in stock, owed.
-            Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);
 
         Route::get('/hostel/rooms', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'rooms'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/hostel/rooms', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeRoom'])->middleware('role:super_admin,school_admin');
