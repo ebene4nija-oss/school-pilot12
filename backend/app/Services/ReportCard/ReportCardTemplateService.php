@@ -336,6 +336,8 @@ HTML;
             $rows[] = [
                 'subject' => $score->subject->name ?? 'Subject',
                 'subject_code' => $score->subject->code ?? null,
+                // core | elective — lets a card group its subjects.
+                'category' => $score->subject->category ?? 'core',
                 'first_ca' => (float) $score->first_ca,
                 'second_ca' => (float) $score->second_ca,
                 'ca_total' => (float) $score->first_ca + (float) $score->second_ca,
@@ -362,6 +364,34 @@ HTML;
             ->keys()
             ->values();
         $overallPosition = $classTotals->search($student->id);
+
+        // The class's mean of each student's average, for "class average".
+        $classAverage = $classScores->count()
+            ? round($classScores->groupBy('student_id')->map(fn ($g) => $g->avg('total_score'))->avg(), 2)
+            : null;
+
+        // Best and weakest subject, for a card's "at a glance" panel.
+        $ranked = collect($rows)->sortByDesc('total')->values();
+        $best = $ranked->first();
+        $focus = $ranked->count() > 1 ? $ranked->last() : null;
+
+        // Subjects grouped by category, core first; empty groups left out.
+        $groups = collect([
+            'core' => 'Core subjects',
+            'elective' => 'Other subjects',
+        ])->map(fn ($name, $key) => [
+            'key' => $key,
+            'name' => $name,
+            'scores' => array_values(array_filter($rows, fn ($r) => ($key === 'core') === ($r['category'] === 'core'))),
+        ])->filter(fn ($g) => $g['scores'] !== [])->values()->all();
+
+        // "Next term begins": what the caller passed, else the school's next
+        // term by date, so a card does not need someone to type it in.
+        $nextTerm = $extra['next_term_begins'] ?? Term::withoutGlobalScopes()
+            ->where('school_id', $student->school_id)
+            ->where('start_date', '>', $term->end_date ?? $term->start_date)
+            ->orderBy('start_date')
+            ->value('start_date');
 
         $attendance = $this->attendanceSummary($student, $term);
 
@@ -399,22 +429,32 @@ HTML;
                 'photo_url' => $student->passport_photo_path,
                 'position' => $overallPosition === false ? null : $overallPosition + 1,
                 'class_size' => $classmateIds->count(),
+                // True only for first in class, so a card can say so.
+                'is_top' => $overallPosition === 0 && $scores->count() > 0,
             ],
             'term' => [
                 'name' => $term->name,
                 'starts_on' => $term->start_date,
                 'ends_on' => $term->end_date,
                 'session' => $term->session->name ?? '',
-                'next_term_begins' => $extra['next_term_begins'] ?? null,
+                'next_term_begins' => $nextTerm ? substr((string) $nextTerm, 0, 10) : null,
             ],
             'summary' => [
                 'subjects_count' => $scores->count(),
                 'total_score' => round((float) $total, 2),
                 'average' => $average,
                 'overall_grade' => \App\Models\GradingScale::bandOf($bands, (float) $average)['grade'],
+                'overall_remark' => \App\Models\GradingScale::bandOf($bands, (float) $average)['remark'],
+                'class_average' => $classAverage,
+                'class_average_grade' => $classAverage !== null ? \App\Models\GradingScale::bandOf($bands, (float) $classAverage)['grade'] : null,
+                'best_subject' => $best['subject'] ?? null,
+                'best_score' => $best['total'] ?? null,
+                'focus_subject' => $focus['subject'] ?? null,
+                'focus_score' => $focus['total'] ?? null,
             ],
             'attendance' => $attendance,
             'scores' => $rows,
+            'score_groups' => $groups,
             'comments' => [
                 'class_teacher' => $extra['class_teacher_comment'] ?? null,
                 'principal' => $extra['principal_comment'] ?? null,
@@ -472,7 +512,7 @@ HTML;
      */
     public function sampleContext(): array
     {
-        return [
+        $context = [
             'school' => [
                 'name' => 'Graceland College',
                 'address' => '14 Awolowo Way, Ikeja, Lagos',
@@ -490,6 +530,7 @@ HTML;
                 'photo_url' => '',
                 'position' => 3,
                 'class_size' => 42,
+                'is_top' => false,
             ],
             'term' => [
                 'name' => 'First Term',
@@ -503,13 +544,20 @@ HTML;
                 'total_score' => 302.0,
                 'average' => 75.5,
                 'overall_grade' => 'A1',
+                'overall_remark' => 'Excellent',
+                'class_average' => 62.6,
+                'class_average_grade' => 'C4',
+                'best_subject' => 'Mathematics',
+                'best_score' => 84.0,
+                'focus_subject' => 'Civic Education',
+                'focus_score' => 67.0,
             ],
             'attendance' => ['present' => 58, 'absent' => 4, 'total' => 62, 'percentage' => 93.5],
             'scores' => [
-                ['subject' => 'Mathematics', 'subject_code' => 'MTH', 'first_ca' => 17.0, 'second_ca' => 16.0, 'ca_total' => 33.0, 'exam' => 51.0, 'total' => 84.0, 'grade' => 'A1', 'position' => 2, 'class_average' => 61.4, 'class_highest' => 91.0, 'class_lowest' => 28.0, 'teacher_comment' => 'Strong grasp of algebraic manipulation.'],
-                ['subject' => 'English Language', 'subject_code' => 'ENG', 'first_ca' => 15.0, 'second_ca' => 14.0, 'ca_total' => 29.0, 'exam' => 44.0, 'total' => 73.0, 'grade' => 'B2', 'position' => 6, 'class_average' => 64.2, 'class_highest' => 88.0, 'class_lowest' => 35.0, 'teacher_comment' => 'Comprehension is solid; work on essay structure.'],
-                ['subject' => 'Basic Science', 'subject_code' => 'BSC', 'first_ca' => 18.0, 'second_ca' => 17.0, 'ca_total' => 35.0, 'exam' => 43.0, 'total' => 78.0, 'grade' => 'A1', 'position' => 1, 'class_average' => 58.9, 'class_highest' => 78.0, 'class_lowest' => 22.0, 'teacher_comment' => null],
-                ['subject' => 'Civic Education', 'subject_code' => 'CIV', 'first_ca' => 14.0, 'second_ca' => 13.0, 'ca_total' => 27.0, 'exam' => 40.0, 'total' => 67.0, 'grade' => 'B3', 'position' => 9, 'class_average' => 66.1, 'class_highest' => 85.0, 'class_lowest' => 41.0, 'teacher_comment' => null],
+                ['subject' => 'Mathematics', 'subject_code' => 'MTH', 'category' => 'core', 'first_ca' => 17.0, 'second_ca' => 16.0, 'ca_total' => 33.0, 'exam' => 51.0, 'total' => 84.0, 'grade' => 'A1', 'position' => 2, 'class_average' => 61.4, 'class_highest' => 91.0, 'class_lowest' => 28.0, 'teacher_comment' => 'Strong grasp of algebraic manipulation.'],
+                ['subject' => 'English Language', 'subject_code' => 'ENG', 'category' => 'core', 'first_ca' => 15.0, 'second_ca' => 14.0, 'ca_total' => 29.0, 'exam' => 44.0, 'total' => 73.0, 'grade' => 'B2', 'position' => 6, 'class_average' => 64.2, 'class_highest' => 88.0, 'class_lowest' => 35.0, 'teacher_comment' => 'Comprehension is solid; work on essay structure.'],
+                ['subject' => 'Basic Science', 'subject_code' => 'BSC', 'category' => 'core', 'first_ca' => 18.0, 'second_ca' => 17.0, 'ca_total' => 35.0, 'exam' => 43.0, 'total' => 78.0, 'grade' => 'A1', 'position' => 1, 'class_average' => 58.9, 'class_highest' => 78.0, 'class_lowest' => 22.0, 'teacher_comment' => null],
+                ['subject' => 'Civic Education', 'subject_code' => 'CIV', 'category' => 'elective', 'first_ca' => 14.0, 'second_ca' => 13.0, 'ca_total' => 27.0, 'exam' => 40.0, 'total' => 67.0, 'grade' => 'B3', 'position' => 9, 'class_average' => 66.1, 'class_highest' => 85.0, 'class_lowest' => 41.0, 'teacher_comment' => null],
             ],
             'comments' => [
                 'class_teacher' => 'A conscientious student who contributes well in class.',
@@ -528,6 +576,15 @@ HTML;
             ],
             'generated_at' => '2026-12-12',
         ];
+
+        $context['score_groups'] = collect(['core' => 'Core subjects', 'elective' => 'Other subjects'])
+            ->map(fn ($name, $key) => [
+                'key' => $key,
+                'name' => $name,
+                'scores' => array_values(array_filter($context['scores'], fn ($r) => ($key === 'core') === ($r['category'] === 'core'))),
+            ])->filter(fn ($g) => $g['scores'] !== [])->values()->all();
+
+        return $context;
     }
 
     // ------------------------------------------------------------------

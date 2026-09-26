@@ -1,0 +1,189 @@
+<div class="sheet">
+
+  {{! ============================== MASTHEAD ============================== }}
+  <table class="mast">
+    <tr>
+      <td class="mast-crest">
+        {{#if school.logo_url}}
+          <img class="crest-img" src="{{ school.logo_url }}" alt="{{ school.name }} crest">
+        {{else}}
+          <table class="crest"><tr><td>{{ school.name | initials }}</td></tr></table>
+        {{/if}}
+      </td>
+      <td class="mast-name">
+        <h1>{{ school.name | upper }}</h1>
+        <div class="contact">
+          {{ school.address }}{{#if school.phone}} &nbsp;|&nbsp; {{ school.phone }}{{/if}}{{#if school.email}} &nbsp;|&nbsp; {{ school.email }}{{/if}}
+        </div>
+      </td>
+      <td class="mast-term">
+        <span class="term-pill">{{ term.name | upper }} REPORT</span>
+        <div class="session">{{ term.session }} SESSION</div>
+      </td>
+    </tr>
+  </table>
+
+  {{! ============================ STUDENT CARD ============================ }}
+  <table class="student">
+    <tr>
+      <td class="photo-cell">
+        {{#if student.photo_url}}
+          <img class="photo-img" src="{{ student.photo_url }}" alt="Photo of {{ student.name }}">
+        {{else}}
+          <table class="photo"><tr><td>{{ student.name | initials }}</td></tr></table>
+        {{/if}}
+      </td>
+      <td>
+        <div class="sname">{{ student.name | upper }}</div>
+        <div class="chips">
+          <span class="chip">{{ student.class | upper }}{{#if student.arm}} {{ student.arm | upper }}{{/if}}</span>
+          <span class="chip">REG: {{ student.admission_number }}</span>
+          <span class="chip">CLASS SIZE: {{ student.class_size }}</span>
+          {{#if attendance.total}}<span class="chip">ATTENDANCE: {{ attendance.present }}/{{ attendance.total }} ({{ attendance.percentage | number:0 }}%)</span>{{/if}}
+          {{#if student.is_top}}
+            <span class="chip gold">&#9733; CLASS CHAMPION &mdash; 1ST POSITION</span>
+          {{else}}
+            {{#if student.position}}<span class="chip">POSITION: {{ student.position | ordinal }} OF {{ student.class_size }}</span>{{/if}}
+          {{/if}}
+        </div>
+      </td>
+      {{#if term.next_term_begins}}
+      <td class="next">
+        NEXT TERM BEGINS
+        <b>{{ term.next_term_begins | date:"j F, Y" | upper }}</b>
+      </td>
+      {{/if}}
+    </tr>
+  </table>
+
+  {{! ============================== SUBJECTS ============================== }}
+  <div class="sec">
+    <h2>Subject Scores <span class="kicker">ACADEMIC PERFORMANCE</span></h2>
+  </div>
+  <table class="scores">
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th class="subj">SUBJECT</th>
+        <th>1ST CA</th>
+        <th>2ND CA</th>
+        <th>EXAM</th>
+        <th>TOTAL</th>
+        <th>CLASS AVG</th>
+        <th>HIGHEST</th>
+        <th>POS.</th>
+        <th>GRADE</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each score_groups}}
+        <tr class="group"><td colspan="10">{{ this.name | upper }}</td></tr>
+        {{#each this.scores}}
+          <tr>
+            <td class="num">{{@number}}</td>
+            <td class="subj">
+              {{ this.subject }}
+              {{#if this.teacher_comment}}<div class="remark">{{ this.teacher_comment }}</div>{{/if}}
+            </td>
+            <td>{{ this.first_ca | number:0 }}</td>
+            <td>{{ this.second_ca | number:0 }}</td>
+            <td>{{ this.exam | number:0 }}</td>
+            <td class="total {{ this.total | score_band }}">{{ this.total | number:1 }}</td>
+            <td>{{ this.class_average | number:1 | default:"—" }}</td>
+            <td>{{ this.class_highest | number:0 | default:"—" }}</td>
+            <td>{{ this.position | ordinal | default:"—" }}</td>
+            <td><span class="gp {{ this.grade | grade_key }}">{{ this.grade }}</span></td>
+          </tr>
+        {{/each}}
+      {{/each}}
+      {{#unless score_groups}}
+        <tr><td colspan="10" class="empty">No scores have been recorded for this term yet.</td></tr>
+      {{/unless}}
+      <tr class="avg">
+        <td></td>
+        <td class="subj">TERM AVERAGE</td>
+        <td colspan="3">{{#if summary.class_average}}Class avg: {{ summary.class_average | number:1 }}%{{/if}}</td>
+        <td>{{ summary.average | number:1 }}%</td>
+        <td colspan="3">Total: {{ summary.total_score | number:1 }}</td>
+        <td><span class="gp {{ summary.overall_grade | grade_key }}">{{ summary.overall_grade }}</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  {{! ====================== STANDARDS + GRADE KEY ======================= }}
+  {{#if traits}}
+  <table class="twocol">
+    <tr>
+      <td class="left">
+        <div class="sec">
+          <h2>Standards &amp; Domains <span class="kicker">CHARACTER &amp; SKILLS</span></h2>
+        </div>
+        <table class="std">
+          {{#each traits}}
+            <tr><td>{{ this.name }}</td><td class="std-rating"><span class="rating-pill">{{ this.rating }} / 5</span></td></tr>
+          {{/each}}
+        </table>
+        <div class="rate">5 = OUTSTANDING</div>
+      </td>
+      <td class="right">
+        <div class="sec">
+          <h2>Key to Grades <span class="kicker">GRADING SYSTEM</span></h2>
+        </div>
+        <div class="keys">
+          {{#each grading_scale}}
+            <span class="kc {{ this.grade | grade_key }}">{{ this.grade }} &nbsp;{{ this.range }}{{#if this.remark}} &nbsp;{{ this.remark | upper }}{{/if}}</span>
+          {{/each}}
+        </div>
+      </td>
+    </tr>
+  </table>
+  {{else}}
+  <div class="sec">
+    <h2>Key to Grades <span class="kicker">GRADING SYSTEM</span></h2>
+  </div>
+  <div class="keys">
+    {{#each grading_scale}}
+      <span class="kc {{ this.grade | grade_key }}">{{ this.grade }} &nbsp;{{ this.range }}{{#if this.remark}} &nbsp;{{ this.remark | upper }}{{/if}}</span>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{! ======================= COMMENTS + SIGNATURES ======================== }}
+  <table class="signrow">
+    <tr>
+      <td class="sig">
+        <div class="lbl">FORM TEACHER'S COMMENT</div>
+        <div class="write">{{ comments.class_teacher | default:" " }}</div>
+        <div class="who">FORM TEACHER{{#if staff.form_teacher}} &mdash; {{ staff.form_teacher | upper }}{{/if}}</div>
+      </td>
+      <td class="sig">
+        <div class="lbl">PRINCIPAL'S COMMENT</div>
+        <div class="write">{{ comments.principal | default:" " }}</div>
+        <div class="who">PRINCIPAL</div>
+      </td>
+      <td class="stamp-cell"><table class="stamp"><tr><td>OFFICIAL<br>SCHOOL<br>STAMP</td></tr></table></td>
+    </tr>
+  </table>
+
+  {{! ============================ VERIFICATION ============================ }}
+  <table class="verify">
+    <tr>
+      {{#if verification.qr_code_url}}
+      <td class="qr"><img src="{{ verification.qr_code_url }}" alt="Result verification QR code"></td>
+      {{/if}}
+      <td class="vt">
+        <b>SCAN TO VERIFY THIS RESULT</b><br>
+        Verification code: <b>{{ verification.token }}</b> &bull; Issued {{ generated_at | date:"j F Y" }} &bull; Any alteration invalidates this document.<br>
+        <span class="url">{{ verification.verify_url }}</span>
+      </td>
+    </tr>
+  </table>
+
+  <table class="foot">
+    <tr>
+      <td>{{ school.name | upper }}</td>
+      <td class="r">{{ term.name | upper }} REPORT &bull; {{ term.session }}</td>
+    </tr>
+  </table>
+
+</div>

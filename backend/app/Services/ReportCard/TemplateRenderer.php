@@ -87,7 +87,7 @@ class TemplateRenderer
     /** Every filter the dialect understands. */
     private const FILTERS = [
         'naira', 'number', 'upper', 'lower', 'title', 'date', 'percent',
-        'default', 'ordinal', 'initials', 'trim', 'grade_colour',
+        'default', 'ordinal', 'initials', 'trim', 'grade_colour', 'grade_key', 'score_band',
     ];
 
     // ------------------------------------------------------------------
@@ -458,6 +458,8 @@ class TemplateRenderer
             'date' => $this->formatDate($value, $arg ?: 'j M Y'),
             'default' => ($value === null || $value === '' || $value === []) ? ($arg ?? '') : $value,
             'grade_colour' => $this->gradeColour((string) $value),
+            'grade_key' => $this->gradeKey((string) $value),
+            'score_band' => $this->scoreBand($value),
             default => $value,
         };
     }
@@ -507,6 +509,35 @@ class TemplateRenderer
      * A class name, not a colour value — the template's own CSS decides what
      * an A1 looks like. Keeps presentation in the school's stylesheet.
      */
+    /**
+     * A class name for one exact grade: `A` → `gk-A`, `B+` → `gk-Bplus`,
+     * `C4` → `gk-C4`. For schools whose scale gives each grade its own colour,
+     * which `grade_colour` cannot do: it groups by first letter, so B+ and B
+     * (or D and E) share one.
+     */
+    private function gradeKey(string $grade): string
+    {
+        $key = str_replace(['+', '-'], ['plus', 'minus'], strtoupper(trim($grade)));
+        $key = preg_replace('/[^A-Z0-9a-z]/', '', $key);
+
+        return $key === '' ? 'gk-none' : 'gk-'.$key;
+    }
+
+    /**
+     * A class name for a mark's band of ten: 94 → `sb-90`, 81 → `sb-80`, down
+     * to `sb-below40`. For shading score cells by range.
+     */
+    private function scoreBand($value): string
+    {
+        if (! is_numeric($value)) {
+            return 'sb-none';
+        }
+
+        $band = (int) (floor(((float) $value) / 10) * 10);
+
+        return $band >= 40 ? 'sb-'.min($band, 90) : 'sb-below40';
+    }
+
     private function gradeColour(string $grade): string
     {
         return match (strtoupper(substr($grade, 0, 1))) {

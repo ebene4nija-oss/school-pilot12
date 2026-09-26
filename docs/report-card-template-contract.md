@@ -112,6 +112,8 @@ Chain with `|`. Arguments follow a colon and may be quoted.
 | `default:"…"` | `{{ nickname \| default:"—" }}` | fallback when null/empty |
 | `trim` | `{{ note \| trim }}` | |
 | `grade_colour` | `<td class="{{ this.grade \| grade_colour }}">` | `grade-excellent`, `grade-very-good`, `grade-credit`, `grade-pass`, `grade-fail` — a class name, so *your* CSS decides what an A1 looks like |
+| `grade_key` | `<span class="{{ this.grade \| grade_key }}">` | one class per exact grade: `gk-A`, `gk-Bplus` (B+), `gk-C4`, `gk-none` — for scales where B+ and B, or D and E, need different colours |
+| `score_band` | `<td class="{{ this.total \| score_band }}">` | the mark's band of ten: `sb-90`, `sb-80` … `sb-40`, `sb-below40`, `sb-none` — for shading score cells |
 
 Date formats are PHP `date()` format characters.
 
@@ -164,23 +166,32 @@ else.
 school.name, .address, .phone, .email, .logo_url, .subdomain
 
 student.name, .admission_number, .class, .arm, .gender, .photo_url,
-        .position, .class_size
+        .position, .class_size, .is_top (first in class)
 
-term.name, .starts_on, .ends_on, .session, .next_term_begins
+term.name, .starts_on, .ends_on, .session,
+     .next_term_begins (the school's next term's start date, when one exists)
 
-summary.subjects_count, .total_score, .average, .overall_grade
+summary.subjects_count, .total_score, .average, .overall_grade, .overall_remark,
+        .class_average, .class_average_grade,
+        .best_subject, .best_score, .focus_subject, .focus_score
 
 attendance.present, .absent, .total, .percentage
 
-scores[]  .subject, .subject_code, .first_ca, .second_ca, .ca_total, .exam,
-          .total, .grade, .position, .class_average, .class_highest,
-          .class_lowest, .teacher_comment
+scores[]  .subject, .subject_code, .category (core | elective), .first_ca,
+          .second_ca, .ca_total, .exam, .total, .grade, .position,
+          .class_average, .class_highest, .class_lowest, .teacher_comment
+
+score_groups[]  .key (core | elective), .name, .scores[] (as above) —
+                the same rows grouped, core first, empty groups left out
+
+staff.form_teacher
 
 comments.class_teacher, .principal
 
 traits[]  .name, .rating
 
-grading_scale[]  .grade, .range, .remark
+grading_scale[]  .grade, .range, .remark — the school's own scale for the
+                 pupil's class level (WAEC A1–F9 when none is set)
 
 verification.token, .verify_url, .qr_code_url
 
