@@ -670,6 +670,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
              * school is asking for help.
              */
             Route::get('/platform/overview', [\App\Http\Controllers\Api\V1\PlatformController::class, 'overview']);
+
+            /*
+             * Platform settings and AI configuration (doc §5). Integration keys,
+             * the AI spend cap and model choice used to be editable only over
+             * SSH in backend.env. Secrets are write-only through these routes.
+             */
+            Route::get('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'index']);
+            Route::put('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'update']);
+            Route::get('/platform/ai-usage', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'aiUsage']);
+            Route::post('/platform/schools/{schoolId}/ai', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'setSchoolAi']);
             // The migration queue an operator actually works, across schools.
             Route::get('/platform/school-migrations', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'queue']);
             Route::put('/platform/school-migrations/{id}', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'update']);

@@ -38,6 +38,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
       { href: '/super-admin', icon: '🛡️', label: 'Operator console', roles: ['super_admin'], className: 'font-semibold' },
+      { href: '/super-admin/settings', icon: '🔧', label: 'Platform settings', roles: ['super_admin'] },
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },
     ],
   },
@@ -56,14 +57,14 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
       { href: '/results', icon: '📝', label: 'Results & broadsheet', roles: ['school_admin', 'teacher'] },
       { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'] },
-      { href: '/live-class', icon: '🎥', label: 'Virtual classes' },
+      { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'] },
     ],
   },
   {
     heading: 'Operations',
     items: [
       { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin'] },
-      { href: '/library', icon: '📚', label: 'Library' },
+      { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'] },
       { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher'] },
       { href: '/bus-tracking', icon: '🚌', label: 'Transport', roles: ['school_admin', 'teacher'] },
       { href: '/health', icon: '🩺', label: 'Clinic log', roles: ['school_admin'] },
@@ -132,6 +133,19 @@ export default function Sidebar() {
 
   const inspecting = me?.is_platform_operator && me.school !== null;
 
+  /*
+   * The one link that owns this page: the longest href the path sits under.
+   * A plain prefix test lit up several at once — /super-admin/settings is under
+   * /super-admin — and "/" is a prefix of every route, so it matches only
+   * exactly.
+   */
+  const activeHref = SECTIONS.flatMap((section) => section.items)
+    .map((item) => item.href)
+    .filter((href) =>
+      href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`),
+    )
+    .sort((a, b) => b.length - a.length)[0];
+
   return (
     <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between bg-brand p-4 text-white/75">
       <div>
@@ -197,9 +211,7 @@ export default function Sidebar() {
                   </p>
                 )}
                 {items.map((item) => {
-                  // Exact match for the dashboard — "/" is a prefix of every route.
-                  const active =
-                    item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                  const active = item.href === activeHref;
 
                   return (
                     <Link

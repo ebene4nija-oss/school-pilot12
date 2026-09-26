@@ -36,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CbtExam::class, CbtExamPolicy::class);
         Gate::policy(CbtAttempt::class, CbtAttemptPolicy::class);
 
+        // Keys and settings managed from the operator console, laid over the
+        // config paths the services already read. Unset keys keep their
+        // backend.env values.
+        \App\Support\PlatformSettings::apply();
+
         $this->configureRateLimiting();
     }
 

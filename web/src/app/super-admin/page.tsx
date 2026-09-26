@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { viewSchool } from '@/app/actions/auth';
 import { fetchApi } from '@/lib/api';
@@ -11,6 +12,7 @@ import {
   Cell,
   Empty,
   ErrorNote,
+  Field,
   Loading,
   PageShell,
   StatTile,
@@ -60,6 +62,37 @@ interface TenantRow {
   ai_spend_naira_this_month: number;
 }
 
+interface Provisioned {
+  message: string;
+  school: { id: number; name: string; subdomain: string; status: string; sign_in_url: string };
+  administrator: {
+    name: string;
+    email: string;
+    temporary_password: string;
+    setup_email_sent: boolean;
+  };
+}
+
+const EMPTY_PROVISION = {
+  name: '',
+  subdomain: '',
+  email: '',
+  phone: '',
+  status: 'trial',
+  admin_name: '',
+  admin_email: '',
+};
+
+/** A school's name as a hostname label: "St. Mary's College" -> "st-marys-college". */
+function suggestSubdomain(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['\u2019]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
 const STATUS_TONE = {
   active: 'green',
   trial: 'blue',
@@ -74,6 +107,16 @@ export default function SuperAdminConsole() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+
+  const [showProvision, setShowProvision] = useState(false);
+  const [provision, setProvision] = useState(EMPTY_PROVISION);
+  // Whether the operator has typed their own subdomain; until then it follows
+  // the school's name.
+  const [subdomainEdited, setSubdomainEdited] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionErrors, setProvisionErrors] = useState<Record<string, string[]>>({});
+  const [provisioned, setProvisioned] = useState<Provisioned | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadSchools = useCallback(async (term: string) => {
     const query = term.trim() ? `?search=${encodeURIComponent(term.trim())}` : '';
@@ -132,6 +175,87 @@ export default function SuperAdminConsole() {
     }
   }
 
+  async function refresh() {
+    const [stats] = await Promise.all([fetchApi<Overview>('/platform/overview'), loadSchools(search)]);
+    setOverview(stats);
+  }
+
+  async function submitProvision(e: React.FormEvent) {
+    e.preventDefault();
+    setProvisioning(true);
+    setProvisionErrors({});
+    setError(null);
+
+    try {
+      const res = await fetchApi<Provisioned>('/platform/schools', {
+        method: 'POST',
+        body: JSON.stringify({ ...provision, phone: provision.phone.trim() || null }),
+      });
+
+      setProvisioned(res);
+      setShowProvision(false);
+      setProvision(EMPTY_PROVISION);
+      setSubdomainEdited(false);
+      await refresh();
+    } catch (err) {
+      // Field errors go beside their fields; anything else goes on top.
+      const payload = (err as { payload?: { errors?: Record<string, string[]> } }).payload;
+
+      if (payload?.errors) {
+        setProvisionErrors(payload.errors);
+      } else {
+        setError(err instanceof Error ? err.message : 'That school could not be created.');
+      }
+    } finally {
+      setProvisioning(false);
+    }
+  }
+
+  async function copyCredentials() {
+    if (!provisioned) return;
+
+    const text = [
+      provisioned.school.name,
+      `Sign in: ${provisioned.school.sign_in_url}`,
+      `School code: ${provisioned.school.subdomain}`,
+      `Email: ${provisioned.administrator.email}`,
+      `Temporary password: ${provisioned.administrator.temporary_password}`,
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked; the details are on screen to copy by hand.
+    }
+  }
+
+  async function toggleAi(school: TenantRow) {
+    setBusyId(school.id);
+    setError(null);
+
+    try {
+      await fetchApi(`/platform/schools/${school.id}/ai`, {
+        method: 'POST',
+        body: JSON.stringify({ enabled: !school.ai_enabled }),
+      });
+
+      setSchools((prev) =>
+        prev.map((row) => (row.id === school.id ? { ...row, ai_enabled: !school.ai_enabled } : row)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That change could not be saved.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const fieldError = (name: string) =>
+    provisionErrors[name]?.[0] ? (
+      <span className="mt-1 block text-xs text-negative">{provisionErrors[name][0]}</span>
+    ) : null;
+
   async function setStatus(school: TenantRow, status: TenantRow['status']) {
     setBusyId(school.id);
     setError(null);
@@ -154,6 +278,22 @@ export default function SuperAdminConsole() {
     <PageShell
       title="Operator console"
       subtitle="Every school on the platform, platform AI spend, and tenant status."
+      actions={
+        <div className="flex gap-2">
+          <Link href="/super-admin/settings">
+            <Button variant="secondary">Platform settings</Button>
+          </Link>
+          <Button
+            variant="accent"
+            onClick={() => {
+              setShowProvision((v) => !v);
+              setProvisioned(null);
+            }}
+          >
+            {showProvision ? 'Cancel' : 'New school'}
+          </Button>
+        </div>
+      }
     >
       <ErrorNote message={error} />
 
@@ -195,6 +335,152 @@ export default function SuperAdminConsole() {
                 hint={`${overview.ai_spend_this_month.calls.toLocaleString('en-NG')} call(s) since ${overview.ai_spend_this_month.since}`}
               />
             </div>
+          )}
+
+          {provisioned && (
+            <Card
+              title={`${provisioned.school.name} is ready`}
+              description="Send these to the school's administrator. The temporary password is shown only now and cannot be retrieved later."
+              className="ring-2 ring-accent"
+            >
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-ink-faint">Sign-in address</dt>
+                  <dd className="font-medium text-brand">{provisioned.school.sign_in_url}</dd>
+                </div>
+                <div>
+                  <dt className="text-ink-faint">School code</dt>
+                  <dd className="font-mono">{provisioned.school.subdomain}</dd>
+                </div>
+                <div>
+                  <dt className="text-ink-faint">Administrator</dt>
+                  <dd>
+                    {provisioned.administrator.name} · {provisioned.administrator.email}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ink-faint">Temporary password</dt>
+                  <dd className="font-mono text-base">{provisioned.administrator.temporary_password}</dd>
+                </div>
+              </dl>
+
+              <p className="mt-4 text-xs text-ink-muted">
+                {provisioned.administrator.setup_email_sent
+                  ? 'A setup link was also emailed to the administrator.'
+                  : 'No setup email was sent because mail is not configured yet. Send these details yourself.'}
+              </p>
+
+              <div className="mt-4 flex gap-2">
+                <Button onClick={copyCredentials}>{copied ? 'Copied' : 'Copy details'}</Button>
+                <Button variant="secondary" onClick={() => setProvisioned(null)}>
+                  Done
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {showProvision && (
+            <Card
+              title="New school"
+              description="Creates the school and its first administrator together. It starts on trial unless you say otherwise."
+            >
+              <form onSubmit={submitProvision} className="grid gap-4 sm:grid-cols-2">
+                <Field label="School name">
+                  <input
+                    required
+                    value={provision.name}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setProvision((p) => ({
+                        ...p,
+                        name,
+                        subdomain: subdomainEdited ? p.subdomain : suggestSubdomain(name),
+                      }));
+                    }}
+                    className={inputClass}
+                    placeholder="e.g. Sunrise Academy"
+                  />
+                  {fieldError('name')}
+                </Field>
+
+                <Field label="School code (subdomain)">
+                  <div className="flex items-center">
+                    <input
+                      required
+                      value={provision.subdomain}
+                      onChange={(e) => {
+                        setSubdomainEdited(true);
+                        setProvision((p) => ({ ...p, subdomain: e.target.value.toLowerCase() }));
+                      }}
+                      className={`${inputClass} rounded-r-none`}
+                      placeholder="sunrise"
+                    />
+                    <span className="rounded-r-lg border border-l-0 border-line bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
+                      .schoolpilot.org.ng
+                    </span>
+                  </div>
+                  {fieldError('subdomain')}
+                </Field>
+
+                <Field label="School email">
+                  <input
+                    required
+                    type="email"
+                    value={provision.email}
+                    onChange={(e) => setProvision((p) => ({ ...p, email: e.target.value }))}
+                    className={inputClass}
+                  />
+                  {fieldError('email')}
+                </Field>
+
+                <Field label="Phone (optional)">
+                  <input
+                    value={provision.phone}
+                    onChange={(e) => setProvision((p) => ({ ...p, phone: e.target.value }))}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field label="Administrator's name">
+                  <input
+                    required
+                    value={provision.admin_name}
+                    onChange={(e) => setProvision((p) => ({ ...p, admin_name: e.target.value }))}
+                    className={inputClass}
+                    placeholder="The proprietor or head of school"
+                  />
+                  {fieldError('admin_name')}
+                </Field>
+
+                <Field label="Administrator's email">
+                  <input
+                    required
+                    type="email"
+                    value={provision.admin_email}
+                    onChange={(e) => setProvision((p) => ({ ...p, admin_email: e.target.value }))}
+                    className={inputClass}
+                  />
+                  {fieldError('admin_email')}
+                </Field>
+
+                <Field label="Status">
+                  <select
+                    value={provision.status}
+                    onChange={(e) => setProvision((p) => ({ ...p, status: e.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="trial">Trial</option>
+                    <option value="active">Active</option>
+                  </select>
+                </Field>
+
+                <div className="flex items-end sm:col-span-2">
+                  <Button type="submit" variant="accent" disabled={provisioning}>
+                    {provisioning ? 'Creating…' : 'Create school'}
+                  </Button>
+                </div>
+              </form>
+            </Card>
           )}
 
           <Card
@@ -258,7 +544,17 @@ export default function SuperAdminConsole() {
                     <Cell className="text-xs">{school.plan_band}</Cell>
                     <Cell>{nairaAmount(school.fees_collected)}</Cell>
                     <Cell>
-                      {school.ai_enabled ? nairaAmount(school.ai_spend_naira_this_month) : '—'}
+                      <div className="flex items-center gap-2">
+                        <span>{school.ai_enabled ? nairaAmount(school.ai_spend_naira_this_month) : 'Off'}</span>
+                        <button
+                          onClick={() => toggleAi(school)}
+                          disabled={busyId === school.id}
+                          className="text-xs font-medium text-info underline hover:text-brand disabled:opacity-60"
+                          aria-label={`${school.ai_enabled ? 'Turn AI off' : 'Turn AI on'} for ${school.name}`}
+                        >
+                          {school.ai_enabled ? 'Turn off' : 'Turn on'}
+                        </button>
+                      </div>
                     </Cell>
                     <Cell>
                       <Badge tone={STATUS_TONE[school.status]}>{school.status}</Badge>
