@@ -60,6 +60,22 @@ interface Batch {
   school: { id: number; name: string; subdomain: string } | null;
 }
 
+/** One school's PIN position: what it bought from us, and what became of it. Counts only. */
+interface SchoolSales {
+  school_id: number;
+  name: string;
+  result_checker_enabled: boolean;
+  pins_bought: number;
+  paid_to_platform: number;
+  last_purchase_at: string | null;
+  available: number;
+  sold: number;
+  used: number;
+  void: number;
+  overdraft: number;
+  parent_revenue: number;
+}
+
 interface SchoolOption {
   id: number;
   name: string;
@@ -88,6 +104,7 @@ export default function ResultPinsPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [totals, setTotals] = useState({ batches: 0, pins_issued: 0, revenue: 0 });
   const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [sales, setSales] = useState<SchoolSales[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -99,11 +116,13 @@ export default function ResultPinsPage() {
   const [grant, setGrant] = useState<Grant | null>(null);
 
   const load = useCallback(async () => {
-    const [t, r, b, s] = await Promise.all([
+    const [t, r, b, s, sold] = await Promise.all([
       fetchApi<{ tiers: Tier[] }>('/platform/result-pins/price-tiers'),
       fetchApi<{ rates: SchoolRate[] }>('/platform/result-pins/school-rates'),
       fetchApi<{ totals: typeof totals; batches: Batch[] }>('/platform/result-pins/batches'),
       fetchApi<{ data: SchoolOption[] }>('/platform/schools'),
+      // Sales are a report, not a control: the page still works without them.
+      fetchApi<{ schools: SchoolSales[] }>('/platform/result-pins/sales').catch(() => ({ schools: [] })),
     ]);
 
     setTiers(t.tiers);
@@ -111,6 +130,7 @@ export default function ResultPinsPage() {
     setBatches(b.batches);
     setTotals(b.totals);
     setSchools(s.data);
+    setSales(sold.schools.filter((row) => row.pins_bought > 0 || row.overdraft > 0));
   }, []);
 
   useEffect(() => {
@@ -268,6 +288,44 @@ export default function ResultPinsPage() {
               </div>
             </Card>
           )}
+
+          <Card
+            title="Sales by school"
+            description="What each school bought from SchoolPilot, and what has become of it: sold to parents, used to check a result, or still in stock. Counts only."
+          >
+            {sales.length === 0 ? (
+              <Empty>No school has bought PINs yet.</Empty>
+            ) : (
+              <Table columns={['School', 'Bought', 'Paid to us', 'Sold to parents', 'Used', 'In stock', 'Parents paid', 'Last bought']}>
+                {sales.map((row) => (
+                  <tr key={row.school_id}>
+                    <Cell>
+                      <Link href={`/super-admin/schools/${row.school_id}`} className="font-medium text-brand hover:underline">
+                        {row.name}
+                      </Link>
+                      {!row.result_checker_enabled && <span className="block text-xs text-ink-faint">Result checker off</span>}
+                    </Cell>
+                    <Cell>{row.pins_bought.toLocaleString('en-NG')}</Cell>
+                    <Cell className="font-medium">{nairaAmount(row.paid_to_platform)}</Cell>
+                    <Cell>{(row.sold + row.used).toLocaleString('en-NG')}</Cell>
+                    <Cell>{row.used.toLocaleString('en-NG')}</Cell>
+                    <Cell>
+                      {row.available.toLocaleString('en-NG')}
+                      {row.overdraft > 0 && (
+                        <span className="block text-xs font-semibold text-negative">{row.overdraft} over stock</span>
+                      )}
+                    </Cell>
+                    <Cell>{nairaAmount(row.parent_revenue)}</Cell>
+                    <Cell className="whitespace-nowrap text-xs">
+                      {row.last_purchase_at
+                        ? new Date(row.last_purchase_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })
+                        : '—'}
+                    </Cell>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
 
           <Card
             title="Issue PINs for an offline payment"
