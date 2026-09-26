@@ -44,6 +44,19 @@ class AiStudioController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        /*
+         * `ai_enabled` is SchoolPilot's switch (PlatformSettingsController::
+         * setSchoolAi). A school admin could set it here too, which let a
+         * school turn back on AI the operator had switched off. Schools choose
+         * individual features instead (PUT /school/ai-features).
+         */
+        if ($request->has('ai_enabled') && $request->user()?->userProfile?->role !== 'super_admin') {
+            return response()->json([
+                'message' => 'Only SchoolPilot can switch AI on or off for a school. Choose individual AI features instead.',
+                'errors' => ['ai_enabled' => ['Only SchoolPilot can switch AI on or off for a school.']],
+            ], 422);
+        }
+
         $school->update([
             'ai_enabled' => $request->has('ai_enabled') ? $request->ai_enabled : $school->ai_enabled,
             'ai_feature_flags' => array_merge($school->ai_feature_flags ?? [

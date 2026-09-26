@@ -35,7 +35,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     // BindTenantFromUser runs after authentication because the tenant
     // middleware executes before it and can only see the host — which is a
     // bare `localhost` on any deployment not using subdomains.
-    Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class, 'require.2fa'])->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\BindTenantFromUser::class, 'require.2fa', \App\Http\Middleware\EnforceSchoolModules::class])->group(function () {
         Route::post('/auth/invite', [AuthController::class, 'inviteUser'])->middleware('role:super_admin,school_admin');
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
@@ -341,6 +341,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::get('/classes', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'classes']);
         Route::get('/terms', [\App\Http\Controllers\Api\V1\AcademicStructureController::class, 'terms']);
+
+        // What this school has: modules SchoolPilot switched on, and the AI
+        // features the school chose. Read by every role (the menu uses it).
+        Route::get('/school/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'show']);
+        Route::put('/school/ai-features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'updateAi'])->middleware('role:super_admin,school_admin');
 
         /*
          * Form teachers. The listing is open to staff — a teacher needs to know
@@ -786,6 +791,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             // paid by bank transfer or arranged it directly with SchoolPilot.
             Route::post('/platform/result-pins/grant', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'grantBatch']);
             // Per school: bought, paid, sold on, used, still in stock, owed.
+            // Per-school module switches (CBT, transport, hostel, …). Audited.
+            Route::get('/platform/schools/{schoolId}/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'platformShow'])->whereNumber('schoolId');
+            Route::put('/platform/schools/{schoolId}/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'platformUpdate'])->whereNumber('schoolId');
             Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);
         });
 

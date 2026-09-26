@@ -30,6 +30,8 @@ type Item = {
   label: string;
   /** Roles that see this link. Absent means every signed-in role. */
   roles?: Role[];
+  /** An optional module SchoolPilot can switch off per school (SchoolFeatures). */
+  module?: string;
   className?: string;
 };
 
@@ -80,8 +82,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/exam-timetable', icon: '🗒️', label: 'Exam timetable', roles: ['school_admin'] },
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
       { href: '/results', icon: '📝', label: 'Results & broadsheet', roles: ['school_admin', 'teacher'] },
-      { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'] },
-      { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'] },
+      { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'], module: 'cbt' },
+      { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'live_classes' },
     ],
   },
   {
@@ -89,10 +91,10 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin'] },
       { href: '/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['school_admin'] },
-      { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'] },
-      { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher'] },
-      { href: '/bus-tracking', icon: '🚌', label: 'Transport', roles: ['school_admin', 'teacher'] },
-      { href: '/health', icon: '🩺', label: 'Clinic log', roles: ['school_admin', 'nurse'] },
+      { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'library' },
+      { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher'], module: 'hostel' },
+      { href: '/bus-tracking', icon: '🚌', label: 'Transport', roles: ['school_admin', 'teacher'], module: 'transport' },
+      { href: '/health', icon: '🩺', label: 'Clinic log', roles: ['school_admin', 'nurse'], module: 'clinic' },
       { href: '/notifications', icon: '📢', label: 'Notifications', roles: ['school_admin'] },
       { href: '/analytics', icon: '📈', label: 'Analytics', roles: ['school_admin'] },
     ],
@@ -100,6 +102,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   {
     heading: 'Administration',
     items: [
+      { href: '/ai-features', icon: '🤖', label: 'AI features', roles: ['school_admin'] },
       { href: '/security', icon: '🔐', label: 'Security', roles: ['school_admin'] },
       { href: '/director', icon: '👑', label: 'Director console', roles: ['school_admin'], className: 'font-semibold' },
     ],
@@ -130,6 +133,9 @@ export default function Sidebar() {
   // first paint rather than flashing the wrong set of links.
   const [role, setRole] = useState<Role | null>(roleFromCookie);
   const [leaving, setLeaving] = useState(false);
+  // Modules SchoolPilot has switched off for this school. Their endpoints
+  // already refuse; this just stops the menu offering them.
+  const [modulesOff, setModulesOff] = useState<string[]>([]);
 
   useEffect(() => {
     fetchApi<Me>('/user')
@@ -141,6 +147,11 @@ export default function Sidebar() {
         // The chrome must still render if this fails; it degrades to the role
         // cookie and no school name, rather than an empty sidebar.
       });
+
+    fetchApi<{ modules: { key: string; enabled: boolean }[] }>('/school/features')
+      .then((res) => setModulesOff(res.modules.filter((m) => !m.enabled).map((m) => m.key)))
+      // No school (an operator on their console): nothing to hide.
+      .catch(() => undefined);
   }, []);
 
   /** A platform operator who has stepped into a school steps back out. */
@@ -207,6 +218,7 @@ export default function Sidebar() {
         <nav className="space-y-4 text-sm font-medium">
           {SECTIONS.map((section, i) => {
             const items = section.items.filter((item) => {
+              if (item.module && modulesOff.includes(item.module)) return false;
               if (!item.roles) return true;
               if (!role) return false;
 
