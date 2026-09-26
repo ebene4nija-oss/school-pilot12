@@ -68,6 +68,12 @@ interface Batch {
   created_at: string;
 }
 
+/** The school's module switches, and the AI features it chose for itself (read-only here). */
+interface Features {
+  modules: { key: string; label: string; enabled: boolean }[];
+  ai: { available: boolean; features: { key: string; label: string; chosen: boolean; active: boolean }[] };
+}
+
 interface AccessRow {
   id: number;
   operator: { name: string } | null;
@@ -110,6 +116,7 @@ export default function SchoolDetailPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [activity, setActivity] = useState<AuditRow[]>([]);
   const [access, setAccess] = useState<AccessRow[]>([]);
+  const [features, setFeatures] = useState<Features | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,12 +125,13 @@ export default function SchoolDetailPage() {
   const [posting, setPosting] = useState(false);
 
   const load = useCallback(async () => {
-    const [d, n, b, a, g] = await Promise.all([
+    const [d, n, b, a, g, f] = await Promise.all([
       fetchApi<Detail>(`/platform/schools/${schoolId}`),
       fetchApi<{ data: Note[] }>(`/platform/schools/${schoolId}/notes`),
       fetchApi<{ batches: Batch[] }>(`/platform/result-pins/batches?school_id=${schoolId}`).catch(() => ({ batches: [] })),
       fetchApi<{ data: AuditRow[] }>(`/platform/audit-log?school_id=${schoolId}`).catch(() => ({ data: [] })),
       fetchApi<{ data: AccessRow[] }>(`/platform/access-log?school_id=${schoolId}`).catch(() => ({ data: [] })),
+      fetchApi<Features>(`/platform/schools/${schoolId}/features`).catch(() => null),
     ]);
 
     setDetail(d);
@@ -131,6 +139,7 @@ export default function SchoolDetailPage() {
     setBatches(b.batches);
     setActivity(a.data.slice(0, 10));
     setAccess(g.data.slice(0, 10));
+    setFeatures(f);
   }, [schoolId]);
 
   useEffect(() => {
@@ -354,6 +363,54 @@ export default function SchoolDetailPage() {
               </p>
             </Card>
           </div>
+
+          {features && (
+            <Card
+              title="Modules"
+              description="What this school can use. A module switched off disappears from the school's menu and its screens refuse; nothing is deleted, and switching it back on restores everything."
+            >
+              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {features.modules.map((module) => (
+                  <li
+                    key={module.key}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-line-soft px-3 py-2"
+                  >
+                    <span className="text-sm text-ink">{module.label}</span>
+                    <button
+                      role="switch"
+                      aria-checked={module.enabled}
+                      aria-label={`${module.label} for ${school.name}`}
+                      disabled={busy}
+                      onClick={() => {
+                        if (module.enabled && !window.confirm(`Switch ${module.label} off for ${school.name}? Its screens stop working for the school until you switch it back on.`)) return;
+                        run(() =>
+                          fetchApi(`/platform/schools/${schoolId}/features`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ modules: { [module.key]: !module.enabled } }),
+                          }),
+                        );
+                      }}
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${
+                        module.enabled ? 'bg-positive-soft text-positive' : 'bg-surface-raised text-ink-muted'
+                      }`}
+                    >
+                      {module.enabled ? 'On' : 'Off'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-4 text-xs text-ink-muted">
+                AI is {features.ai.available ? 'on' : 'off'} for this school (switch it in the School card above).
+                {features.ai.available && features.ai.features.length > 0 && (
+                  <>
+                    {' '}The school has chosen:{' '}
+                    {features.ai.features.filter((ai) => ai.chosen).map((ai) => ai.label).join(', ') || 'none yet'}.
+                  </>
+                )}
+              </p>
+            </Card>
+          )}
 
           <Card
             title="Operator access"

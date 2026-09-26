@@ -78,6 +78,7 @@ Reached by clicking a school's name. Everything needed to answer a support call 
 
 - Tiles: active students, school fees collected and outstanding (the school's money, not SchoolPilot's), AI spend this month, status.
 - Profile, AI switch, account counts by role, and a link to that school's administrators on Security.
+- **Modules**: switch CBT, live classes, transport, hostel, library and clinic on or off for the school (`GET`/`PUT /platform/schools/{id}/features`, audited as `platform.school.modules_changed`). A switched-off module's screens refuse with `module_disabled`; nothing is deleted. Also shows which AI features the school chose for itself, read-only.
 - **Internal support notes.** Operator-only: calls, promises, special arrangements. The school never sees them; no school-side route reads `school_support_notes`.
 - **Result PIN purchases**: what the school has paid SchoolPilot.
 - **Recent activity**: the last ten audit rows for the school, with a link to the full audit log filtered to it.
