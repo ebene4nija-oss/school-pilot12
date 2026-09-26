@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { viewSchool } from '@/app/actions/auth';
+import { useParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
+import OpenSchoolButton from '@/components/OpenSchoolButton';
 import {
   Badge,
   Button,
@@ -38,6 +38,7 @@ interface Detail {
     phone: string | null;
     address: string | null;
     status: 'active' | 'trial' | 'suspended';
+    trial_ends_at: string | null;
     ai_enabled: boolean;
     result_checker_enabled: boolean;
     plan_band: string;
@@ -68,6 +69,15 @@ interface Batch {
   created_at: string;
 }
 
+interface AccessRow {
+  id: number;
+  operator: { name: string } | null;
+  reason: string;
+  opened_at: string | null;
+  ended_at: string | null;
+  is_live: boolean;
+}
+
 interface AuditRow {
   id: number;
   at: string | null;
@@ -91,13 +101,15 @@ function when(iso: string | null): string {
 
 export default function SchoolDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const schoolId = Number(params.id);
 
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [activity, setActivity] = useState<AuditRow[]>([]);
+  const [access, setAccess] = useState<AccessRow[]>([]);
+  const [trialDate, setTrialDate] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -105,17 +117,20 @@ export default function SchoolDetailPage() {
   const [posting, setPosting] = useState(false);
 
   const load = useCallback(async () => {
-    const [d, n, b, a] = await Promise.all([
+    const [d, n, b, a, g] = await Promise.all([
       fetchApi<Detail>(`/platform/schools/${schoolId}`),
       fetchApi<{ data: Note[] }>(`/platform/schools/${schoolId}/notes`),
       fetchApi<{ batches: Batch[] }>(`/platform/result-pins/batches?school_id=${schoolId}`).catch(() => ({ batches: [] })),
       fetchApi<{ data: AuditRow[] }>(`/platform/audit-log?school_id=${schoolId}`).catch(() => ({ data: [] })),
+      fetchApi<{ data: AccessRow[] }>(`/platform/access-log?school_id=${schoolId}`).catch(() => ({ data: [] })),
     ]);
 
     setDetail(d);
     setNotes(n.data);
     setBatches(b.batches);
     setActivity(a.data.slice(0, 10));
+    setAccess(g.data.slice(0, 10));
+    setTrialDate(d.school.trial_ends_at ?? '');
   }, [schoolId]);
 
   useEffect(() => {
@@ -139,23 +154,14 @@ export default function SchoolDetailPage() {
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
     setError(null);
+    setNotice(null);
 
     try {
-      await action();
+      const res = (await action()) as { message?: string } | undefined;
+      if (res?.message) setNotice(res.message);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That change could not be saved.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function openSchool() {
-    setBusy(true);
-
-    try {
-      await viewSchool(schoolId);
-      router.push('/');
     } finally {
       setBusy(false);
     }
@@ -194,9 +200,7 @@ export default function SchoolDetailPage() {
             <Link href="/super-admin">
               <Button variant="secondary">All schools</Button>
             </Link>
-            <Button variant="secondary" disabled={busy} onClick={openSchool}>
-              Open school
-            </Button>
+            <OpenSchoolButton schoolId={schoolId} schoolName={school.name} label="Open school" />
             {school.status === 'suspended' ? (
               <Button
                 variant="secondary"
@@ -205,7 +209,7 @@ export default function SchoolDetailPage() {
                   run(() =>
                     fetchApi(`/platform/schools/${schoolId}/status`, {
                       method: 'POST',
-                      body: JSON.stringify({ status: 'active' }),
+                      body: JSON.stringify({ status: school.trial_ends_at ? 'trial' : 'active' }),
                     }),
                   )
                 }
@@ -234,6 +238,11 @@ export default function SchoolDetailPage() {
       }
     >
       <ErrorNote message={error} />
+      {notice && (
+        <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
+          {notice}
+        </p>
+      )}
 
       {loading ? (
         <Loading />
@@ -329,6 +338,83 @@ export default function SchoolDetailPage() {
               </p>
             </Card>
           </div>
+
+          {school.status === 'trial' && (
+            <Card
+              title="Trial"
+              description="Nothing happens automatically when a trial ends; the console flags it so someone can call the school."
+            >
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  run(() =>
+                    fetchApi(`/platform/schools/${schoolId}/trial`, {
+                      method: 'POST',
+                      body: JSON.stringify({ trial_ends_at: trialDate }),
+                    }),
+                  );
+                }}
+                className="flex flex-wrap items-end gap-2"
+              >
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-ink">Trial ends</span>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().slice(0, 10)}
+                    value={trialDate}
+                    onChange={(e) => setTrialDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                <Button type="submit" variant="secondary" disabled={busy || !trialDate || trialDate === school.trial_ends_at}>
+                  Change date
+                </Button>
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (!window.confirm(`Mark ${school.name} as a paying school? Its trial end date is cleared.`)) return;
+                    run(() =>
+                      fetchApi(`/platform/schools/${schoolId}/status`, {
+                        method: 'POST',
+                        body: JSON.stringify({ status: 'active' }),
+                      }),
+                    );
+                  }}
+                >
+                  Convert to paying
+                </Button>
+              </form>
+              {school.trial_ends_at && school.trial_ends_at < new Date().toISOString().slice(0, 10) && (
+                <p className="mt-3 text-sm font-medium text-negative">
+                  This trial ended on {new Date(school.trial_ends_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })}.
+                </p>
+              )}
+            </Card>
+          )}
+
+          <Card
+            title="Operator access"
+            description="Every time someone at SchoolPilot opened this school, with the reason they gave. Latest ten."
+          >
+            {access.length === 0 ? (
+              <Empty>No operator has opened this school.</Empty>
+            ) : (
+              <Table columns={['Opened', 'By', 'Reason', 'Ended']}>
+                {access.map((row) => (
+                  <tr key={row.id}>
+                    <Cell className="whitespace-nowrap text-xs">{when(row.opened_at)}</Cell>
+                    <Cell>{row.operator?.name ?? '—'}</Cell>
+                    <Cell className="text-sm">{row.reason}</Cell>
+                    <Cell className="whitespace-nowrap text-xs">
+                      {row.is_live ? <Badge tone="amber">Open now</Badge> : when(row.ended_at)}
+                    </Cell>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
 
           <Card
             title="Internal support notes"

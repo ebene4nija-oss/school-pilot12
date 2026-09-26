@@ -695,6 +695,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/results/release', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'release']);
         });
 
+        // What SchoolPilot is currently telling this school's administrators.
+        Route::get('/announcements', [\App\Http\Controllers\Api\V1\PlatformAnnouncementController::class, 'forSchool'])->middleware('role:school_admin,super_admin');
+
         // SchoolPilot platform operators only.
         Route::middleware('role:super_admin')->group(function () {
             /*
@@ -733,6 +736,21 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             // Operator-only notes on a school. No school-side route reads them.
             Route::get('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'notes']);
             Route::post('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'storeNote']);
+            Route::post('/platform/schools/{schoolId}/trial', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setTrial']);
+
+            /*
+             * Opening a school: a reason, an audit row and a time limit.
+             * BindTenantFromUser honours X-Platform-School only while one of
+             * these grants is live.
+             */
+            Route::post('/platform/schools/{schoolId}/access', [\App\Http\Controllers\Api\V1\PlatformAccessController::class, 'open']);
+            Route::post('/platform/access/close', [\App\Http\Controllers\Api\V1\PlatformAccessController::class, 'close']);
+            Route::get('/platform/access-log', [\App\Http\Controllers\Api\V1\PlatformAccessController::class, 'log']);
+
+            // Notices to school administrators — never to parents (NDPA).
+            Route::get('/platform/announcements', [\App\Http\Controllers\Api\V1\PlatformAnnouncementController::class, 'index']);
+            Route::post('/platform/announcements', [\App\Http\Controllers\Api\V1\PlatformAnnouncementController::class, 'store']);
+            Route::post('/platform/announcements/{id}/withdraw', [\App\Http\Controllers\Api\V1\PlatformAnnouncementController::class, 'withdraw']);
 
             /*
              * Platform security (doc §5): the audit trail across schools, and
@@ -840,6 +858,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
                 'user_profile' => $user->userProfile,
                 'role' => $role,
                 'is_platform_operator' => $role === 'super_admin',
+                // An operator's live grant on the school they have open: when
+                // it ends, and the reason they gave.
+                'platform_access' => ($access = $request->attributes->get('platform_access')) ? [
+                    'expires_at' => $access->expires_at->toIso8601String(),
+                    'reason' => $access->reason,
+                ] : null,
                 'school' => $school ? [
                     'id' => $school->id,
                     'name' => $school->name,

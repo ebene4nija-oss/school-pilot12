@@ -123,19 +123,67 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 }
 
 /**
- * Pick which tenant the operator console is looking at.
+ * Open a school in the operator console, or leave the one that is open.
  *
- * Writing the cookie is all this does; the API decides whether to honour the
- * matching header, and only does so for a super admin.
+ * Opening asks the API for an access grant first — with the operator's
+ * reason, audited, and time-limited — and only then writes the cookie. The API
+ * honours the matching header only while that grant is live, so the cookie on
+ * its own opens nothing. Leaving closes the grant before clearing the cookie.
  */
-export async function viewSchool(schoolId: number | null): Promise<void> {
+export async function viewSchool(
+  schoolId: number | null,
+  reason?: string,
+): Promise<{ error?: string; expiresAt?: string }> {
   const session = await getSession();
 
   if (!session || session.role !== 'super_admin') {
-    return;
+    return { error: 'Only a SchoolPilot operator can open a school.' };
   }
 
-  await setViewedSchool(schoolId === null ? null : String(schoolId));
+  const headers = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${session.token}`,
+    ...(session.subdomain ? { 'X-School-Subdomain': session.subdomain } : {}),
+  };
+
+  if (schoolId === null) {
+    try {
+      await fetch(`${API_BASE_URL}/platform/access/close`, { method: 'POST', headers, cache: 'no-store' });
+    } catch {
+      // The grant expires on its own; an unreachable API must not keep the
+      // operator stuck inside a school in the browser.
+    }
+
+    await setViewedSchool(null);
+    return {};
+  }
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_BASE_URL}/platform/schools/${schoolId}/access`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ reason: reason ?? '' }),
+      cache: 'no-store',
+    });
+  } catch {
+    return { error: 'Could not reach SchoolPilot. Try again.' };
+  }
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    errors?: Record<string, string[]>;
+    access?: { expires_at: string };
+  };
+
+  if (!res.ok) {
+    return { error: payload.errors?.reason?.[0] ?? payload.message ?? 'That school could not be opened.' };
+  }
+
+  await setViewedSchool(String(schoolId));
+  return { expiresAt: payload.access?.expires_at };
 }
 
 export async function logout(): Promise<void> {

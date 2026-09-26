@@ -210,6 +210,15 @@ class PlatformConsoleTest extends TestCase
      */
     public function test_operator_can_scope_to_one_school_with_the_platform_header(): void
     {
+        foreach ([$this->greenfield, $this->graceland] as $school) {
+            \App\Models\PlatformSchoolAccess::create([
+                'user_id' => $this->superAdmin->id,
+                'school_id' => $school->id,
+                'reason' => 'Support request: roster check',
+                'expires_at' => now()->addHour(),
+            ]);
+        }
+
         $this->actingAs($this->superAdmin, 'sanctum')
             ->getJson('/api/v1/students', ['X-Platform-School' => (string) $this->greenfield->id])
             ->assertOk()
@@ -231,14 +240,15 @@ class PlatformConsoleTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
-    public function test_unknown_school_in_the_header_leaves_the_operator_unscoped(): void
+    public function test_unknown_school_in_the_header_is_refused_not_read_across_schools(): void
     {
-        // Not "a school with no students" — the id does not exist, so the
-        // operator stays cross-tenant and sees all five.
+        // Not "a school with no students", and no longer "every school's
+        // students" either: with no live grant for a real school, school-side
+        // routes are refused outright.
         $this->actingAs($this->superAdmin, 'sanctum')
             ->getJson('/api/v1/students', ['X-Platform-School' => '999999'])
-            ->assertOk()
-            ->assertJsonCount(5, 'data');
+            ->assertForbidden()
+            ->assertJsonPath('code', 'school_access_required');
     }
 
     // ---------------------------------------------------------------- platform row

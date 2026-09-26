@@ -2,9 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { viewSchool } from '@/app/actions/auth';
 import { fetchApi } from '@/lib/api';
+import OpenSchoolButton from '@/components/OpenSchoolButton';
 import {
   Badge,
   Button,
@@ -37,6 +36,7 @@ import {
 
 interface Overview {
   schools: { total: number; active: number; trial: number; suspended: number };
+  trials: { ending_within_7_days: number; ended: number };
   students: { total: number; active: number };
   staff: { total: number };
   school_fee_flow: {
@@ -54,6 +54,7 @@ interface TenantRow {
   subdomain: string;
   email: string | null;
   status: 'active' | 'trial' | 'suspended';
+  trial_ends_at: string | null;
   active_students: number;
   plan_band: string;
   ai_enabled: boolean;
@@ -100,7 +101,6 @@ const STATUS_TONE = {
 } as const;
 
 export default function SuperAdminConsole() {
-  const router = useRouter();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [schools, setSchools] = useState<TenantRow[]>([]);
   const [search, setSearch] = useState('');
@@ -157,21 +157,6 @@ export default function SuperAdminConsole() {
       await loadSchools(search);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That search could not be run.');
-    }
-  }
-
-  /**
-   * Enter one school. The session is scoped to it server-side, so every
-   * school-side page then answers for that tenant.
-   */
-  async function inspect(school: TenantRow) {
-    setBusyId(school.id);
-
-    try {
-      await viewSchool(school.id);
-      router.push('/');
-    } finally {
-      setBusyId(null);
     }
   }
 
@@ -251,6 +236,9 @@ export default function SuperAdminConsole() {
     }
   }
 
+  // ISO date, comparable as a string with `trial_ends_at`.
+  const today = new Date().toISOString().slice(0, 10);
+
   const fieldError = (name: string) =>
     provisionErrors[name]?.[0] ? (
       <span className="mt-1 block text-xs text-negative">{provisionErrors[name][0]}</span>
@@ -261,12 +249,17 @@ export default function SuperAdminConsole() {
     setError(null);
 
     try {
-      await fetchApi(`/platform/schools/${school.id}/status`, {
-        method: 'POST',
-        body: JSON.stringify({ status }),
-      });
+      const res = await fetchApi<{ school: { status: TenantRow['status']; trial_ends_at: string | null } }>(
+        `/platform/schools/${school.id}/status`,
+        { method: 'POST', body: JSON.stringify({ status }) },
+      );
 
-      setSchools((prev) => prev.map((s) => (s.id === school.id ? { ...s, status } : s)));
+      // The server may also move the trial date, so take both from it.
+      setSchools((prev) =>
+        prev.map((s) =>
+          s.id === school.id ? { ...s, status: res.school.status, trial_ends_at: res.school.trial_ends_at } : s,
+        ),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That change could not be saved.');
     } finally {
@@ -303,7 +296,18 @@ export default function SuperAdminConsole() {
               <StatTile
                 label="Schools"
                 value={overview.schools.total.toLocaleString('en-NG')}
-                hint={`${overview.schools.active} active · ${overview.schools.trial} trial · ${overview.schools.suspended} suspended`}
+                hint={
+                  <>
+                    {overview.schools.active} active · {overview.schools.trial} trial · {overview.schools.suspended} suspended
+                    {(overview.trials.ended > 0 || overview.trials.ending_within_7_days > 0) && (
+                      <span className="block font-medium text-caution">
+                        {overview.trials.ended > 0 && `${overview.trials.ended} trial(s) ended`}
+                        {overview.trials.ended > 0 && overview.trials.ending_within_7_days > 0 && ' · '}
+                        {overview.trials.ending_within_7_days > 0 && `${overview.trials.ending_within_7_days} ending this week`}
+                      </span>
+                    )}
+                  </>
+                }
               />
               <StatTile
                 label="Students across all schools"
@@ -557,21 +561,23 @@ export default function SuperAdminConsole() {
                     </Cell>
                     <Cell>
                       <Badge tone={STATUS_TONE[school.status]}>{school.status}</Badge>
+                      {school.status === 'trial' && school.trial_ends_at && (
+                        <span
+                          className={`mt-1 block text-xs ${school.trial_ends_at < today ? 'font-semibold text-negative' : 'text-ink-muted'}`}
+                        >
+                          {school.trial_ends_at < today ? 'Ended ' : 'Ends '}
+                          {new Date(school.trial_ends_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })}
+                        </span>
+                      )}
                     </Cell>
                     <Cell>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          disabled={busyId === school.id}
-                          onClick={() => inspect(school)}
-                        >
-                          Open
-                        </Button>
+                        <OpenSchoolButton schoolId={school.id} schoolName={school.name} />
                         {school.status === 'suspended' ? (
                           <Button
                             variant="secondary"
                             disabled={busyId === school.id}
-                            onClick={() => setStatus(school, 'active')}
+                            onClick={() => setStatus(school, school.trial_ends_at ? 'trial' : 'active')}
                           >
                             Reinstate
                           </Button>

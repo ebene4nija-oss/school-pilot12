@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PlatformSchoolAccess;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
@@ -72,8 +73,19 @@ class OperatorViewingSchoolTest extends TestCase
         }
     }
 
+    /**
+     * The picker's header, with the live access grant that opening a school
+     * through the console creates. Without the grant the header is ignored.
+     */
     private function viewing(School $school): array
     {
+        PlatformSchoolAccess::create([
+            'user_id' => $this->operator->id,
+            'school_id' => $school->id,
+            'reason' => 'Support request: roster check',
+            'expires_at' => now()->addHour(),
+        ]);
+
         return ['X-Platform-School' => (string) $school->id];
     }
 
@@ -211,14 +223,16 @@ class OperatorViewingSchoolTest extends TestCase
 
     /**
      * And the school dashboard says so rather than crashing or, worse,
-     * returning a tidy page of zeroes that reads as an empty school.
+     * returning a tidy page of zeroes that reads as an empty school. Refused
+     * before the controller now: with no school open, an operator reaches the
+     * console's own routes only.
      */
     public function test_the_school_dashboard_refuses_an_operator_with_no_school_chosen(): void
     {
         $this->actingAs($this->operator, 'sanctum')
             ->getJson('/api/v1/analytics/principal', ['X-School-Subdomain' => 'admin'])
-            ->assertStatus(409)
-            ->assertJsonPath('message', 'Choose a school to see its dashboard. Platform-wide figures are on the operator console.');
+            ->assertForbidden()
+            ->assertJsonPath('code', 'school_access_required');
     }
 
     /** The operator console still answers across every tenant. */
@@ -311,7 +325,7 @@ class OperatorViewingSchoolTest extends TestCase
                 'scheduled_for' => now()->addDay()->toIso8601String(),
                 'duration_minutes' => 45,
             ], ['X-School-Subdomain' => 'admin'])
-            ->assertStatus(409);
+            ->assertForbidden();
 
         $this->assertDatabaseCount('live_classes', 0);
     }

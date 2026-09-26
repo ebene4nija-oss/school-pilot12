@@ -81,6 +81,14 @@ interface CurrentUser {
   user_profile?: { role?: string; school_id?: number | null } | null;
 }
 
+/** A notice from SchoolPilot to this school's administrators. */
+interface PlatformNotice {
+  id: number;
+  title: string;
+  body: string;
+  tone: 'info' | 'warning';
+}
+
 export default function SchoolDashboard() {
   const router = useRouter();
   const [data, setData] = useState<PrincipalDashboard | null>(null);
@@ -92,6 +100,7 @@ export default function SchoolDashboard() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  const [notices, setNotices] = useState<PlatformNotice[]>([]);
 
   const loadQueue = useCallback(async () => {
     // The dashboard shows the first few; the count comes from `meta` so the
@@ -135,6 +144,10 @@ export default function SchoolDashboard() {
         // A teacher without an approval queue is normal, and a failure here
         // must not blank the whole dashboard.
         await loadQueue().catch(() => undefined);
+
+        // Administrators only; for a teacher this is a 403, and that is fine.
+        const announced = await fetchApi<{ data: PlatformNotice[] }>('/announcements').catch(() => null);
+        if (!cancelled && announced) setNotices(announced.data);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Could not load the dashboard.');
@@ -201,6 +214,21 @@ export default function SchoolDashboard() {
       }
     >
       <ErrorNote message={error} />
+
+      {notices.map((notice) => (
+        <div
+          key={notice.id}
+          role="note"
+          className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+            notice.tone === 'warning'
+              ? 'border-accent/40 bg-caution-soft text-caution'
+              : 'border-line-soft bg-info-soft text-info'
+          }`}
+        >
+          <p className="font-semibold">From SchoolPilot · {notice.title}</p>
+          <p className="mt-1 whitespace-pre-wrap text-ink">{notice.body}</p>
+        </div>
+      ))}
 
       {loading ? (
         <Loading />

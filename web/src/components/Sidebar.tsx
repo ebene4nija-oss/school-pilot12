@@ -45,6 +45,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin', icon: '🛡️', label: 'Schools', roles: ['super_admin'], className: 'font-semibold' },
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
+      { href: '/super-admin/announcements', icon: '📣', label: 'Announcements', roles: ['super_admin'] },
     ],
   },
   {

@@ -59,4 +59,22 @@ return [
 
     'email_daily_limit' => env('EMAIL_DAILY_LIMIT', 1000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Operator console
+    |--------------------------------------------------------------------------
+    |
+    | How long an operator's access to one school lasts after they open it with
+    | a reason. Short enough that a forgotten tab does not leave a school open
+    | all day; long enough for a support call. Re-opening starts a new grant.
+    |
+    | And how long a new school's trial runs by default. The console flags a
+    | trial that has ended; it does not suspend the school on its own.
+    |
+    */
+
+    'operator_access_minutes' => (int) env('OPERATOR_ACCESS_MINUTES', 120),
+
+    'trial_days' => (int) env('SCHOOL_TRIAL_DAYS', 30),
+
 ];

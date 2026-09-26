@@ -47,8 +47,9 @@ Columns: name and email, subdomain, active students, plan band (derived from the
 | Action | Effect |
 |---|---|
 | **New school** | Opens the provisioning form (below). The one amber button on the screen. |
-| **Open** | Scopes the operator's session to that school. Every school-side page then answers for it. The sidebar shows *Viewing as operator · School name* with **Leave this school**. |
+| **Open** | Asks for a reason, then opens the school for a limited time (§4). Every school-side page then answers for it. The sidebar shows *Viewing as operator · School name* with **Leave this school**. |
 | **Suspend / Reinstate** | Blocks or restores the school's access. Nothing is deleted — roll, results and payment history are kept. Audited. |
+| **Trial end** | Shown under a trial school's status, in red once it has passed. Nothing suspends a school when its trial ends; the console only flags it. |
 | **Turn AI on / off** | Switches every AI feature for that school. The daily cap limits spend; this stops it outright. Audited. |
 
 ### New school
@@ -62,7 +63,7 @@ Creates the school **and its first administrator** in one transaction — a scho
 | School email | Required. |
 | Phone | Optional. |
 | Administrator's name and email | Required. The email must not already belong to a user. |
-| Status | Trial (default) or Active. |
+| Status | Trial (default) or Active. A trial ends after `SCHOOL_TRIAL_DAYS` (default 30); the date can be changed on School detail. |
 
 On success the console shows the sign-in address, school code, administrator and a **temporary password shown once** — it cannot be retrieved afterwards. A setup link is also emailed if mail is configured; the panel says whether it was.
 
@@ -75,7 +76,9 @@ Reached by clicking a school's name. Everything needed to answer a support call 
 - **Internal support notes.** Operator-only: calls, promises, special arrangements. The school never sees them; no school-side route reads `school_support_notes`.
 - **Result PIN purchases**: what the school has paid SchoolPilot.
 - **Recent activity**: the last ten audit rows for the school, with a link to the full audit log filtered to it.
-- Actions: Open school, Suspend (with a confirmation) or Reinstate.
+- **Trial** (trial schools only): change the end date, or **Convert to paying**, which makes the school active and clears the date.
+- **Operator access**: the last ten times someone at SchoolPilot opened this school, with the reason given.
+- Actions: Open school, Suspend (with a confirmation) or Reinstate (back to trial if a trial date remains, otherwise active).
 
 ### Onboarding & migrations — `/super-admin/migrations`
 
@@ -92,15 +95,18 @@ Open migration requests across schools, overdue first, each with a due-in or hou
 
 ## 4. Working inside a school
 
-**Open** on a school sets an `sp_view_school` cookie. The web proxy turns that into an `X-Platform-School` header, which the API honours **for super admins only** — for any other role it is ignored, so no school user can reach another school by setting a header.
+Opening a school gives an operator that school's records, its pupils' included, so it is on the record.
+
+1. **Open** asks for a reason (at least 10 characters). The web app calls `POST /platform/schools/{id}/access`, which creates a **grant**: operator, school, reason, IP, and an expiry `OPERATOR_ACCESS_MINUTES` from now (default 120). It is audited as `platform.school.opened`. Only after that does the app set the `sp_view_school` cookie.
+2. The web proxy turns the cookie into an `X-Platform-School` header. The API honours it **only for a super admin holding a live grant for that school**, one that is neither expired nor closed. For any other role the header is ignored, so no school user can reach another school by setting it.
+3. **Leave this school** closes the grant (`platform.school.closed`) and clears the cookie. Opening a different school closes the previous grant first; an operator has one school open at a time.
 
 While inside a school:
 
 - Every school-side page answers for that school, and **writes land in that school**.
-- The console link stays in the sidebar, alongside the school's own screens.
-- **Leave this school** clears the cookie and returns to the console.
+- The console links stay in the sidebar, alongside the school's own screens.
 
-An operator who has *not* opened a school has no acting school. School-scoped endpoints refuse with `409 Choose a school…` rather than guessing — in particular they never fall back to the `admin` sign-in subdomain.
+**Without a live grant** (none opened, expired, closed, or for a different school), an operator reaches only `/platform/*`, `/user` and `/auth/*`. Every other route returns `403` with `code: "school_access_required"`. Before this, an operator with no school open could call school-side routes unscoped and read every school's records at once: `/students` listed every child on the platform. When a grant expires mid-session, `/user` reports no acting school, so the banner and the school's menu disappear and the dashboard returns to the console.
 
 ---
 
@@ -174,6 +180,14 @@ Any key not in this registry is refused with `422`.
 
 ---
 
+## 4a. Announcements — `/super-admin/announcements`
+
+Notices from SchoolPilot to **school administrators**: maintenance, releases, policy changes. Each has a title, a message, a kind (information or warning), an audience (every school or one school) and an end time. School admins see live ones at the top of their dashboard. Publishing and withdrawing are audited.
+
+They never go to parents, teachers or students. Those are the school's contacts, not SchoolPilot's; messaging them directly would make SchoolPilot the data controller for their details (NDPA, doc §12). A school that wants to pass a notice on uses its own Notifications screen. Not yet shown in the mobile app.
+
+---
+
 ## 5a. Security — `/super-admin/security` and `/super-admin/audit-log`
 
 ### Security
@@ -204,6 +218,10 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | GET | `/platform/schools/{id}` | — | `school`, `students`, `staff_by_role`, `fee_flow`, `ai_spend_naira_this_month` |
 | POST | `/platform/schools/{id}/status` | `status`: `active`\|`trial`\|`suspended` | `school`. `422` for the platform row. |
 | POST | `/platform/schools/{id}/ai` | `enabled`: boolean | `school`. `404` for the platform row. |
+| POST | `/platform/schools/{id}/trial` | `trial_ends_at` (date, today or later) | `school` with the new date. `422` unless the school is on trial. |
+| POST | `/platform/schools/{id}/access` | `reason` (10–500) | `201` with `access` (school, operator, reason, opened_at, expires_at, is_live). Closes any grant the operator already holds. `404` for the platform row. |
+| POST | `/platform/access/close` | — | `closed`: how many grants were closed. Nothing open is not an error. |
+| GET | `/platform/access-log` | `?school_id=` | `data[]` of grants, newest first, with `ended_at` and `is_live`; `meta` |
 | GET | `/platform/schools/{id}/notes` | — | `data[]` (id, body, author, created_at), newest first, up to 200. `404` for the platform row. |
 | POST | `/platform/schools/{id}/notes` | `body` (≤ 5000) | `201` with `data`. |
 
@@ -232,6 +250,15 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | GET | `/platform/result-pins/batches` | — |
 | POST | `/platform/result-pins/grant` | `school_id`, `quantity`, `unit_price?`, `gateway?` (`bank_transfer`\|`cash`), `notes` |
 
+### Announcements
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/platform/announcements` | — | `data[]`, newest first (up to 100), with school, author, withdrawn_at, is_showing |
+| POST | `/platform/announcements` | `title` (≤150), `body` (≤2000), `tone?` (`info`\|`warning`), `school_id?` (none = every school), `shows_until` (future) | `201` with `data` |
+| POST | `/platform/announcements/{id}/withdraw` | — | Takes it down now. |
+| GET | `/announcements` | — | **school_admin**: up to 5 live announcements for this school or every school. Not for teachers. |
+
 ### Security
 
 | Method | Path | Body / query | Returns |
@@ -244,7 +271,7 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 
 | Header | Set by | Effect |
 |---|---|---|
-| `X-Platform-School: <id>` | The web proxy, from `sp_view_school`, for super admins only | Scopes the request to that school. Ignored for every other role; ignored if the id does not exist. |
+| `X-Platform-School: <id>` | The web proxy, from `sp_view_school`, for super admins only | Scopes the request to that school **while the operator holds a live grant for it** (§4). Ignored for every other role. Without a grant, only `/platform/*`, `/user` and `/auth/*` answer. |
 | `X-School-Subdomain` | The web proxy | Identifies the host's school for tenant resolution. For an operator this is the `admin` sign-in subdomain and is **not** their acting school. |
 
 ---
@@ -257,6 +284,9 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | `platform.school.status_changed` | Old and new status |
 | `platform.school.ai_toggled` | Old and new `ai_enabled` |
 | `platform.settings.updated` | Keys changed and keys cleared — never values |
+| `platform.school.opened` / `platform.school.closed` | The reason and expiry; when access was ended |
+| `platform.school.trial_changed` | Old and new trial end date (status changes also record the trial date) |
+| `platform.announcement.published` / `.withdrawn` | Title, audience and end time |
 | `platform.user.sessions_revoked` | The administrator whose sessions were revoked, and how many |
 | `platform.result_pin_school_rate_set`, grants | As recorded by the result-PIN console |
 

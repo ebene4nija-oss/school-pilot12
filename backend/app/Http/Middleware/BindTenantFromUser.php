@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PlatformSchoolAccess;
 use App\Support\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -25,6 +26,9 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * A super admin may additionally name one school with `X-Platform-School`,
  * which is how the operator console's school picker inspects a single tenant.
+ * It is honoured only while that operator holds a live `PlatformSchoolAccess`
+ * grant for that school — opened with a reason, audited, and time-limited.
+ * Without one, an operator reaches the console's own routes and nothing else.
  * That header is read for super admins and for nobody else: for any other role
  * it is ignored outright rather than validated, so no school-side user can
  * widen or move their own tenant by setting a request header.
@@ -42,12 +46,14 @@ class BindTenantFromUser
         if ($profile) {
             if ($profile->role === 'super_admin') {
                 $viewing = $this->requestedSchool($request);
+                $access = $viewing !== null ? $this->liveAccess($request->user()->id, $viewing) : null;
 
-                if ($viewing !== null) {
+                if ($access !== null) {
                     // Inspecting one tenant: scope exactly as a member of that
                     // school would be, so every school-side endpoint answers
                     // for that school and nothing leaks in from the others.
                     $this->tenant->setSchoolId($viewing);
+                    $request->attributes->set('platform_access', $access);
                 } else {
                     /*
                      * Clear the host-resolved school before marking unscoped.
@@ -59,6 +65,22 @@ class BindTenantFromUser
                      */
                     $this->tenant->setSchoolId(null);
                     $this->tenant->markUnscoped();
+
+                    /*
+                     * Unscoped, an operator's query on a school-side route
+                     * spans every tenant — `/students` returned every child on
+                     * the platform. A school's records are reached only through
+                     * a live access grant, which records who, which school and
+                     * why. Without one, only the operator's own routes answer.
+                     */
+                    if (! $this->isOperatorRoute($request)) {
+                        return response()->json([
+                            'message' => $viewing !== null
+                                ? 'Your access to this school has ended. Open it again from the operator console, with a reason, to continue.'
+                                : 'Open a school from the operator console, with a reason, to see its records.',
+                            'code' => 'school_access_required',
+                        ], 403);
+                    }
                 }
             } elseif ($profile->school_id) {
                 $this->tenant->setSchoolId((int) $profile->school_id);
@@ -66,6 +88,26 @@ class BindTenantFromUser
         }
 
         return $next($request);
+    }
+
+    /**
+     * Routes an operator uses without being inside a school: the console's own
+     * `/platform/*`, who-am-I, and account routes (2FA, sign-out).
+     */
+    private function isOperatorRoute(Request $request): bool
+    {
+        return $request->is('api/v1/platform', 'api/v1/platform/*', 'api/v1/user', 'api/v1/auth/*');
+    }
+
+    /** This operator's unexpired, unclosed grant for this school, if any. */
+    private function liveAccess(int $userId, int $schoolId): ?PlatformSchoolAccess
+    {
+        return PlatformSchoolAccess::query()
+            ->live()
+            ->where('user_id', $userId)
+            ->where('school_id', $schoolId)
+            ->latest('id')
+            ->first();
     }
 
     /**

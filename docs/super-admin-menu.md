@@ -24,6 +24,7 @@ OPERATOR
     └ School detail        /super-admin/schools/{id}     reached from the directory
   Onboarding & migrations  /super-admin/migrations
   Result PINs              /super-admin/result-pins
+  Announcements            /super-admin/announcements
 PLATFORM
   AI service               /super-admin/ai
   Messaging                /super-admin/messaging
@@ -108,7 +109,7 @@ The mockups are UI references. Where they conflict with the spec, the spec wins.
 | `APP_KEY`, database, mail transport, AI stub mode | Server-level settings; changing them from the app could lock the app out of itself (`platform-console.md` §5) |
 | Any school's day-to-day screens | The operator reaches them through **Open** on a school, not through the operator menu |
 | Mobile | The operator console is web-only (`mobile-app.md`) |
-| Browsing student records across schools | NDPA data minimisation: platform views stay aggregate. Opening a single school is the audited way in |
+| Browsing student records across schools | NDPA data minimisation: platform views stay aggregate. Opening a single school — with a reason, audited, time-limited — is the only way in (`platform-console.md` §4) |
 
 ---
 
@@ -120,6 +121,23 @@ The mockups are UI references. Where they conflict with the spec, the spec wins.
 4. **Plans & bands → Billing summary.** Blocked on pricing decisions (§13 uses placeholder ₦X).
 5. **Operator access (IP allowlist).** Auth change: needs a written risk note first.
 6. **Compliance, Reports, Support.**
+
+### Second pass (2026-09-26)
+
+From a review of a generic super-admin spec against this one, the items worth doing:
+
+| # | Item | Status |
+|---|---|---|
+| a | Record when an operator opens a school: reason, audit entry, time limit; no school records without one | ✅ `platform-console.md` §4 |
+| b | Trial end dates, extending a trial, converting a trial to paying | ✅ |
+| c | Announcements to school administrators (never parents) | ✅ |
+| d | Per-school feature switches | Handed to the c9 session, to be designed with its school-side AI toggles |
+| e | AI remarks monitor: counts only, never approves | Handed to c9 |
+| f | Backup status and NDPA data requests (§12) | Handed to c9 |
+| g | Term subscriptions and invoices | Blocked on §13 pricing |
+| h | Operator sub-roles | Only when there is more than one operator |
+
+Dropped from that spec: MRR/ARR and monthly plans (contradict §13), global academic and fee templates, ticketing/SLA/knowledge base (support is WhatsApp-first), and prompt libraries, agent logs, webhooks, API keys, flag rollouts and mobile release management (premature).
 
 ## 6. Open questions for the product owner
 
