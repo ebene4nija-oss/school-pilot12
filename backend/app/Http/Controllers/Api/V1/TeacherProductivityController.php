@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\CaScheme;
 use App\Models\Homework;
 use App\Models\ScoreEntry;
 use App\Models\Student;
+use App\Services\GradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -16,18 +18,22 @@ class TeacherProductivityController extends Controller
     /**
      * 1. Bulk Grading Endpoint
      */
-    public function bulkGrading(Request $request)
+    public function bulkGrading(Request $request, GradingService $grading)
     {
         $schoolId = $this->schoolId();
+        // The school's CA split and grading scale, like single score entry.
+        // This used to allow 20/20/60 only and grade on its own copy of the
+        // WAEC ladder, whatever the school had configured.
+        $scheme = CaScheme::activeFor($schoolId);
 
         $validator = Validator::make($request->all(), [
             'term_id' => ['required', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
             'subject_id' => ['required', \Illuminate\Validation\Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'scores' => 'required|array',
             'scores.*.student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
-            'scores.*.first_ca' => 'nullable|numeric|min:0|max:20',
-            'scores.*.second_ca' => 'nullable|numeric|min:0|max:20',
-            'scores.*.exam' => 'nullable|numeric|min:0|max:60',
+            'scores.*.first_ca' => "nullable|numeric|min:0|max:{$scheme->first_ca_weight}",
+            'scores.*.second_ca' => "nullable|numeric|min:0|max:{$scheme->second_ca_weight}",
+            'scores.*.exam' => "nullable|numeric|min:0|max:{$scheme->exam_weight}",
             'scores.*.comment' => 'nullable|string',
         ]);
 
@@ -37,22 +43,17 @@ class TeacherProductivityController extends Controller
 
         $savedEntries = [];
 
-        DB::transaction(function () use ($request, $schoolId, &$savedEntries) {
-            foreach ($request->scores as $item) {
-                $firstCa = $item['first_ca'] ?? 0;
-                $secondCa = $item['second_ca'] ?? 0;
-                $exam = $item['exam'] ?? 0;
-                $total = $firstCa + $secondCa + $exam;
+        $levels = $this->classLevels($schoolId, collect($request->scores)->pluck('student_id')->all());
 
-                $grade = 'F';
-                if ($total >= 75) $grade = 'A1';
-                elseif ($total >= 70) $grade = 'B2';
-                elseif ($total >= 65) $grade = 'B3';
-                elseif ($total >= 60) $grade = 'C4';
-                elseif ($total >= 55) $grade = 'C5';
-                elseif ($total >= 50) $grade = 'C6';
-                elseif ($total >= 45) $grade = 'D7';
-                elseif ($total >= 40) $grade = 'E8';
+        DB::transaction(function () use ($request, $schoolId, $scheme, $grading, $levels, &$savedEntries) {
+            foreach ($request->scores as $item) {
+                $firstCa = (float) ($item['first_ca'] ?? 0);
+                $secondCa = (float) ($item['second_ca'] ?? 0);
+                $exam = (float) ($item['exam'] ?? 0);
+
+                $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $levels[$item['student_id']] ?? null);
+                $total = $computed['percentage'];
+                $grade = $computed['grade'];
 
                 $data = [
                     'first_ca' => $firstCa,
@@ -88,7 +89,7 @@ class TeacherProductivityController extends Controller
     /**
      * 2. Import Scores / Grades from Excel CSV
      */
-    public function importScoresCsv(Request $request)
+    public function importScoresCsv(Request $request, GradingService $grading)
     {
         $validator = Validator::make($request->all(), [
             'term_id' => 'required|exists:terms,id',
@@ -101,6 +102,7 @@ class TeacherProductivityController extends Controller
         }
 
         $schoolId = $this->schoolId();
+        $scheme = CaScheme::activeFor($schoolId);
         $file = $request->file('file');
         $rows = array_map('str_getcsv', file($file->getRealPath()));
         $header = array_shift($rows);
@@ -126,11 +128,10 @@ class TeacherProductivityController extends Controller
                 continue;
             }
 
-            $total = $firstCa + $secondCa + $exam;
-            $grade = 'F';
-            if ($total >= 75) $grade = 'A1';
-            elseif ($total >= 70) $grade = 'B2';
-            elseif ($total >= 65) $grade = 'B3';
+            // Was a three-step ladder (A1, B2, B3, else "F"), so a 60 was a fail.
+            $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $this->classLevels($schoolId, [$studentId])[$studentId] ?? null);
+            $total = $computed['percentage'];
+            $grade = $computed['grade'];
 
             ScoreEntry::updateOrCreate(
                 [
@@ -304,5 +305,20 @@ class TeacherProductivityController extends Controller
                 'Additional practice and regular revision recommended for optimal performance.',
             ]
         ]);
+    }
+
+    /**
+     * Each student's class level, for choosing their grading scale.
+     *
+     * @return array<int|string, string|null> keyed by student id
+     */
+    private function classLevels(int $schoolId, array $studentIds): array
+    {
+        return DB::table('students')
+            ->leftJoin('classes', 'classes.id', '=', 'students.class_id')
+            ->where('students.school_id', $schoolId)
+            ->whereIn('students.id', $studentIds)
+            ->pluck('classes.level_category', 'students.id')
+            ->all();
     }
 }

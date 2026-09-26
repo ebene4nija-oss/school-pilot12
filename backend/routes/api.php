@@ -634,6 +634,21 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         | Report card design templates (per school, imported)
         |------------------------------------------------------------------
         */
+        // Grading scales per class level, and asking SchoolPilot to design the
+        // report card. School admins only.
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/grading-scales', [\App\Http\Controllers\Api\V1\GradingScaleController::class, 'index']);
+            Route::put('/grading-scales/{level}', [\App\Http\Controllers\Api\V1\GradingScaleController::class, 'update']);
+            Route::delete('/grading-scales/{level}', [\App\Http\Controllers\Api\V1\GradingScaleController::class, 'destroy']);
+            Route::get('/report-cards/design-requests', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'index']);
+            Route::post('/report-cards/design-requests', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'store']);
+            Route::post('/report-cards/design-requests/{id}/files', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'addFiles'])->whereNumber('id');
+            Route::get('/report-cards/design-requests/{id}/files/{fileId}', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'downloadFile'])->whereNumber('id')->whereNumber('fileId');
+            Route::get('/report-cards/design-requests/{id}/preview', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'preview'])->whereNumber('id');
+            Route::post('/report-cards/design-requests/{id}/approve', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'approve'])->whereNumber('id');
+            Route::post('/report-cards/design-requests/{id}/request-changes', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'requestChanges'])->whereNumber('id');
+            Route::post('/report-cards/design-requests/{id}/cancel', [\App\Http\Controllers\Api\V1\ReportCardDesignRequestController::class, 'cancel'])->whereNumber('id');
+        });
         Route::get('/report-cards/template-contract', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'contract'])->middleware('role:super_admin,school_admin');
         Route::get('/report-cards/templates', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'index'])->middleware('role:super_admin,school_admin');
         Route::post('/report-cards/templates', [\App\Http\Controllers\Api\V1\ReportCardTemplateController::class, 'import'])->middleware('role:super_admin,school_admin');
@@ -815,6 +830,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/backups', [\App\Http\Controllers\Api\V1\PlatformComplianceController::class, 'backups']);
             Route::post('/platform/backups/restore-tests', [\App\Http\Controllers\Api\V1\PlatformComplianceController::class, 'recordRestoreTest']);
             Route::get('/platform/data-requests', [\App\Http\Controllers\Api\V1\PlatformComplianceController::class, 'dataRequests']);
+            // Report-card design requests from schools: the queue, their files,
+            // uploading the finished template. The school approves it.
+            Route::get('/platform/report-card-requests', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'index']);
+            Route::get('/platform/report-card-requests/{id}', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'show'])->whereNumber('id');
+            Route::get('/platform/report-card-requests/{id}/files/{fileId}', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'downloadFile'])->whereNumber('id')->whereNumber('fileId');
+            Route::get('/platform/report-card-requests/{id}/preview', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'preview'])->whereNumber('id');
+            Route::post('/platform/report-card-requests/{id}/start', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'start'])->whereNumber('id');
+            Route::post('/platform/report-card-requests/{id}/template', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'uploadTemplate'])->whereNumber('id');
+            Route::put('/platform/report-card-requests/{id}/grading-scales', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'updateScales'])->whereNumber('id');
+            Route::put('/platform/report-card-requests/{id}/notes', [\App\Http\Controllers\Api\V1\PlatformReportCardDesignController::class, 'notes'])->whereNumber('id');
             // AI report-card remarks per school: counts only, read-only.
             Route::get('/platform/ai-remarks', [\App\Http\Controllers\Api\V1\PlatformAiRemarksController::class, 'index']);
             Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);

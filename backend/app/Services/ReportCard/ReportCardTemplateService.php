@@ -324,6 +324,9 @@ HTML;
 
         $bySubject = $classScores->groupBy('subject_id');
 
+        // The school's own scale for this class level (WAEC if none is set).
+        $bands = \App\Models\GradingScale::bandsFor((int) $student->school_id, $student->currentClass?->level_category);
+
         $rows = [];
         foreach ($scores as $score) {
             $peers = $bySubject->get($score->subject_id, collect());
@@ -338,7 +341,7 @@ HTML;
                 'ca_total' => (float) $score->first_ca + (float) $score->second_ca,
                 'exam' => (float) $score->exam,
                 'total' => (float) $score->total_score,
-                'grade' => $score->grade,
+                'grade' => $score->grade ?: \App\Models\GradingScale::bandOf($bands, (float) $score->total_score)['grade'],
                 'position' => $position === false ? null : $position + 1,
                 'class_average' => $peers->count() ? round($peers->avg('total_score'), 2) : null,
                 'class_highest' => $peers->count() ? (float) $peers->max('total_score') : null,
@@ -408,7 +411,7 @@ HTML;
                 'subjects_count' => $scores->count(),
                 'total_score' => round((float) $total, 2),
                 'average' => $average,
-                'overall_grade' => $this->gradeFor($average),
+                'overall_grade' => \App\Models\GradingScale::bandOf($bands, (float) $average)['grade'],
             ],
             'attendance' => $attendance,
             'scores' => $rows,
@@ -417,7 +420,7 @@ HTML;
                 'principal' => $extra['principal_comment'] ?? null,
             ],
             'traits' => $extra['traits'] ?? [],
-            'grading_scale' => $extra['grading_scale'] ?? $this->defaultGradingScale(),
+            'grading_scale' => $extra['grading_scale'] ?? self::scaleForTemplate($bands),
             'verification' => $extra['verification'] ?? [],
             'generated_at' => now()->toDateString(),
         ], $extra['overrides'] ?? []);
@@ -445,34 +448,22 @@ HTML;
         ];
     }
 
-    private function gradeFor(float $score): string
+    /**
+     * Grade bands in the shape templates read: `{ grade, range, remark }` —
+     * the same shape as the fixed WAEC table templates were written against.
+     */
+    public static function scaleForTemplate(array $bands): array
     {
-        return match (true) {
-            $score >= 75 => 'A1',
-            $score >= 70 => 'B2',
-            $score >= 65 => 'B3',
-            $score >= 60 => 'C4',
-            $score >= 55 => 'C5',
-            $score >= 50 => 'C6',
-            $score >= 45 => 'D7',
-            $score >= 40 => 'E8',
-            default => 'F9',
-        };
+        return array_map(fn ($b) => [
+            'grade' => $b['grade'],
+            'range' => "{$b['min']} - {$b['max']}",
+            'remark' => $b['remark'] ?? '',
+        ], $bands);
     }
 
     private function defaultGradingScale(): array
     {
-        return [
-            ['grade' => 'A1', 'range' => '75 - 100', 'remark' => 'Excellent'],
-            ['grade' => 'B2', 'range' => '70 - 74', 'remark' => 'Very Good'],
-            ['grade' => 'B3', 'range' => '65 - 69', 'remark' => 'Good'],
-            ['grade' => 'C4', 'range' => '60 - 64', 'remark' => 'Credit'],
-            ['grade' => 'C5', 'range' => '55 - 59', 'remark' => 'Credit'],
-            ['grade' => 'C6', 'range' => '50 - 54', 'remark' => 'Credit'],
-            ['grade' => 'D7', 'range' => '45 - 49', 'remark' => 'Pass'],
-            ['grade' => 'E8', 'range' => '40 - 44', 'remark' => 'Pass'],
-            ['grade' => 'F9', 'range' => '0 - 39', 'remark' => 'Fail'],
-        ];
+        return self::scaleForTemplate(\App\Models\GradingScale::WAEC);
     }
 
     /**

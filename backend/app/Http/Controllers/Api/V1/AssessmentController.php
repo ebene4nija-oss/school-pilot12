@@ -51,7 +51,13 @@ class AssessmentController extends Controller
         $secondCa = (float) $request->input('second_ca', 0);
         $exam = (float) $request->input('exam', 0);
 
-        $computed = $grading->total($scheme, $firstCa, $secondCa, $exam);
+        // Graded on the school's scale for this student's class level.
+        $level = \App\Models\Student::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->with('currentClass:id,level_category')
+            ->find($request->input('student_id'))?->currentClass?->level_category;
+
+        $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $level);
 
         $entry = ScoreEntry::updateOrCreate(
             [

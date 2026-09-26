@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CaScheme;
+use App\Models\GradingScale;
 use App\Models\ScoreEntry;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,52 @@ use Illuminate\Support\Facades\DB;
  */
 class GradingService
 {
+    /**
+     * The grade for a percentage on the school's own scale for a class level
+     * (GradingScale::bandsFor), falling back to WAEC where none is set.
+     */
+    public function gradeFor(?int $schoolId, ?string $level, float $percentage): string
+    {
+        return GradingScale::bandOf(GradingScale::bandsFor($schoolId, $level), $percentage)['grade'];
+    }
+
+    /**
+     * Re-grade one term's scores for the classes a scale applies to, after the
+     * scale changed. One term only: grades already issued on past report cards
+     * stay what they were.
+     *
+     * @return int score entries re-graded
+     */
+    public function regradeTerm(int $schoolId, int $termId, string $level): int
+    {
+        $classIds = DB::table('classes')
+            ->where('school_id', $schoolId)
+            ->when($level !== 'default', fn ($q) => $q->where('level_category', $level))
+            ->pluck('level_category', 'id');
+
+        $changed = 0;
+
+        ScoreEntry::withoutGlobalScopes()
+            ->where('score_entries.school_id', $schoolId)
+            ->where('term_id', $termId)
+            ->join('students', 'students.id', '=', 'score_entries.student_id')
+            ->whereIn('students.class_id', $classIds->keys())
+            ->select('score_entries.*', 'students.class_id as student_class_id')
+            ->orderBy('score_entries.id')
+            ->chunk(500, function ($entries) use ($schoolId, $classIds, &$changed) {
+                foreach ($entries as $entry) {
+                    $grade = $this->gradeFor($schoolId, $classIds[$entry->student_class_id] ?? null, (float) $entry->total_score);
+
+                    if ($grade !== $entry->grade) {
+                        ScoreEntry::withoutGlobalScopes()->whereKey($entry->id)->update(['grade' => $grade]);
+                        $changed++;
+                    }
+                }
+            });
+
+        return $changed;
+    }
+
     /** WAEC nine-point scale — not letter grades, not a GPA (doc "Hard Rules"). */
     public function waecGrade(float $percentage): string
     {
@@ -45,9 +92,11 @@ class GradingService
      * rejected: a school running 10 + 10 + 40 means "out of 60", and a parent
      * reading the card expects a percentage.
      *
+     * The grade is on the school's scale for the student's class level.
+     *
      * @return array{raw: float, percentage: float, grade: string}
      */
-    public function total(CaScheme $scheme, float $firstCa, float $secondCa, float $exam): array
+    public function total(CaScheme $scheme, float $firstCa, float $secondCa, float $exam, ?string $level = null): array
     {
         $raw = $firstCa + $secondCa + $exam;
         $weight = $scheme->totalWeight();
@@ -57,7 +106,7 @@ class GradingService
         return [
             'raw' => round($raw, 2),
             'percentage' => $percentage,
-            'grade' => $this->waecGrade($percentage),
+            'grade' => $this->gradeFor($scheme->school_id ? (int) $scheme->school_id : null, $level, $percentage),
         ];
     }
 
