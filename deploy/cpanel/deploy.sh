@@ -168,8 +168,15 @@ if [ -n "${TENANT_SUBDOMAIN:-}" ]; then
     echo "    tenant routing healthy ($TENANT_SUBDOMAIN)"
 fi
 
-curl -fsS -o /dev/null "https://schoolpilot.org.ng/" \
-    || { echo "fatal: web portal did not come up — staying in maintenance mode" >&2; exit 1; }
+# Retried, like /up above. This runs seconds after `systemctl restart
+# schoolpilot-web`, and Next.js takes a moment to bind its port — a single shot
+# here fails a perfectly good deploy and leaves the platform sitting in
+# maintenance mode because the server had not finished starting.
+for i in $(seq 1 15); do
+    curl -fsS -o /dev/null "https://schoolpilot.org.ng/" && break
+    [ "$i" -eq 15 ] && { echo "fatal: web portal did not come up — staying in maintenance mode" >&2; exit 1; }
+    sleep 2
+done
 echo "    web portal healthy"
 
 # The portal's own API path, which is the check this script was missing.
@@ -186,7 +193,14 @@ echo "    web portal healthy"
 # as JSON when there is no session, which is a perfectly good signal: it proves
 # the request reached Next.js rather than Laravel. A 404 means Apache is routing
 # it to the wrong application again.
-PORTAL_API_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "https://schoolpilot.org.ng/api/backend/user" || echo 000)
+# Retried for the same reason, and a connection failure (000) is treated as
+# "not up yet" rather than as a verdict.
+PORTAL_API_STATUS=000
+for i in $(seq 1 15); do
+    PORTAL_API_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "https://schoolpilot.org.ng/api/backend/user" || echo 000)
+    [ "$PORTAL_API_STATUS" != "000" ] && break
+    sleep 2
+done
 
 case "$PORTAL_API_STATUS" in
     401|200)
