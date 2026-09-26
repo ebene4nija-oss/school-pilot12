@@ -27,9 +27,11 @@ class School extends Model
         'ai_api_settings',
         'result_checker_enabled',
         'result_pin_retail_price',
+        'is_platform',
     ];
 
     protected $casts = [
+        'is_platform' => 'boolean',
         'ai_enabled' => 'boolean',
         'result_checker_enabled' => 'boolean',
         'result_pin_retail_price' => 'decimal:2',
@@ -39,4 +41,22 @@ class School extends Model
         'longitude' => 'decimal:7',
         'geofence_radius_meters' => 'integer',
     ];
+
+    /**
+     * Real schools — the ones with pupils in them.
+     *
+     * SchoolPilot's own row exists only so the operator has a subdomain to sign
+     * in through. Counting it as a tenant reported "Schools 1" for a platform
+     * that had not yet onboarded anybody.
+     */
+    public function scopeTenants($query)
+    {
+        return $query->where('is_platform', false);
+    }
+
+    /** SchoolPilot's own row, not a customer. */
+    public function scopePlatform($query)
+    {
+        return $query->where('is_platform', true);
+    }
 }

@@ -44,7 +44,13 @@ class PlatformController extends Controller
     public function overview()
     {
         return $this->tenant->withoutScoping(function () {
+            /*
+             * `tenants()` excludes SchoolPilot's own row. That row exists only
+             * to give the operator a subdomain to sign in through, and counting
+             * it reported "Schools 1" for a platform with no customers on it.
+             */
             $schoolsByStatus = School::query()
+                ->tenants()
                 ->selectRaw('status, COUNT(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status');
@@ -129,7 +135,8 @@ class PlatformController extends Controller
         $status = $request->query('status');
 
         return $this->tenant->withoutScoping(function () use ($search, $status) {
-            $query = School::query()->orderBy('name');
+            // Customers only — see overview() above.
+            $query = School::query()->tenants()->orderBy('name');
 
             if ($search !== '') {
                 $query->where(function ($q) use ($search) {
@@ -288,6 +295,20 @@ class PlatformController extends Controller
 
             if (! $school) {
                 return response()->json(['message' => 'School not found'], 404);
+            }
+
+            /*
+             * SchoolPilot's own row is not a tenant and cannot be suspended.
+             *
+             * Every login resolves a tenant from the host, the operator's
+             * included, so suspending this row would block sign-in through the
+             * subdomain the operator uses — locking them out of the console
+             * that has the button. There is no way back in from the browser.
+             */
+            if ($school->is_platform) {
+                return response()->json([
+                    'message' => 'That is SchoolPilot\'s own record, not a school. Suspending it would block operator sign-in.',
+                ], 422);
             }
 
             $previous = $school->status;

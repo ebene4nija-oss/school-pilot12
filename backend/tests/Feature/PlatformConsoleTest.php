@@ -240,4 +240,88 @@ class PlatformConsoleTest extends TestCase
             ->assertOk()
             ->assertJsonCount(5, 'data');
     }
+
+    // ---------------------------------------------------------------- platform row
+
+    /**
+     * SchoolPilot's own row is not a customer.
+     *
+     * Every login resolves a tenant from the host, the operator's included, so
+     * SchoolPilot holds a row in `schools` purely to give itself a subdomain to
+     * sign in through. Listing it made the console report a school that has no
+     * pupils, pays no fees and belongs to no proprietor.
+     */
+    private function platformSchool(): School
+    {
+        return School::create([
+            'name' => 'SchoolPilot HQ',
+            'slug' => 'admin',
+            'subdomain' => 'admin',
+            'status' => 'active',
+            'is_platform' => true,
+        ]);
+    }
+
+    public function test_the_platform_row_is_not_listed_as_a_school(): void
+    {
+        $this->platformSchool();
+
+        $response = $this->actingAs($this->superAdmin, 'sanctum')
+            ->getJson('/api/v1/platform/schools')
+            ->assertOk()
+            // Still the two real schools, not three.
+            ->assertJsonPath('meta.total', 2);
+
+        $this->assertStringNotContainsString('SchoolPilot HQ', $response->getContent());
+    }
+
+    public function test_the_platform_row_is_not_counted_as_a_school(): void
+    {
+        $this->platformSchool();
+
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->getJson('/api/v1/platform/overview')
+            ->assertOk()
+            ->assertJsonPath('schools.total', 2)
+            ->assertJsonPath('schools.active', 1);
+    }
+
+    /**
+     * The footgun. Suspending this row blocks sign-in through the subdomain the
+     * operator authenticates with, and the button to undo it is inside the
+     * console they would no longer be able to reach.
+     */
+    public function test_the_platform_row_cannot_be_suspended(): void
+    {
+        $platform = $this->platformSchool();
+
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson("/api/v1/platform/schools/{$platform->id}/status", ['status' => 'suspended'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('schools', ['id' => $platform->id, 'status' => 'active']);
+    }
+
+    /** Real schools are still suspendable — the guard is narrow. */
+    public function test_a_real_school_can_still_be_suspended(): void
+    {
+        $this->platformSchool();
+
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->postJson("/api/v1/platform/schools/{$this->greenfield->id}/status", ['status' => 'suspended'])
+            ->assertOk()
+            ->assertJsonPath('school.status', 'suspended');
+    }
+
+    /** A brand-new platform reports no schools, rather than one. */
+    public function test_a_platform_with_no_customers_reports_none(): void
+    {
+        School::query()->whereKey([$this->greenfield->id, $this->graceland->id])->forceDelete();
+        $this->platformSchool();
+
+        $this->actingAs($this->superAdmin, 'sanctum')
+            ->getJson('/api/v1/platform/overview')
+            ->assertOk()
+            ->assertJsonPath('schools.total', 0);
+    }
 }
