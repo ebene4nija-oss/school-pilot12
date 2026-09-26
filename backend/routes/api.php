@@ -483,6 +483,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * no way to find out what it said. Scoped by `user_id`, not by school,
          * so an admin calling it gets their own messages like anyone else.
          */
+        // Your own phone number and photo (gap G3). POST, because PHP does not
+        // parse multipart bodies on PUT and the photo is a file upload.
+        Route::post('/me/profile', [\App\Http\Controllers\Api\V1\SelfProfileController::class, 'update']);
         Route::get('/me/notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'inbox']);
         Route::post('/me/notifications/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markInboxRead']);
 

@@ -636,7 +636,7 @@ should be worked around by hacking the client.
 |---|---|---|---|
 | **G1** | ~~No `POST /auth/logout`.~~ **Done.** `POST /api/v1/auth/logout` deletes the token that made the request, leaving the user's other sessions alone. `AuthController::logout`. | — | — |
 | **G2** | ~~No self-service password reset.~~ **Done.** `POST /api/v1/auth/forgot-password` and `POST /api/v1/auth/reset-password`, backed by `PasswordResetService` and Laravel's `password_reset_tokens` broker. | — | — |
-| **G3** | `PUT /users/{id}/profile` is admin-only. | Students and parents cannot update their own phone number or photo. | Add a `PUT /me/profile` scoped to the caller. |
+| ~~**G3**~~ | ~~`PUT /users/{id}/profile` is admin-only.~~ | ~~Students and parents cannot update their own phone number or photo.~~ | **Fixed.** `POST /api/v1/me/profile` (multipart; POST because PHP does not parse multipart on PUT) takes `phone` and/or `photo` (jpg/png/webp, ≤ 2 MB). The phone is normalised to `0803…` and refused if anyone else at the school has it in any form, because the number is how the school recognises a family. The photo is the account's own picture; a student's official passport photo on ID cards and report cards stays the school's to set. |
 | ~~**G4**~~ | ~~`GET /cbt/exams/{examId}/offline-package` is staff-only.~~ | ~~A student device cannot pre-download a paper.~~ | **Fixed, and the decision made: mobile candidates may pre-cache.** The same path now serves two payloads. Staff get the paper's shape for provisioning a lab; a candidate gets a **media manifest only** — checksums, sizes and asset URLs, no question text, no options, no answers — bound by `CbtExamPolicy::sit`, requiring a published paper that has not closed, and deliberately available *before* `opens_at`, because downloading fourteen megabytes of diagrams the night before over school wifi is the entire point. Questions still arrive only from `startAttempt`. |
 | ~~**G5**~~ | ~~No student- or parent-facing homework list.~~ | ~~A student cannot discover what homework exists.~~ | **Fixed.** `GET /api/v1/academics/homework`, one route with three scopings: a student to their class, a guardian to a child the pivot says is theirs (`student_id` when they have more than one), a teacher to their own assignments. Students and guardians also get `submitted`, `overdue` and any mark; `overdue` is computed server-side so it cannot disagree with the lateness rule submissions already use. |
 | ~~**G6**~~ | ~~`GET /notifications/history` is admin-only.~~ | ~~A parent can receive a push but cannot see what they were sent.~~ | **Fixed.** `GET /api/v1/me/notifications` and `POST /api/v1/me/notifications/read`, scoped by `user_id` rather than by school — an admin calling it gets their own messages like anyone else, and the ledger stays where it was. `notification_logs` grew a `read_at`, without which there is no unread count and so no badge. Failed and queued sends are excluded: a message the phone never received is not an inbox item. |
@@ -649,9 +649,8 @@ should be worked around by hacking the client.
 
 **Handling.** None of these were worked around in the client. Where a gap blocks
 a control, the app shows what to do instead of offering a button that cannot
-work, and the code says which gap it is waiting on. **Only G3 is left** — a
-student or parent still cannot edit their own phone number or photo, which
-blocks one control on one screen. Everything else in this table is done.
+work, and the code says which gap it is waiting on. **Every gap in this table
+is now closed.**
 
 **On G10 and the two lists that were not paginated.** The audit found most list
 endpoints already carrying `paginate()`; `GET /students`, the question bank, the
