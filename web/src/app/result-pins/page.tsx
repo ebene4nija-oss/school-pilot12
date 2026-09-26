@@ -184,11 +184,34 @@ function Overview({ inventory, pricing, onSaved }: { inventory: Inventory; prici
   const [enabled, setEnabled] = useState(inventory.settings.result_checker_enabled);
   const [retail, setRetail] = useState(inventory.settings.retail_price ?? '');
   const [quantity, setQuantity] = useState('100');
+  const [gateway, setGateway] = useState<'paystack' | 'flutterwave'>('paystack');
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const qty = Number(quantity) || 0;
   const unit = quote(pricing, qty);
+
+  /**
+   * Reserve the batch and go to the payment page. The server works out the
+   * price; the PINs arrive when the gateway confirms payment.
+   */
+  const payOnline = async () => {
+    setPaying(true);
+    setPayError(null);
+
+    try {
+      const res = await fetchApi<{ authorization_url: string }>('/result-pins/batches', {
+        method: 'POST',
+        body: JSON.stringify({ quantity: qty, gateway }),
+      });
+      window.location.href = res.authorization_url;
+    } catch (err) {
+      setPayError(errorText(err, 'Could not open the payment page.'));
+      setPaying(false);
+    }
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,9 +284,20 @@ function Overview({ inventory, pricing, onSaved }: { inventory: Inventory; prici
               </div>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <select value={gateway} onChange={(e) => setGateway(e.target.value as 'paystack' | 'flutterwave')} className={`${inputClass} w-auto`} aria-label="Pay with">
+                <option value="paystack">Paystack</option>
+                <option value="flutterwave">Flutterwave</option>
+              </select>
+              <Button variant="accent" disabled={paying || unit === null || qty < 1} onClick={payOnline}>
+                {paying ? 'Opening payment…' : unit !== null ? `Pay ${nairaAmount(unit * qty)} online` : 'Pay online'}
+              </Button>
+            </div>
+            {payError && <p className="mt-2 text-sm text-negative">{payError}</p>}
+
             <p className="mt-4 rounded-lg bg-info-soft px-3 py-2 text-xs text-info">
-              To buy, pay SchoolPilot by bank transfer and send the proof of payment to your SchoolPilot contact. The
-              PINs appear here as soon as the payment is confirmed.
+              Paying cash or by bank transfer instead? Pay SchoolPilot directly and tell your SchoolPilot contact; they
+              add the PINs to your stock once the money is received.
             </p>
           </>
         )}

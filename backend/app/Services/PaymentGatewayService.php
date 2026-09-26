@@ -275,6 +275,28 @@ class PaymentGatewayService
         return $this->platformSigningSecret($gateway);
     }
 
+    /**
+     * SchoolPilot's own merchant account, for the one payment that is owed to
+     * SchoolPilot: a school buying result-PIN stock.
+     *
+     * An unsaved credentials object built from config, so it goes through the
+     * same initializeCheckout path as a school's account. Never persisted, and
+     * never used for a parent's payment — that money belongs to the school.
+     */
+    public function platformCredentials(string $gateway): ?SchoolPaymentGateway
+    {
+        $secret = config($gateway === 'flutterwave' ? 'services.flutterwave.secret' : 'services.paystack.secret');
+
+        if (! is_string($secret) || trim($secret) === '') {
+            return null;
+        }
+
+        $credentials = new SchoolPaymentGateway();
+        $credentials->forceFill(['gateway' => $gateway, 'is_active' => true, 'secret_key' => $secret]);
+
+        return $credentials;
+    }
+
     private function platformSigningSecret(string $gateway): ?string
     {
         $secret = $gateway === 'flutterwave'

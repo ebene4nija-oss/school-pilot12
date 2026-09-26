@@ -66,6 +66,10 @@ class ResultCheckerPinTest extends TestCase
             ]),
         ]);
 
+        // SchoolPilot's own account, which a school's PIN-stock purchase is
+        // paid into. Faked above like every gateway call.
+        config(['services.paystack.secret' => 'test_secret']);
+
         $this->school = School::create([
             'name' => 'Graceland College',
             'slug' => 'graceland',
@@ -664,6 +668,58 @@ class ResultCheckerPinTest extends TestCase
 
         $this->assertSame('active', ResultPinBatch::first()->status);
         $this->assertSame(500, ResultPin::where('status', 'available')->count());
+    }
+
+    /**
+     * Online stock purchases are paid into SchoolPilot's account, never the
+     * school's own, and the amount charged is the server's quote.
+     */
+    public function test_buying_a_batch_online_opens_checkout_on_the_platform_account()
+    {
+        // The school has its own merchant account; it must not be used.
+        SchoolPaymentGateway::create([
+            'school_id' => $this->school->id, 'gateway' => 'paystack', 'is_active' => true,
+            'public_key' => 'pk_school', 'secret_key' => 'sk_school_own', 'webhook_secret' => null,
+        ]);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 500, 'gateway' => 'paystack', 'amount' => 1])
+            ->assertStatus(201)
+            ->assertJsonPath('authorization_url', 'https://checkout.paystack.com/test-checkout');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'transaction/initialize')
+                && $request->hasHeader('Authorization', 'Bearer test_secret')
+                && $request['amount'] === 40000_00
+                && $request['email'] === 'bello@graceland.test'
+                && str_starts_with($request['reference'], 'SPRB');
+        });
+    }
+
+    public function test_without_a_platform_key_a_school_is_told_to_pay_offline()
+    {
+        config(['services.paystack.secret' => null]);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(409)
+            ->assertJsonPath('error', 'Online payment for PINs is not available yet. Pay SchoolPilot by bank transfer or cash and the PINs will be added to your stock.');
+
+        $this->assertDatabaseCount('result_pin_batches', 0);
+    }
+
+    public function test_a_gateway_failure_leaves_no_pending_batch()
+    {
+        // Replace setUp's successful fake: stubs added later do not override earlier ones.
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake(['api.paystack.co/*' => Http::response(['status' => false, 'message' => 'Invalid key'], 401)]);
+
+        $this->as($this->admin)
+            ->postJson('/api/v1/result-pins/batches', ['quantity' => 100, 'gateway' => 'paystack'])
+            ->assertStatus(502);
+
+        $this->assertDatabaseCount('result_pin_batches', 0);
     }
 
     public function test_an_underpaid_batch_mints_no_pins()

@@ -12,6 +12,8 @@ use App\Models\ResultRelease;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Term;
+use App\Exceptions\PaymentGatewayException;
+use App\Services\PaymentGatewayService;
 use App\Services\ResultPinPricing;
 use App\Services\ResultPinService;
 use Illuminate\Http\Request;
@@ -100,11 +102,17 @@ class ResultPinController extends Controller
     /**
      * Buy PIN stock from SchoolPilot.
      *
-     * Creates a pending batch and a reference. No PINs exist until the gateway
-     * webhook confirms — see FinanceController::handleWebhook. An abandoned
-     * checkout therefore leaves a pending batch and nothing sellable.
+     * Creates a pending batch and opens a checkout on SchoolPilot's own
+     * Paystack or Flutterwave account — never the school's, since this money is
+     * owed to SchoolPilot. No PINs exist until the gateway webhook confirms
+     * (FinanceController::handleWebhook, verified against the platform key). An
+     * abandoned checkout therefore leaves a pending batch and nothing sellable.
+     *
+     * The amount is the server's quote; the client sends only a quantity.
+     * Schools paying by transfer or cash do not come through here: SchoolPilot
+     * grants their PINs from the console (PlatformResultPinController).
      */
-    public function purchaseBatch(Request $request)
+    public function purchaseBatch(Request $request, PaymentGatewayService $gateways)
     {
         $max = (int) config('schoolpilot.result_pin_max_batch_quantity', 10000);
 
@@ -130,12 +138,42 @@ class ResultPinController extends Controller
             ], 409);
         }
 
+        $credentials = $gateways->platformCredentials($request->gateway);
+
+        if (! $credentials) {
+            return response()->json([
+                'error' => 'Online payment for PINs is not available yet. Pay SchoolPilot by bank transfer or cash and the PINs will be added to your stock.',
+            ], 409);
+        }
+
+        $reference = $this->pins->generateReference('SPRB');
+        $total = bcmul((string) $unitPrice, (string) (int) $request->quantity, 2);
+        $payer = $request->user();
+
+        if (! filled($payer->email)) {
+            return response()->json(['error' => 'Your account needs an email address to pay online.'], 409);
+        }
+
+        try {
+            $checkout = $gateways->initializeCheckout($credentials, [
+                'reference' => $reference,
+                'amount' => (float) $total,
+                'email' => $payer->email,
+                'name' => $payer->name,
+                'title' => 'SchoolPilot result PINs',
+                'callback_url' => route('payments.return'),
+                'metadata' => ['school_id' => $schoolId, 'quantity' => (int) $request->quantity, 'purpose' => 'result_pin_batch'],
+            ]);
+        } catch (PaymentGatewayException $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+
         $batch = ResultPinBatch::create([
             'school_id' => $schoolId,
-            'reference' => $this->pins->generateReference('SPRB'),
+            'reference' => $reference,
             'quantity' => (int) $request->quantity,
             'unit_price' => $unitPrice,
-            'total_amount' => bcmul((string) $unitPrice, (string) (int) $request->quantity, 2),
+            'total_amount' => $total,
             'source' => 'online',
             'gateway' => $request->gateway,
             'status' => 'pending',
@@ -143,6 +181,8 @@ class ResultPinController extends Controller
 
         return response()->json([
             'message' => 'Batch reserved. Complete payment to receive your PINs.',
+            // Open this. The PINs are issued when the gateway confirms payment.
+            'authorization_url' => $checkout['authorization_url'],
             'batch' => [
                 'id' => $batch->id,
                 'reference' => $batch->reference,
