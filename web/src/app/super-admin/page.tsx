@@ -276,13 +276,10 @@ export default function SuperAdminConsole() {
 
   return (
     <PageShell
-      title="Operator console"
+      title="Schools"
       subtitle="Every school on the platform, platform AI spend, and tenant status."
       actions={
         <div className="flex gap-2">
-          <Link href="/super-admin/settings">
-            <Button variant="secondary">Platform settings</Button>
-          </Link>
           <Button
             variant="accent"
             onClick={() => {
@@ -534,7 +531,9 @@ export default function SuperAdminConsole() {
                 {schools.map((school) => (
                   <tr key={school.id}>
                     <Cell className="font-medium text-brand">
-                      {school.name}
+                      <Link href={`/super-admin/schools/${school.id}`} className="hover:underline">
+                        {school.name}
+                      </Link>
                       {school.email && (
                         <span className="block text-xs text-ink-muted">{school.email}</span>
                       )}

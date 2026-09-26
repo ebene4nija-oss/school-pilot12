@@ -10,19 +10,14 @@ Spec reference: doc §5 — *"Super Admin manages schools, subscriptions, platfo
 
 | Spec area (§5) | State | Where |
 |---|---|---|
-| Schools | ✅ Built | Console → Schools; `/platform/schools` |
+| Schools | ✅ Built | Schools directory, School detail, Onboarding & migrations; `/platform/schools`, `/platform/school-migrations` |
 | Platform-wide settings | ✅ Built | Platform settings; `/platform/settings` |
-| AI service configuration | ✅ Built | Platform settings → AI service; per-school switch in Schools |
+| AI service configuration | ✅ Built | AI service; per-school switch on School detail and the directory |
 | Cross-school reporting | 🟡 Partial | Four headline tiles and today's AI spend. No trends, no exports. |
-| Subscriptions | ❌ Not built | §13 plan bands appear only as a label derived from the roll. Nothing records what a school is on or owes. |
-| Platform security | ❌ Not built | No platform view of 2FA enrolment, sessions or the audit log. |
+| Subscriptions | 🟡 Partial | Result PINs (rate card, school rates, offline grants, sales ledger) are built. §13 term plans are not: the band is only a label derived from the roll, and nothing records what a school is on or owes. |
+| Platform security | 🟡 Partial | Security (admin 2FA, sessions, sign-out-everywhere) and Audit log are built. The operator IP allowlist is not. |
 
-Built with an API but **no screen yet**:
-
-| Feature | API | Why it matters |
-|---|---|---|
-| Migration request queue | `/platform/school-migrations` | Schools request assisted migration with a 24-hour promise; the queue that fulfils it is only reachable through the API. |
-| Result-PIN rate card, school rates and grants | `/platform/result-pins/*` | Wholesale pricing and offline PIN grants for schools that paid by transfer. |
+The full menu, and what is still to build, is in `super-admin-menu.md`.
 
 ---
 
@@ -71,6 +66,28 @@ Creates the school **and its first administrator** in one transaction — a scho
 
 On success the console shows the sign-in address, school code, administrator and a **temporary password shown once** — it cannot be retrieved afterwards. A setup link is also emailed if mail is configured; the panel says whether it was.
 
+### School detail — `/super-admin/schools/{id}`
+
+Reached by clicking a school's name. Everything needed to answer a support call without opening the school:
+
+- Tiles: active students, school fees collected and outstanding (the school's money, not SchoolPilot's), AI spend this month, status.
+- Profile, AI switch, account counts by role, and a link to that school's administrators on Security.
+- **Internal support notes.** Operator-only: calls, promises, special arrangements. The school never sees them; no school-side route reads `school_support_notes`.
+- **Result PIN purchases**: what the school has paid SchoolPilot.
+- **Recent activity**: the last ten audit rows for the school, with a link to the full audit log filtered to it.
+- Actions: Open school, Suspend (with a confirmation) or Reinstate.
+
+### Onboarding & migrations — `/super-admin/migrations`
+
+Open migration requests across schools, overdue first, each with a due-in or hours-overdue badge counted from the 24-hour promise. **Start**, **Mark complete** or **Cancel request**. *Notes to the school* are shown to the school, so they are not the place for internal remarks. Internal remarks go in School detail's support notes.
+
+### Result PINs — `/super-admin/result-pins`
+
+- **Issue PINs for an offline payment**: school, quantity, optional unit price (empty means the school's agreed rate, then the rate card), bank transfer or cash, and a required reference. The codes are shown **once**, as a CSV download.
+- **Rate card**: add or reprice a band by order size; withdraw or restore it. Past batches keep the price they were bought at.
+- **Agreed school rates**: a flat per-PIN price for one school, with a required reason; **Lift** returns the school to the rate card.
+- **Batches**: every batch across schools (latest 200), with revenue and PINs-issued totals.
+
 ---
 
 ## 4. Working inside a school
@@ -87,9 +104,9 @@ An operator who has *not* opened a school has no acting school. School-scoped en
 
 ---
 
-## 5. Platform settings — `/super-admin/settings`
+## 5. Platform settings — `/super-admin/settings` and AI service — `/super-admin/ai`
 
-Integration keys and AI configuration for every school. **Values saved here override the server's `backend.env`**; anything not set here keeps the server's value, so a deployment that never opens this screen behaves exactly as before.
+Integration keys and AI configuration for every school. Both screens edit the same registry: **AI service** shows the AI group and today's spend; **Platform settings** shows every other group. **Values saved here override the server's `backend.env`**; anything not set here keeps the server's value, so a deployment that never opens this screen behaves exactly as before.
 
 ### How values are handled
 
@@ -157,6 +174,22 @@ Any key not in this registry is refused with `422`.
 
 ---
 
+## 5a. Security — `/super-admin/security` and `/super-admin/audit-log`
+
+### Security
+
+Every administrator account (school admins and operators) with 2FA state, active session count, last sign-in and lockout. Tiles count accounts with and without 2FA, and say whether the server actually enforces 2FA at sign-in (`AUTH_REQUIRE_ADMIN_2FA`). You can filter by name or email, by 2FA state, and by school when you arrive from School detail.
+
+**Sign out everywhere** deletes the account's tokens: this is the first response to a suspected compromise. It is limited to administrator accounts; teachers' and parents' sessions are the school's to manage. It is refused for the operator's own account, and it is audited.
+
+### Audit log
+
+Every `audit_logs` row across schools, newest first, 50 per page. Filters: kind (operator actions `platform.*` / school activity), school, action prefix, date range.
+
+**Values are shown for platform actions only.** A school-side row, such as a student record edited, carries a child's personal data in its old and new values. The log shows *which fields* changed, not what they changed to (NDPA data minimisation, doc §12). To see the record, open the school.
+
+---
+
 ## 6. API reference
 
 All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and return `403` for any other role.
@@ -171,6 +204,8 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | GET | `/platform/schools/{id}` | — | `school`, `students`, `staff_by_role`, `fee_flow`, `ai_spend_naira_this_month` |
 | POST | `/platform/schools/{id}/status` | `status`: `active`\|`trial`\|`suspended` | `school`. `422` for the platform row. |
 | POST | `/platform/schools/{id}/ai` | `enabled`: boolean | `school`. `404` for the platform row. |
+| GET | `/platform/schools/{id}/notes` | — | `data[]` (id, body, author, created_at), newest first, up to 200. `404` for the platform row. |
+| POST | `/platform/schools/{id}/notes` | `body` (≤ 5000) | `201` with `data`. |
 
 ### Settings and AI
 
@@ -180,14 +215,14 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | PUT | `/platform/settings` | `values`: `{key: value}`; `clear`: `[key]` | Same as GET. A secret sent empty is unchanged; any other setting sent empty reverts to the server value. `422` for unknown keys or invalid values, with errors keyed `values.<key>`. |
 | GET | `/platform/ai-usage` | — | `date`, `cap_naira`, `schools_with_ai_enabled`, `data[]` (school, calls, spent_naira, cap_used_percentage, at_cap) |
 
-### Migrations *(no screen yet)*
+### Migrations
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/platform/school-migrations` | — | Open requests across schools, overdue first, each with its `school` |
 | PUT | `/platform/school-migrations/{id}` | `status`: `submitted`\|`in_progress`\|`completed`\|`cancelled`; `operator_notes?` | The request. Completing stamps `completed_at`; notes are shown to the school. |
 
-### Result PINs *(no screen yet)*
+### Result PINs
 
 | Method | Path | Body |
 |---|---|---|
@@ -196,6 +231,14 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | DELETE | `/platform/result-pins/school-rates/{schoolId}` | — |
 | GET | `/platform/result-pins/batches` | — |
 | POST | `/platform/result-pins/grant` | `school_id`, `quantity`, `unit_price?`, `gateway?` (`bank_transfer`\|`cash`), `notes` |
+
+### Security
+
+| Method | Path | Body / query | Returns |
+|---|---|---|---|
+| GET | `/platform/audit-log` | `?school_id=`, `?scope=platform\|school`, `?action=` (prefix), `?from=`, `?to=` (dates), `?page=` | `data[]` (id, at, action, school, actor, record, changed_fields, old_values/new_values — **null unless the action is `platform.*`**, ip_address), `meta` |
+| GET | `/platform/security/admins` | `?school_id=`, `?two_factor=on\|off`, `?search=` | `summary` (admins, with_two_factor, without_two_factor, locked, two_factor_required), `data[]` (id, name, email, role, school, two_factor_enabled, active_sessions, last_login_at, locked_until, status), `meta` |
+| POST | `/platform/security/admins/{userId}/revoke-sessions` | — | `sessions_revoked`. `404` unless the user is a school admin or operator; `422` for your own account. |
 
 ### Headers
 
@@ -214,15 +257,11 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | `platform.school.status_changed` | Old and new status |
 | `platform.school.ai_toggled` | Old and new `ai_enabled` |
 | `platform.settings.updated` | Keys changed and keys cleared — never values |
+| `platform.user.sessions_revoked` | The administrator whose sessions were revoked, and how many |
 | `platform.result_pin_school_rate_set`, grants | As recorded by the result-PIN console |
 
 ---
 
 ## 8. Next to build
 
-In order of what they unblock:
-
-1. **Screens for the migration queue and result-PIN console** — the API exists and is tested.
-2. **Platform security** — 2FA enrolment across operators and school admins, active sessions, and a searchable audit log.
-3. **Subscriptions** — record each school's plan and term billing per §13, charged at result generation and premium CBT. Needs pricing decisions first.
-4. **Cross-school reporting** — trends over terms, and exports.
+See `super-admin-menu.md` §5. In short: term subscriptions (blocked on §13 pricing decisions), the operator IP allowlist (auth change: risk note first), then compliance, cross-school reports and support.

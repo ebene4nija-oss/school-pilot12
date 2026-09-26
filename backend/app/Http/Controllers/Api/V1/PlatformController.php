@@ -8,6 +8,7 @@ use App\Models\CbtAttempt;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\School;
+use App\Models\SchoolSupportNote;
 use App\Models\Student;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -470,6 +471,71 @@ class PlatformController extends Controller
                 ],
             ]);
         });
+    }
+
+    /**
+     * An operator's internal notes on one school, newest first.
+     *
+     * SchoolPilot's own record of calls, promises and special arrangements.
+     * The school never sees these; there is no school-side route to them.
+     */
+    public function notes(int $schoolId)
+    {
+        return $this->tenant->withoutScoping(function () use ($schoolId) {
+            $school = School::query()->tenants()->find($schoolId);
+
+            if (! $school) {
+                return response()->json(['message' => 'School not found'], 404);
+            }
+
+            $notes = SchoolSupportNote::query()
+                ->with('author:id,name')
+                ->where('school_id', $school->id)
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(200)
+                ->get();
+
+            return response()->json([
+                'data' => $notes->map(fn (SchoolSupportNote $note) => $this->presentNote($note)),
+            ]);
+        });
+    }
+
+    public function storeNote(Request $request, int $schoolId)
+    {
+        $validated = $request->validate([
+            'body' => 'required|string|max:5000',
+        ]);
+
+        return $this->tenant->withoutScoping(function () use ($request, $schoolId, $validated) {
+            $school = School::query()->tenants()->find($schoolId);
+
+            if (! $school) {
+                return response()->json(['message' => 'School not found'], 404);
+            }
+
+            $note = SchoolSupportNote::create([
+                'school_id' => $school->id,
+                'user_id' => $request->user()->id,
+                'body' => trim($validated['body']),
+            ]);
+
+            return response()->json([
+                'message' => 'Note added.',
+                'data' => $this->presentNote($note->load('author:id,name')),
+            ], 201);
+        });
+    }
+
+    private function presentNote(SchoolSupportNote $note): array
+    {
+        return [
+            'id' => $note->id,
+            'body' => $note->body,
+            'author' => $note->author?->name,
+            'created_at' => $note->created_at?->toIso8601String(),
+        ];
     }
 
     /**

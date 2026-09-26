@@ -16,12 +16,23 @@ Researched 2026-09-26 from:
 
 ## 1. What the menu shows today
 
+Updated 2026-09-26 after the first build pass:
+
 ```
-Operator console        /super-admin            (overview tiles + schools directory + New school)
-Platform settings       /super-admin/settings   (AI, SMS, WhatsApp, push keys; today's AI spend)
+OPERATOR
+  Schools                  /super-admin                  overview tiles, directory, New school
+    └ School detail        /super-admin/schools/{id}     reached from the directory
+  Onboarding & migrations  /super-admin/migrations
+  Result PINs              /super-admin/result-pins
+PLATFORM
+  AI service               /super-admin/ai
+  Messaging                /super-admin/messaging
+  Security                 /super-admin/security
+  Audit log                /super-admin/audit-log
+  Platform settings        /super-admin/settings         SMS, WhatsApp, email, push keys
 ```
 
-While the operator has a school open, the school admin menu also appears, together with the *Viewing as operator · School name* banner. There is no separate School detail page, even though `GET /platform/schools/{id}` exists.
+While the operator has a school open, the school admin menu also appears below this one, together with the *Viewing as operator · School name* banner.
 
 ---
 
@@ -57,19 +68,20 @@ Platform settings
 |---|---|---|---|---|---|
 | 1 | **Overview** | Cross-school reporting | 🟡 | Headline tiles: schools (active/trial/suspended), students, school fees collected (labelled clearly as *not* SchoolPilot revenue), AI spend this month. Attention list: schools at their AI cap, overdue migrations, overdue term invoices. | Existing console; mockup |
 | 2 | **Schools › All schools** | Schools | ✅ | Directory with search/status filter, plan band, fees, AI spend, status. Actions: New school, Open, Suspend/Reinstate, AI on/off. The mockup also filters by **city** and shows **last active date** and an **"Owes ₦…"** flag. | `/platform/schools`; mockup |
-| 3 | **Schools › School detail** | Schools | 🔌 | Profile (name, admin contact, phone, address), students, staff by role, fee flow, AI spend; **subscription and billing history per term**; **internal support notes** (operator-only, never shown to the school); Suspend. | `GET /platform/schools/{id}`; mockup `school_account_detail` |
-| 4 | **Schools › Onboarding & migrations** | Schools | 🔌 | Queue of migration requests, overdue first, with status (submitted → in progress → completed/cancelled) and notes that are shown to the school. Honours the §14 promise of free migration within 24 hours. | `/platform/school-migrations` |
+| 3 | **Schools › School detail** | Schools | ✅ | Profile (name, admin contact, phone, address), students, staff by role, fee flow, AI spend; **internal support notes** (operator-only, never shown to the school); result-PIN purchase history; recent audited activity; Suspend/Reinstate, AI on/off, Open. *Term subscription history waits on item 6.* | `GET /platform/schools/{id}`; mockup `school_account_detail` |
+| 4 | **Schools › Onboarding & migrations** | Schools | ✅ | Queue of migration requests, overdue first, with status (submitted → in progress → completed/cancelled) and notes that are shown to the school. Honours the §14 promise of free migration within 24 hours. | `/platform/school-migrations` |
 | 5 | **Billing › Billing summary** | Subscriptions | ❌ | Revenue **per term** (not MRR, see §3), outstanding and overdue term invoices, upcoming renewals, export. | Mockup `subscription_billing_summary`; Stage 12 |
 | 6 | **Billing › Plans & bands** | Subscriptions | ❌ | The §13 student-count bands (Starter → Custom) with per-term prices, the full-session discount, and each school's assigned plan. Today the band is only derived from the roll; nothing is stored. **Pricing decisions are needed before this can be built.** | §13 |
-| 7 | **Billing › Result PINs** | Subscriptions | 🔌 | Wholesale rate card (quantity tiers), per-school negotiated rates, PIN batch history, offline grants for schools that paid by bank transfer or cash. This is the "charge at result generation" mechanism from §13. | `/platform/result-pins/*` |
-| 8 | **AI service** | AI configuration | ✅ (inside Platform settings) | Anthropic key, models, daily ₦ cap per school, alert threshold, USD→NGN rate, **today's spend per school**, per-school AI switch. Recommend making this its own menu item, because "our AI stopped working" is the most common operator question. | `/platform/settings`, `/platform/ai-usage` |
-| 9 | **Security › Admin 2FA & sessions** | Platform security | ❌ | 2FA enrolment status for every school admin and operator (2FA is already mandatory for both roles through `require.2fa`), active sessions, revoke sessions. Per-user endpoints exist (`/users/{id}/security`, `/users/{id}/revoke-sessions`), but no cross-school view does. | §5; §7.15; Stage 3 |
-| 10 | **Security › Audit log** | Platform security | ❌ | Searchable log of `platform.*` actions and sensitive school-side changes (students, payments, results), filterable by school, actor and action. The `AuditLog` model is already written to; nothing reads it at platform level. The mockup links a "Security Audit Log". | §7.15; Stage 3; mockup |
+| 7 | **Billing › Result PINs** | Subscriptions | ✅ | Wholesale rate card (quantity tiers), per-school negotiated rates, PIN batch history, offline grants for schools that paid by bank transfer or cash. This is the "charge at result generation" mechanism from §13. | `/platform/result-pins/*` |
+| 8 | **AI service** | AI configuration | ✅ | Anthropic key, models, daily ₦ cap per school, alert threshold, USD→NGN rate, **today's spend per school**. Its own menu item, because "our AI stopped working" is the most common operator question. The per-school switch is on School detail and the directory. | `/platform/settings`, `/platform/ai-usage` |
+| 9 | **Security › Admin 2FA & sessions** | Platform security | ✅ | 2FA enrolment status for every school admin and operator across schools, active session count, last login, lockout status, and one-click remote session revocation. | `/platform/security/admins`, `/platform/security/admins/{id}/revoke-sessions` |
+| 10 | **Security › Audit log** | Platform security | ✅ | Searchable cross-school audit trail of platform actions (`platform.*`) and sensitive school-side events (students, results, payments), filterable by school, kind, action prefix and date range. NDPA data minimisation: school-side rows show *which fields* changed, never the values. | `/platform/audit-log` |
 | 11 | **Security › Operator access** | Platform security | ❌ | List of operator accounts, and the Stage 3 hardening: **IP allowlist** or a VPN requirement for `super_admin`. Nothing in the code implements an allowlist yet. Treat this as auth config: explain the change and its risk before building it (CLAUDE.md). | Stage 3 item 8 |
-| 12 | **Compliance (NDPA)** | Platform security *(inferred)* | 🟡 | Data-export requests across schools (`/admin/exports`), parental-consent coverage per school, deletion and consent-withdrawal requests, and a record of the lawful basis for the Claude API cross-border transfer. Education data puts SchoolPilot in the "major importance" category, so it needs a DPO and annual audit filings. This screen is where that evidence would live. | §12 |
-| 13 | **Reports** | Cross-school reporting | ❌ | Trends across terms (schools, students, fees, CBT, AI spend), export to Excel. Keep it aggregate: counts and totals per school, never lists of students. | §5; `platform-console.md` §8 |
-| 14 | **Support** | *(operational)* | ❌ | Mockup menu item. Fits the §14 WhatsApp-first model: a view of schools' open issues and the internal notes from School detail. There is no backing model yet. | Mockup; §14 |
-| 15 | **Platform settings** | Platform-wide settings | ✅ | SMS (Termii), WhatsApp, Firebase push keys. Secrets are write-only and encrypted, and every change is audited. | `/platform/settings` |
+| 12 | **Messaging limits & delivery** | Platform-wide settings | 🔌 | Per-school daily outbound email caps and toggles, protecting the shared sending domain against blocklisting, plus live tracking of sent/failed messages today. | `/platform/messaging`, `/platform/schools/{id}/messaging` |
+| 13 | **Compliance (NDPA)** | Platform security *(inferred)* | 🟡 | Data-export requests across schools (`/admin/exports`), parental-consent coverage per school, deletion and consent-withdrawal requests, and a record of the lawful basis for the Claude API cross-border transfer. Education data puts SchoolPilot in the "major importance" category, so it needs a DPO and annual audit filings. This screen is where that evidence would live. | §12 |
+| 14 | **Reports** | Cross-school reporting | ❌ | Trends across terms (schools, students, fees, CBT, AI spend), export to Excel. Keep it aggregate: counts and totals per school, never lists of students. | §5; `platform-console.md` §8 |
+| 15 | **Support** | *(operational)* | ❌ | Mockup menu item. Fits the §14 WhatsApp-first model: a view of schools' open issues and the internal notes from School detail. There is no backing model yet. | Mockup; §14 |
+| 16 | **Platform settings** | Platform-wide settings | ✅ | SMS (Termii), WhatsApp, Firebase push keys. Secrets are write-only and encrypted, and every change is audited. | `/platform/settings` |
 
 ---
 
@@ -102,9 +114,9 @@ The mockups are UI references. Where they conflict with the spec, the spec wins.
 
 ## 5. Suggested build order
 
-1. **School detail + Onboarding & migrations + Result PINs screens.** The APIs are built and tested; only the screens are missing.
-2. **Security: audit log, then admin 2FA & sessions.** Mostly read-only, and it closes the "platform security ❌" gap.
-3. **AI service as its own menu item.** A small refactor of the existing settings page.
+1. ~~School detail + Onboarding & migrations + Result PINs screens.~~ Done.
+2. ~~Security: audit log, then admin 2FA & sessions.~~ Done.
+3. ~~AI service as its own menu item.~~ Done.
 4. **Plans & bands → Billing summary.** Blocked on pricing decisions (§13 uses placeholder ₦X).
 5. **Operator access (IP allowlist).** Auth change: needs a written risk note first.
 6. **Compliance, Reports, Support.**

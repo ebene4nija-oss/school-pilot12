@@ -34,11 +34,32 @@ type Item = {
 };
 
 const SECTIONS: { heading?: string; items: Item[] }[] = [
+  /*
+   * The operator's own menu (docs/super-admin-menu.md). First, so it stays on
+   * top while an operator has a school open and that school's menu appears
+   * beneath it.
+   */
+  {
+    heading: 'Operator',
+    items: [
+      { href: '/super-admin', icon: '🛡️', label: 'Schools', roles: ['super_admin'], className: 'font-semibold' },
+      { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
+      { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
+    ],
+  },
+  {
+    heading: 'Platform',
+    items: [
+      { href: '/super-admin/ai', icon: '🤖', label: 'AI service', roles: ['super_admin'] },
+      { href: '/super-admin/messaging', icon: '✉️', label: 'Messaging', roles: ['super_admin'] },
+      { href: '/super-admin/security', icon: '🔐', label: 'Security', roles: ['super_admin'] },
+      { href: '/super-admin/audit-log', icon: '📜', label: 'Audit log', roles: ['super_admin'] },
+      { href: '/super-admin/settings', icon: '🔧', label: 'Platform settings', roles: ['super_admin'] },
+    ],
+  },
   {
     items: [
       { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
-      { href: '/super-admin', icon: '🛡️', label: 'Operator console', roles: ['super_admin'], className: 'font-semibold' },
-      { href: '/super-admin/settings', icon: '🔧', label: 'Platform settings', roles: ['super_admin'] },
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },
     ],
   },

@@ -714,6 +714,17 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/platform/schools', [\App\Http\Controllers\Api\V1\PlatformController::class, 'store']);
             Route::get('/platform/schools/{schoolId}', [\App\Http\Controllers\Api\V1\PlatformController::class, 'show']);
             Route::post('/platform/schools/{schoolId}/status', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setStatus']);
+            // Operator-only notes on a school. No school-side route reads them.
+            Route::get('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'notes']);
+            Route::post('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'storeNote']);
+
+            /*
+             * Platform security (doc §5): the audit trail across schools, and
+             * every administrator account's 2FA and session state.
+             */
+            Route::get('/platform/audit-log', [\App\Http\Controllers\Api\V1\PlatformSecurityController::class, 'auditLog']);
+            Route::get('/platform/security/admins', [\App\Http\Controllers\Api\V1\PlatformSecurityController::class, 'admins']);
+            Route::post('/platform/security/admins/{userId}/revoke-sessions', [\App\Http\Controllers\Api\V1\PlatformSecurityController::class, 'revokeSessions']);
 
             Route::get('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'listPriceTiers']);
             Route::post('/platform/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\PlatformResultPinController::class, 'storePriceTier']);
