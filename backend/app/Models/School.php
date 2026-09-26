@@ -32,6 +32,9 @@ class School extends Model
         'email_daily_limit',
     ];
 
+    /** Never serialised: it carries the school's AI key. */
+    protected $hidden = ['ai_api_settings'];
+
     protected $casts = [
         'is_platform' => 'boolean',
         'email_enabled' => 'boolean',
@@ -40,7 +43,9 @@ class School extends Model
         'result_checker_enabled' => 'boolean',
         'result_pin_retail_price' => 'decimal:2',
         'ai_feature_flags' => 'array',
-        'ai_api_settings' => 'array',
+        // Holds a school's own AI provider key. Encrypted at rest like the
+        // SMS and payment keys; it was the one secret stored as plain JSON.
+        'ai_api_settings' => 'encrypted:array',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'geofence_radius_meters' => 'integer',

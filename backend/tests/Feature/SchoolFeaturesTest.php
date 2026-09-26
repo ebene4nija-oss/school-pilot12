@@ -136,4 +136,35 @@ class SchoolFeaturesTest extends TestCase
             ->putJson('/api/v1/school/ai-features', ['features' => ['grading' => true]])
             ->assertStatus(422);
     }
+
+    /** A school's own AI key is encrypted at rest and never sent back. */
+    public function test_a_schools_ai_key_is_encrypted_and_never_returned(): void
+    {
+        $res = $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/v1/ai/settings', ['ai_api_settings' => ['api_key' => 'sk-ant-SCHOOL-SECRET-123', 'model' => 'claude-haiku-4-5']])
+            ->assertOk()
+            ->assertJsonPath('school_ai_config.custom_api_configured', true);
+
+        $this->assertStringNotContainsString('SCHOOL-SECRET', $res->getContent());
+
+        $raw = \Illuminate\Support\Facades\DB::table('schools')->where('id', $this->school->id)->value('ai_api_settings');
+        $this->assertStringNotContainsString('SCHOOL-SECRET', (string) $raw);
+
+        $this->assertSame('sk-ant-SCHOOL-SECRET-123', app(AiManagerService::class)->getApiConfig($this->school->id)['api_key']);
+        $this->assertArrayNotHasKey('ai_api_settings', $this->school->fresh()->toArray());
+    }
+
+    public function test_existing_plain_keys_are_encrypted_by_the_migration(): void
+    {
+        \Illuminate\Support\Facades\DB::table('schools')->where('id', $this->school->id)
+            ->update(['ai_api_settings' => json_encode(['api_key' => 'sk-OLD-PLAIN'])]);
+
+        $migration = require database_path('migrations/2026_09_26_120000_encrypt_school_ai_api_settings.php');
+        $migration->up();
+        $migration->up(); // a second run must not double-encrypt
+
+        $raw = \Illuminate\Support\Facades\DB::table('schools')->where('id', $this->school->id)->value('ai_api_settings');
+        $this->assertStringNotContainsString('sk-OLD-PLAIN', (string) $raw);
+        $this->assertSame('sk-OLD-PLAIN', $this->school->fresh()->ai_api_settings['api_key']);
+    }
 }
