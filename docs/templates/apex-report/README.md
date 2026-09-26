@@ -8,16 +8,17 @@ A navy-and-gold report card, one A4 page per term, for first and second term.
 
 **What the card shows:**
 - School and term header, and the pupil's details. Attendance, position and "class champion" (first in class) appear as badges.
-- Subjects grouped into core and other. Each row has 1st CA, 2nd CA, exam, total (shaded by score), class average, highest, position and grade (coloured per grade).
+- Subjects grouped into core and other. Each row has a mark for each CA and the exam, total (shaded by score), class average, highest, position and grade (coloured per grade).
 - A term-average row.
 - Standards (ratings).
 - The school's own grading key, in its own colours.
 - Form teacher's and principal's comments over signature lines, and a stamp.
 - The verification QR code and footer.
 
-**Blank until SchoolPilot can record them:**
-- **Standards / ratings** are hidden until ratings are recorded.
-- **Comments** print as empty lines to sign on until comments can be entered.
+**Filled from the school's own setup:**
+- A column for each part of the school's marking scheme (two, three or more CAs and the exam).
+- Affective traits and psychomotor skills with the school's rating key, from **Ratings & comments**. Hidden for a pupil with no ratings yet.
+- Form teacher's and head of school's comments, with the school's title for its head (e.g. Head Teacher). A comment the school switched off is left off the card. An empty one prints as a line to write on.
 
 **Fits one page** for up to about 20 subjects. Long per-subject teacher remarks take extra space.
 

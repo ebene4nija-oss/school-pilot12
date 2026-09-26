@@ -65,9 +65,7 @@
       <tr>
         <th class="num">#</th>
         <th class="subj">SUBJECT</th>
-        <th>1ST CA</th>
-        <th>2ND CA</th>
-        <th>EXAM</th>
+        {{#each ca_components}}<th>{{ this.name | upper }}<br><span class="max">/{{ this.max }}</span></th>{{/each}}
         <th>TOTAL</th>
         <th>CLASS AVG</th>
         <th>HIGHEST</th>
@@ -77,7 +75,7 @@
     </thead>
     <tbody>
       {{#each score_groups}}
-        <tr class="group"><td colspan="10">{{ this.name | upper }}</td></tr>
+        <tr class="group"><td colspan="2">{{ this.name | upper }}</td>{{#each ../ca_components}}<td></td>{{/each}}<td colspan="5"></td></tr>
         {{#each this.scores}}
           <tr>
             <td class="num">{{@number}}</td>
@@ -85,9 +83,7 @@
               {{ this.subject }}
               {{#if this.teacher_comment}}<div class="remark">{{ this.teacher_comment }}</div>{{/if}}
             </td>
-            <td>{{ this.first_ca | number:0 }}</td>
-            <td>{{ this.second_ca | number:0 }}</td>
-            <td>{{ this.exam | number:0 }}</td>
+            {{#each this.components}}<td>{{ this.score | number:0 | default:"—" }}</td>{{/each}}
             <td class="total {{ this.total | score_band }}">{{ this.total | number:1 }}</td>
             <td>{{ this.class_average | number:1 | default:"—" }}</td>
             <td>{{ this.class_highest | number:0 | default:"—" }}</td>
@@ -97,14 +93,14 @@
         {{/each}}
       {{/each}}
       {{#unless score_groups}}
-        <tr><td colspan="10" class="empty">No scores have been recorded for this term yet.</td></tr>
+        <tr><td colspan="2" class="empty">No scores have been recorded for this term yet.</td>{{#each ca_components}}<td></td>{{/each}}<td colspan="5"></td></tr>
       {{/unless}}
       <tr class="avg">
         <td></td>
         <td class="subj">TERM AVERAGE</td>
-        <td colspan="3">{{#if summary.class_average}}Class avg: {{ summary.class_average | number:1 }}%{{/if}}</td>
+        {{#each ca_components}}<td></td>{{/each}}
         <td>{{ summary.average | number:1 }}%</td>
-        <td colspan="3">Total: {{ summary.total_score | number:1 }}</td>
+        <td colspan="3">{{#if summary.class_average}}Class avg: {{ summary.class_average | number:1 }}%{{/if}}</td>
         <td><span class="gp {{ summary.overall_grade | grade_key }}">{{ summary.overall_grade }}</span></td>
       </tr>
     </tbody>
@@ -118,12 +114,23 @@
         <div class="sec">
           <h2>Standards &amp; Domains <span class="kicker">CHARACTER &amp; SKILLS</span></h2>
         </div>
+        {{#if affective_traits}}
+        <div class="std-head">AFFECTIVE TRAITS</div>
         <table class="std">
-          {{#each traits}}
-            <tr><td>{{ this.name }}</td><td class="std-rating"><span class="rating-pill">{{ this.rating }} / 5</span></td></tr>
+          {{#each affective_traits}}
+            <tr><td>{{ this.name }}</td><td class="std-rating"><span class="rating-pill">{{ this.rating }}</span></td></tr>
           {{/each}}
         </table>
-        <div class="rate">5 = OUTSTANDING</div>
+        {{/if}}
+        {{#if psychomotor_skills}}
+        <div class="std-head">PSYCHOMOTOR SKILLS</div>
+        <table class="std">
+          {{#each psychomotor_skills}}
+            <tr><td>{{ this.name }}</td><td class="std-rating"><span class="rating-pill">{{ this.rating }}</span></td></tr>
+          {{/each}}
+        </table>
+        {{/if}}
+        <div class="rate">{{#each rating_scale}}{{ this.value }}{{#if this.label}} = {{ this.label }}{{/if}}{{#unless @last}} &nbsp;&bull;&nbsp; {{/unless}}{{/each}}</div>
       </td>
       <td class="right">
         <div class="sec">
@@ -151,16 +158,20 @@
   {{! ======================= COMMENTS + SIGNATURES ======================== }}
   <table class="signrow">
     <tr>
+      {{#if comments.show_class_teacher}}
       <td class="sig">
         <div class="lbl">FORM TEACHER'S COMMENT</div>
         <div class="write">{{ comments.class_teacher | default:" " }}</div>
         <div class="who">FORM TEACHER{{#if staff.form_teacher}} &mdash; {{ staff.form_teacher | upper }}{{/if}}</div>
       </td>
+      {{/if}}
+      {{#if comments.show_principal}}
       <td class="sig">
-        <div class="lbl">PRINCIPAL'S COMMENT</div>
+        <div class="lbl">{{ comments.principal_title | upper }}'S COMMENT</div>
         <div class="write">{{ comments.principal | default:" " }}</div>
-        <div class="who">PRINCIPAL</div>
+        <div class="who">{{ comments.principal_title | upper }}</div>
       </td>
+      {{/if}}
       <td class="stamp-cell"><table class="stamp"><tr><td>OFFICIAL<br>SCHOOL<br>STAMP</td></tr></table></td>
     </tr>
   </table>

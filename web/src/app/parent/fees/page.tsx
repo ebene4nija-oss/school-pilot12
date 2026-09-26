@@ -23,6 +23,7 @@ type Invoice = {
   balance: number;
   status: string;
   due_date: string | null;
+  payments?: { payment_id: number; receipt_number: string; amount: number; gateway: string | null; reference: string | null; paid_at: string | null }[];
 };
 
 type Statement = { total_invoiced: number; total_paid: number; balance: number; invoices: Invoice[] };
@@ -143,6 +144,27 @@ export default function ParentFeesPage() {
                   Leave the amount blank to pay the full balance, or enter part of it. Tap an invoice number for the PDF.
                   After paying, the balance updates once your bank confirms — usually within a minute.
                 </p>
+              </Card>
+
+              <Card title="Receipts" className="mt-6" description="Every payment the school has confirmed, with its receipt number.">
+                {statement.invoices.every((inv) => !inv.payments?.length) ? (
+                  <Empty>No payments yet.</Empty>
+                ) : (
+                  <Table columns={['Receipt', 'Date', 'Invoice', 'Amount', 'Paid by', 'Reference']}>
+                    {statement.invoices.flatMap((inv) =>
+                      (inv.payments ?? []).map((p) => (
+                        <tr key={p.payment_id}>
+                          <Cell className="font-mono text-xs">{p.receipt_number}</Cell>
+                          <Cell>{p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</Cell>
+                          <Cell className="font-mono text-xs">{inv.invoice_number}</Cell>
+                          <Cell className="font-semibold">{nairaAmount(p.amount)}</Cell>
+                          <Cell className="capitalize">{(p.gateway ?? '—').replace('_', ' ')}</Cell>
+                          <Cell className="font-mono text-xs">{p.reference ?? '—'}</Cell>
+                        </tr>
+                      )),
+                    )}
+                  </Table>
+                )}
               </Card>
             </>
           )}

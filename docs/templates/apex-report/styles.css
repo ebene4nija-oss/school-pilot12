@@ -51,7 +51,9 @@ td, th { vertical-align: middle; }
 .bignum small { font-size: 8pt; color: #64748B; }
 .substats { font-size: 6.5pt; color: #64748B; margin-top: 0.6mm; }
 .substats b { color: #12294E; }
-.rate { color: #C9A227; font-size: 6pt; font-weight: bold; margin-top: 1mm; }
+.rate { color: #C9A227; font-size: 5.8pt; font-weight: bold; margin-top: 1mm; }
+.std-head { font-size: 5.8pt; font-weight: bold; letter-spacing: 1.2px; color: #64748B; margin: 1mm 0 0.4mm; }
+.scores th .max { font-weight: normal; font-size: 5.4pt; color: #C8D4E8; }
 
 /* ---------- subject table ---------- */
 .scores { font-size: 7.6pt; }
@@ -101,7 +103,7 @@ td, th { vertical-align: middle; }
 .keylist td { padding: 0.3mm 1mm; font-size: 7.1pt; border-bottom: 1px dashed #E4E9F2; }
 .keylist td.kg { width: 11mm; }
 .keylist td.kr { width: 18mm; color: #64748B; }
-.std-rating { text-align: right; width: 22mm; }
+.std-rating { text-align: right; width: 14mm; }
 .rating-pill { background: #F1F5FB; color: #12294E; font-weight: bold; font-size: 6.6pt; padding: 0 2mm; border-radius: 2mm; }
 
 /* ---------- key ---------- */

@@ -32,6 +32,8 @@ type Item = {
   roles?: Role[];
   /** An optional module SchoolPilot can switch off per school (SchoolFeatures). */
   module?: string;
+  /** A count shown beside the label, from `badges`. */
+  badge?: string;
   className?: string;
 };
 
@@ -47,7 +49,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin', icon: '🛡️', label: 'Schools', roles: ['super_admin'], className: 'font-semibold' },
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
-      { href: '/super-admin/report-card-requests', icon: '🖨️', label: 'Report card requests', roles: ['super_admin'] },
+      { href: '/super-admin/report-card-requests', icon: '🖨️', label: 'Report card requests', roles: ['super_admin'], badge: 'rc_requests' },
       { href: '/super-admin/announcements', icon: '📣', label: 'Announcements', roles: ['super_admin'] },
     ],
   },
@@ -89,7 +91,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/exam-timetable', icon: '🗒️', label: 'Exam timetable', roles: ['school_admin'] },
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
       { href: '/results', icon: '📝', label: 'Results & broadsheet', roles: ['school_admin', 'teacher'] },
-      { href: '/report-card-design', icon: '🎨', label: 'Report card & grading', roles: ['school_admin'] },
+      { href: '/report-card-design', icon: '🎨', label: 'Report cards & grading', roles: ['school_admin'] },
+      { href: '/report-entries', icon: '⭐', label: 'Ratings & comments', roles: ['school_admin', 'teacher'] },
       { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'], module: 'cbt' },
       { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'live_classes' },
     ],
@@ -144,6 +147,8 @@ export default function Sidebar() {
   // Modules SchoolPilot has switched off for this school. Their endpoints
   // already refuse; this just stops the menu offering them.
   const [modulesOff, setModulesOff] = useState<string[]>([]);
+  // Operator: design requests waiting for SchoolPilot (new or sent back).
+  const [badges, setBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchApi<Me>('/user')
@@ -160,6 +165,12 @@ export default function Sidebar() {
       .then((res) => setModulesOff(res.modules.filter((m) => !m.enabled).map((m) => m.key)))
       // No school (an operator on their console): nothing to hide.
       .catch(() => undefined);
+
+    if (roleFromCookie() === 'super_admin') {
+      fetchApi<{ counts: Record<string, number> }>('/platform/report-card-requests?status=open')
+        .then((res) => setBadges({ rc_requests: (res.counts?.submitted ?? 0) + (res.counts?.changes_requested ?? 0) }))
+        .catch(() => undefined);
+    }
   }, []);
 
   /** A platform operator who has stepped into a school steps back out. */
@@ -271,6 +282,11 @@ export default function Sidebar() {
                     >
                       <span aria-hidden="true">{item.icon}</span>
                       <span>{item.label}</span>
+                      {item.badge && (badges[item.badge] ?? 0) > 0 && (
+                        <span className="ml-auto rounded-full bg-accent px-2 text-xs font-bold text-accent-ink" aria-label={`${badges[item.badge]} waiting`}>
+                          {badges[item.badge]}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

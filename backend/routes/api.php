@@ -393,6 +393,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/teacher/bulk-grading', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'bulkGrading'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/teacher/import-scores', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'importScoresCsv'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/teacher/export-scores', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'exportScoresCsv'])->middleware('role:super_admin,school_admin,teacher');
+        Route::get('/teacher/score-template', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'scoreTemplate'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/teacher/copy-lesson-plans', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'copyPreviousTermLessonPlans'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/teacher/duplicate-exam', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'duplicateExam'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/teacher/comment-bank', [\App\Http\Controllers\Api\V1\TeacherProductivityController::class, 'getCommentBank'])->middleware('role:super_admin,school_admin,teacher');
@@ -636,6 +637,13 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         | Report card design templates (per school, imported)
         |------------------------------------------------------------------
         */
+        // What the school rates on report cards (set at onboarding), and the
+        // per-pupil ratings and comments. Teachers: their own class only.
+        Route::get('/report-settings', [\App\Http\Controllers\Api\V1\ReportEntryController::class, 'settings'])->middleware('role:super_admin,school_admin,teacher');
+        Route::put('/report-settings', [\App\Http\Controllers\Api\V1\ReportEntryController::class, 'updateSettings'])->middleware('role:super_admin,school_admin');
+        Route::get('/report-entries', [\App\Http\Controllers\Api\V1\ReportEntryController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
+        Route::put('/report-entries', [\App\Http\Controllers\Api\V1\ReportEntryController::class, 'update'])->middleware('role:super_admin,school_admin,teacher');
+
         // Grading scales per class level, and asking SchoolPilot to design the
         // report card. School admins only.
         Route::middleware('role:super_admin,school_admin')->group(function () {

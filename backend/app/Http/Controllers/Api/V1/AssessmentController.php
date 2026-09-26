@@ -34,22 +34,30 @@ class AssessmentController extends Controller
             'term_id' => ['required', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
             'student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
             'subject_id' => ['required', \Illuminate\Validation\Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
-            'first_ca' => "nullable|numeric|min:0|max:{$scheme->first_ca_weight}",
-            'second_ca' => "nullable|numeric|min:0|max:{$scheme->second_ca_weight}",
-            'exam' => "nullable|numeric|min:0|max:{$scheme->exam_weight}",
-        ], [
-            'first_ca.max' => "First CA is marked out of {$scheme->first_ca_weight} under the '{$scheme->name}' scheme.",
-            'second_ca.max' => "Second CA is marked out of {$scheme->second_ca_weight} under the '{$scheme->name}' scheme.",
-            'exam.max' => "The exam is marked out of {$scheme->exam_weight} under the '{$scheme->name}' scheme.",
+            'components' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $firstCa = (float) $request->input('first_ca', 0);
-        $secondCa = (float) $request->input('second_ca', 0);
-        $exam = (float) $request->input('exam', 0);
+        $existing = ScoreEntry::where('school_id', $schoolId)
+            ->where('term_id', $request->input('term_id'))
+            ->where('student_id', $request->input('student_id'))
+            ->where('subject_id', $request->input('subject_id'))
+            ->value('component_scores');
+
+        // A mark per part of the school's scheme (any number of CAs), or the
+        // classic first_ca / second_ca / exam fields. See ScoreInput.
+        $marks = \App\Services\ScoreInput::resolve(
+            $scheme,
+            $request->only(['components', 'first_ca', 'second_ca', 'exam']),
+            is_string($existing) ? json_decode($existing, true) : $existing,
+        );
+
+        $firstCa = $marks['first_ca'];
+        $secondCa = $marks['second_ca'];
+        $exam = $marks['exam'];
 
         // Graded on the school's scale for this student's class level.
         $level = \App\Models\Student::withoutGlobalScopes()
@@ -70,6 +78,7 @@ class AssessmentController extends Controller
                 'first_ca' => $firstCa,
                 'second_ca' => $secondCa,
                 'exam' => $exam,
+                'component_scores' => $marks['component_scores'],
                 'total_score' => $computed['percentage'],
                 'grade' => $computed['grade'],
             ]
@@ -92,6 +101,7 @@ class AssessmentController extends Controller
                 'first_ca_weight' => $scheme->first_ca_weight,
                 'second_ca_weight' => $scheme->second_ca_weight,
                 'exam_weight' => $scheme->exam_weight,
+                'components' => $scheme->parts(),
             ],
             'score_entry' => $entry,
         ]);
@@ -105,8 +115,12 @@ class AssessmentController extends Controller
     {
         $schoolId = $this->schoolId();
 
+        $active = CaScheme::activeFor($schoolId);
+
         return response()->json([
-            'active' => CaScheme::activeFor($schoolId),
+            'active' => $active,
+            // The active scheme's parts, classic schemes included.
+            'active_components' => $active->parts(),
             'data' => CaScheme::where('school_id', $schoolId)->orderByDesc('is_default')->get(),
         ]);
     }
@@ -114,6 +128,36 @@ class AssessmentController extends Controller
     public function storeCaScheme(Request $request)
     {
         $schoolId = $this->schoolId();
+
+        /*
+         * Any number of parts: `components: [{name, max, kind: ca|exam}]`,
+         * at least one CA and one exam. The legacy weights are derived from
+         * them, so older readers see a first CA, the other CAs combined, and
+         * the exam. Sending the three weights alone still works.
+         */
+        if (is_array($request->input('components'))) {
+            $request->validate([
+                'name' => 'required|string|max:100',
+                'components' => 'required|array|min:2|max:10',
+                'components.*.name' => 'required|string|max:30',
+                'components.*.max' => 'required|integer|min:1|max:100',
+                'components.*.kind' => 'required|in:ca,exam',
+                'is_default' => 'boolean',
+            ]);
+
+            $kinds = array_column($request->input('components'), 'kind');
+
+            if (! in_array('ca', $kinds, true) || ! in_array('exam', $kinds, true)) {
+                return response()->json(['errors' => ['components' => ['Include at least one CA and one exam.']]], 422);
+            }
+
+            $derived = CaScheme::fromParts($request->input('components'));
+            $request->merge([
+                'first_ca_weight' => $derived['first_ca_weight'],
+                'second_ca_weight' => $derived['second_ca_weight'],
+                'exam_weight' => $derived['exam_weight'],
+            ]);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
@@ -139,7 +183,9 @@ class AssessmentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $scheme = DB::transaction(function () use ($request, $schoolId) {
+        $components = isset($derived) ? $derived['components'] : null;
+
+        $scheme = DB::transaction(function () use ($request, $schoolId, $components) {
             $makeDefault = $request->boolean('is_default', true);
 
             if ($makeDefault) {
@@ -152,6 +198,7 @@ class AssessmentController extends Controller
                 'first_ca_weight' => $request->integer('first_ca_weight'),
                 'second_ca_weight' => $request->integer('second_ca_weight'),
                 'exam_weight' => $request->integer('exam_weight'),
+                'components' => $components,
                 'is_default' => $makeDefault,
             ]);
         });
@@ -366,10 +413,16 @@ class AssessmentController extends Controller
             ->get();
 
         $studentIds = $students->pluck('id');
+        $subjectNames = \App\Models\Subject::where('school_id', $schoolId)->pluck('name', 'id');
+
         $allScores = ScoreEntry::where('school_id', $schoolId)
             ->where('term_id', $request->term_id)
             ->whereIn('student_id', $studentIds)
             ->get()
+            // The subject's name, which the broadsheet's columns are headed
+            // by. Scores carried only an id, so the web broadsheet showed no
+            // subject columns at all.
+            ->each(fn ($score) => $score->setAttribute('subject_name', $subjectNames[$score->subject_id] ?? null))
             ->groupBy('student_id');
 
         // Positions are recomputed and persisted rather than derived only for
@@ -381,7 +434,10 @@ class AssessmentController extends Controller
             (int) $request->input('term_id')
         );
 
-        $allScores = $allScores->map(fn ($group) => $group->each->refresh());
+        $allScores = $allScores->map(fn ($group) => $group->each(function ($score) use ($subjectNames) {
+            $score->refresh();
+            $score->setAttribute('subject_name', $subjectNames[$score->subject_id] ?? null);
+        }));
 
         $broadsheet = [];
         foreach ($students as $student) {
@@ -407,7 +463,8 @@ class AssessmentController extends Controller
         return response()->json([
             'class_id' => $request->input('class_id'),
             'term_id' => $request->input('term_id'),
-            'ca_scheme' => CaScheme::activeFor($schoolId)->only(['name', 'first_ca_weight', 'second_ca_weight', 'exam_weight']),
+            'ca_scheme' => ($scheme = CaScheme::activeFor($schoolId))->only(['name', 'first_ca_weight', 'second_ca_weight', 'exam_weight'])
+                + ['components' => $scheme->parts()],
             'broadsheet' => $broadsheet,
         ]);
     }

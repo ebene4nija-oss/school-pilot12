@@ -179,16 +179,29 @@ attendance.present, .absent, .total, .percentage
 
 scores[]  .subject, .subject_code, .category (core | elective), .first_ca,
           .second_ca, .ca_total, .exam, .total, .grade, .position,
-          .class_average, .class_highest, .class_lowest, .teacher_comment
+          .class_average, .class_highest, .class_lowest, .teacher_comment,
+          .components[] (.key, .name, .max, .score) — a mark per part of
+          the school's marking scheme, any number of CAs, in order
+
+ca_components[]  .key, .name, .max — the school's parts, for column
+                 headings; loop it in the header and `this.components` in
+                 each row so a 3-CA school gets 3 CA columns.
+                 first_ca / second_ca still exist: the first CA, and every
+                 other CA added together.
 
 score_groups[]  .key (core | elective), .name, .scores[] (as above) —
                 the same rows grouped, core first, empty groups left out
 
 staff.form_teacher
 
-comments.class_teacher, .principal
+comments.class_teacher, .principal, .principal_title ("Principal",
+         "Head Teacher" …), .show_class_teacher, .show_principal —
+         entered per pupil on the Ratings & comments screen; the show_*
+         flags are the school's choice of which comments its card prints
 
-traits[]  .name, .rating
+traits[]  .name, .group (affective | psychomotor), .rating, .rating_label
+affective_traits[], psychomotor_skills[]  the same, one group each
+rating_scale[]  .value, .label — the school's scale, best first, for a key
 
 grading_scale[]  .grade, .range, .remark — the school's own scale for the
                  pupil's class level (WAEC A1–F9 when none is set)

@@ -31,16 +31,27 @@ import {
 
 type Tab = 'broadsheet' | 'enter' | 'import' | 'comments';
 
+interface CaPart {
+  key: string;
+  name: string;
+  max: number;
+  kind: 'ca' | 'exam';
+}
+
 interface CaScheme {
   name: string;
   first_ca_weight: number;
   second_ca_weight: number;
   exam_weight: number;
+  /** Every part of the school's scheme, any number of CAs. */
+  components?: CaPart[];
 }
 
 interface BroadsheetScore {
   subject_id?: number;
   subject?: string;
+  subject_name?: string | null;
+  component_scores?: Record<string, number> | null;
   first_ca?: number;
   second_ca?: number;
   exam?: number;
@@ -101,12 +112,12 @@ export default function ResultsPage() {
   // Single score entry
   const [studentId, setStudentId] = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [firstCa, setFirstCa] = useState('');
-  const [secondCa, setSecondCa] = useState('');
-  const [exam, setExam] = useState('');
+  // A mark per part of the school's scheme, keyed by part.
+  const [marks, setMarks] = useState<Record<string, string>>({});
 
   // CSV import
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importSubjectId, setImportSubjectId] = useState('');
 
   // Comment review
   const [editing, setEditing] = useState<number | null>(null);
@@ -216,16 +227,15 @@ export default function ResultsPage() {
           term_id: Number(termId),
           student_id: Number(studentId),
           subject_id: Number(subjectId),
-          first_ca: firstCa === '' ? null : Number(firstCa),
-          second_ca: secondCa === '' ? null : Number(secondCa),
-          exam: exam === '' ? null : Number(exam),
+          // Parts left blank keep any mark already entered.
+          components: Object.fromEntries(
+            Object.entries(marks).filter(([, v]) => v !== '').map(([k, v]) => [k, Number(v)]),
+          ),
         }),
       });
 
       setNotice('Score saved.');
-      setFirstCa('');
-      setSecondCa('');
-      setExam('');
+      setMarks({});
       await loadSheet();
     });
   }
@@ -239,14 +249,17 @@ export default function ResultsPage() {
       const form = new FormData();
       form.append('file', csvFile);
       form.append('term_id', termId);
+      // The endpoint needs the subject; the form never sent it, so every
+      // import from this screen was refused.
+      form.append('subject_id', importSubjectId);
 
       // Multipart, not a JSON array: the endpoint takes a real uploaded file.
-      const res = await uploadApi<{ message?: string; imported?: number }>(
+      const res = await uploadApi<{ message?: string; imported_count?: number; errors?: string[] }>(
         '/teacher/import-scores',
         form,
       );
 
-      setNotice(res.message ?? `Imported ${res.imported ?? 0} score(s).`);
+      setNotice(res.message ?? `Imported ${res.imported_count ?? 0} score(s).`);
       setCsvFile(null);
       await loadSheet();
     });
@@ -280,11 +293,20 @@ export default function ResultsPage() {
   }
 
   const scheme = sheet?.ca_scheme;
+  const parts: CaPart[] =
+    scheme?.components ??
+    (scheme
+      ? [
+          { key: 'ca1', name: '1st CA', max: scheme.first_ca_weight, kind: 'ca' },
+          { key: 'ca2', name: '2nd CA', max: scheme.second_ca_weight, kind: 'ca' },
+          { key: 'exam', name: 'Exam', max: scheme.exam_weight, kind: 'exam' },
+        ]
+      : []);
 
   // Subject columns are taken from whatever the broadsheet returned, so a
   // school with nine subjects is not truncated to a fixed three.
   const subjectColumns = Array.from(
-    new Set((sheet?.broadsheet ?? []).flatMap((row) => row.scores.map((s) => s.subject ?? ''))),
+    new Set((sheet?.broadsheet ?? []).flatMap((row) => row.scores.map((s) => s.subject_name ?? s.subject ?? ''))),
   ).filter(Boolean);
 
   const students = (sheet?.broadsheet ?? []).map((row) => ({
@@ -338,8 +360,7 @@ export default function ResultsPage() {
 
             {scheme && (
               <p className="mt-3 text-xs text-ink-muted">
-                Marking scheme <strong>{scheme.name}</strong>: first CA out of {scheme.first_ca_weight},
-                second CA out of {scheme.second_ca_weight}, exam out of {scheme.exam_weight}.
+                Marking scheme <strong>{scheme.name}</strong>: {parts.map((p) => `${p.name} out of ${p.max}`).join(', ')}.
               </p>
             )}
           </Card>
@@ -393,7 +414,7 @@ export default function ResultsPage() {
                       </Cell>
 
                       {subjectColumns.map((subject) => {
-                        const score = row.scores.find((s) => s.subject === subject);
+                        const score = row.scores.find((s) => (s.subject_name ?? s.subject) === subject);
 
                         return (
                           <Cell key={subject}>
@@ -459,41 +480,19 @@ export default function ResultsPage() {
                   </select>
                 </Field>
 
-                <Field label={`First CA${scheme ? ` (out of ${scheme.first_ca_weight})` : ''}`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={scheme?.first_ca_weight}
-                    value={firstCa}
-                    onChange={(e) => setFirstCa(e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-
-                <Field label={`Second CA${scheme ? ` (out of ${scheme.second_ca_weight})` : ''}`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={scheme?.second_ca_weight}
-                    value={secondCa}
-                    onChange={(e) => setSecondCa(e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-
-                <Field label={`Exam${scheme ? ` (out of ${scheme.exam_weight})` : ''}`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={scheme?.exam_weight}
-                    value={exam}
-                    onChange={(e) => setExam(e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
+                {parts.map((part) => (
+                  <Field key={part.key} label={`${part.name} (out of ${part.max})`}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      max={part.max}
+                      value={marks[part.key] ?? ''}
+                      onChange={(e) => setMarks({ ...marks, [part.key]: e.target.value })}
+                      className={inputClass}
+                    />
+                  </Field>
+                ))}
 
                 <div className="sm:col-span-2">
                   <Button type="submit" disabled={busy || !studentId || !subjectId}>
@@ -510,6 +509,25 @@ export default function ResultsPage() {
               description="Upload the CSV exported from this school's own score sheet. The file is uploaded as a file — not pasted text — because that is what the endpoint reads."
             >
               <form onSubmit={importScores} className="space-y-4">
+                <Field label="Subject">
+                  <select required value={importSubjectId} onChange={(e) => setImportSubjectId(e.target.value)} className={inputClass}>
+                    <option value="">Select a subject…</option>
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </Field>
+
+                {classId && (
+                  <a
+                    href={`/api/backend/teacher/score-template?class_id=${classId}`}
+                    download
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-surface-sunken"
+                  >
+                    ⬇ Download a score sheet for this class
+                  </a>
+                )}
+
                 <Field label="CSV file">
                   <input
                     type="file"
@@ -519,14 +537,15 @@ export default function ResultsPage() {
                   />
                 </Field>
 
-                <Button type="submit" disabled={busy || !csvFile}>
+                <Button type="submit" disabled={busy || !csvFile || !importSubjectId}>
                   {busy ? 'Uploading…' : 'Import'}
                 </Button>
               </form>
 
               <p className="mt-4 text-xs text-ink-muted">
-                A matching export is available from the same screen the scores came from, so the
-                column order is the one this school already uses.
+                The score sheet lists every pupil in the class with a column for each part of your
+                marking scheme ({parts.map((p) => p.name).join(', ')}). Fill it in, keep the headings, and
+                upload it here. Columns are matched by heading, so their order does not matter.
               </p>
             </Card>
           )}

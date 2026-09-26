@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi, uploadApi } from '@/lib/api';
 import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, PageShell, inputClass } from '@/components/Page';
 import GradingBandsEditor, { type Band, WAEC, bandProblem, cleanBands } from '@/components/GradingBandsEditor';
+import ReportSetup from '@/components/ReportSetup';
 
 /**
  * Report card design and grading.
@@ -51,14 +52,16 @@ const STATUS: Record<DesignRequest['status'], { label: string; tone: 'amber' | '
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 export default function ReportCardDesignPage() {
-  const [tab, setTab] = useState<'design' | 'grading'>('design');
+  // Opens on the onboarding choices, which the setup checklist links to.
+  const [tab, setTab] = useState<'setup' | 'design' | 'grading'>('setup');
 
   return (
-    <PageShell title="Report card design" subtitle="Send SchoolPilot your report card and grading; approve the design before it is used.">
+    <PageShell title="Report cards & grading" subtitle="How marks are split, what is rated, your grading, and your report card's design.">
       <div role="tablist" className="mb-6 flex flex-wrap gap-2">
         {([
-          ['design', 'Design request'],
+          ['setup', 'Marks, ratings & comments'],
           ['grading', 'Grading scales'],
+          ['design', 'Design request'],
         ] as const).map(([id, label]) => (
           <button
             key={id}
@@ -74,7 +77,7 @@ export default function ReportCardDesignPage() {
         ))}
       </div>
 
-      {tab === 'design' ? <DesignTab /> : <GradingTab />}
+      {tab === 'setup' ? <ReportSetup /> : tab === 'design' ? <DesignTab /> : <GradingTab />}
     </PageShell>
   );
 }

@@ -31,9 +31,8 @@ class TeacherProductivityController extends Controller
             'subject_id' => ['required', \Illuminate\Validation\Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'scores' => 'required|array',
             'scores.*.student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
-            'scores.*.first_ca' => "nullable|numeric|min:0|max:{$scheme->first_ca_weight}",
-            'scores.*.second_ca' => "nullable|numeric|min:0|max:{$scheme->second_ca_weight}",
-            'scores.*.exam' => "nullable|numeric|min:0|max:{$scheme->exam_weight}",
+            // Marks are checked per part by ScoreInput, against the scheme.
+            'scores.*.components' => 'nullable|array',
             'scores.*.comment' => 'nullable|string',
         ]);
 
@@ -45,11 +44,23 @@ class TeacherProductivityController extends Controller
 
         $levels = $this->classLevels($schoolId, collect($request->scores)->pluck('student_id')->all());
 
-        DB::transaction(function () use ($request, $schoolId, $scheme, $grading, $levels, &$savedEntries) {
-            foreach ($request->scores as $item) {
-                $firstCa = (float) ($item['first_ca'] ?? 0);
-                $secondCa = (float) ($item['second_ca'] ?? 0);
-                $exam = (float) ($item['exam'] ?? 0);
+        $existing = ScoreEntry::where('school_id', $schoolId)
+            ->where('term_id', $request->term_id)
+            ->where('subject_id', $request->subject_id)
+            ->whereIn('student_id', collect($request->scores)->pluck('student_id'))
+            ->pluck('component_scores', 'student_id');
+
+        // Every row is checked before anything is saved.
+        $resolved = [];
+        foreach ($request->scores as $i => $item) {
+            $resolved[$i] = \App\Services\ScoreInput::resolve($scheme, $item, $existing[$item['student_id']] ?? null, "scores.{$i}.");
+        }
+
+        DB::transaction(function () use ($request, $schoolId, $scheme, $grading, $levels, $resolved, &$savedEntries) {
+            foreach ($request->scores as $i => $item) {
+                $firstCa = $resolved[$i]['first_ca'];
+                $secondCa = $resolved[$i]['second_ca'];
+                $exam = $resolved[$i]['exam'];
 
                 $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $levels[$item['student_id']] ?? null);
                 $total = $computed['percentage'];
@@ -59,6 +70,7 @@ class TeacherProductivityController extends Controller
                     'first_ca' => $firstCa,
                     'second_ca' => $secondCa,
                     'exam' => $exam,
+                    'component_scores' => $resolved[$i]['component_scores'],
                     'total_score' => $total,
                     'grade' => $grade,
                 ];
@@ -91,71 +103,192 @@ class TeacherProductivityController extends Controller
      */
     public function importScoresCsv(Request $request, GradingService $grading)
     {
+        $schoolId = $this->schoolId();
+
+        // Term and subject must be this school's: the rules used to accept any
+        // school's ids.
         $validator = Validator::make($request->all(), [
-            'term_id' => 'required|exists:terms,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'file' => 'required|file|mimes:csv,txt,xlsx',
+            'term_id' => ['required', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
+            'subject_id' => ['required', \Illuminate\Validation\Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
+            'file' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $schoolId = $this->schoolId();
         $scheme = CaScheme::activeFor($schoolId);
-        $file = $request->file('file');
-        $rows = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($rows);
+        $rows = array_map('str_getcsv', file($request->file('file')->getRealPath(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+        $header = array_map(fn ($h) => $this->headerKey((string) $h), array_shift($rows) ?? []);
+
+        /*
+         * Columns are found by heading, in any order: the student by
+         * `student_id` or `admission_number`, and a mark per part of the
+         * school's scheme by the part's key (`ca3`) or name ("3rd CA"). The
+         * classic headings first_ca / second_ca / exam still work for a
+         * two-CA school. Without recognisable headings the old fixed order
+         * (student_id, first CA, second CA, exam) is assumed.
+         */
+        $partColumns = [];
+        foreach ($scheme->parts() as $part) {
+            foreach ([$part['key'], $this->headerKey($part['name'])] as $candidate) {
+                $at = array_search($candidate, $header, true);
+                if ($at !== false) {
+                    $partColumns[$part['key']] = $at;
+                    break;
+                }
+            }
+        }
+
+        if ($scheme->isClassic()) {
+            // The original headings, for any part not already matched by key
+            // or name (`exam` alone would otherwise hide first_ca/second_ca).
+            foreach (['first_ca' => 'ca1', 'second_ca' => 'ca2', 'exam' => 'exam'] as $legacy => $key) {
+                $at = array_search($legacy, $header, true);
+                if ($at !== false && ! isset($partColumns[$key])) {
+                    $partColumns[$key] = $at;
+                }
+            }
+            if ($partColumns === []) {
+                $partColumns = ['ca1' => 1, 'ca2' => 2, 'exam' => 3];
+            }
+        }
+
+        if ($partColumns === []) {
+            $names = implode(', ', array_column($scheme->parts(), 'name'));
+
+            return response()->json(['message' => "No mark columns found. Use a heading for each part: {$names}. Download the template to see the layout."], 422);
+        }
+
+        $idColumn = array_search('student_id', $header, true);
+        $admissionColumn = array_search('admission_number', $header, true);
+        if ($admissionColumn === false) {
+            $admissionColumn = array_search('admission_no', $header, true);
+        }
+        if ($idColumn === false && $admissionColumn === false) {
+            $idColumn = 0;
+        }
 
         $importedCount = 0;
         $errors = [];
 
         foreach ($rows as $index => $row) {
             $rowNum = $index + 2;
-            if (count($row) < 4) {
-                $errors[] = "Row {$rowNum}: Insufficient columns. Expected: student_id, first_ca, second_ca, exam";
+
+            if (count(array_filter($row, fn ($v) => trim((string) $v) !== '')) === 0) {
                 continue;
             }
 
-            $studentId = trim($row[0]);
-            $firstCa = (float)trim($row[1]);
-            $secondCa = (float)trim($row[2]);
-            $exam = (float)trim($row[3]);
+            $student = $idColumn !== false && trim((string) ($row[$idColumn] ?? '')) !== ''
+                ? Student::where('school_id', $schoolId)->find(trim((string) $row[$idColumn]))
+                : ($admissionColumn !== false
+                    ? Student::where('school_id', $schoolId)->where('admission_number', trim((string) ($row[$admissionColumn] ?? '')))->first()
+                    : null);
 
-            $student = Student::where('school_id', $schoolId)->find($studentId);
-            if (!$student) {
-                $errors[] = "Row {$rowNum}: Student ID {$studentId} not found in school.";
+            if (! $student) {
+                $errors[] = "Row {$rowNum}: student not found in this school.";
+
+                continue;
+            }
+
+            $components = [];
+            foreach ($partColumns as $key => $at) {
+                $value = trim((string) ($row[$at] ?? ''));
+                if ($value !== '') {
+                    $components[$key] = $value;
+                }
+            }
+
+            $existing = ScoreEntry::where('school_id', $schoolId)
+                ->where('term_id', $request->term_id)
+                ->where('student_id', $student->id)
+                ->where('subject_id', $request->subject_id)
+                ->first();
+
+            try {
+                $marks = \App\Services\ScoreInput::resolve($scheme, ['components' => $components], $existing?->component_scores);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                $errors[] = "Row {$rowNum}: ".collect($e->errors())->flatten()->implode(' ');
+
                 continue;
             }
 
             // Was a three-step ladder (A1, B2, B3, else "F"), so a 60 was a fail.
-            $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $this->classLevels($schoolId, [$studentId])[$studentId] ?? null);
-            $total = $computed['percentage'];
-            $grade = $computed['grade'];
+            $computed = $grading->total($scheme, $marks['first_ca'], $marks['second_ca'], $marks['exam'], $this->classLevels($schoolId, [$student->id])[$student->id] ?? null);
 
             ScoreEntry::updateOrCreate(
                 [
                     'school_id' => $schoolId,
                     'term_id' => $request->term_id,
-                    'student_id' => $studentId,
+                    'student_id' => $student->id,
                     'subject_id' => $request->subject_id,
                 ],
                 [
-                    'first_ca' => $firstCa,
-                    'second_ca' => $secondCa,
-                    'exam' => $exam,
-                    'total_score' => $total,
-                    'grade' => $grade,
+                    'first_ca' => $marks['first_ca'],
+                    'second_ca' => $marks['second_ca'],
+                    'exam' => $marks['exam'],
+                    'component_scores' => $marks['component_scores'],
+                    'total_score' => $computed['percentage'],
+                    'grade' => $computed['grade'],
                 ]
             );
             $importedCount++;
         }
 
         return response()->json([
-            'message' => "Successfully imported {$importedCount} student scores.",
+            'message' => "Imported {$importedCount} score(s).".($errors ? ' '.count($errors).' row(s) skipped.' : ''),
             'imported_count' => $importedCount,
             'errors' => $errors,
         ]);
+    }
+
+    /**
+     * A score sheet to fill in: one row per student in the class, one column
+     * per part of the school's marking scheme. Uploaded unchanged it imports.
+     */
+    public function scoreTemplate(Request $request)
+    {
+        $schoolId = $this->schoolId();
+
+        $request->validate([
+            'class_id' => ['required', \Illuminate\Validation\Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+        ]);
+
+        $scheme = CaScheme::activeFor($schoolId);
+        $students = Student::where('school_id', $schoolId)
+            ->where('class_id', $request->class_id)
+            ->where('status', 'active')
+            ->with('user:id,name')
+            ->orderBy('admission_number')
+            ->get();
+
+        $cell = fn ($v) => '"'.str_replace('"', '""', (string) $v).'"';
+        $lines = [implode(',', array_map($cell, array_merge(
+            ['admission_number', 'student_name'],
+            array_map(fn ($p) => "{$p['name']} ({$p['max']})", $scheme->parts()),
+        )))];
+
+        foreach ($students as $student) {
+            $lines[] = implode(',', array_merge(
+                [$cell($student->admission_number), $cell($student->user?->name)],
+                array_fill(0, count($scheme->parts()), ''),
+            ));
+        }
+
+        return response(implode(chr(13).chr(10), $lines).chr(13).chr(10), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="score-sheet.csv"',
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    /** "3rd CA (10)" → "3rd_ca"; strips a byte-order mark and a "(max)" suffix. */
+    private function headerKey(string $heading): string
+    {
+        $heading = preg_replace('/^\xEF\xBB\xBF/', '', $heading);
+        $heading = preg_replace('/\(\s*\d+\s*\)\s*$/', '', $heading);
+
+        return trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($heading))), '_');
     }
 
     /**

@@ -427,7 +427,7 @@ class FeeCollectionController extends Controller
 
         $invoices = Invoice::where('school_id', $schoolId)
             ->where('student_id', $student->id)
-            ->with('term:id,name')
+            ->with(['term:id,name', 'payments' => fn ($q) => $q->where('status', 'successful')->orderBy('paid_at')])
             ->orderByDesc('id')
             ->get();
 
@@ -446,6 +446,15 @@ class FeeCollectionController extends Controller
                 'balance' => $i->balance(),
                 'status' => $i->status,
                 'due_date' => $i->due_date?->toDateString(),
+                // Confirmed payments against this invoice, as receipts.
+                'payments' => $i->payments->map(fn ($p) => [
+                    'payment_id' => $p->id,
+                    'receipt_number' => 'REC-'.str_pad((string) $p->id, 6, '0', STR_PAD_LEFT),
+                    'amount' => (float) $p->amount,
+                    'gateway' => $p->gateway,
+                    'reference' => $p->reference,
+                    'paid_at' => $p->paid_at?->toIso8601String(),
+                ])->values(),
             ]),
         ]);
     }

@@ -49,11 +49,15 @@ export default function SetupChecklistPage() {
 
     (async () => {
       try {
-        const [terms, classes, subjects, students] = await Promise.all([
+        const [terms, classes, subjects, students, reportSetup] = await Promise.all([
           probe('/terms'),
           probe('/classes'),
           probe('/subjects'),
           probe('/students'),
+          // Done when the marking scheme and the ratings/comments are both saved.
+          fetchApi<{ configured: boolean; ca_scheme: { saved: boolean } }>('/report-settings')
+            .then((r) => (r.configured && r.ca_scheme.saved ? 1 : 0))
+            .catch(() => null),
         ]);
 
         setChecks([
@@ -71,8 +75,15 @@ export default function SetupChecklistPage() {
             label: 'Subjects',
             detail: 'Subjects, and which teacher takes each one.',
             count: subjects,
-            href: '/students',
-            hrefLabel: 'Manage',
+            href: '/subjects',
+            hrefLabel: 'Subjects',
+          },
+          {
+            label: 'Report cards & grading',
+            detail: 'How marks are split (any number of CAs), your grading, what is rated and which comments print — then request your report card design.',
+            count: reportSetup,
+            href: '/report-card-design',
+            hrefLabel: 'Set up',
           },
           {
             label: 'Students enrolled',

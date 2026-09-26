@@ -327,6 +327,21 @@ HTML;
         // The school's own scale for this class level (WAEC if none is set).
         $bands = \App\Models\GradingScale::bandsFor((int) $student->school_id, $student->currentClass?->level_category);
 
+        // The school's CA parts, for a column per part (any number of CAs).
+        $parts = \App\Models\CaScheme::activeFor((int) $student->school_id)->parts();
+        $partsFor = function ($score) use ($parts) {
+            $marks = is_array($score->component_scores) ? $score->component_scores : null;
+            // Scores entered before parts existed: read the classic columns.
+            $marks ??= ['ca1' => $score->first_ca, 'ca2' => $score->second_ca, 'exam' => $score->exam];
+
+            return array_map(fn ($p) => [
+                'key' => $p['key'],
+                'name' => $p['name'],
+                'max' => $p['max'],
+                'score' => isset($marks[$p['key']]) ? (float) $marks[$p['key']] : null,
+            ], $parts);
+        };
+
         $rows = [];
         foreach ($scores as $score) {
             $peers = $bySubject->get($score->subject_id, collect());
@@ -341,6 +356,8 @@ HTML;
                 'first_ca' => (float) $score->first_ca,
                 'second_ca' => (float) $score->second_ca,
                 'ca_total' => (float) $score->first_ca + (float) $score->second_ca,
+                // A mark per part of the school's scheme, in order.
+                'components' => $partsFor($score),
                 'exam' => (float) $score->exam,
                 'total' => (float) $score->total_score,
                 'grade' => $score->grade ?: \App\Models\GradingScale::bandOf($bands, (float) $score->total_score)['grade'],
@@ -408,6 +425,20 @@ HTML;
             $student->arm_id ? (int) $student->arm_id : null,
         );
 
+        // Ratings and comments teachers entered for this term (ReportEntryController).
+        $reportSettings = \App\Models\SchoolReportSettings::forSchool((int) $student->school_id);
+        $entered = \App\Models\StudentTermReport::withoutGlobalScopes()
+            ->where('student_id', $student->id)->where('term_id', $term->id)->first();
+        $ratings = $entered?->ratings ?? [];
+        $traitRows = collect($reportSettings->items())
+            ->filter(fn ($item) => isset($ratings[$item['name']]))
+            ->map(fn ($item) => [
+                'name' => $item['name'],
+                'group' => $item['group'],
+                'rating' => (string) $ratings[$item['name']],
+                'rating_label' => $reportSettings->ratingLabel((string) $ratings[$item['name']]),
+            ])->values()->all();
+
         return array_replace_recursive([
             'staff' => [
                 'form_teacher' => $formTeacher->name ?? ($extra['form_teacher_name'] ?? ''),
@@ -455,11 +486,19 @@ HTML;
             'attendance' => $attendance,
             'scores' => $rows,
             'score_groups' => $groups,
+            'ca_components' => array_map(fn ($p) => ['key' => $p['key'], 'name' => $p['name'], 'max' => $p['max']], $parts),
             'comments' => [
-                'class_teacher' => $extra['class_teacher_comment'] ?? null,
-                'principal' => $extra['principal_comment'] ?? null,
+                'class_teacher' => $extra['class_teacher_comment'] ?? ($reportSettings->form_teacher_comment ? $entered?->form_teacher_comment : null),
+                'principal' => $extra['principal_comment'] ?? ($reportSettings->principal_comment ? $entered?->principal_comment : null),
+                'principal_title' => $reportSettings->principal_title ?? 'Principal',
+                'show_class_teacher' => (bool) $reportSettings->form_teacher_comment,
+                'show_principal' => (bool) $reportSettings->principal_comment,
             ],
-            'traits' => $extra['traits'] ?? [],
+            // Every rated item (affective and psychomotor), and each group.
+            'traits' => $extra['traits'] ?? $traitRows,
+            'affective_traits' => array_values(array_filter($traitRows, fn ($t) => $t['group'] === 'affective')),
+            'psychomotor_skills' => array_values(array_filter($traitRows, fn ($t) => $t['group'] === 'psychomotor')),
+            'rating_scale' => $reportSettings->rating_scale ?? [],
             'grading_scale' => $extra['grading_scale'] ?? self::scaleForTemplate($bands),
             'verification' => $extra['verification'] ?? [],
             'generated_at' => now()->toDateString(),
@@ -554,19 +593,39 @@ HTML;
             ],
             'attendance' => ['present' => 58, 'absent' => 4, 'total' => 62, 'percentage' => 93.5],
             'scores' => [
-                ['subject' => 'Mathematics', 'subject_code' => 'MTH', 'category' => 'core', 'first_ca' => 17.0, 'second_ca' => 16.0, 'ca_total' => 33.0, 'exam' => 51.0, 'total' => 84.0, 'grade' => 'A1', 'position' => 2, 'class_average' => 61.4, 'class_highest' => 91.0, 'class_lowest' => 28.0, 'teacher_comment' => 'Strong grasp of algebraic manipulation.'],
-                ['subject' => 'English Language', 'subject_code' => 'ENG', 'category' => 'core', 'first_ca' => 15.0, 'second_ca' => 14.0, 'ca_total' => 29.0, 'exam' => 44.0, 'total' => 73.0, 'grade' => 'B2', 'position' => 6, 'class_average' => 64.2, 'class_highest' => 88.0, 'class_lowest' => 35.0, 'teacher_comment' => 'Comprehension is solid; work on essay structure.'],
-                ['subject' => 'Basic Science', 'subject_code' => 'BSC', 'category' => 'core', 'first_ca' => 18.0, 'second_ca' => 17.0, 'ca_total' => 35.0, 'exam' => 43.0, 'total' => 78.0, 'grade' => 'A1', 'position' => 1, 'class_average' => 58.9, 'class_highest' => 78.0, 'class_lowest' => 22.0, 'teacher_comment' => null],
-                ['subject' => 'Civic Education', 'subject_code' => 'CIV', 'category' => 'elective', 'first_ca' => 14.0, 'second_ca' => 13.0, 'ca_total' => 27.0, 'exam' => 40.0, 'total' => 67.0, 'grade' => 'B3', 'position' => 9, 'class_average' => 66.1, 'class_highest' => 85.0, 'class_lowest' => 41.0, 'teacher_comment' => null],
+                ['subject' => 'Mathematics', 'subject_code' => 'MTH', 'category' => 'core', 'first_ca' => 17.0, 'second_ca' => 16.0, 'ca_total' => 33.0, 'exam' => 51.0, 'components' => [['key' => 'ca1', 'name' => '1st CA', 'max' => 20, 'score' => 17.0], ['key' => 'ca2', 'name' => '2nd CA', 'max' => 20, 'score' => 16.0], ['key' => 'exam', 'name' => 'Exam', 'max' => 60, 'score' => 51.0]], 'total' => 84.0, 'grade' => 'A1', 'position' => 2, 'class_average' => 61.4, 'class_highest' => 91.0, 'class_lowest' => 28.0, 'teacher_comment' => 'Strong grasp of algebraic manipulation.'],
+                ['subject' => 'English Language', 'subject_code' => 'ENG', 'category' => 'core', 'first_ca' => 15.0, 'second_ca' => 14.0, 'ca_total' => 29.0, 'exam' => 44.0, 'components' => [['key' => 'ca1', 'name' => '1st CA', 'max' => 20, 'score' => 15.0], ['key' => 'ca2', 'name' => '2nd CA', 'max' => 20, 'score' => 14.0], ['key' => 'exam', 'name' => 'Exam', 'max' => 60, 'score' => 44.0]], 'total' => 73.0, 'grade' => 'B2', 'position' => 6, 'class_average' => 64.2, 'class_highest' => 88.0, 'class_lowest' => 35.0, 'teacher_comment' => 'Comprehension is solid; work on essay structure.'],
+                ['subject' => 'Basic Science', 'subject_code' => 'BSC', 'category' => 'core', 'first_ca' => 18.0, 'second_ca' => 17.0, 'ca_total' => 35.0, 'exam' => 43.0, 'components' => [['key' => 'ca1', 'name' => '1st CA', 'max' => 20, 'score' => 18.0], ['key' => 'ca2', 'name' => '2nd CA', 'max' => 20, 'score' => 17.0], ['key' => 'exam', 'name' => 'Exam', 'max' => 60, 'score' => 43.0]], 'total' => 78.0, 'grade' => 'A1', 'position' => 1, 'class_average' => 58.9, 'class_highest' => 78.0, 'class_lowest' => 22.0, 'teacher_comment' => null],
+                ['subject' => 'Civic Education', 'subject_code' => 'CIV', 'category' => 'elective', 'first_ca' => 14.0, 'second_ca' => 13.0, 'ca_total' => 27.0, 'exam' => 40.0, 'components' => [['key' => 'ca1', 'name' => '1st CA', 'max' => 20, 'score' => 14.0], ['key' => 'ca2', 'name' => '2nd CA', 'max' => 20, 'score' => 13.0], ['key' => 'exam', 'name' => 'Exam', 'max' => 60, 'score' => 40.0]], 'total' => 67.0, 'grade' => 'B3', 'position' => 9, 'class_average' => 66.1, 'class_highest' => 85.0, 'class_lowest' => 41.0, 'teacher_comment' => null],
+            ],
+            'ca_components' => [
+                ['key' => 'ca1', 'name' => '1st CA', 'max' => 20],
+                ['key' => 'ca2', 'name' => '2nd CA', 'max' => 20],
+                ['key' => 'exam', 'name' => 'Exam', 'max' => 60],
             ],
             'comments' => [
                 'class_teacher' => 'A conscientious student who contributes well in class.',
                 'principal' => 'A commendable result. Keep it up next term.',
+                'principal_title' => 'Principal',
+                'show_class_teacher' => true,
+                'show_principal' => true,
             ],
+            'affective_traits' => [
+                ['name' => 'Punctuality', 'group' => 'affective', 'rating' => '5', 'rating_label' => 'Excellent'],
+                ['name' => 'Neatness', 'group' => 'affective', 'rating' => '4', 'rating_label' => 'Very good'],
+                ['name' => 'Cooperation', 'group' => 'affective', 'rating' => '5', 'rating_label' => 'Excellent'],
+            ],
+            'psychomotor_skills' => [
+                ['name' => 'Handwriting', 'group' => 'psychomotor', 'rating' => '4', 'rating_label' => 'Very good'],
+                ['name' => 'Sports', 'group' => 'psychomotor', 'rating' => '5', 'rating_label' => 'Excellent'],
+            ],
+            'rating_scale' => \App\Models\SchoolReportSettings::DEFAULT_SCALE,
             'traits' => [
-                ['name' => 'Punctuality', 'rating' => 5],
-                ['name' => 'Neatness', 'rating' => 4],
-                ['name' => 'Cooperation', 'rating' => 5],
+                ['name' => 'Punctuality', 'group' => 'affective', 'rating' => '5', 'rating_label' => 'Excellent'],
+                ['name' => 'Neatness', 'group' => 'affective', 'rating' => '4', 'rating_label' => 'Very good'],
+                ['name' => 'Cooperation', 'group' => 'affective', 'rating' => '5', 'rating_label' => 'Excellent'],
+                ['name' => 'Handwriting', 'group' => 'psychomotor', 'rating' => '4', 'rating_label' => 'Very good'],
+                ['name' => 'Sports', 'group' => 'psychomotor', 'rating' => '5', 'rating_label' => 'Excellent'],
             ],
             'grading_scale' => $this->defaultGradingScale(),
             'verification' => [
