@@ -11,6 +11,7 @@ import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
 import '../dashboard/home_screen.dart';
+import 'absence_alert_switch.dart';
 
 final behaviourProvider =
     FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
@@ -64,6 +65,7 @@ class _ChildScreenState extends ConsumerState<ChildScreen> {
                     onSelectionChanged: (s) => setState(() => _tab = s.first),
                   ),
                 ),
+                if (_tab == 0) const AbsenceAlertSwitch(),
                 Expanded(
                   child: _tab == 0
                       ? const _AttendanceView()

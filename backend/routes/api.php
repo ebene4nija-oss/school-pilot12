@@ -254,6 +254,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * side. Scoped to the caller's own pivot rows inside the controller,
          * so the role list here is the outer fence, not the check.
          */
+        /*
+         * Absence alerts: off until the school switches them on, and then only
+         * for parents who opt in, per child. The school office can record a
+         * parent's choice for them (a phone-only parent cannot sign in).
+         */
+        Route::get('/school/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'schoolSettings'])->middleware('role:school_admin');
+        Route::put('/school/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'updateSchool'])->middleware('role:school_admin');
+        Route::get('/students/{studentId}/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'forStudent'])->middleware('role:school_admin')->whereNumber('studentId');
+        Route::put('/students/{studentId}/guardians/{guardianId}/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'setForGuardian'])->middleware('role:school_admin')->whereNumber(['studentId', 'guardianId']);
+        Route::get('/parent/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'mine'])->middleware('role:parent');
+        Route::put('/parent/children/{studentId}/absence-alerts', [\App\Http\Controllers\Api\V1\AbsenceAlertController::class, 'setMine'])->middleware('role:parent')->whereNumber('studentId');
+
         Route::get('/parent/children', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'children'])
             ->middleware('role:super_admin,school_admin,parent');
         Route::get('/parent/feed/{studentId}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'getStudentFeed'])->middleware('role:super_admin,school_admin,parent');

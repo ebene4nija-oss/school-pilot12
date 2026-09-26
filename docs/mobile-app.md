@@ -614,6 +614,26 @@ unregistered and **must** re-register on next launch — `onTokenRefresh` alone
 is not enough, because the token can be unchanged while the server row is gone.
 Register on every cold start; the endpoint upserts, so it is cheap and safe.
 
+### Absence alerts
+
+Off unless **both** the school and the parent ask for them. The school admin
+switches them on (Attendance page on the web), and chooses whether they may also
+go by SMS, which the school pays for per message. Each parent then opts in per
+child: in the app with the switch above the child's attendance, on the web on
+**My children**, or by asking the school office, which records it for them
+(the way a phone-only parent, who cannot sign in, gets them).
+
+| Call | Who |
+|---|---|
+| `GET /parent/absence-alerts` → `offered`, `channels`, `children[] {student_id, enabled}` | parent |
+| `PUT /parent/children/{studentId}/absence-alerts` `{enabled}` (409 if the school has not switched them on) | parent |
+| `GET` / `PUT /school/absence-alerts` `{enabled, sms}` | school admin |
+| `GET /students/{id}/absence-alerts`, `PUT /students/{id}/guardians/{guardianId}/absence-alerts` | school admin, on a parent's behalf |
+
+An alert goes when today's register marks the child absent, at most once per
+child, per parent, per day, whatever corrections follow. Back-filled earlier
+days never alert. The message names only the child's first name and the school.
+
 ## B11. Testing
 
 - **Unit:** repositories against a mocked `dio`, including 401/403/422/429.

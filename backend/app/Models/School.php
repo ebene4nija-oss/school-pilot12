@@ -30,6 +30,8 @@ class School extends Model
         'is_platform',
         'email_enabled',
         'email_daily_limit',
+        'absence_alerts_enabled',
+        'absence_alerts_sms',
     ];
 
     /** Never serialised: it carries the school's AI key. */
@@ -37,6 +39,8 @@ class School extends Model
 
     protected $casts = [
         'is_platform' => 'boolean',
+        'absence_alerts_enabled' => 'boolean',
+        'absence_alerts_sms' => 'boolean',
         'email_enabled' => 'boolean',
         'email_daily_limit' => 'integer',
         'ai_enabled' => 'boolean',

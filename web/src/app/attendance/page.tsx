@@ -16,6 +16,7 @@ import {
   Table,
   inputClass,
 } from '@/components/Page';
+import AbsenceAlertsCard from '@/components/AbsenceAlertsCard';
 
 /**
  * Taking the register.
@@ -395,6 +396,8 @@ export default function AttendancePage() {
           </Card>
         </div>
       )}
+
+      <AbsenceAlertsCard />
     </PageShell>
   );
 }

@@ -63,6 +63,11 @@ export function proxy(request: NextRequest) {
     if (role === 'bursar') {
       return NextResponse.redirect(new URL('/finance', request.url));
     }
+
+    // And a parent: their children, not the school's dashboard (which refuses them).
+    if (role === 'parent') {
+      return NextResponse.redirect(new URL('/parent', request.url));
+    }
   }
 
   return NextResponse.next();

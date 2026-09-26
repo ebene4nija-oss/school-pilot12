@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Jobs\SendAbsenceAlertsJob;
+use Illuminate\Support\Carbon;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
@@ -127,6 +129,13 @@ class AttendanceController extends Controller
             }
         });
 
+        // Parents who asked to be told, if the school has switched alerts on.
+        $absent = collect($marked)->where('status', 'absent')->pluck('student_id')->all();
+
+        if ($absent !== []) {
+            SendAbsenceAlertsJob::dispatch($schoolId, $absent, Carbon::parse($validated['date'])->toDateString());
+        }
+
         $payload = [
             'message' => sprintf('Marked %d student(s).', count($marked)),
             'date' => $validated['date'],
@@ -235,6 +244,10 @@ class AttendanceController extends Controller
                 'status' => $request->status,
             ]
         );
+
+        if ($request->status === 'absent') {
+            SendAbsenceAlertsJob::dispatch($schoolId, [(int) $request->student_id], Carbon::parse($request->date)->toDateString());
+        }
 
         return response()->json([
             'message' => 'Student attendance marked successfully',

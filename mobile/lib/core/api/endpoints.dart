@@ -147,6 +147,12 @@ class Api {
   static String parentFeed(int studentId) => '$version/parent/feed/$studentId';
   static const pickupAuthorization = '$version/parent/pickup-authorization';
 
+  // Absence alerts: offered only once the school switches them on, then
+  // opted into per child.
+  static const parentAbsenceAlerts = '$version/parent/absence-alerts';
+  static String parentChildAbsenceAlerts(int studentId) =>
+      '$version/parent/children/$studentId/absence-alerts';
+
   // Messaging and notifications
   static const messageThreads = '$version/messages/threads';
   static String messageThread(int id) => '$version/messages/threads/$id';

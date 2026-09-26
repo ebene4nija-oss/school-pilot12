@@ -65,6 +65,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   {
     items: [
       { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
+      { href: '/parent', icon: '👨‍👩‍👧', label: 'My children', roles: ['parent'] },
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },
     ],
   },

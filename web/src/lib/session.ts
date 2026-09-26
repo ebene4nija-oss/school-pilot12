@@ -61,6 +61,8 @@ export function landingPathFor(role: SessionRole | null): string {
   if (role === 'nurse') return '/health';
   // A bursar works the fee book; the dashboard is results and attendance.
   if (role === 'bursar') return '/finance';
+  // The school's dashboard refuses parents; their page is their children.
+  if (role === 'parent') return '/parent';
   return '/';
 }
 
