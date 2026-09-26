@@ -13,6 +13,7 @@ class UserProfile extends Model
         'school_id',
         'user_id',
         'role',
+        'sees_all_students',
         'phone',
         'address',
         'avatar_url',
@@ -30,6 +31,7 @@ class UserProfile extends Model
      * over. They were previously stored as plaintext.
      */
     protected $casts = [
+        'sees_all_students' => 'boolean',
         'two_factor_enabled' => 'boolean',
         'two_factor_secret' => 'encrypted',
         'two_factor_recovery_codes' => 'encrypted:array',

@@ -131,9 +131,9 @@ From a review of a generic super-admin spec against this one, the items worth do
 | a | Record when an operator opens a school: reason, audit entry, time limit; no school records without one | ✅ `platform-console.md` §4 |
 | b | ~~Trial end dates~~ | Built, then removed: the core is free for good and schools pay per use (§13), so a trial had nothing to switch off. `trial` is now shown as *onboarding*. Revisit only if pricing moves to per-term licences. |
 | c | Announcements to school administrators (never parents) | ✅ |
-| d | Per-school feature switches | Handed to the c9 session, to be designed with its school-side AI toggles |
-| e | AI remarks monitor: counts only, never approves | Handed to c9 |
-| f | Backup status and NDPA data requests (§12) | Handed to c9 |
+| d | Per-school feature switches | ✅ f8f77f4 (API), 7235256 (control on School detail) |
+| e | AI remarks monitor: counts only, never approves | ✅ d7700e1 — `/super-admin/ai-remarks` |
+| f | Backup status and NDPA data requests (§12) | ✅ f5017bf — `/super-admin/compliance`. No deletion-request workflow exists yet; the page says so. |
 | g | Term subscriptions and invoices | Blocked on §13 pricing |
 | h | Operator sub-roles | Only when there is more than one operator |
 

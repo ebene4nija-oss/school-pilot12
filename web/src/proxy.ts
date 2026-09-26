@@ -58,6 +58,11 @@ export function proxy(request: NextRequest) {
     if (role === 'nurse') {
       return NextResponse.redirect(new URL('/health', request.url));
     }
+
+    // Likewise a bursar: the fee book, not the academic dashboard.
+    if (role === 'bursar') {
+      return NextResponse.redirect(new URL('/finance', request.url));
+    }
   }
 
   return NextResponse.next();

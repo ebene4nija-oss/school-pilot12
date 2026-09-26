@@ -61,7 +61,7 @@ class FinanceController extends Controller
          * child's invoice and read its balance back in the response.
          */
         if ($invoice->student) {
-            $this->authorize('view', $invoice->student);
+            $this->authorize('viewFinance', $invoice->student);
         }
 
         $balance = $invoice->balance();
@@ -167,7 +167,8 @@ class FinanceController extends Controller
 
         // Direct manual payment (cash/bank transfer by admin) vs gateway payment verification
         $isManual = in_array($request->gateway, ['cash', 'bank_transfer']);
-        $isAdmin = $user->userProfile && in_array($user->userProfile->role, ['super_admin', 'school_admin']);
+        // The bursar takes cash and bank transfers at the accounts office.
+        $isAdmin = $user->userProfile && in_array($user->userProfile->role, ['super_admin', 'school_admin', 'bursar']);
 
         // Non-admins cannot self-mark online payments as successful without gateway verification
         $status = ($isManual && $isAdmin) ? 'successful' : 'pending';
@@ -376,6 +377,14 @@ class FinanceController extends Controller
 
         $invoice = Invoice::where('school_id', $schoolId)->with(['student.user'])->findOrFail($id);
 
+        /*
+         * Whose bill this is. Being in the school was the only check, so any
+         * parent could read any other family's invoice by changing the id.
+         */
+        if ($invoice->student) {
+            $this->authorize('viewFinance', $invoice->student);
+        }
+
         return response()->json([
             'status' => 'success',
             'document_type' => 'invoice_pdf',
@@ -392,6 +401,11 @@ class FinanceController extends Controller
         $schoolId = $this->schoolId();
 
         $payment = Payment::where('school_id', $schoolId)->with(['invoice.student.user'])->findOrFail($id);
+
+        // As for the invoice: a receipt is the paying family's, not the school's to share.
+        if ($payment->invoice?->student) {
+            $this->authorize('viewFinance', $payment->invoice->student);
+        }
 
         return response()->json([
             'status' => 'success',

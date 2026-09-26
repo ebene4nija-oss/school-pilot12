@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Student;
 use App\Models\User;
+use App\Support\TeacherScope;
 
 /**
  * Object-level authorization for a single student's records.
@@ -31,8 +32,15 @@ class StudentPolicy
         }
 
         return match ($profile->role) {
-            // School staff act on the whole roster within their own school.
-            'super_admin', 'school_admin', 'teacher' => true,
+            'super_admin', 'school_admin' => true,
+
+            /*
+             * A teacher sees the students they teach — their form class, or a
+             * class they teach a subject in — unless the school admin has
+             * granted them the whole school (an exams officer, a head of
+             * section). It used to be every child in the school.
+             */
+            'teacher' => TeacherScope::seesWholeSchool($user) || TeacherScope::teaches($user, $student),
 
             // A parent sees only their own children.
             'parent' => $student->isGuardedBy($user),
@@ -59,6 +67,27 @@ class StudentPolicy
             return false;
         }
 
-        return in_array($profile->role, ['super_admin', 'school_admin', 'teacher'], true);
+        return match ($profile->role) {
+            'super_admin', 'school_admin' => true,
+            'teacher' => TeacherScope::seesWholeSchool($user) || TeacherScope::teaches($user, $student),
+            default => false,
+        };
+    }
+
+    /**
+     * A student's fee records — statement, invoices, receipts — and nothing
+     * else of theirs. Whoever may view the student may view these, and so may
+     * the bursar, who works the fee book without seeing results or health
+     * records.
+     */
+    public function viewFinance(User $user, Student $student): bool
+    {
+        $profile = $user->userProfile;
+
+        if ($profile?->role === 'bursar') {
+            return $profile->school_id === $student->school_id;
+        }
+
+        return $this->view($user, $student);
     }
 }

@@ -354,6 +354,18 @@ when a guardian has several. Child covers attendance, behaviour and the
 timetable. Results is PIN-gated. More holds messages, pickup authorisation and
 consent.
 
+**Nurse and bursar** are web-only for now. A nurse's portal is the clinic log;
+a bursar's is Fees & finance and Result PINs. The app has no navigation for
+either role and should tell them to use the web portal rather than show an
+empty shell.
+
+**Teachers see the students they teach.** `GET /students` and every
+single-student read return only students in a class the teacher is form or
+assistant teacher of this session, or teaches a subject in, unless the school
+admin has granted them the whole school (`sees_all_students`). A teacher with no
+assignments gets an empty roster, not an error. `GET /students/lookup` (name,
+admission number, class) stays school-wide.
+
 ## B4. Screen inventory and the endpoint behind each
 
 ### Shared

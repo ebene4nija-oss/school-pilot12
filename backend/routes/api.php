@@ -61,7 +61,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // Search-as-you-type for pickers: at most 20 matches, name + admission
         // number + class only. Declared before /students/{id}, which would
         // otherwise take "lookup" as an id. Nurses use it to log clinic visits.
-        Route::get('/students/lookup', [\App\Http\Controllers\Api\V1\StudentController::class, 'lookup'])->middleware('role:super_admin,school_admin,teacher,nurse');
+        Route::get('/students/lookup', [\App\Http\Controllers\Api\V1\StudentController::class, 'lookup'])->middleware('role:super_admin,school_admin,teacher,nurse,bursar');
+        // A teacher sees the classes they teach; the school admin may grant the whole school.
+        Route::put('/staff/{userId}/student-access', [\App\Http\Controllers\Api\V1\StaffStudentAccessController::class, 'update'])->middleware('role:school_admin')->whereNumber('userId');
 
         // Staff: the directory, adding one, and adding many from a CSV.
         Route::middleware('role:super_admin,school_admin')->group(function () {
@@ -160,7 +162,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * it is published under /api/v1 and mobile clients may already call it.
          * Only the handler moved.
          */
-        Route::middleware('role:super_admin,school_admin')->group(function () {
+        Route::middleware('role:super_admin,school_admin,bursar')->group(function () {
             Route::get('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'index']);
             Route::post('/finance/fee-structure', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'store']);
             Route::put('/finance/fee-structure/{id}', [\App\Http\Controllers\Api\V1\FeeStructureController::class, 'update']);
@@ -192,8 +194,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // hosted URL; `payments` records a manual or already-taken payment. The
         // client never holds a key and never mints a reference (G8, G9).
         Route::post('/finance/payments/initialize', [\App\Http\Controllers\Api\V1\FinanceController::class, 'initializePayment'])->middleware('role:super_admin,school_admin,parent,student');
-        Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment'])->middleware('role:super_admin,school_admin,parent,student');
-        Route::post('/finance/payments/reconcile-bank-transfer', [\App\Http\Controllers\Api\V1\FinanceController::class, 'reconcileBankTransfer'])->middleware('role:super_admin,school_admin');
+        Route::post('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'recordPayment'])->middleware('role:super_admin,school_admin,bursar,parent,student');
+        Route::post('/finance/payments/reconcile-bank-transfer', [\App\Http\Controllers\Api\V1\FinanceController::class, 'reconcileBankTransfer'])->middleware('role:super_admin,school_admin,bursar');
         Route::get('/finance/invoices/{id}/pdf', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadInvoicePdf']);
         Route::get('/finance/payments/{id}/receipt', [\App\Http\Controllers\Api\V1\FinanceController::class, 'downloadPaymentReceipt']);
 
@@ -202,7 +204,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * discounts. The module could take money but could not report who had
          * not paid — the question a bursar asks weekly.
          */
-        Route::middleware('role:super_admin,school_admin')->group(function () {
+        Route::middleware('role:super_admin,school_admin,bursar')->group(function () {
             Route::get('/finance/defaulters', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'defaulters']);
             // Chasing them. The finance page's reminder button was wired to
             // nothing until this existed.
@@ -215,7 +217,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/finance/invoices/{invoiceId}/installment-plan', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'installmentPlan']);
         // Guardians read their own child's statement; StudentPolicy enforces which child.
         Route::get('/finance/students/{studentId}/statement', [\App\Http\Controllers\Api\V1\FeeCollectionController::class, 'studentStatement'])
-            ->middleware('role:super_admin,school_admin,parent,student');
+            ->middleware('role:super_admin,school_admin,bursar,parent,student');
 
         /*
          * Staff / HR (§7.3) — the people-management half. Payroll already
@@ -237,11 +239,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         // Advanced School Accounting Routes (Beyond Fee Collection)
         Route::post('/accounting/payroll', [\App\Http\Controllers\Api\V1\AccountingController::class, 'processPayroll'])->middleware('role:super_admin,school_admin');
-        Route::post('/accounting/vendors', [\App\Http\Controllers\Api\V1\AccountingController::class, 'storeVendor'])->middleware('role:super_admin,school_admin');
-        Route::post('/accounting/expenses', [\App\Http\Controllers\Api\V1\AccountingController::class, 'recordExpense'])->middleware('role:super_admin,school_admin');
-        Route::post('/accounting/petty-cash', [\App\Http\Controllers\Api\V1\AccountingController::class, 'logPettyCash'])->middleware('role:super_admin,school_admin');
-        Route::post('/accounting/budget', [\App\Http\Controllers\Api\V1\AccountingController::class, 'storeBudget'])->middleware('role:super_admin,school_admin');
-        Route::get('/accounting/income-report', [\App\Http\Controllers\Api\V1\AccountingController::class, 'getIncomeReport'])->middleware('role:super_admin,school_admin');
+        Route::post('/accounting/vendors', [\App\Http\Controllers\Api\V1\AccountingController::class, 'storeVendor'])->middleware('role:super_admin,school_admin,bursar');
+        Route::post('/accounting/expenses', [\App\Http\Controllers\Api\V1\AccountingController::class, 'recordExpense'])->middleware('role:super_admin,school_admin,bursar');
+        Route::post('/accounting/petty-cash', [\App\Http\Controllers\Api\V1\AccountingController::class, 'logPettyCash'])->middleware('role:super_admin,school_admin,bursar');
+        Route::post('/accounting/budget', [\App\Http\Controllers\Api\V1\AccountingController::class, 'storeBudget'])->middleware('role:super_admin,school_admin,bursar');
+        Route::get('/accounting/income-report', [\App\Http\Controllers\Api\V1\AccountingController::class, 'getIncomeReport'])->middleware('role:super_admin,school_admin,bursar');
 
         // Advanced Parent Engagement Portal Routes
         /*
@@ -687,14 +689,14 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         });
 
         // School admins and directors.
-        Route::middleware('role:super_admin,school_admin')->group(function () {
+        Route::middleware('role:super_admin,school_admin,bursar')->group(function () {
             Route::get('/result-pins/price-tiers', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'priceTiers']);
             Route::get('/result-pins/inventory', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'inventory']);
             Route::get('/result-pins/batches', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'batches']);
             Route::post('/result-pins/batches', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'purchaseBatch']);
             Route::get('/result-pins/batches/{id}/reveal', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'revealBatch']);
             Route::post('/result-pins/counter-sale', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'sellOverCounter']);
-            Route::put('/result-pins/settings', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'updateSettings']);
+            Route::put('/result-pins/settings', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'updateSettings'])->middleware('role:super_admin,school_admin');
             Route::post('/result-pins/waive', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'waive']);
             Route::get('/result-pins/sales-report', [\App\Http\Controllers\Api\V1\ResultPinController::class, 'salesReport']);
             // Every PIN that has left stock: sold to whom, used for which child.
@@ -803,7 +805,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);
         });
 
-        Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin');
+        Route::post('/finance/scholarships', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'storeScholarship'])->middleware('role:super_admin,school_admin,bursar');
 
         /*
          * Transport, library, hostel and clinic.

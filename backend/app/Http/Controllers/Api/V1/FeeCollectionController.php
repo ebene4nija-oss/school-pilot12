@@ -423,7 +423,7 @@ class FeeCollectionController extends Controller
         $schoolId = $this->schoolId();
         $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
 
-        $this->authorize('view', $student);
+        $this->authorize('viewFinance', $student);
 
         $invoices = Invoice::where('school_id', $schoolId)
             ->where('student_id', $student->id)

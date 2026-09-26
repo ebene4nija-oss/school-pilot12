@@ -29,7 +29,7 @@ use Illuminate\Validation\Rule;
 class StaffDirectoryController extends Controller
 {
     /** Roles a school can give its own staff. */
-    public const ROLES = ['school_admin', 'teacher', 'nurse'];
+    public const ROLES = ['school_admin', 'teacher', 'nurse', 'bursar'];
 
     private const MAX_IMPORT_ROWS = 500;
 
@@ -39,7 +39,7 @@ class StaffDirectoryController extends Controller
 
         $query = User::query()
             ->whereHas('userProfile', fn ($q) => $q->where('school_id', $schoolId)->whereIn('role', self::ROLES))
-            ->with('userProfile:id,user_id,role,phone');
+            ->with('userProfile:id,user_id,role,phone,sees_all_students');
 
         if ($request->filled('role') && in_array($request->role, self::ROLES, true)) {
             $query->whereHas('userProfile', fn ($q) => $q->where('role', $request->role));
@@ -61,6 +61,8 @@ class StaffDirectoryController extends Controller
                 'email' => $u->email,
                 'phone' => $u->userProfile?->phone,
                 'role' => $u->userProfile?->role,
+                // Teachers only: whether they see the whole school or just their classes.
+                'sees_all_students' => (bool) $u->userProfile?->sees_all_students,
                 'staff_id' => $staff->get($u->id)?->staff_id,
                 'designation' => $staff->get($u->id)?->designation,
                 'qualification' => $staff->get($u->id)?->qualification,
@@ -254,7 +256,7 @@ class StaffDirectoryController extends Controller
             'school_id' => $schoolId,
             'user_id' => $user->id,
             'staff_id' => $data['staff_id'] ?? null,
-            'designation' => $data['designation'] ?? ($data['role'] === 'nurse' ? 'School nurse' : null),
+            'designation' => $data['designation'] ?? (['nurse' => 'School nurse', 'bursar' => 'Bursar'][$data['role']] ?? null),
             'qualification' => $data['qualification'] ?? null,
             'employment_date' => $data['employment_date'] ?? null,
         ]);

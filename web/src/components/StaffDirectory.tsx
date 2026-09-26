@@ -12,7 +12,7 @@ import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, Table, inp
  * to set their own password; nobody types a password for someone else.
  */
 
-type Role = 'school_admin' | 'teacher' | 'nurse';
+type Role = 'school_admin' | 'teacher' | 'nurse' | 'bursar';
 
 type Member = {
   user_id: number;
@@ -20,6 +20,8 @@ type Member = {
   email: string | null;
   phone: string | null;
   role: Role;
+  /** Teachers: sees every student, not just their own classes. */
+  sees_all_students: boolean;
   staff_id: string | null;
   designation: string | null;
   qualification: string | null;
@@ -39,12 +41,14 @@ export const ROLE_LABEL: Record<Role, string> = {
   school_admin: 'Administrator',
   teacher: 'Teacher',
   nurse: 'Nurse',
+  bursar: 'Bursar',
 };
 
-const ROLE_TONE: Record<Role, 'blue' | 'green' | 'amber'> = {
+const ROLE_TONE: Record<Role, 'blue' | 'green' | 'amber' | 'slate'> = {
   school_admin: 'amber',
   teacher: 'blue',
   nurse: 'green',
+  bursar: 'slate',
 };
 
 export function StaffList({ refreshKey }: { refreshKey: number }) {
@@ -55,6 +59,8 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
   const [role, setRole] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(async (term: string, roleFilter: string) => {
     const params = new URLSearchParams();
@@ -81,9 +87,44 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
     return () => clearTimeout(timer);
   }, [load, search, role, refreshKey]);
 
+  /**
+   * A teacher sees the classes they teach. Some — an exams officer, a head of
+   * section — need every student; this grants it, on the record.
+   */
+  async function setWholeSchool(member: Member, enabled: boolean) {
+    if (
+      enabled &&
+      !window.confirm(`Let ${member.name} see every student in the school, not just the classes they teach?`)
+    ) {
+      return;
+    }
+
+    setBusyId(member.user_id);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const res = await fetchApi<{ message: string }>(`/staff/${member.user_id}/student-access`, {
+        method: 'PUT',
+        body: JSON.stringify({ sees_all_students: enabled }),
+      });
+      setNotice(res.message);
+      setMembers((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, sees_all_students: enabled } : m)));
+    } catch (err) {
+      setError(errorText(err, 'That change could not be saved.'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <Card title="Staff directory" description="Everyone with a staff login at this school.">
       <ErrorNote message={error} />
+      {notice && (
+        <p role="status" className="mb-4 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
+          {notice}
+        </p>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
@@ -109,12 +150,30 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
       ) : members.length === 0 ? (
         <Empty>{search || role ? 'Nobody matches that.' : 'No staff added yet. Add one, or import a CSV.'}</Empty>
       ) : (
-        <Table columns={['Name', 'Role', 'Staff ID', 'Designation', 'Phone', 'Email']}>
+        <Table columns={['Name', 'Role', 'Sees students', 'Staff ID', 'Designation', 'Phone', 'Email']}>
           {members.map((m) => (
             <tr key={m.user_id}>
               <Cell className="font-medium text-brand">{m.name}</Cell>
               <Cell>
                 <Badge tone={ROLE_TONE[m.role] ?? 'slate'}>{ROLE_LABEL[m.role] ?? m.role}</Badge>
+              </Cell>
+              <Cell className="text-xs">
+                {m.role === 'teacher' ? (
+                  <div className="flex items-center gap-2">
+                    <span>{m.sees_all_students ? 'Whole school' : 'Own classes'}</span>
+                    <button
+                      disabled={busyId === m.user_id}
+                      onClick={() => setWholeSchool(m, !m.sees_all_students)}
+                      className="font-medium text-info underline hover:text-brand disabled:opacity-60"
+                    >
+                      {m.sees_all_students ? 'Limit' : 'Grant all'}
+                    </button>
+                  </div>
+                ) : m.role === 'school_admin' ? (
+                  'Whole school'
+                ) : (
+                  <span className="text-ink-faint">None</span>
+                )}
               </Cell>
               <Cell className="font-mono text-xs">{m.staff_id ?? '—'}</Cell>
               <Cell>{m.designation ?? '—'}</Cell>
@@ -180,6 +239,7 @@ export function AddStaffForm({ onAdded }: { onAdded: () => void }) {
           <select value={form.role} onChange={(e) => set({ role: e.target.value as Role })} className={inputClass}>
             <option value="teacher">Teacher</option>
             <option value="nurse">Nurse — clinic log only</option>
+            <option value="bursar">Bursar — fees and accounts only</option>
             <option value="school_admin">Administrator — full access</option>
           </select>
         </Field>
@@ -272,7 +332,7 @@ export function ImportStaff({ onImported }: { onImported: () => void }) {
       </a>
       <p className="mb-4 text-xs text-ink-muted">
         Columns: <code>name, email, phone, role, staff_id, designation, qualification, employment_date</code>. Role is{' '}
-        <code>teacher</code>, <code>nurse</code> or <code>school_admin</code>. Up to 500 people per file.
+        <code>teacher</code>, <code>nurse</code>, <code>bursar</code> or <code>school_admin</code>. Up to 500 people per file.
       </p>
 
       <div className="flex flex-wrap items-center gap-3">

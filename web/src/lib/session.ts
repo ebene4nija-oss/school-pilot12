@@ -33,6 +33,7 @@ export type SessionRole =
   | 'school_admin'
   | 'teacher'
   | 'nurse'
+  | 'bursar'
   | 'student'
   | 'parent';
 
@@ -58,6 +59,8 @@ export function landingPathFor(role: SessionRole | null): string {
   if (role === 'teacher') return '/results';
   // A nurse's whole portal is the clinic log; the dashboard would refuse her.
   if (role === 'nurse') return '/health';
+  // A bursar works the fee book; the dashboard is results and attendance.
+  if (role === 'bursar') return '/finance';
   return '/';
 }
 

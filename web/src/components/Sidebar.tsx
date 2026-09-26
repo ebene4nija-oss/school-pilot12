@@ -22,7 +22,7 @@ import { fetchApi } from '@/lib/api';
  * link is a courtesy and not a control.
  */
 
-type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'student' | 'parent';
+type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent';
 
 type Item = {
   href: string;
@@ -91,8 +91,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   {
     heading: 'Operations',
     items: [
-      { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin'] },
-      { href: '/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['school_admin'] },
+      { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin', 'bursar'] },
+      { href: '/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['school_admin', 'bursar'] },
       { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'library' },
       { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher'], module: 'hostel' },
       { href: '/bus-tracking', icon: '🚌', label: 'Transport', roles: ['school_admin', 'teacher'], module: 'transport' },

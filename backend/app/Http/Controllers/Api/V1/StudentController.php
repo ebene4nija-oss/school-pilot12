@@ -16,6 +16,7 @@ use App\Models\UserProfile;
 use App\Services\GuardianDirectory;
 use App\Services\PasswordResetService;
 use App\Services\StudentImportService;
+use App\Support\TeacherScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,13 @@ class StudentController extends Controller
         // The picker asks for a handful of active students, not the full roll.
         if ($request->boolean('active_only')) {
             $query->where('status', 'active');
+        }
+
+        // A teacher sees the classes they teach, unless granted the whole school.
+        $user = $request->user();
+
+        if ($user->userProfile?->role === 'teacher' && ! TeacherScope::seesWholeSchool($user)) {
+            TeacherScope::apply($query, $user);
         }
 
         $students = $query->paginate(min((int) $request->input('per_page', 20), 100));

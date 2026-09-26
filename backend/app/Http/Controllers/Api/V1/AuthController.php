@@ -312,7 +312,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|in:school_admin,teacher,nurse,student,parent',
+            'role' => 'required|in:school_admin,teacher,nurse,bursar,student,parent',
             'phone' => 'nullable|string',
         ]);
 

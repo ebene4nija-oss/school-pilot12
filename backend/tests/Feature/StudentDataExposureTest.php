@@ -73,6 +73,10 @@ class StudentDataExposureTest extends TestCase
     /** The headline defect. */
     public function test_roster_listing_does_not_leak_medical_data_to_teachers()
     {
+        // A teacher sees only the classes they teach; this one is granted the
+        // whole school so the roster is not empty and the check means something.
+        $this->teacher->userProfile->update(['sees_all_students' => true]);
+
         $response = $this->actingAs($this->teacher, 'sanctum')
             ->getJson($this->url('/students'))
             ->assertStatus(200);
