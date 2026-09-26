@@ -75,7 +75,9 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   {
     heading: 'Academics',
     items: [
+      { href: '/subjects', icon: '📘', label: 'Subjects', roles: ['school_admin'] },
       { href: '/timetable', icon: '🗓️', label: 'Timetable', roles: ['school_admin', 'teacher'] },
+      { href: '/exam-timetable', icon: '🗒️', label: 'Exam timetable', roles: ['school_admin'] },
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
       { href: '/results', icon: '📝', label: 'Results & broadsheet', roles: ['school_admin', 'teacher'] },
       { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'] },

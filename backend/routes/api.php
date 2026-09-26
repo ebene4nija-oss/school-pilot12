@@ -126,6 +126,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/timetable/versions/{id}/publish', [\App\Http\Controllers\Api\V1\TimetableController::class, 'publish'])->middleware('role:super_admin,school_admin');
         Route::get('/timetable/view', [\App\Http\Controllers\Api\V1\TimetableController::class, 'view']);
 
+        // Exam timetables. Everyone reads published ones; admins build them.
+        Route::get('/exam-timetables', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'index']);
+        Route::get('/exam-timetables/{id}', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'show'])->whereNumber('id');
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::post('/exam-timetables', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'store']);
+            Route::put('/exam-timetables/{id}', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'update'])->whereNumber('id');
+            Route::delete('/exam-timetables/{id}', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'destroy'])->whereNumber('id');
+            Route::post('/exam-timetables/{id}/sittings', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'storeSitting'])->whereNumber('id');
+            Route::put('/exam-sittings/{id}', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'updateSitting'])->whereNumber('id');
+            Route::delete('/exam-sittings/{id}', [\App\Http\Controllers\Api\V1\ExamTimetableController::class, 'destroySitting'])->whereNumber('id');
+        });
+
         // Assessment & Broadsheet Routes
         Route::post('/assessment/score', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'enterScores'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/assessment/score/{id}/ai-comment', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'generateAiComment'])->middleware('role:super_admin,school_admin,teacher');
@@ -343,6 +355,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // Subject Management & Enrollment Routes
         Route::get('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'listSubjects']);
         Route::post('/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'storeSubject'])->middleware('role:super_admin,school_admin');
+        Route::put('/subjects/{id}', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'updateSubject'])->middleware('role:super_admin,school_admin')->whereNumber('id');
+        Route::get('/subjects/assignments', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'assignments'])->middleware('role:super_admin,school_admin,teacher');
+        Route::delete('/classes/{classId}/subjects/{subjectId}', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'removeClassSubject'])->middleware('role:super_admin,school_admin');
         Route::post('/subjects/assign-teacher', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'assignTeacher'])->middleware('role:super_admin,school_admin');
         Route::post('/subjects/remove-teacher', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'removeTeacher'])->middleware('role:super_admin,school_admin');
         Route::get('/teachers/{teacherId}/subjects', [\App\Http\Controllers\Api\V1\SubjectManagementController::class, 'getTeacherSubjects'])->middleware('role:super_admin,school_admin,teacher');

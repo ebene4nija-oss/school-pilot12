@@ -47,6 +47,13 @@ class SubjectManagementController extends Controller
 
         $query = Subject::where('school_id', $schoolId);
 
+        // A deactivated subject is no longer offered: it drops out of every
+        // picker (score entry, live classes) but keeps its history. The
+        // subjects screen asks for it explicitly.
+        if (! $request->boolean('include_inactive')) {
+            $query->where('is_active', true);
+        }
+
         if ($category = $request->query('category')) {
             $query->where('category', $category);
         }
@@ -87,6 +94,90 @@ class SubjectManagementController extends Controller
         return response()->json(['message' => 'Subject created.', 'data' => $subject], 201);
     }
 
+    /**
+     * Rename, recode, recategorise, or stop offering a subject.
+     *
+     * There is no delete: scores, results and timetables point at subjects,
+     * and a deleted Mathematics would take a term's broadsheet with it.
+     * Deactivating hides it from pickers instead.
+     */
+    public function updateSubject(Request $request, $id)
+    {
+        $schoolId = $this->getSchoolId($request);
+        $subject = Subject::where('school_id', $schoolId)->find($id);
+
+        if (! $subject) {
+            return response()->json(['message' => 'Subject not found.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name'        => 'sometimes|required|string|max:255',
+            'code'        => ['sometimes', 'nullable', 'string', 'max:10', Rule::unique('subjects')->where('school_id', $schoolId)->ignore($subject->id)],
+            'category'    => 'sometimes|required|in:core,elective',
+            'department'  => 'sometimes|nullable|in:science,arts,commercial,general',
+            'description' => 'sometimes|nullable|string|max:1000',
+            'is_active'   => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $subject->update($validator->validated());
+
+        return response()->json(['message' => 'Subject updated.', 'data' => $subject->fresh()]);
+    }
+
+    /**
+     * Who teaches what, across the school, in one list.
+     *
+     * The only reader before was per teacher, which cannot answer the question
+     * a timetable officer actually asks: "who takes JSS 2 Mathematics?"
+     */
+    public function assignments(Request $request)
+    {
+        $schoolId = $this->getSchoolId($request);
+
+        $rows = DB::table('teacher_subjects')
+            ->join('subjects', 'teacher_subjects.subject_id', '=', 'subjects.id')
+            ->join('users', 'teacher_subjects.teacher_id', '=', 'users.id')
+            ->leftJoin('classes', 'teacher_subjects.class_id', '=', 'classes.id')
+            ->where('teacher_subjects.school_id', $schoolId)
+            ->select(
+                'teacher_subjects.id', 'teacher_subjects.is_primary',
+                'subjects.id as subject_id', 'subjects.name as subject_name',
+                'users.id as teacher_id', 'users.name as teacher_name',
+                'classes.id as class_id', 'classes.name as class_name'
+            )
+            ->orderBy('subjects.name')
+            ->orderBy('classes.name')
+            ->get();
+
+        $classCounts = DB::table('class_subjects')
+            ->where('school_id', $schoolId)
+            ->selectRaw('subject_id, COUNT(*) as total')
+            ->groupBy('subject_id')
+            ->pluck('total', 'subject_id');
+
+        return response()->json(['data' => $rows, 'class_counts' => $classCounts]);
+    }
+
+    /** Stop offering a subject in one class. The subject itself is untouched. */
+    public function removeClassSubject(Request $request, $classId, $subjectId)
+    {
+        $schoolId = $this->getSchoolId($request);
+
+        $deleted = DB::table('class_subjects')
+            ->where('school_id', $schoolId)
+            ->where('class_id', $classId)
+            ->where('subject_id', $subjectId)
+            ->delete();
+
+        return $deleted
+            ? response()->json(['message' => 'Subject removed from the class.'])
+            : response()->json(['message' => 'That class does not offer that subject.'], 404);
+    }
+
     // ─── Assign Teacher to Subject ───────────────────────────────────
 
     public function assignTeacher(Request $request)
@@ -94,7 +185,12 @@ class SubjectManagementController extends Controller
         $schoolId = $this->getSchoolId($request);
 
         $validator = Validator::make($request->all(), [
-            'teacher_id' => ['required', Rule::exists('users', 'id')],
+            // A member of *this* school's teaching staff. This checked only that
+            // the user existed, so any account on the platform — another
+            // school's teacher, a parent — could be put down to teach here.
+            'teacher_id' => ['required', Rule::exists('user_profiles', 'user_id')
+                ->where('school_id', $schoolId)
+                ->whereIn('role', ['teacher', 'school_admin'])],
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'class_id'   => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'is_primary' => 'nullable|boolean',
@@ -142,6 +238,10 @@ class SubjectManagementController extends Controller
 
         if ($request->class_id) {
             $query->where('class_id', $request->class_id);
+        } elseif ($request->has('class_id')) {
+            // An explicit null is the "every class" assignment only. Leaving
+            // the key out still removes every assignment, as it always has.
+            $query->whereNull('class_id');
         }
 
         $query->delete();
