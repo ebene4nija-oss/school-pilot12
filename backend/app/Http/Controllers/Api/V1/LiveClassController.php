@@ -77,7 +77,20 @@ class LiveClassController extends Controller
 
     public function store(Request $request)
     {
-        $schoolId = $this->tenant->schoolId() ?? $request->user()->userProfile?->school_id;
+        /*
+         * Through the shared resolver, which returns null for an explicitly
+         * unscoped request. Reading the tenant directly, as this did, misses
+         * that: a platform operator who has not picked a school would have had
+         * the session's own school id handed to them, and the session belongs
+         * to the internal `admin` subdomain they signed in through.
+         */
+        $schoolId = $this->schoolId();
+
+        if ($schoolId === null) {
+            return response()->json([
+                'message' => 'Choose a school before scheduling a class for it.',
+            ], 409);
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',

@@ -14,10 +14,28 @@ class SubjectManagementController extends Controller
 {
     private function getSchoolId(Request $request)
     {
-        if ($request->user() && $request->user()->userProfile && $request->user()->userProfile->school_id) {
-            return $this->schoolId();
+        /*
+         * Tenant first — see Controller::schoolId(), which prefers the resolved
+         * tenant, falls back to the acting user's own profile, and returns null
+         * for a request that is explicitly unscoped.
+         *
+         * The guard here used to test the user's profile *first*. A platform
+         * operator has no school on their profile, so for them the guard was
+         * always false and this fell through to `tenant_school` — the school
+         * resolved from the host, which for an operator is the internal `admin`
+         * subdomain they signed in through, not the tenant they are inspecting.
+         * These endpoints therefore answered for the wrong school entirely.
+         */
+        $schoolId = $this->schoolId();
+
+        if ($schoolId !== null) {
+            return $schoolId;
         }
+
+        // Host-resolved tenant, for routes reached without an authenticated
+        // profile at all.
         $tenant = $request->attributes->get('tenant_school');
+
         return $tenant ? $tenant->id : $request->attributes->get('school_id');
     }
 

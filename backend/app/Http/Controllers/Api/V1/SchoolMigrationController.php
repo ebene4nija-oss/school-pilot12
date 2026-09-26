@@ -47,10 +47,14 @@ class SchoolMigrationController extends Controller
             'approximate_records' => 'nullable|integer|min:1|max:1000000',
         ]);
 
-        $schoolId = $this->tenant->schoolId() ?? $request->user()->userProfile?->school_id;
+        // Through the shared resolver, which returns null for an explicitly
+        // unscoped request rather than handing back the sign-in subdomain.
+        $schoolId = $this->schoolId();
 
         if (! $schoolId) {
-            return response()->json(['message' => 'No school context for this user.'], 403);
+            return response()->json([
+                'message' => 'Choose a school before requesting a migration for it.',
+            ], 409);
         }
 
         /*

@@ -229,4 +229,90 @@ class OperatorViewingSchoolTest extends TestCase
             ->assertOk()
             ->assertJsonPath('students.active', 10);
     }
+
+    /**
+     * The whole point of the picker, stated as one assertion.
+     *
+     * An operator is always signed in *through* some subdomain — the internal
+     * `admin` one — while inspecting a different school entirely. Several
+     * controllers resolved their school from `tenant_school`, which is the
+     * host-resolved sign-in subdomain, so they answered for SchoolPilot HQ
+     * while the operator was looking at Greenfield. Wrong school, no error.
+     */
+    public function test_endpoints_answer_for_the_inspected_school_not_the_sign_in_subdomain(): void
+    {
+        $hq = School::create([
+            'name' => 'SchoolPilot HQ', 'slug' => 'admin',
+            'subdomain' => 'admin', 'status' => 'active',
+        ]);
+        // HQ has its own students, so answering for HQ is visibly distinct
+        // from answering for the school actually being inspected.
+        $this->enrol($hq, 5);
+
+        $headers = $this->viewing($this->greenfield) + ['X-School-Subdomain' => 'admin'];
+
+        // Greenfield has 3, HQ has 5. Anything reporting 5 is reading the
+        // sign-in subdomain instead of the picker.
+        $this->actingAs($this->operator, 'sanctum')
+            ->getJson('/api/v1/students', $headers)
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->getJson('/api/v1/analytics/principal', $headers)
+            ->assertOk()
+            ->assertJsonPath('population.active', 3);
+
+        // The getSchoolId() controllers, which fell through to tenant_school.
+        foreach (['/api/v1/transport/buses', '/api/v1/library/books', '/api/v1/hostel/rooms'] as $endpoint) {
+            $this->actingAs($this->operator, 'sanctum')
+                ->getJson($endpoint, $headers)
+                ->assertOk("{$endpoint} should answer for the inspected school");
+        }
+    }
+
+    /** Writes land in the inspected school, not the sign-in subdomain. */
+    public function test_a_write_lands_in_the_inspected_school(): void
+    {
+        School::create([
+            'name' => 'SchoolPilot HQ', 'slug' => 'admin',
+            'subdomain' => 'admin', 'status' => 'active',
+        ]);
+
+        $headers = $this->viewing($this->greenfield) + ['X-School-Subdomain' => 'admin'];
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->postJson('/api/v1/transport/buses', [
+                'bus_number' => 'BUS-01',
+                'driver_name' => 'Driver Musa',
+                'driver_phone' => '08011112222',
+            ], $headers)
+            ->assertCreated();
+
+        $this->assertDatabaseHas('buses', [
+            'bus_number' => 'BUS-01',
+            'school_id' => $this->greenfield->id,
+        ]);
+    }
+
+    /** And scheduling with no school chosen is refused, not written with null. */
+    public function test_scheduling_a_class_with_no_school_chosen_is_refused(): void
+    {
+        School::create([
+            'name' => 'SchoolPilot HQ', 'slug' => 'admin',
+            'subdomain' => 'admin', 'status' => 'active',
+        ]);
+
+        $this->actingAs($this->operator, 'sanctum')
+            ->postJson('/api/v1/live-classes', [
+                'title' => 'Orphaned session',
+                'provider' => 'zoom',
+                'meeting_url' => 'https://zoom.us/j/1',
+                'scheduled_for' => now()->addDay()->toIso8601String(),
+                'duration_minutes' => 45,
+            ], ['X-School-Subdomain' => 'admin'])
+            ->assertStatus(409);
+
+        $this->assertDatabaseCount('live_classes', 0);
+    }
 }

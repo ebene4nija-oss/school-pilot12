@@ -21,18 +21,29 @@ class Phase1And2Controller extends Controller
      */
     private function getSchoolId(Request $request)
     {
-        // Tenant first, then the acting user's profile — see Controller::schoolId().
+        /*
+         * Tenant first — see Controller::schoolId(), which prefers the resolved
+         * tenant, falls back to the acting user's own profile, and returns null
+         * for a request that is explicitly unscoped.
+         *
+         * The guard here used to test the user's profile *first*. A platform
+         * operator has no school on their profile, so for them the guard was
+         * always false and this fell through to `tenant_school` — the school
+         * resolved from the host, which for an operator is the internal `admin`
+         * subdomain they signed in through, not the tenant they are inspecting.
+         * These endpoints therefore answered for the wrong school entirely.
+         */
         $schoolId = $this->schoolId();
 
         if ($schoolId !== null) {
             return $schoolId;
         }
 
-        // Request attributes are the older path, kept for the routes that are
-        // resolved by host rather than by an authenticated profile.
-        $tenantSchool = $request->attributes->get('tenant_school');
+        // Host-resolved tenant, for routes reached without an authenticated
+        // profile at all.
+        $tenant = $request->attributes->get('tenant_school');
 
-        return $tenantSchool ? $tenantSchool->id : $request->attributes->get('school_id');
+        return $tenant ? $tenant->id : $request->attributes->get('school_id');
     }
 
     // 1. Scholarships & Installments
