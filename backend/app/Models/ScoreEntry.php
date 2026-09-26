@@ -22,6 +22,9 @@ class ScoreEntry extends Model
         'position_in_class',
         'teacher_comment',
         'ai_comment_status',
+        'ai_comment_review',
+        'ai_comment_generated_at',
+        'ai_comment_reviewed_at',
     ];
     public function student()
     {

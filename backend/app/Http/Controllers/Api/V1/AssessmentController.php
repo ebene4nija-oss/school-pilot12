@@ -194,6 +194,10 @@ class AssessmentController extends Controller
         $entry->update([
             'teacher_comment' => $generatedComment,
             'ai_comment_status' => 'pending_approval',
+            // A fresh draft needs a fresh review.
+            'ai_comment_review' => null,
+            'ai_comment_generated_at' => now(),
+            'ai_comment_reviewed_at' => null,
         ]);
 
         return response()->json([
@@ -310,17 +314,23 @@ class AssessmentController extends Controller
 
         $entry = ScoreEntry::where('school_id', $schoolId)->findOrFail($id);
 
+        // How it was reviewed, kept apart from the status: "approved" covers
+        // both a draft taken as written and one the teacher rewrote.
         if ($request->action === 'approve') {
-            $entry->update(['ai_comment_status' => 'approved']);
+            $entry->update(['ai_comment_status' => 'approved', 'ai_comment_review' => 'approved_as_is', 'ai_comment_reviewed_at' => now()]);
         } elseif ($request->action === 'edit') {
             $entry->update([
                 'teacher_comment' => $request->edited_comment,
                 'ai_comment_status' => 'approved',
+                'ai_comment_review' => 'edited',
+                'ai_comment_reviewed_at' => now(),
             ]);
         } else {
             $entry->update([
                 'teacher_comment' => null,
                 'ai_comment_status' => 'rejected',
+                'ai_comment_review' => 'rejected',
+                'ai_comment_reviewed_at' => now(),
             ]);
         }
 

@@ -54,6 +54,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Platform',
     items: [
       { href: '/super-admin/ai', icon: '🤖', label: 'AI service', roles: ['super_admin'] },
+      { href: '/super-admin/ai-remarks', icon: '📝', label: 'AI remarks', roles: ['super_admin'] },
       { href: '/super-admin/messaging', icon: '✉️', label: 'Messaging', roles: ['super_admin'] },
       { href: '/super-admin/security', icon: '🔐', label: 'Security', roles: ['super_admin'] },
       { href: '/super-admin/audit-log', icon: '📜', label: 'Audit log', roles: ['super_admin'] },

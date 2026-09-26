@@ -794,6 +794,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             // Per-school module switches (CBT, transport, hostel, …). Audited.
             Route::get('/platform/schools/{schoolId}/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'platformShow'])->whereNumber('schoolId');
             Route::put('/platform/schools/{schoolId}/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'platformUpdate'])->whereNumber('schoolId');
+            // AI report-card remarks per school: counts only, read-only.
+            Route::get('/platform/ai-remarks', [\App\Http\Controllers\Api\V1\PlatformAiRemarksController::class, 'index']);
             Route::get('/platform/result-pins/sales', [\App\Http\Controllers\Api\V1\ResultPinReportController::class, 'platformSummary']);
         });
 
