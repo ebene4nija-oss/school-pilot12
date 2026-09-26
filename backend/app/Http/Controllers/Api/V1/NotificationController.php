@@ -17,6 +17,16 @@ use Illuminate\Support\Facades\Validator;
 
 class NotificationController extends Controller
 {
+    /** Who a broadcast can be addressed to without knowing anyone's user id. */
+    private const AUDIENCES = ['parents', 'students', 'teachers', 'staff'];
+
+    /**
+     * One message's ceiling. A whole-school send to every family is two or three
+     * thousand SMS on the school's own SIM, which is both expensive and the
+     * surest way to get that SIM flagged by the network. One class at a time.
+     */
+    private const MAX_RECIPIENTS = 3000;
+
     /**
      * Register this device for push (§7.13).
      *
@@ -147,23 +157,50 @@ class NotificationController extends Controller
     {
         $schoolId = $this->schoolId();
 
+        /*
+         * An audience, or explicit user ids.
+         *
+         * The form used to ask a school admin to type recipient user ids —
+         * "14, 22, 37" — which no school admin knows. Nobody could reach "all
+         * JSS 2 parents" without a database session, so in practice nothing
+         * was sent. `user_ids` stays for callers that already hold ids (the
+         * mobile app, the defaulter list).
+         */
         $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:1000',
+            'user_ids' => 'required_without:audience|array|min:1|max:1000',
             'user_ids.*' => 'integer',
+            'audience' => 'required_without:user_ids|array',
+            'audience.type' => 'required_with:audience|in:'.implode(',', self::AUDIENCES),
+            'audience.class_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'audience.arm_id' => 'nullable|integer',
             'body' => 'required|string|max:1000',
             'title' => 'nullable|string|max:120',
             'category' => 'nullable|string|max:64',
             'channels' => 'required|array|min:1',
-            'channels.*' => 'in:push,sms,whatsapp',
+            // Email was offered on the page and refused here, so ticking it
+            // failed the whole send with a validation error.
+            'channels.*' => 'in:push,sms,whatsapp,email',
         ]);
 
-        $recipients = User::whereIn('id', $validated['user_ids'])
-            ->whereHas('userProfile', fn ($q) => $q->where('school_id', $schoolId))
-            ->with('userProfile')
-            ->get();
+        $recipients = isset($validated['audience'])
+            ? $this->audience($validated['audience'], $schoolId)->with('userProfile')->get()
+            : User::whereIn('id', $validated['user_ids'])
+                ->whereHas('userProfile', fn ($q) => $q->where('school_id', $schoolId))
+                ->with('userProfile')
+                ->get();
 
         if ($recipients->isEmpty()) {
-            return response()->json(['error' => 'None of those recipients belong to this school.'], 422);
+            return response()->json([
+                'error' => isset($validated['audience'])
+                    ? 'Nobody matches that audience yet.'
+                    : 'None of those recipients belong to this school.',
+            ], 422);
+        }
+
+        if ($recipients->count() > self::MAX_RECIPIENTS) {
+            return response()->json([
+                'error' => 'That audience has '.$recipients->count().' people. Send to one class at a time — at most '.self::MAX_RECIPIENTS.' per message.',
+            ], 422);
         }
 
         $context = [
@@ -206,6 +243,128 @@ class NotificationController extends Controller
     }
 
     /** What this school has sent — the answer to "why is the SMS bill this size". */
+    /**
+     * How many people an audience reaches, and on which channels.
+     *
+     * Asked before sending so the admin sees "342 parents — 298 have a phone,
+     * 121 have an email" instead of discovering the gap in the delivery log.
+     */
+    public function audiencePreview(Request $request)
+    {
+        $schoolId = $this->schoolId();
+
+        $validated = $request->validate([
+            'audience' => 'required|array',
+            'audience.type' => 'required|in:'.implode(',', self::AUDIENCES),
+            'audience.class_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'audience.arm_id' => 'nullable|integer',
+        ]);
+
+        $users = $this->audience($validated['audience'], $schoolId)
+            ->with('userProfile:id,user_id,phone')
+            ->get(['id', 'email']);
+
+        return response()->json([
+            'recipients' => $users->count(),
+            'with_phone' => $users->filter(fn (User $u) => filled($u->userProfile?->phone))->count(),
+            'with_email' => $users->filter(fn (User $u) => filled($u->email))->count(),
+            'too_many' => $users->count() > self::MAX_RECIPIENTS,
+            'max_recipients' => self::MAX_RECIPIENTS,
+        ]);
+    }
+
+    /**
+     * Which channels can deliver for this school right now, and why not.
+     *
+     * "Notifications are not working" was, underneath, four separate answers
+     * nobody could see: no SMS account, no mail server, no push credentials,
+     * and a form that rejected email. This names each one.
+     */
+    public function channels(\App\Services\SmsService $sms, FcmService $fcm, WhatsAppService $whatsapp)
+    {
+        $schoolId = $this->schoolId();
+        $school = $schoolId ? \App\Models\School::find($schoolId) : null;
+
+        $smsState = $sms->describe($schoolId);
+
+        $mailer = config('mail.default');
+        $host = config('mail.mailers.smtp.host');
+        $mailReady = $mailer === 'smtp' && filled($host);
+
+        $limit = $school ? NotificationService::emailDailyLimit($school) : null;
+        $sentToday = $schoolId ? NotificationService::emailsSentToday($schoolId) : 0;
+
+        return response()->json([
+            'push' => [
+                'ready' => $fcm->isConfigured(),
+                'reason' => $fcm->isConfigured() ? null : 'Push credentials are not set up on the platform yet. Contact SchoolPilot.',
+            ],
+            'sms' => [
+                'ready' => $smsState['configured'],
+                'source' => $smsState['source'],
+                'provider' => $smsState['provider'],
+                'reason' => $smsState['configured'] ? null : 'Add your SMS account under SMS settings on this page.',
+            ],
+            'whatsapp' => [
+                'ready' => $whatsapp->isConfigured(),
+                'reason' => $whatsapp->isConfigured() ? null : 'WhatsApp is not set up on the platform yet. Contact SchoolPilot.',
+            ],
+            'email' => [
+                'ready' => $mailReady && (bool) ($school?->email_enabled ?? true),
+                'daily_limit' => $limit,
+                'sent_today' => $sentToday,
+                'remaining_today' => $limit === null ? null : max($limit - $sentToday, 0),
+                'reason' => match (true) {
+                    ! $mailReady => 'Email is not set up on the platform yet. Contact SchoolPilot.',
+                    $school && ! $school->email_enabled => 'Email is switched off for this school by SchoolPilot.',
+                    $limit !== null && $sentToday >= $limit => "Today's limit of {$limit} emails has been reached.",
+                    default => null,
+                },
+            ],
+        ]);
+    }
+
+    /**
+     * The users an audience names, within this school.
+     *
+     * Parents are reached through the students they are guardians of, so
+     * "JSS 2 parents" means the guardians of active JSS 2 students — not
+     * everyone with a parent account, which would include families who have
+     * left.
+     */
+    private function audience(array $audience, int $schoolId): \Illuminate\Database\Eloquent\Builder
+    {
+        $students = \Illuminate\Support\Facades\DB::table('students')
+            ->where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->whereNull('deleted_at');
+
+        if (! empty($audience['class_id'])) {
+            $students->where('class_id', $audience['class_id']);
+        }
+
+        if (! empty($audience['arm_id'])) {
+            $students->where('arm_id', $audience['arm_id']);
+        }
+
+        return match ($audience['type']) {
+            'parents' => User::query()->whereIn('id', \Illuminate\Support\Facades\DB::table('guardians')
+                ->where('guardians.school_id', $schoolId)
+                ->whereIn('guardians.id', \Illuminate\Support\Facades\DB::table('student_guardian')
+                    ->whereIn('student_id', (clone $students)->select('id'))
+                    ->select('guardian_id'))
+                ->select('guardians.user_id')),
+            'students' => User::query()->whereIn('id', (clone $students)->select('user_id')),
+            'teachers' => User::query()->whereHas('userProfile', fn ($q) => $q
+                ->where('school_id', $schoolId)
+                ->where('role', 'teacher')),
+            // Everyone who works at the school.
+            'staff' => User::query()->whereHas('userProfile', fn ($q) => $q
+                ->where('school_id', $schoolId)
+                ->whereIn('role', ['school_admin', 'teacher'])),
+        };
+    }
+
     public function history(Request $request)
     {
         $schoolId = $this->schoolId();

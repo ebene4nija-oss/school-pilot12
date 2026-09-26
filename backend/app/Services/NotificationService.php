@@ -135,13 +135,16 @@ class NotificationService
             return $this->record($user, 'sms', $body, 'failed', $context, 'No phone number on file.');
         }
 
-        if (! $this->sms->isConfigured()) {
+        // The recipient's own school sends, from its own account.
+        $schoolId = $user->userProfile?->school_id;
+
+        if (! $this->sms->isConfigured($schoolId)) {
             // Checked before the loop fans out, like push: one honest reason per
             // recipient beats 900 attempts we already know cannot authenticate.
-            return $this->record($user, 'sms', $body, 'failed', $context, 'SMS is not configured for this deployment.', $phone);
+            return $this->record($user, 'sms', $body, 'failed', $context, 'SMS is not set up for this school.', $phone);
         }
 
-        $result = $this->sms->sendSms($phone, $body);
+        $result = $this->sms->sendSms($phone, $body, $schoolId);
         $ok = ($result['status'] ?? null) === 'success' || isset($result['message_id']);
 
         return $this->record(
@@ -173,6 +176,10 @@ class NotificationService
             return $this->record($user, 'email', $body, 'failed', $context, 'No email address on file.');
         }
 
+        if ($refusal = $this->emailRefusal($user, $context)) {
+            return $this->record($user, 'email', $body, 'failed', $context, $refusal, $address);
+        }
+
         $subject = (string) ($context['subject'] ?? config('app.name', 'SchoolPilot'));
 
         try {
@@ -184,6 +191,78 @@ class NotificationService
         }
 
         return $this->record($user, 'email', $body, 'sent', $context, null, $address);
+    }
+
+    /**
+     * Messages that must always go out, whatever the school's email limits.
+     *
+     * A password-reset or account-setup link is the way back into an account.
+     * Counting it against a daily cap would lock out exactly the parent who
+     * most needs to get in, on exactly the day a school has been busy.
+     */
+    public const TRANSACTIONAL_CATEGORIES = ['password_reset', 'account_setup'];
+
+    /**
+     * Why this email may not be sent, or null if it may.
+     *
+     * The platform — not the school — decides whether a school can email and
+     * how much in a day. A school admin able to raise their own cap would not
+     * be under one, and a runaway broadcast to three thousand parents is the
+     * kind of thing that gets the sending domain blocklisted for every school
+     * on the platform, not just the one that sent it.
+     */
+    private function emailRefusal(User $user, array $context): ?string
+    {
+        if (in_array($context['category'] ?? null, self::TRANSACTIONAL_CATEGORIES, true)) {
+            return null;
+        }
+
+        $schoolId = $user->userProfile?->school_id;
+
+        if (! $schoolId) {
+            return null;
+        }
+
+        $school = \App\Models\School::find($schoolId);
+
+        if (! $school) {
+            return null;
+        }
+
+        if (! $school->email_enabled) {
+            return 'Email is switched off for this school by SchoolPilot.';
+        }
+
+        $limit = static::emailDailyLimit($school);
+
+        if ($limit !== null && static::emailsSentToday($schoolId) >= $limit) {
+            return "Daily email limit of {$limit} reached for this school. Sending resumes tomorrow.";
+        }
+
+        return null;
+    }
+
+    /** The school's own cap if the platform set one, else the platform default. */
+    public static function emailDailyLimit(\App\Models\School $school): ?int
+    {
+        if ($school->email_daily_limit !== null) {
+            return (int) $school->email_daily_limit;
+        }
+
+        $default = config('schoolpilot.email_daily_limit');
+
+        return is_numeric($default) && (int) $default > 0 ? (int) $default : null;
+    }
+
+    /** Emails this school has actually sent today. Transactional mail counts too. */
+    public static function emailsSentToday(int $schoolId): int
+    {
+        return NotificationLog::withoutGlobalScope('school_id')
+            ->where('school_id', $schoolId)
+            ->where('channel', 'email')
+            ->where('status', 'sent')
+            ->where('sent_at', '>=', now()->startOfDay())
+            ->count();
     }
 
     public function whatsapp(User $user, string $body, array $context = []): array

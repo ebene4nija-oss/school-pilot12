@@ -273,6 +273,28 @@ class PlatformSettingsController extends Controller
 
                 return (string) $number;
 
+            case 'integer':
+                if (filter_var($raw, FILTER_VALIDATE_INT) === false) {
+                    return ['Enter a whole number.'];
+                }
+
+                $integer = (int) $raw;
+
+                if (isset($definition['min']) && $integer < $definition['min']) {
+                    return ["Must be at least {$definition['min']}."];
+                }
+
+                if (isset($definition['max']) && $integer > $definition['max']) {
+                    return ["Must be at most {$definition['max']}."];
+                }
+
+                return (string) $integer;
+
+            case 'email':
+                $address = trim((string) $raw);
+
+                return filter_var($address, FILTER_VALIDATE_EMAIL) ? $address : ['Enter a valid email address.'];
+
             case 'select':
                 return in_array($raw, $definition['options'], true)
                     ? (string) $raw
@@ -406,6 +428,7 @@ class PlatformSettingsController extends Controller
             'naira' => is_numeric($value) ? round(((int) $value) / 100, 2) : null,
             'bool' => (bool) $value,
             'number' => is_numeric($value) ? (float) $value : null,
+            'integer' => is_numeric($value) ? (int) $value : null,
             default => (string) $value,
         };
     }

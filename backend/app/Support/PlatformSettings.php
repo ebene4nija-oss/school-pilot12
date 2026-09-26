@@ -151,6 +151,67 @@ class PlatformSettings
                 'help' => 'The registered WhatsApp sender.',
             ],
 
+            // --------------------------------------------------------- Email
+            'mail.default' => [
+                'group' => 'email',
+                'label' => 'Mail delivery',
+                'type' => 'select',
+                'options' => ['smtp', 'log'],
+                'help' => 'smtp sends real email through the server below. log writes messages to a file and delivers nothing; it is only for testing.',
+            ],
+            'mail.mailers.smtp.host' => [
+                'group' => 'email',
+                'label' => 'SMTP server',
+                'type' => 'string',
+                'help' => 'For example smtp.zoho.com, smtp.gmail.com, or the mail server cPanel gives you.',
+            ],
+            'mail.mailers.smtp.port' => [
+                'group' => 'email',
+                'label' => 'SMTP port',
+                'type' => 'integer',
+                'min' => 1,
+                'max' => 65535,
+                'help' => '587 for STARTTLS, 465 for SSL.',
+            ],
+            'mail.mailers.smtp.scheme' => [
+                'group' => 'email',
+                'label' => 'Connection security',
+                'type' => 'select',
+                'options' => ['smtp', 'smtps'],
+                'help' => 'smtp (STARTTLS) for port 587; smtps (SSL) for port 465.',
+            ],
+            'mail.mailers.smtp.username' => [
+                'group' => 'email',
+                'label' => 'SMTP username',
+                'type' => 'string',
+                'help' => 'Usually the full sending address.',
+            ],
+            'mail.mailers.smtp.password' => [
+                'group' => 'email',
+                'label' => 'SMTP password',
+                'type' => 'secret',
+                'help' => 'The mailbox password, or an app password where the provider requires one.',
+            ],
+            'mail.from.address' => [
+                'group' => 'email',
+                'label' => 'Send from address',
+                'type' => 'email',
+                'help' => 'Parents see this as the sender. It should be an address the SMTP account is allowed to send as.',
+            ],
+            'mail.from.name' => [
+                'group' => 'email',
+                'label' => 'Send from name',
+                'type' => 'string',
+                'help' => 'For example: SchoolPilot.',
+            ],
+            'schoolpilot.email_daily_limit' => [
+                'group' => 'email',
+                'label' => 'Emails per school per day',
+                'type' => 'integer',
+                'min' => 0,
+                'help' => 'Default limit for every school; the Schools table can set a different number for one school or switch its email off. Password-reset and account-setup emails are never held back. 0 means no limit.',
+            ],
+
             // ---------------------------------------------------------- Push
             'services.fcm.credentials' => [
                 'group' => 'push',
@@ -175,6 +236,7 @@ class PlatformSettings
             'ai' => 'AI service',
             'sms' => 'SMS',
             'whatsapp' => 'WhatsApp',
+            'email' => 'Email',
             'push' => 'Push notifications',
         ];
     }
@@ -283,6 +345,7 @@ class PlatformSettings
             'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'naira' => (int) $value,
             'number' => (float) $value,
+            'integer' => (int) $value,
             default => $value,
         };
     }

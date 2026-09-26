@@ -43,4 +43,20 @@ return [
 
     'platform_subdomain' => env('PLATFORM_SUBDOMAIN', 'admin'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Emails a school may send per day
+    |--------------------------------------------------------------------------
+    |
+    | The platform-wide default; the operator console can set a different
+    | number for one school, or switch a school's email off. Password-reset and
+    | account-setup emails are never held back by it.
+    |
+    | One sending domain carries every school's mail, so one runaway broadcast
+    | can get it blocklisted for all of them. 0 or empty means no limit.
+    |
+    */
+
+    'email_daily_limit' => env('EMAIL_DAILY_LIMIT', 1000),
+
 ];

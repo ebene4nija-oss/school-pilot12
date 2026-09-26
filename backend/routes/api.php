@@ -415,6 +415,28 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/notifications/history', [\App\Http\Controllers\Api\V1\NotificationController::class, 'history'])
             ->middleware('role:super_admin,school_admin');
 
+        // --- Messaging (school SMS gateway, audiences, channel readiness) ---
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+            // Who an audience reaches, and which channels can deliver now.
+            Route::post('/notifications/audience-preview', [\App\Http\Controllers\Api\V1\NotificationController::class, 'audiencePreview']);
+            Route::get('/notifications/channels', [\App\Http\Controllers\Api\V1\NotificationController::class, 'channels']);
+        });
+
+        /*
+         * The school's own SMS account. It sends from the school's phone and
+         * SIM, or its own bulk account, so it belongs to the school. Admins
+         * only: the key can send on the school's airtime.
+         */
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/school/sms-gateway', [\App\Http\Controllers\Api\V1\SchoolSmsGatewayController::class, 'show']);
+            Route::put('/school/sms-gateway', [\App\Http\Controllers\Api\V1\SchoolSmsGatewayController::class, 'update']);
+            Route::delete('/school/sms-gateway', [\App\Http\Controllers\Api\V1\SchoolSmsGatewayController::class, 'destroy']);
+            Route::post('/school/sms-gateway/test', [\App\Http\Controllers\Api\V1\SchoolSmsGatewayController::class, 'test'])
+                ->middleware('throttle:10,1');
+            Route::get('/school/sms-gateway/balance', [\App\Http\Controllers\Api\V1\SchoolSmsGatewayController::class, 'balance']);
+        });
+        // --- end Messaging ---
+
         /*
          * The caller's own inbox (gap G6).
          *
@@ -679,6 +701,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'index']);
             Route::put('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'update']);
             Route::get('/platform/ai-usage', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'aiUsage']);
+            // Per-school email on/off and daily limits; what each school sent today.
+            Route::get('/platform/messaging', [\App\Http\Controllers\Api\V1\PlatformMessagingController::class, 'index']);
+            Route::post('/platform/schools/{schoolId}/messaging', [\App\Http\Controllers\Api\V1\PlatformMessagingController::class, 'update']);
             Route::post('/platform/schools/{schoolId}/ai', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'setSchoolAi']);
             // The migration queue an operator actually works, across schools.
             Route::get('/platform/school-migrations', [\App\Http\Controllers\Api\V1\SchoolMigrationController::class, 'queue']);

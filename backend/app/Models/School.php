@@ -28,10 +28,14 @@ class School extends Model
         'result_checker_enabled',
         'result_pin_retail_price',
         'is_platform',
+        'email_enabled',
+        'email_daily_limit',
     ];
 
     protected $casts = [
         'is_platform' => 'boolean',
+        'email_enabled' => 'boolean',
+        'email_daily_limit' => 'integer',
         'ai_enabled' => 'boolean',
         'result_checker_enabled' => 'boolean',
         'result_pin_retail_price' => 'decimal:2',
