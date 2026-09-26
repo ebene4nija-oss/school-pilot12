@@ -72,4 +72,18 @@ return [
 
     'operator_access_minutes' => (int) env('OPERATOR_ACCESS_MINUTES', 120),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Backups (read-only status for the operator console)
+    |--------------------------------------------------------------------------
+    |
+    | Where deploy/cpanel/backup-db.sh writes its encrypted dumps and its log.
+    | The app only reads these — it lists files and scans the log for the last
+    | success. It never writes, restores or decrypts anything.
+    |
+    */
+
+    'backup_dir' => env('BACKUP_DIR', '/home/schoolpilotorg/backups'),
+    'backup_log' => env('BACKUP_LOG', '/home/schoolpilotorg/logs/backup.log'),
+
 ];
