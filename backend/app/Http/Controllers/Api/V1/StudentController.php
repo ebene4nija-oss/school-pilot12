@@ -13,6 +13,7 @@ use App\Models\StudentClassHistory;
 use App\Models\StudentEnrollment;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\GuardianDirectory;
 use App\Services\PasswordResetService;
 use App\Services\StudentImportService;
 use Illuminate\Http\Request;
@@ -40,12 +41,25 @@ class StudentController extends Controller
             $query->where('arm_id', $request->arm_id);
         }
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            })->orWhere('admission_number', 'like', "%{$search}%");
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+
+            /*
+             * Grouped. The admission-number match used to be a bare orWhere at
+             * the top level, so "search within JSS 2" returned any student in
+             * any class whose admission number matched.
+             */
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })->orWhere('admission_number', 'like', "%{$search}%");
+            });
+        }
+
+        // The picker asks for a handful of active students, not the full roll.
+        if ($request->boolean('active_only')) {
+            $query->where('status', 'active');
         }
 
         $students = $query->paginate(min((int) $request->input('per_page', 20), 100));
@@ -53,18 +67,52 @@ class StudentController extends Controller
         return StudentResource::collection($students)->response();
     }
 
-    public function store(Request $request)
+    /**
+     * Enrol one student, with their class and their parents.
+     *
+     * The form used to collect a name, an email, a gender and a birth
+     * certificate number — no class, no admission number, no parent — so every
+     * child enrolled by hand had to be finished some other way, and there was
+     * no other way. It now takes the whole record in one request.
+     *
+     * Parents are matched by phone: a second child with the same mother's
+     * number attaches to her existing account instead of creating a new one.
+     *
+     * Email is optional for the student and for each parent. Most pupils have
+     * none; many parents have only a phone. They are enrolled, linked and
+     * reachable by SMS without one, and can sign in once an email is added.
+     */
+    public function store(Request $request, GuardianDirectory $directory)
     {
+        $schoolId = $this->schoolId();
+
+        if ($schoolId === null) {
+            return response()->json(['message' => 'Choose a school first.'], 409);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'class_id' => 'nullable|exists:classes,id',
-            'arm_id' => 'nullable|exists:arms,id',
-            'admission_number' => 'nullable|string',
+            'email' => 'nullable|email|max:255|unique:users,email',
+            // Scoped to this school: a class id from another school is a
+            // class this student cannot be in.
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'arm_id' => [
+                'nullable',
+                Rule::exists('arms', 'id')->where(fn ($q) => $q
+                    ->where('school_id', $schoolId)
+                    ->when($request->class_id, fn ($q2) => $q2->where('class_id', $request->class_id))),
+            ],
+            'admission_number' => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('students', 'admission_number')->where('school_id', $schoolId),
+            ],
             'gender' => 'required|in:male,female,other',
-            'date_of_birth' => 'nullable|date',
-            'state_of_origin' => 'nullable|string',
-            'lga' => 'nullable|string',
+            'date_of_birth' => 'nullable|date|before:today',
+            'phone' => 'nullable|string|max:20',
+            'state_of_origin' => 'nullable|string|max:100',
+            'lga' => 'nullable|string|max:100',
+            'religion' => 'nullable|string|max:50',
+            'previous_school' => 'nullable|string|max:255',
             'blood_group' => 'nullable|string',
             'allergies' => 'nullable|array',
             'medical_notes' => 'nullable|string',
@@ -73,6 +121,19 @@ class StudentController extends Controller
             'emergency_contacts' => 'nullable|array',
             'avatar' => 'nullable|file|image|max:2048',
             'passport_photo' => 'nullable|file|image|max:2048',
+
+            // Up to two parents or guardians. Optional here so older clients
+            // (the mobile app) keep working; the web form requires the first.
+            'guardians' => 'nullable|array|max:2',
+            'guardians.*.name' => 'required|string|max:255',
+            'guardians.*.phone' => ['required', 'string', 'max:20', 'regex:/^\+?[\d\s()-]{7,20}$/'],
+            'guardians.*.email' => 'nullable|email|max:255',
+            'guardians.*.relationship' => 'nullable|string|in:father,mother,guardian,parent,other',
+            'guardians.*.occupation' => 'nullable|string|max:100',
+        ], [
+            'arm_id.exists' => 'That arm does not belong to the chosen class.',
+            'admission_number.unique' => 'Another student in this school already has that admission number.',
+            'guardians.*.phone.regex' => 'Enter a phone number such as 0803 123 4567.',
         ]);
 
         if ($validator->fails()) {
@@ -80,11 +141,10 @@ class StudentController extends Controller
         }
 
         $admin = $request->user();
-        $schoolId = $this->schoolId();
 
         $resets = app(PasswordResetService::class);
 
-        $student = DB::transaction(function () use ($request, $admin, $schoolId) {
+        [$student, $newGuardianUsers] = DB::transaction(function () use ($request, $admin, $schoolId, $directory) {
             /*
              * Never seen by anyone, including the admin creating the record.
              * It exists so the row is never briefly stored with a guessable
@@ -101,7 +161,7 @@ class StudentController extends Controller
 
             $user = User::create([
                 'name' => $request->name,
-                'email' => $request->email,
+                'email' => filled($request->email) ? strtolower(trim($request->email)) : null,
                 'password' => Hash::make($tempPassword),
             ]);
 
@@ -109,27 +169,67 @@ class StudentController extends Controller
                 'school_id' => $schoolId,
                 'user_id' => $user->id,
                 'role' => 'student',
-                'phone' => $request->phone,
+                'phone' => GuardianDirectory::canonicalPhone($request->phone),
                 'avatar_url' => $passportPhotoPath,
             ]);
+
+            // Same format as the importer, so a school's numbers read as one
+            // series however each child was enrolled.
+            $admission = filled($request->admission_number)
+                ? trim($request->admission_number)
+                : $this->nextAdmissionNumber($schoolId);
 
             $student = Student::create([
                 'school_id' => $schoolId,
                 'user_id' => $user->id,
                 'class_id' => $request->class_id,
                 'arm_id' => $request->arm_id,
-                'admission_number' => $request->admission_number,
+                'admission_number' => $admission,
                 'gender' => $request->gender,
                 'date_of_birth' => $request->date_of_birth,
                 'state_of_origin' => $request->state_of_origin,
                 'lga' => $request->lga,
+                'religion' => $request->religion,
+                'previous_school' => $request->previous_school,
                 'blood_group' => $request->blood_group,
                 'allergies' => $request->allergies,
                 'medical_notes' => $request->medical_notes,
                 'birth_certificate_reference' => $request->birth_certificate_reference,
                 'passport_photo_path' => $passportPhotoPath,
                 'emergency_contacts' => $request->emergency_contacts,
+                'status' => 'active',
             ]);
+
+            // Joins the current session straight away, or the next rollover
+            // would skip a child enrolled mid-year.
+            $sessionId = AcademicSession::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
+            if ($sessionId && $request->class_id) {
+                StudentEnrollment::create([
+                    'school_id' => $schoolId,
+                    'student_id' => $student->id,
+                    'session_id' => $sessionId,
+                    'class_id' => $request->class_id,
+                    'arm_id' => $request->arm_id,
+                    'status' => 'active',
+                    'enrolled_on' => now()->toDateString(),
+                    'recorded_by' => $admin->id,
+                ]);
+            }
+
+            $newGuardianUsers = [];
+
+            foreach (array_values($request->input('guardians', [])) as $index => $details) {
+                $result = $directory->findOrCreate($schoolId, $details);
+
+                if (! $student->guardians()->whereKey($result['guardian']->id)->exists()) {
+                    $student->guardians()->attach($result['guardian']->id, ['is_primary' => $index === 0]);
+                }
+
+                if ($result['created']) {
+                    $newGuardianUsers[] = $result['guardian']->user;
+                }
+            }
 
             AuditLog::create([
                 'school_id' => $schoolId,
@@ -141,18 +241,140 @@ class StudentController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
-            return $student;
+            return [$student, $newGuardianUsers];
         });
 
+        $school = School::find($schoolId);
+
         // Outside the transaction: a mail transport hiccup must not roll back
-        // an admission. The student can always use "Forgot password" instead.
-        $delivery = $resets->sendSetupLink($student->user, School::find($schoolId));
+        // an admission. Only accounts with an address get a link; a
+        // phone-only parent is reachable by SMS and signs in once an email is
+        // added.
+        $studentLinkSent = false;
+
+        if ($student->user->email) {
+            $delivery = $resets->sendSetupLink($student->user, $school);
+            $studentLinkSent = ($delivery['email']['status'] ?? null) === 'sent';
+        }
+
+        foreach ($newGuardianUsers as $guardianUser) {
+            if ($guardianUser->email) {
+                $resets->sendSetupLink($guardianUser, $school);
+            }
+        }
 
         return response()->json([
-            'message' => 'Student record created successfully',
-            'student' => new StudentResource($student->load('user:id,name,email')),
-            'setup_link_sent' => ($delivery['email']['status'] ?? null) === 'sent',
+            'message' => 'Student enrolled.',
+            'student' => new StudentResource($student->load('user:id,name,email', 'currentClass:id,name', 'currentArm:id,name')),
+            'guardians' => $student->guardians()->with('user.userProfile')->get()->map(fn ($g) => [
+                'id' => $g->id,
+                'name' => $g->user?->name,
+                'phone' => $g->user?->userProfile?->phone,
+                'email' => $g->user?->email,
+                'relationship' => $g->relationship,
+            ]),
+            'setup_link_sent' => $studentLinkSent,
         ], 201);
+    }
+
+    /**
+     * Find a student by name or admission number, for the pickers.
+     *
+     * The clinic and hostel forms loaded every student in the school into one
+     * dropdown — unusable at a thousand pupils, and it put the whole roster in
+     * the browser of anyone who opened the form. This returns at most twenty
+     * matches, and only what is needed to pick the right child: name,
+     * admission number, class. It is what a nurse can see of the roster, and
+     * nothing more.
+     */
+    public function lookup(Request $request)
+    {
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'class_id' => 'nullable|integer',
+        ]);
+
+        $search = trim($validated['search']);
+
+        $students = Student::query()
+            ->where('status', 'active')
+            ->when($validated['class_id'] ?? null, fn ($q, $classId) => $q->where('class_id', $classId))
+            ->where(function ($q) use ($search) {
+                $q->where('admission_number', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+            })
+            ->with(['user:id,name', 'currentClass:id,name', 'currentArm:id,name'])
+            ->limit(20)
+            ->get(['id', 'user_id', 'class_id', 'arm_id', 'admission_number']);
+
+        return response()->json([
+            'data' => $students->map(fn (Student $s) => [
+                'id' => $s->id,
+                'name' => $s->user?->name,
+                'admission_number' => $s->admission_number,
+                'class' => trim(($s->currentClass?->name ?? '').' '.($s->currentArm?->name ?? '')) ?: null,
+            ])->sortBy('name')->values(),
+        ]);
+    }
+
+    /**
+     * The student import template.
+     *
+     * Headers are the canonical names the importer matches, so a file built on
+     * this template is read without guessing. The class and arm in the sample
+     * row are this school's own first class and arm where it has any, so the
+     * example is one that would actually import.
+     *
+     * One sample row only, marked as such, to show the format of each column —
+     * a date, a phone number — and meant to be overwritten.
+     */
+    public function importTemplate()
+    {
+        $schoolId = $this->schoolId();
+
+        $class = $schoolId
+            ? \App\Models\SchoolClass::where('school_id', $schoolId)->orderBy('id')->first()
+            : null;
+        $arm = $class ? \App\Models\Arm::where('class_id', $class->id)->orderBy('id')->first() : null;
+
+        $headers = [
+            'admission_number', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth',
+            'class', 'arm', 'email', 'state_of_origin', 'lga', 'religion', 'previous_school',
+            'guardian_name', 'guardian_phone', 'guardian_email',
+        ];
+
+        $example = [
+            '', 'Example', '', 'Pupil', 'female', '2015-03-21',
+            $class?->name ?? 'JSS 1', $arm?->name ?? '', '', 'Lagos', 'Ikeja', '', '',
+            'Example Parent', '08031234567', '',
+        ];
+
+        $lines = [
+            implode(',', $headers),
+            implode(',', array_map(fn ($v) => '"'.str_replace('"', '""', $v).'"', $example)),
+        ];
+
+        return response(implode(chr(13).chr(10), $lines).chr(13).chr(10), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="student-import-template.csv"',
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    /** YYYY/NNNN, continuing the school's series. */
+    private function nextAdmissionNumber(int $schoolId): string
+    {
+        $sequence = (int) Student::withoutGlobalScopes()->where('school_id', $schoolId)->count();
+
+        do {
+            $sequence++;
+            $candidate = sprintf('%s/%04d', now()->format('Y'), $sequence);
+        } while (Student::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->where('admission_number', $candidate)
+            ->exists());
+
+        return $candidate;
     }
 
     public function show(Request $request, $id)

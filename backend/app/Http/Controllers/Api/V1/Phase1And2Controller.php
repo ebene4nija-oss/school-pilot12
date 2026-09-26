@@ -554,7 +554,12 @@ class Phase1And2Controller extends Controller
             'student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
             'symptoms' => 'required|string',
             'treatment' => 'required|string',
-            'attending_nurse' => 'required|string',
+            // A nurse recording her own visit is the attending nurse; anyone
+            // recording on a nurse's behalf names her.
+            'attending_nurse' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => $request->user()?->userProfile?->role !== 'nurse'),
+                'nullable', 'string', 'max:255',
+            ],
         ]);
 
         $visit = \App\Models\ClinicVisit::create([
@@ -562,7 +567,9 @@ class Phase1And2Controller extends Controller
             'student_id' => $validated['student_id'],
             'symptoms' => $validated['symptoms'],
             'treatment' => $validated['treatment'],
-            'attending_nurse' => $validated['attending_nurse'],
+            'attending_nurse' => filled($validated['attending_nurse'] ?? null)
+                ? $validated['attending_nurse']
+                : $request->user()->name,
             'visited_at' => now(),
         ]);
 

@@ -249,7 +249,8 @@ class StudentImportTest extends TestCase
         $student = Student::withoutGlobalScopes()->with('user')->first();
 
         $this->assertEquals('ADM/001', $student->admission_number);
-        $this->assertStringEndsWith('@pilotacademy.local', $student->user->email);
+        // No invented address: an `@school.local` email would be "delivered" and bounce.
+        $this->assertNull($student->user->email);
     }
 
     public function test_only_valid_rows_are_created_and_bad_rows_never_reach_the_database()

@@ -58,6 +58,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         
         // Student Information System (SIS) Routes
         Route::get('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'index'])->middleware('role:super_admin,school_admin,teacher');
+        // Search-as-you-type for pickers: at most 20 matches, name + admission
+        // number + class only. Declared before /students/{id}, which would
+        // otherwise take "lookup" as an id. Nurses use it to log clinic visits.
+        Route::get('/students/lookup', [\App\Http\Controllers\Api\V1\StudentController::class, 'lookup'])->middleware('role:super_admin,school_admin,teacher,nurse');
+
+        // Staff: the directory, adding one, and adding many from a CSV.
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/staff/directory', [\App\Http\Controllers\Api\V1\StaffDirectoryController::class, 'index']);
+            Route::post('/staff', [\App\Http\Controllers\Api\V1\StaffDirectoryController::class, 'store']);
+            Route::post('/staff/import', [\App\Http\Controllers\Api\V1\StaffDirectoryController::class, 'import']);
+            Route::get('/staff/import/template', [\App\Http\Controllers\Api\V1\StaffDirectoryController::class, 'template']);
+        });
         Route::post('/students', [\App\Http\Controllers\Api\V1\StudentController::class, 'store'])->middleware('role:super_admin,school_admin');
         Route::post('/students/promote', [\App\Http\Controllers\Api\V1\StudentController::class, 'promote'])->middleware('role:super_admin,school_admin');
         Route::get('/students/{student}/class-history', [\App\Http\Controllers\Api\V1\StudentController::class, 'classHistory'])->middleware('role:super_admin,school_admin,teacher');
@@ -96,6 +108,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::post('/students/import/preview', [\App\Http\Controllers\Api\V1\StudentController::class, 'importPreview'])->middleware('role:super_admin,school_admin');
         Route::post('/students/import/commit', [\App\Http\Controllers\Api\V1\StudentController::class, 'importCommit'])->middleware('role:super_admin,school_admin');
+        // A ready-made CSV with the exact headers the importer recognises.
+        Route::get('/students/import/template', [\App\Http\Controllers\Api\V1\StudentController::class, 'importTemplate'])->middleware('role:super_admin,school_admin');
 
         // Attendance & Hardware-Free Clock-In
         Route::post('/attendance/qr-token', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'generateQrToken'])->middleware('role:super_admin,school_admin,teacher');
@@ -767,8 +781,10 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * visit — they are who walks a child to the nurse — but reading the log
          * back is restricted to the school's administrators (doc §12).
          */
-        Route::get('/health/clinic-visits', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'clinicVisits'])->middleware('role:super_admin,school_admin');
-        Route::post('/health/clinic-visit', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'recordClinicVisit'])->middleware('role:super_admin,school_admin,teacher');
+        // The nurse role reaches these two routes and the student lookup, and
+        // nothing else.
+        Route::get('/health/clinic-visits', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'clinicVisits'])->middleware('role:super_admin,school_admin,nurse');
+        Route::post('/health/clinic-visit', [\App\Http\Controllers\Api\V1\Phase1And2Controller::class, 'recordClinicVisit'])->middleware('role:super_admin,school_admin,teacher,nurse');
 
         /*
          * Virtual classrooms. SchoolPilot stores the schedule and the joining

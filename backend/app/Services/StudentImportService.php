@@ -260,14 +260,13 @@ class StudentImportService
                     ?: sprintf('%s/%04d', now()->format('Y'), $sequence);
 
                 /*
-                 * Most Nigerian primary pupils have no email of their own, and
-                 * demanding one produced sheets full of invented addresses.
-                 * A placeholder on a non-routable domain keeps the unique
-                 * constraint on `users.email` satisfied without pretending the
-                 * child can be mailed; the parent's address is the one that
-                 * matters and it is captured separately.
+                 * Most Nigerian primary pupils have no email of their own. An
+                 * address used to be invented here — `2025-0001@school.local` —
+                 * because the column was required; it is optional now, and an
+                 * invented address is worse than none since email broadcasts
+                 * would try to deliver to it.
                  */
-                $email = $row['email'] ?: Str::slug($admission) . '@' . $emailDomain;
+                $email = $row['email'] ? strtolower(trim($row['email'])) : null;
 
                 $user = User::create([
                     'name' => $row['name'],
@@ -343,7 +342,12 @@ class StudentImportService
     }
 
     /**
-     * A parent account per family, keyed on phone number where there is one.
+     * A parent account per family, through the same directory the enrolment
+     * form uses — so a child imported here and a sibling enrolled by hand
+     * attach to one mother, matched by phone however the number was written.
+     *
+     * Parents with no phone are matched by name within this one file only;
+     * across files a name is not enough to say two people are the same.
      */
     private function resolveGuardian(
         array $row,
@@ -352,47 +356,21 @@ class StudentImportService
         array &$cache,
         int $sequence,
     ): Guardian {
-        $phone = $row['guardian_phone'] ? preg_replace('/\D+/', '', $row['guardian_phone']) : null;
+        $phone = GuardianDirectory::canonicalPhone($row['guardian_phone'] ?? null);
         $cacheKey = $phone ?: 'name:' . $this->normalise($row['guardian_name']);
 
         if (isset($cache[$cacheKey])) {
             return $cache[$cacheKey];
         }
 
-        // An existing parent in this school with the same phone is the same
-        // person — a second child should attach, not duplicate the account.
-        if ($phone) {
-            $existing = Guardian::withoutGlobalScopes()
-                ->where('school_id', $schoolId)
-                ->whereHas('user.userProfile', fn ($q) => $q->where('phone', $phone))
-                ->first();
+        $result = app(GuardianDirectory::class)->findOrCreate($schoolId, [
+            'name' => $row['guardian_name'],
+            'phone' => $phone,
+            'email' => $row['guardian_email'] ?? null,
+            'relationship' => 'parent',
+        ]);
 
-            if ($existing) {
-                return $cache[$cacheKey] = $existing;
-            }
-        }
-
-        $email = $row['guardian_email'] ?: 'guardian-' . ($phone ?: $sequence) . '@' . $emailDomain;
-
-        $user = User::firstOrCreate(
-            ['email' => strtolower($email)],
-            [
-                'name' => $row['guardian_name'],
-                'password' => bin2hex(random_bytes(32)),
-            ]
-        );
-
-        UserProfile::firstOrCreate(
-            ['user_id' => $user->id],
-            ['school_id' => $schoolId, 'role' => 'parent', 'phone' => $phone]
-        );
-
-        $guardian = Guardian::firstOrCreate(
-            ['school_id' => $schoolId, 'user_id' => $user->id],
-            ['relationship' => 'parent']
-        );
-
-        return $cache[$cacheKey] = $guardian;
+        return $cache[$cacheKey] = $result['guardian'];
     }
 
     // ─── Parsing ────────────────────────────────────────────────────
