@@ -268,6 +268,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         Route::get('/parent/children', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'children'])
             ->middleware('role:super_admin,school_admin,parent');
+        // A child's form teacher and subject teachers, to start a message.
+        Route::get('/parent/children/{studentId}/contacts', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'contacts'])->middleware('role:parent')->whereNumber('studentId');
         Route::get('/parent/feed/{studentId}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'getStudentFeed'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/parent/pickup-authorization', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storePickupAuthorization'])->middleware('role:super_admin,school_admin,parent');
         // Full behaviour history, paginated. The feed carries only the ten most

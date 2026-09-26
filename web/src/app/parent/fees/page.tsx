@@ -1,0 +1,153 @@
+'use client';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { errorText, fetchApi } from '@/lib/api';
+import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
+import ChildSwitcher, { useChildren } from '@/components/ChildSwitcher';
+
+/**
+ * A parent's view of their child's fees: what was billed, what is paid, and
+ * paying the balance online.
+ *
+ * Payment opens the school's own Paystack or Flutterwave checkout, through
+ * the same endpoint as the app; the amount is checked on the server, and the
+ * invoice updates when the gateway confirms, not when the page says so.
+ */
+
+type Invoice = {
+  invoice_id: number;
+  invoice_number: string;
+  term: string | null;
+  total_amount: number;
+  amount_paid: number;
+  balance: number;
+  status: string;
+  due_date: string | null;
+};
+
+type Statement = { total_invoiced: number; total_paid: number; balance: number; invoices: Invoice[] };
+
+const TONE: Record<string, 'green' | 'amber' | 'red' | 'slate'> = { paid: 'green', partial: 'amber', unpaid: 'red', overdue: 'red' };
+
+export default function ParentFeesPage() {
+  const { children, selected, select, error: childError } = useChildren();
+  const [statement, setStatement] = useState<Statement | null>(null);
+  const [paying, setPaying] = useState<number | null>(null);
+  const [amounts, setAmounts] = useState<Record<number, string>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!selected) return;
+    setStatement(null);
+    setError(null);
+    try {
+      setStatement(await fetchApi<Statement>(`/finance/students/${selected.id}/statement`));
+    } catch (err) {
+      setError(errorText(err, 'Could not load the fee statement.'));
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    void (async () => {
+      await load();
+    })();
+  }, [load]);
+
+  const pay = async (invoice: Invoice) => {
+    const typed = amounts[invoice.invoice_id];
+    const amount = typed ? Number(typed) : invoice.balance;
+
+    if (!(amount > 0) || amount > invoice.balance) {
+      setError(`Enter an amount between ₦1 and ${nairaAmount(invoice.balance)}.`);
+      return;
+    }
+
+    setPaying(invoice.invoice_id);
+    setError(null);
+    try {
+      const res = await fetchApi<{ authorization_url: string }>('/finance/payments/initialize', {
+        method: 'POST',
+        body: JSON.stringify({ invoice_id: invoice.invoice_id, amount }),
+      });
+      window.location.href = res.authorization_url;
+    } catch (err) {
+      setError(errorText(err, 'Could not open the payment page.'));
+      setPaying(null);
+    }
+  };
+
+  return (
+    <PageShell title="Fees" subtitle="What has been billed, what is paid, and paying the balance online.">
+      <ErrorNote message={childError ?? error} />
+
+      {!children ? (
+        <Loading />
+      ) : children.length === 0 ? (
+        <Empty>No child is linked to your account yet. Ask the school office to link your child.</Empty>
+      ) : (
+        <>
+          <ChildSwitcher items={children} selected={selected} onSelect={select} />
+
+          {!statement ? (
+            !error && <Loading />
+          ) : (
+            <>
+              <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                <StatTile label="Billed" value={nairaAmount(statement.total_invoiced)} />
+                <StatTile label="Paid" value={nairaAmount(statement.total_paid)} tone="green" />
+                <StatTile label="Balance" value={nairaAmount(statement.balance)} tone={statement.balance > 0 ? 'amber' : 'green'} />
+              </div>
+
+              <Card title={`Invoices — ${selected?.name ?? ''}`}>
+                {statement.invoices.length === 0 ? (
+                  <Empty>No invoices yet.</Empty>
+                ) : (
+                  <Table columns={['Invoice', 'Term', 'Amount', 'Paid', 'Balance', 'Status', '']}>
+                    {statement.invoices.map((inv) => (
+                      <tr key={inv.invoice_id}>
+                        <Cell className="font-mono text-xs">
+                          <a href={`/api/backend/finance/invoices/${inv.invoice_id}/pdf`} target="_blank" rel="noopener" className="text-brand hover:underline">
+                            {inv.invoice_number}
+                          </a>
+                          {inv.due_date && <span className="block text-ink-faint">Due {new Date(inv.due_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                        </Cell>
+                        <Cell>{inv.term ?? '—'}</Cell>
+                        <Cell>{nairaAmount(inv.total_amount)}</Cell>
+                        <Cell>{nairaAmount(inv.amount_paid)}</Cell>
+                        <Cell className="font-semibold">{nairaAmount(inv.balance)}</Cell>
+                        <Cell><Badge tone={TONE[inv.status] ?? 'slate'}>{inv.status}</Badge></Cell>
+                        <Cell>
+                          {inv.balance > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                type="number"
+                                min={1}
+                                max={inv.balance}
+                                placeholder={String(inv.balance)}
+                                value={amounts[inv.invoice_id] ?? ''}
+                                onChange={(e) => setAmounts({ ...amounts, [inv.invoice_id]: e.target.value })}
+                                className={`${inputClass} w-28`}
+                                aria-label="Amount to pay"
+                              />
+                              <Button variant="accent" disabled={paying !== null} onClick={() => pay(inv)}>
+                                {paying === inv.invoice_id ? 'Opening…' : 'Pay'}
+                              </Button>
+                            </div>
+                          )}
+                        </Cell>
+                      </tr>
+                    ))}
+                  </Table>
+                )}
+                <p className="mt-4 text-xs text-ink-muted">
+                  Leave the amount blank to pay the full balance, or enter part of it. Tap an invoice number for the PDF.
+                  After paying, the balance updates once your bank confirms — usually within a minute.
+                </p>
+              </Card>
+            </>
+          )}
+        </>
+      )}
+    </PageShell>
+  );
+}

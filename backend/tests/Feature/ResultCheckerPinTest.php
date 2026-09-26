@@ -273,6 +273,26 @@ class ResultCheckerPinTest extends TestCase
             ->assertJsonMissingPath('scores');
     }
 
+    /**
+     * A school that does not charge for results: the card opens freely, so
+     * the summary must not tell the parent to buy a PIN.
+     */
+    public function test_without_the_paywall_the_summary_says_unlocked_and_sells_nothing()
+    {
+        $this->releaseResults();
+
+        $this->as($this->parent)
+            ->getJson("/api/v1/result-checker/{$this->student->id}/{$this->term->id}/summary")
+            ->assertOk()
+            ->assertJsonPath('unlocked', true)
+            ->assertJsonPath('pin_required', false)
+            ->assertJsonPath('unlock_options', null);
+
+        $this->as($this->parent)
+            ->get("/api/v1/result-checker/{$this->student->id}/{$this->term->id}")
+            ->assertOk();
+    }
+
     public function test_the_full_result_is_paywalled_without_a_pin()
     {
         $this->enableChecker();

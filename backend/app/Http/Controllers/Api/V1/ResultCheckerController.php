@@ -86,13 +86,20 @@ class ResultCheckerController extends Controller
         $access = $this->pins->accessFor($student->school_id, $student->id, $term->id);
         $average = round($scores->avg('total_score'), 2);
 
+        // A school that does not charge for results needs no PIN: show() opens
+        // the card freely, so the summary must not offer to sell one. It said
+        // "locked" regardless, and pointed parents at a purchase they did not
+        // need.
+        $pinRequired = (bool) ($school->result_checker_enabled ?? false);
+
         return response()->json([
             'student_id' => $student->id,
             'student_name' => $student->user->name ?? null,
             'term_id' => $term->id,
             'term_name' => $term->name,
             'status' => 'released',
-            'unlocked' => (bool) $access,
+            'unlocked' => ! $pinRequired || (bool) $access,
+            'pin_required' => $pinRequired,
             'preview' => [
                 'subjects_count' => $scores->count(),
                 'average' => $average,
@@ -106,7 +113,7 @@ class ResultCheckerController extends Controller
                 'serial' => $access->serial,
                 'views_remaining' => $access->viewsRemaining(),
             ] : null,
-            'unlock_options' => $access ? null : $this->unlockOptions($school),
+            'unlock_options' => ($access || ! $pinRequired) ? null : $this->unlockOptions($school),
         ]);
     }
 

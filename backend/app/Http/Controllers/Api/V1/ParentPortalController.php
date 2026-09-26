@@ -87,6 +87,50 @@ class ParentPortalController extends Controller
     /**
      * Get 360-Degree Parent Feed / Dashboard for a Linked Child
      */
+    /**
+     * Who a parent can message about this child: the form teacher and the
+     * teachers of the child's subjects. Names and roles only.
+     *
+     * Messages need a recipient, and a parent had no way to learn who teaches
+     * their child, so on the web they could only reply to a thread a teacher
+     * had started.
+     */
+    public function contacts(Request $request, $studentId)
+    {
+        $schoolId = $this->schoolId();
+        $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
+
+        $this->authorize('view', $student);
+
+        $contacts = [];
+        $add = function ($user, string $label) use (&$contacts) {
+            if (! $user) {
+                return;
+            }
+            $contacts[$user->id] ??= ['user_id' => $user->id, 'name' => $user->name, 'roles' => []];
+            $contacts[$user->id]['roles'][] = $label;
+        };
+
+        $sessionId = \App\Support\TeacherScope::currentSessionId($schoolId);
+
+        if ($sessionId && $student->class_id) {
+            $add(\App\Models\ClassTeacherAssignment::formTeacherFor($schoolId, $sessionId, (int) $student->class_id, $student->arm_id ? (int) $student->arm_id : null), 'Form teacher');
+        }
+
+        \Illuminate\Support\Facades\DB::table('teacher_subjects')
+            ->join('users', 'users.id', '=', 'teacher_subjects.teacher_id')
+            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->where('teacher_subjects.school_id', $schoolId)
+            ->where(fn ($q) => $q->where('teacher_subjects.class_id', $student->class_id)->orWhereNull('teacher_subjects.class_id'))
+            ->orderBy('subjects.name')
+            ->get(['users.id', 'users.name', 'subjects.name as subject'])
+            ->each(fn ($row) => $add((object) ['id' => $row->id, 'name' => $row->name], $row->subject.' teacher'));
+
+        return response()->json([
+            'data' => array_values(array_map(fn ($c) => $c + ['role' => implode(', ', array_unique($c['roles']))], $contacts)),
+        ]);
+    }
+
     public function getStudentFeed(Request $request, $studentId)
     {
         $user = $request->user();
