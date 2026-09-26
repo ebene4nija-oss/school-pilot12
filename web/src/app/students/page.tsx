@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi, uploadApi } from '@/lib/api';
 import type { Student } from '@/types/api';
+import EnrolStudentForm, { type ClassOption } from '@/components/EnrolStudentForm';
 
 type ImportRow = {
   line: number;
@@ -21,12 +22,6 @@ type ImportPreview = {
   summary: { total: number; ready: number; errors: number };
   unrecognised_columns: string[];
   rows: ImportRow[];
-};
-
-type ClassOption = {
-  id: number;
-  name: string;
-  arms?: { id: number; name: string }[];
 };
 
 type MigrationRequest = {
@@ -47,12 +42,6 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'roster' | 'single' | 'bulk_students' | 'migration'>('roster');
   
-  // Single Add Form
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [gender, setGender] = useState('male');
-  const [birthCertRef, setBirthCertRef] = useState('');
-
   // Bulk CSV State — upload, look at what it found, then confirm.
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importClassId, setImportClassId] = useState('');
@@ -133,26 +122,6 @@ export default function StudentsPage() {
       cancelled = true;
     };
   }, [fetchStudents]);
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !email) return;
-
-    try {
-      await fetchApi('/students', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, gender, birth_certificate_reference: birthCertRef }),
-      });
-      setName('');
-      setEmail('');
-      setBirthCertRef('');
-      setActiveTab('roster');
-      loadStudents();
-    } catch (err) {
-      // The page has an error surface; an alert() box is not one.
-      setRosterError(err instanceof Error ? err.message : 'Could not save that student.');
-    }
-  };
 
   /**
    * Step one: send the file up and get back what the server made of it.
@@ -285,7 +254,7 @@ export default function StudentsPage() {
                 activeTab === 'single' ? 'bg-brand text-white font-bold' : 'bg-surface text-ink hover:bg-surface-sunken'
               }`}
             >
-              + Single Student
+              + Enrol Student
             </button>
             <button
               onClick={() => setActiveTab('bulk_students')}
@@ -318,64 +287,12 @@ export default function StudentsPage() {
         {/* 1. Single Student Registration Form */}
         {activeTab === 'single' && (
           <div className="mb-8 bg-surface border border-line-soft p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg font-bold text-ink mb-4">Single Student Registration (Live API)</h2>
-            <form onSubmit={handleCreateStudent} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-ink-muted mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Amina Bello"
-                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink-muted mb-1">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. student@example.com"
-                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink-muted mb-1">Gender</label>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink-muted mb-1">Birth Certificate Ref No (Optional)</label>
-                <input
-                  type="text"
-                  value={birthCertRef}
-                  onChange={(e) => setBirthCertRef(e.target.value)}
-                  placeholder="e.g. BC-2025-99881"
-                  className="w-full px-3 py-2 bg-canvas border border-line-soft rounded-lg text-ink text-sm focus:border-brand focus:outline-none"
-                />
-              </div>
-
-              <div className="md:col-span-2 flex items-end">
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-brand hover:bg-brand-soft text-white font-bold rounded-lg text-sm transition"
-                >
-                  Save Student to Backend Database
-                </button>
-              </div>
-            </form>
+            <h2 className="text-lg font-bold text-ink mb-1">Enrol a student</h2>
+            <p className="text-ink-muted text-xs mb-5">
+              Class and a parent&rsquo;s phone number are what put a child on the register, the broadsheet, the fee
+              list and the SMS list. Email is optional for both.
+            </p>
+            <EnrolStudentForm classes={classes} onCreated={loadStudents} />
           </div>
         )}
 
@@ -387,6 +304,17 @@ export default function StudentsPage() {
               Upload the class register as a CSV. Columns are matched by their headings in any order —{' '}
               <code className="text-positive bg-canvas px-1.5 py-0.5 rounded">Surname, First name, Admission No, Class, Arm, Sex, DOB, Guardian name, Guardian phone</code>.
               If the sheet has no class column, pick a class below and the whole file goes there.
+            </p>
+            <a
+              href="/api/backend/students/import/template"
+              download
+              className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-surface-sunken"
+            >
+              ⬇ Download the CSV template
+            </a>
+            <p className="text-ink-faint text-[11px] mb-4">
+              The template has every column the importer reads and one example row — replace it with your students.
+              Parents are matched by phone number, so brothers and sisters share one parent account.
             </p>
 
             <form onSubmit={handleBulkPreview} className="space-y-4">
@@ -516,8 +444,8 @@ export default function StudentsPage() {
 
             {importResult && (
               <div className="mt-4 p-4 bg-positive-soft border border-positive/30 rounded-lg text-xs text-positive">
-                ✓ {importResult.created} student record(s) created. They have no password yet — tell them to use
-                &ldquo;Forgot password&rdquo; on the sign-in screen.
+                ✓ {importResult.created} student record(s) created. Anyone imported with an email can use
+                &ldquo;Forgot password&rdquo; on the sign-in screen to set one.
               </div>
             )}
           </div>
@@ -655,7 +583,7 @@ export default function StudentsPage() {
                 <tr>
                   <th className="p-3.5">Admission No</th>
                   <th className="p-3.5">Student Name</th>
-                  <th className="p-3.5">Email</th>
+                  <th className="p-3.5">Class</th>
                   <th className="p-3.5">Gender</th>
                   <th className="p-3.5">Status</th>
                 </tr>
@@ -666,7 +594,7 @@ export default function StudentsPage() {
                     <td className="p-3.5 font-mono text-positive text-xs">{student.admission_number || `SP-${student.id}`}</td>
                     {/* Flat on the resource: the endpoint folds the user in. */}
                     <td className="p-3.5 font-medium text-ink">{student.name ?? '—'}</td>
-                    <td className="p-3.5 text-xs text-ink-muted">{student.email ?? '—'}</td>
+                    <td className="p-3.5 text-xs text-ink-muted">{[student.class, student.arm].filter(Boolean).join(' ') || '—'}</td>
                     <td className="p-3.5 capitalize">{student.gender}</td>
                     <td className="p-3.5">
                       <span className="px-2 py-0.5 bg-positive-soft text-positive border border-positive/20 text-xs font-medium rounded-md capitalize">

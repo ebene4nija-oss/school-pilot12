@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { fetchApi } from '@/lib/api';
+import StudentPicker, { type PickedStudent } from '@/components/StudentPicker';
 import {
   Badge,
   Button,
@@ -49,17 +50,9 @@ interface Assignment {
   admission_number: string | null;
 }
 
-/** As `/students` returns one: the user relation is already flattened. */
-interface StudentOption {
-  id: number;
-  admission_number: string | null;
-  name?: string | null;
-}
-
 export default function HostelPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [students, setStudents] = useState<StudentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -71,7 +64,7 @@ export default function HostelPage() {
   const [capacity, setCapacity] = useState('4');
 
   const [bedRoomId, setBedRoomId] = useState('');
-  const [bedStudentId, setBedStudentId] = useState('');
+  const [bedStudent, setBedStudent] = useState<PickedStudent | null>(null);
   const [bedNumber, setBedNumber] = useState('');
 
   const load = useCallback(async () => {
@@ -88,8 +81,6 @@ export default function HostelPage() {
     (async () => {
       try {
         await load();
-        const roll = await fetchApi<{ data?: StudentOption[] }>('/students').catch(() => null);
-        setStudents(roll?.data ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not load hostel data.');
       } finally {
@@ -124,13 +115,13 @@ export default function HostelPage() {
         method: 'POST',
         body: JSON.stringify({
           room_id: Number(bedRoomId),
-          student_id: Number(bedStudentId),
+          student_id: bedStudent?.id,
           bed_number: bedNumber.trim(),
         }),
       });
 
       setNotice('Bed assigned.');
-      setBedStudentId('');
+      setBedStudent(null);
       setBedNumber('');
       setPanel('none');
     });
@@ -158,8 +149,6 @@ export default function HostelPage() {
       setBusy(false);
     }
   }
-
-  const nameOf = (s: StudentOption) => s.name ?? `Student #${s.id}`;
 
   const beds = rooms.reduce((sum, r) => sum + r.capacity, 0);
   const filled = rooms.reduce((sum, r) => sum + r.occupied, 0);
@@ -262,20 +251,7 @@ export default function HostelPage() {
                   </select>
                 </Field>
                 <Field label="Student">
-                  <select
-                    required
-                    value={bedStudentId}
-                    onChange={(e) => setBedStudentId(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">Select a student…</option>
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {nameOf(s)}
-                        {s.admission_number ? ` (${s.admission_number})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <StudentPicker value={bedStudent} onChange={setBedStudent} />
                 </Field>
                 <Field label="Bed">
                   <input
@@ -287,7 +263,7 @@ export default function HostelPage() {
                   />
                 </Field>
                 <div className="sm:col-span-3">
-                  <Button type="submit" disabled={busy || !bedRoomId || !bedStudentId}>
+                  <Button type="submit" disabled={busy || !bedRoomId || !bedStudent}>
                     {busy ? 'Saving…' : 'Assign bed'}
                   </Button>
                 </div>

@@ -32,6 +32,7 @@ export type SessionRole =
   | 'super_admin'
   | 'school_admin'
   | 'teacher'
+  | 'nurse'
   | 'student'
   | 'parent';
 
@@ -55,6 +56,8 @@ export interface Session {
 export function landingPathFor(role: SessionRole | null): string {
   if (role === 'super_admin') return '/super-admin';
   if (role === 'teacher') return '/results';
+  // A nurse's whole portal is the clinic log; the dashboard would refuse her.
+  if (role === 'nurse') return '/health';
   return '/';
 }
 

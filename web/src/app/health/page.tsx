@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { fetchApi } from '@/lib/api';
+import { errorText, fetchApi } from '@/lib/api';
+import StudentPicker, { type PickedStudent } from '@/components/StudentPicker';
 import {
   Button,
   Card,
@@ -39,23 +40,18 @@ interface Visit {
   visited_at: string | null;
 }
 
-/** As `/students` returns one: the user relation is already flattened. */
-interface StudentOption {
-  id: number;
-  admission_number: string | null;
-  name?: string | null;
-}
-
 export default function ClinicLogPage() {
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [students, setStudents] = useState<StudentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  const [studentId, setStudentId] = useState('');
+  const [student, setStudent] = useState<PickedStudent | null>(null);
+  // A nurse is the attending nurse on her own visits; the API fills her name in.
+  // The role cookie only decides what renders — the API checks the rest.
+  const [isNurse, setIsNurse] = useState(false);
   const [symptoms, setSymptoms] = useState('');
   const [treatment, setTreatment] = useState('');
   const [nurse, setNurse] = useState('');
@@ -68,9 +64,8 @@ export default function ClinicLogPage() {
   useEffect(() => {
     (async () => {
       try {
+        setIsNurse(/(?:^|;\s*)sp_role=nurse(?:;|$)/.test(document.cookie));
         await load();
-        const roll = await fetchApi<{ data?: StudentOption[] }>('/students').catch(() => null);
-        setStudents(roll?.data ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not load the clinic log.');
       } finally {
@@ -89,27 +84,25 @@ export default function ClinicLogPage() {
       await fetchApi('/health/clinic-visit', {
         method: 'POST',
         body: JSON.stringify({
-          student_id: Number(studentId),
+          student_id: student?.id,
           symptoms: symptoms.trim(),
           treatment: treatment.trim(),
-          attending_nurse: nurse.trim(),
+          attending_nurse: isNurse ? undefined : nurse.trim(),
         }),
       });
 
       setNotice('Visit recorded.');
       setSymptoms('');
       setTreatment('');
-      setStudentId('');
+      setStudent(null);
       setShowForm(false);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That visit could not be recorded.');
+      setError(errorText(err, 'That visit could not be recorded.'));
     } finally {
       setSaving(false);
     }
   }
-
-  const nameOf = (s: StudentOption) => s.name ?? `Student #${s.id}`;
 
   return (
     <PageShell
@@ -133,31 +126,20 @@ export default function ClinicLogPage() {
         <Card title="Log a clinic visit" className="mb-6">
           <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <Field label="Student">
-              <select
-                required
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className={inputClass}
-              >
-                <option value="">Select a student…</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {nameOf(s)}
-                    {s.admission_number ? ` (${s.admission_number})` : ''}
-                  </option>
-                ))}
-              </select>
+              <StudentPicker value={student} onChange={setStudent} />
             </Field>
 
-            <Field label="Attending nurse">
-              <input
-                required
-                value={nurse}
-                onChange={(e) => setNurse(e.target.value)}
-                className={inputClass}
-                placeholder="Name of the nurse on duty"
-              />
-            </Field>
+            {!isNurse && (
+              <Field label="Attending nurse">
+                <input
+                  required
+                  value={nurse}
+                  onChange={(e) => setNurse(e.target.value)}
+                  className={inputClass}
+                  placeholder="Name of the nurse on duty"
+                />
+              </Field>
+            )}
 
             <Field label="Reported symptoms">
               <textarea
@@ -180,7 +162,7 @@ export default function ClinicLogPage() {
             </Field>
 
             <div className="sm:col-span-2">
-              <Button type="submit" disabled={saving || !studentId}>
+              <Button type="submit" disabled={saving || !student}>
                 {saving ? 'Saving…' : 'Record visit'}
               </Button>
             </div>

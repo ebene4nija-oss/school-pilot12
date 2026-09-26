@@ -3,13 +3,24 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, Table } from '@/components/Page';
+import { AddStaffForm, ImportStaff, StaffList } from '@/components/StaffDirectory';
 
 /**
- * Staff leave and employment records (§7.11).
+ * The school's staff: who they are, adding them, and their leave (§7.11).
  *
  * The sidebar has linked to /staff since the portal was built; the route did
- * not exist. StaffHrController has had the endpoints all along.
+ * not exist. StaffHrController has had the leave endpoints all along; the
+ * directory and adding staff are StaffDirectoryController.
  */
+
+type Tab = 'directory' | 'add' | 'import' | 'leave';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'directory', label: 'Directory' },
+  { id: 'add', label: '+ Add staff' },
+  { id: 'import', label: 'Import CSV' },
+  { id: 'leave', label: 'Leave' },
+];
 
 type LeaveRequest = {
   id: number;
@@ -32,6 +43,44 @@ const STATUS_TONE: Record<string, 'green' | 'amber' | 'red' | 'slate'> = {
 };
 
 export default function StaffPage() {
+  const [tab, setTab] = useState<Tab>('directory');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  return (
+    <PageShell title="Staff" subtitle="Teachers, nurses and administrators, and their leave.">
+      <div role="tablist" className="mb-6 flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+              tab === t.id ? 'bg-brand text-white' : 'bg-surface text-ink ring-1 ring-line-soft hover:bg-surface-sunken'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'directory' && <StaffList refreshKey={refreshKey} />}
+      {tab === 'add' && (
+        <div className="space-y-6">
+          <AddStaffForm onAdded={refresh} />
+          <StaffList refreshKey={refreshKey} />
+        </div>
+      )}
+      {tab === 'import' && (
+        <ImportStaff onImported={refresh} />
+      )}
+      {tab === 'leave' && <LeavePanel />}
+    </PageShell>
+  );
+}
+
+function LeavePanel() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [offToday, setOffToday] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +134,7 @@ export default function StaffPage() {
   const decided = requests.filter((r) => r.status !== 'pending');
 
   return (
-    <PageShell title="Staff" subtitle="Leave requests and who is off today.">
+    <>
       <ErrorNote message={error} />
 
       {loading ? (
@@ -171,6 +220,6 @@ export default function StaffPage() {
           </Card>
         </div>
       )}
-    </PageShell>
+    </>
   );
 }

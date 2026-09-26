@@ -102,3 +102,24 @@ export async function uploadApi<T = unknown>(
 
   return payload as T;
 }
+
+/**
+ * A readable sentence from a failed request.
+ *
+ * Several endpoints answer a validation failure with only
+ * `{ errors: { field: [messages] } }` and no `message`, which `fetchApi` would
+ * report as "Request failed (422)" — true, and no help to whoever is filling
+ * in the form.
+ */
+export function errorText(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    const errors = (err.payload as { errors?: Record<string, string[] | string> })?.errors;
+
+    if (errors && typeof errors === 'object') {
+      const messages = Object.values(errors).flatMap((m) => (Array.isArray(m) ? m : [m]));
+      if (messages.length > 0) return messages.slice(0, 3).join(' ');
+    }
+  }
+
+  return err instanceof Error ? err.message : fallback;
+}
