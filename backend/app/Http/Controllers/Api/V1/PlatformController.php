@@ -89,18 +89,6 @@ class PlatformController extends Controller
                     'trial' => (int) ($schoolsByStatus['trial'] ?? 0),
                     'suspended' => (int) ($schoolsByStatus['suspended'] ?? 0),
                 ],
-                'trials' => [
-                    // Flags, not actions: nothing suspends a school when its
-                    // trial ends. That is a conversation, not a cron job.
-                    'ending_within_7_days' => School::query()->tenants()
-                        ->where('status', 'trial')
-                        ->whereBetween('trial_ends_at', [now()->toDateString(), now()->addDays(7)->toDateString()])
-                        ->count(),
-                    'ended' => School::query()->tenants()
-                        ->where('status', 'trial')
-                        ->where('trial_ends_at', '<', now()->toDateString())
-                        ->count(),
-                ],
                 'students' => [
                     'total' => (int) $studentsByStatus->sum(),
                     'active' => (int) ($studentsByStatus['active'] ?? 0),
@@ -201,7 +189,6 @@ class PlatformController extends Controller
                     'subdomain' => $school->subdomain,
                     'email' => $school->email,
                     'status' => $school->status,
-                    'trial_ends_at' => $school->trial_ends_at?->toDateString(),
                     'active_students' => $students,
                     // Derived, never stored: a band is a function of the roll,
                     // so persisting it would let the two drift apart.
@@ -277,9 +264,6 @@ class PlatformController extends Controller
                     'phone' => $validated['phone'] ?? null,
                     'address' => $validated['address'] ?? null,
                     'status' => $validated['status'] ?? 'trial',
-                    'trial_ends_at' => ($validated['status'] ?? 'trial') === 'trial'
-                        ? now()->addDays((int) config('schoolpilot.trial_days', 30))->toDateString()
-                        : null,
                     'is_platform' => false,
                 ]);
 
@@ -346,7 +330,6 @@ class PlatformController extends Controller
                     'name' => $school->name,
                     'subdomain' => $school->subdomain,
                     'status' => $school->status,
-                    'trial_ends_at' => $school->trial_ends_at?->toDateString(),
                     'sign_in_url' => "https://{$school->subdomain}.schoolpilot.org.ng/login",
                 ],
                 'administrator' => [
@@ -404,7 +387,6 @@ class PlatformController extends Controller
                     'phone' => $school->phone,
                     'address' => $school->address,
                     'status' => $school->status,
-                    'trial_ends_at' => $school->trial_ends_at?->toDateString(),
                     'ai_enabled' => (bool) $school->ai_enabled,
                     'result_checker_enabled' => (bool) $school->result_checker_enabled,
                     'plan_band' => $this->planBand($activeStudents),
@@ -465,20 +447,7 @@ class PlatformController extends Controller
             }
 
             $previous = $school->status;
-            $previousTrialEnd = $school->trial_ends_at?->toDateString();
             $school->status = $validated['status'];
-
-            /*
-             * A trial that becomes a paying school has no end date any more; a
-             * school put (back) on trial gets the default length unless it
-             * already has a date in the future.
-             */
-            if ($school->status === 'active') {
-                $school->trial_ends_at = null;
-            } elseif ($school->status === 'trial' && (! $school->trial_ends_at || $school->trial_ends_at->isPast())) {
-                $school->trial_ends_at = now()->addDays((int) config('schoolpilot.trial_days', 30))->toDateString();
-            }
-
             $school->save();
 
             \App\Models\AuditLog::create([
@@ -487,8 +456,8 @@ class PlatformController extends Controller
                 'action' => 'platform.school.status_changed',
                 'auditable_type' => School::class,
                 'auditable_id' => $school->id,
-                'old_values' => ['status' => $previous, 'trial_ends_at' => $previousTrialEnd],
-                'new_values' => ['status' => $school->status, 'trial_ends_at' => $school->trial_ends_at?->toDateString()],
+                'old_values' => ['status' => $previous],
+                'new_values' => ['status' => $school->status],
                 'ip_address' => $request->ip(),
                 'user_agent' => substr((string) $request->userAgent(), 0, 255),
             ]);
@@ -499,57 +468,6 @@ class PlatformController extends Controller
                     'id' => $school->id,
                     'name' => $school->name,
                     'status' => $school->status,
-                    'trial_ends_at' => $school->trial_ends_at?->toDateString(),
-                ],
-            ]);
-        });
-    }
-
-    /**
-     * Move a trial's end date — usually extending it for a school that is
-     * nearly ready to pay. Only a school on trial has one.
-     */
-    public function setTrial(Request $request, int $schoolId)
-    {
-        $validated = $request->validate([
-            'trial_ends_at' => 'required|date|after_or_equal:today',
-        ]);
-
-        return $this->tenant->withoutScoping(function () use ($request, $schoolId, $validated) {
-            $school = School::query()->tenants()->find($schoolId);
-
-            if (! $school) {
-                return response()->json(['message' => 'School not found'], 404);
-            }
-
-            if ($school->status !== 'trial') {
-                return response()->json([
-                    'message' => 'Only a school on trial has a trial end date. Put it on trial first.',
-                ], 422);
-            }
-
-            $previous = $school->trial_ends_at?->toDateString();
-            $school->trial_ends_at = $validated['trial_ends_at'];
-            $school->save();
-
-            AuditLog::create([
-                'school_id' => $school->id,
-                'user_id' => $request->user()->id,
-                'action' => 'platform.school.trial_changed',
-                'auditable_type' => School::class,
-                'auditable_id' => $school->id,
-                'old_values' => ['trial_ends_at' => $previous],
-                'new_values' => ['trial_ends_at' => $school->trial_ends_at->toDateString()],
-                'ip_address' => $request->ip(),
-                'user_agent' => substr((string) $request->userAgent(), 0, 255),
-            ]);
-
-            return response()->json([
-                'message' => "Trial now ends on {$school->trial_ends_at->format('j M Y')}.",
-                'school' => [
-                    'id' => $school->id,
-                    'status' => $school->status,
-                    'trial_ends_at' => $school->trial_ends_at->toDateString(),
                 ],
             ]);
         });

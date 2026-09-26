@@ -38,7 +38,6 @@ interface Detail {
     phone: string | null;
     address: string | null;
     status: 'active' | 'trial' | 'suspended';
-    trial_ends_at: string | null;
     ai_enabled: boolean;
     result_checker_enabled: boolean;
     plan_band: string;
@@ -88,6 +87,9 @@ interface AuditRow {
 
 const STATUS_TONE = { active: 'green', trial: 'blue', suspended: 'red' } as const;
 
+// Stored as `trial`, shown as onboarding: there is no trial clock (doc §13).
+const STATUS_LABEL = { active: 'active', trial: 'onboarding', suspended: 'suspended' } as const;
+
 const ROLE_LABEL: Record<string, string> = {
   school_admin: 'Administrators',
   teacher: 'Teachers',
@@ -108,7 +110,6 @@ export default function SchoolDetailPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [activity, setActivity] = useState<AuditRow[]>([]);
   const [access, setAccess] = useState<AccessRow[]>([]);
-  const [trialDate, setTrialDate] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +131,6 @@ export default function SchoolDetailPage() {
     setBatches(b.batches);
     setActivity(a.data.slice(0, 10));
     setAccess(g.data.slice(0, 10));
-    setTrialDate(d.school.trial_ends_at ?? '');
   }, [schoolId]);
 
   useEffect(() => {
@@ -201,6 +201,22 @@ export default function SchoolDetailPage() {
               <Button variant="secondary">All schools</Button>
             </Link>
             <OpenSchoolButton schoolId={schoolId} schoolName={school.name} label="Open school" />
+            {school.status === 'trial' && (
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() =>
+                  run(() =>
+                    fetchApi(`/platform/schools/${schoolId}/status`, {
+                      method: 'POST',
+                      body: JSON.stringify({ status: 'active' }),
+                    }),
+                  )
+                }
+              >
+                Mark as active
+              </Button>
+            )}
             {school.status === 'suspended' ? (
               <Button
                 variant="secondary"
@@ -209,7 +225,7 @@ export default function SchoolDetailPage() {
                   run(() =>
                     fetchApi(`/platform/schools/${schoolId}/status`, {
                       method: 'POST',
-                      body: JSON.stringify({ status: school.trial_ends_at ? 'trial' : 'active' }),
+                      body: JSON.stringify({ status: 'active' }),
                     }),
                   )
                 }
@@ -269,7 +285,7 @@ export default function SchoolDetailPage() {
             />
             <StatTile
               label="Status"
-              value={<Badge tone={STATUS_TONE[school.status]}>{school.status}</Badge>}
+              value={<Badge tone={STATUS_TONE[school.status]}>{STATUS_LABEL[school.status]}</Badge>}
               hint={school.created_at ? `On SchoolPilot since ${new Date(school.created_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })}` : undefined}
             />
           </div>
@@ -338,61 +354,6 @@ export default function SchoolDetailPage() {
               </p>
             </Card>
           </div>
-
-          {school.status === 'trial' && (
-            <Card
-              title="Trial"
-              description="Nothing happens automatically when a trial ends; the console flags it so someone can call the school."
-            >
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  run(() =>
-                    fetchApi(`/platform/schools/${schoolId}/trial`, {
-                      method: 'POST',
-                      body: JSON.stringify({ trial_ends_at: trialDate }),
-                    }),
-                  );
-                }}
-                className="flex flex-wrap items-end gap-2"
-              >
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-ink">Trial ends</span>
-                  <input
-                    type="date"
-                    required
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={trialDate}
-                    onChange={(e) => setTrialDate(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <Button type="submit" variant="secondary" disabled={busy || !trialDate || trialDate === school.trial_ends_at}>
-                  Change date
-                </Button>
-                <Button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (!window.confirm(`Mark ${school.name} as a paying school? Its trial end date is cleared.`)) return;
-                    run(() =>
-                      fetchApi(`/platform/schools/${schoolId}/status`, {
-                        method: 'POST',
-                        body: JSON.stringify({ status: 'active' }),
-                      }),
-                    );
-                  }}
-                >
-                  Convert to paying
-                </Button>
-              </form>
-              {school.trial_ends_at && school.trial_ends_at < new Date().toISOString().slice(0, 10) && (
-                <p className="mt-3 text-sm font-medium text-negative">
-                  This trial ended on {new Date(school.trial_ends_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })}.
-                </p>
-              )}
-            </Card>
-          )}
 
           <Card
             title="Operator access"

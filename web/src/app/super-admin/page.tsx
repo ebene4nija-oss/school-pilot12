@@ -36,7 +36,6 @@ import {
 
 interface Overview {
   schools: { total: number; active: number; trial: number; suspended: number };
-  trials: { ending_within_7_days: number; ended: number };
   students: { total: number; active: number };
   staff: { total: number };
   school_fee_flow: {
@@ -54,7 +53,6 @@ interface TenantRow {
   subdomain: string;
   email: string | null;
   status: 'active' | 'trial' | 'suspended';
-  trial_ends_at: string | null;
   active_students: number;
   plan_band: string;
   ai_enabled: boolean;
@@ -98,6 +96,17 @@ const STATUS_TONE = {
   active: 'green',
   trial: 'blue',
   suspended: 'red',
+} as const;
+
+/**
+ * `trial` is stored as-is (installed mobile apps read the value) but shown as
+ * onboarding: there is no trial clock, because the core is free for good and
+ * schools pay per use at result time (doc §13).
+ */
+const STATUS_LABEL = {
+  active: 'active',
+  trial: 'onboarding',
+  suspended: 'suspended',
 } as const;
 
 export default function SuperAdminConsole() {
@@ -236,9 +245,6 @@ export default function SuperAdminConsole() {
     }
   }
 
-  // ISO date, comparable as a string with `trial_ends_at`.
-  const today = new Date().toISOString().slice(0, 10);
-
   const fieldError = (name: string) =>
     provisionErrors[name]?.[0] ? (
       <span className="mt-1 block text-xs text-negative">{provisionErrors[name][0]}</span>
@@ -249,17 +255,12 @@ export default function SuperAdminConsole() {
     setError(null);
 
     try {
-      const res = await fetchApi<{ school: { status: TenantRow['status']; trial_ends_at: string | null } }>(
-        `/platform/schools/${school.id}/status`,
-        { method: 'POST', body: JSON.stringify({ status }) },
-      );
+      await fetchApi(`/platform/schools/${school.id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status }),
+      });
 
-      // The server may also move the trial date, so take both from it.
-      setSchools((prev) =>
-        prev.map((s) =>
-          s.id === school.id ? { ...s, status: res.school.status, trial_ends_at: res.school.trial_ends_at } : s,
-        ),
-      );
+      setSchools((prev) => prev.map((s) => (s.id === school.id ? { ...s, status } : s)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That change could not be saved.');
     } finally {
@@ -296,18 +297,7 @@ export default function SuperAdminConsole() {
               <StatTile
                 label="Schools"
                 value={overview.schools.total.toLocaleString('en-NG')}
-                hint={
-                  <>
-                    {overview.schools.active} active · {overview.schools.trial} trial · {overview.schools.suspended} suspended
-                    {(overview.trials.ended > 0 || overview.trials.ending_within_7_days > 0) && (
-                      <span className="block font-medium text-caution">
-                        {overview.trials.ended > 0 && `${overview.trials.ended} trial(s) ended`}
-                        {overview.trials.ended > 0 && overview.trials.ending_within_7_days > 0 && ' · '}
-                        {overview.trials.ending_within_7_days > 0 && `${overview.trials.ending_within_7_days} ending this week`}
-                      </span>
-                    )}
-                  </>
-                }
+                hint={`${overview.schools.active} active · ${overview.schools.trial} onboarding · ${overview.schools.suspended} suspended`}
               />
               <StatTile
                 label="Students across all schools"
@@ -383,7 +373,7 @@ export default function SuperAdminConsole() {
           {showProvision && (
             <Card
               title="New school"
-              description="Creates the school and its first administrator together. It starts on trial unless you say otherwise."
+              description="Creates the school and its first administrator together. It starts as onboarding unless you say otherwise."
             >
               <form onSubmit={submitProvision} className="grid gap-4 sm:grid-cols-2">
                 <Field label="School name">
@@ -470,7 +460,7 @@ export default function SuperAdminConsole() {
                     onChange={(e) => setProvision((p) => ({ ...p, status: e.target.value }))}
                     className={inputClass}
                   >
-                    <option value="trial">Trial</option>
+                    <option value="trial">Onboarding</option>
                     <option value="active">Active</option>
                   </select>
                 </Field>
@@ -560,15 +550,7 @@ export default function SuperAdminConsole() {
                       </div>
                     </Cell>
                     <Cell>
-                      <Badge tone={STATUS_TONE[school.status]}>{school.status}</Badge>
-                      {school.status === 'trial' && school.trial_ends_at && (
-                        <span
-                          className={`mt-1 block text-xs ${school.trial_ends_at < today ? 'font-semibold text-negative' : 'text-ink-muted'}`}
-                        >
-                          {school.trial_ends_at < today ? 'Ended ' : 'Ends '}
-                          {new Date(school.trial_ends_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })}
-                        </span>
-                      )}
+                      <Badge tone={STATUS_TONE[school.status]}>{STATUS_LABEL[school.status]}</Badge>
                     </Cell>
                     <Cell>
                       <div className="flex justify-end gap-2">
@@ -577,7 +559,7 @@ export default function SuperAdminConsole() {
                           <Button
                             variant="secondary"
                             disabled={busyId === school.id}
-                            onClick={() => setStatus(school, school.trial_ends_at ? 'trial' : 'active')}
+                            onClick={() => setStatus(school, 'active')}
                           >
                             Reinstate
                           </Button>

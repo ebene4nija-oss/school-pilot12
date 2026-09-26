@@ -751,7 +751,6 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             // Operator-only notes on a school. No school-side route reads them.
             Route::get('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'notes']);
             Route::post('/platform/schools/{schoolId}/notes', [\App\Http\Controllers\Api\V1\PlatformController::class, 'storeNote']);
-            Route::post('/platform/schools/{schoolId}/trial', [\App\Http\Controllers\Api\V1\PlatformController::class, 'setTrial']);
 
             /*
              * Opening a school: a reason, an audit row and a time limit.

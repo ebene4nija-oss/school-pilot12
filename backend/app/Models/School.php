@@ -22,7 +22,6 @@ class School extends Model
         'geofence_radius_meters',
         'logo_url',
         'status',
-        'trial_ends_at',
         'ai_enabled',
         'ai_feature_flags',
         'ai_api_settings',
@@ -35,7 +34,6 @@ class School extends Model
 
     protected $casts = [
         'is_platform' => 'boolean',
-        'trial_ends_at' => 'date',
         'email_enabled' => 'boolean',
         'email_daily_limit' => 'integer',
         'ai_enabled' => 'boolean',

@@ -67,7 +67,7 @@ Platform settings
 
 | # | Menu item | §5 area | Status | What goes on it | Source |
 |---|---|---|---|---|---|
-| 1 | **Overview** | Cross-school reporting | 🟡 | Headline tiles: schools (active/trial/suspended), students, school fees collected (labelled clearly as *not* SchoolPilot revenue), AI spend this month. Attention list: schools at their AI cap, overdue migrations, overdue term invoices. | Existing console; mockup |
+| 1 | **Overview** | Cross-school reporting | 🟡 | Headline tiles: schools (active/onboarding/suspended), students, school fees collected (labelled clearly as *not* SchoolPilot revenue), AI spend this month. Attention list: schools at their AI cap, overdue migrations, overdue term invoices. | Existing console; mockup |
 | 2 | **Schools › All schools** | Schools | ✅ | Directory with search/status filter, plan band, fees, AI spend, status. Actions: New school, Open, Suspend/Reinstate, AI on/off. The mockup also filters by **city** and shows **last active date** and an **"Owes ₦…"** flag. | `/platform/schools`; mockup |
 | 3 | **Schools › School detail** | Schools | ✅ | Profile (name, admin contact, phone, address), students, staff by role, fee flow, AI spend; **internal support notes** (operator-only, never shown to the school); result-PIN purchase history; recent audited activity; Suspend/Reinstate, AI on/off, Open. *Term subscription history waits on item 6.* | `GET /platform/schools/{id}`; mockup `school_account_detail` |
 | 4 | **Schools › Onboarding & migrations** | Schools | ✅ | Queue of migration requests, overdue first, with status (submitted → in progress → completed/cancelled) and notes that are shown to the school. Honours the §14 promise of free migration within 24 hours. | `/platform/school-migrations` |
@@ -129,7 +129,7 @@ From a review of a generic super-admin spec against this one, the items worth do
 | # | Item | Status |
 |---|---|---|
 | a | Record when an operator opens a school: reason, audit entry, time limit; no school records without one | ✅ `platform-console.md` §4 |
-| b | Trial end dates, extending a trial, converting a trial to paying | ✅ |
+| b | ~~Trial end dates~~ | Built, then removed: the core is free for good and schools pay per use (§13), so a trial had nothing to switch off. `trial` is now shown as *onboarding*. Revisit only if pricing moves to per-term licences. |
 | c | Announcements to school administrators (never parents) | ✅ |
 | d | Per-school feature switches | Handed to the c9 session, to be designed with its school-side AI toggles |
 | e | AI remarks monitor: counts only, never approves | Handed to c9 |

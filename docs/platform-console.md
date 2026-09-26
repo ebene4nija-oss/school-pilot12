@@ -35,7 +35,7 @@ The full menu, and what is still to build, is in `super-admin-menu.md`.
 
 | Tile | Meaning | Source |
 |---|---|---|
-| Schools | Customer schools, split active / trial / suspended. Excludes the platform row. | `GET /platform/overview` → `schools` |
+| Schools | Customer schools, split active / onboarding / suspended. Excludes the platform row. | `GET /platform/overview` → `schools` |
 | Students across all schools | Active students, with total records including leavers. | `students` |
 | School fees collected (all schools) | Money schools have collected from parents, against what they billed. **Not SchoolPilot's revenue.** | `school_fee_flow` |
 | AI spend this month | Anthropic cost across all schools since the 1st, in Naira. | `ai_spend_this_month` |
@@ -49,8 +49,13 @@ Columns: name and email, subdomain, active students, plan band (derived from the
 | **New school** | Opens the provisioning form (below). The one amber button on the screen. |
 | **Open** | Asks for a reason, then opens the school for a limited time (§4). Every school-side page then answers for it. The sidebar shows *Viewing as operator · School name* with **Leave this school**. |
 | **Suspend / Reinstate** | Blocks or restores the school's access. Nothing is deleted — roll, results and payment history are kept. Audited. |
-| **Trial end** | Shown under a trial school's status, in red once it has passed. Nothing suspends a school when its trial ends; the console only flags it. |
 | **Turn AI on / off** | Switches every AI feature for that school. The daily cap limits spend; this stops it outright. Audited. |
+
+### Onboarding, not trials
+
+A school's status is **onboarding** (stored as `trial`), **active** or **suspended**. There is no trial period and no end date. The core is free for good, and schools pay per use at result time (doc §13), so there is nothing for a trial to switch off. Onboarding is a label for a school still setting up; **Mark as active** on School detail moves it on. The stored value stays `trial` because installed mobile apps already read it.
+
+Trial end dates existed briefly (migration `2026_09_26_070000`) and were removed by `2026_09_27_000000`.
 
 ### New school
 
@@ -63,7 +68,7 @@ Creates the school **and its first administrator** in one transaction — a scho
 | School email | Required. |
 | Phone | Optional. |
 | Administrator's name and email | Required. The email must not already belong to a user. |
-| Status | Trial (default) or Active. A trial ends after `SCHOOL_TRIAL_DAYS` (default 30); the date can be changed on School detail. |
+| Status | Onboarding (default; stored as `trial`) or Active. |
 
 On success the console shows the sign-in address, school code, administrator and a **temporary password shown once** — it cannot be retrieved afterwards. A setup link is also emailed if mail is configured; the panel says whether it was.
 
@@ -76,9 +81,8 @@ Reached by clicking a school's name. Everything needed to answer a support call 
 - **Internal support notes.** Operator-only: calls, promises, special arrangements. The school never sees them; no school-side route reads `school_support_notes`.
 - **Result PIN purchases**: what the school has paid SchoolPilot.
 - **Recent activity**: the last ten audit rows for the school, with a link to the full audit log filtered to it.
-- **Trial** (trial schools only): change the end date, or **Convert to paying**, which makes the school active and clears the date.
 - **Operator access**: the last ten times someone at SchoolPilot opened this school, with the reason given.
-- Actions: Open school, Suspend (with a confirmation) or Reinstate (back to trial if a trial date remains, otherwise active).
+- Actions: Open school, **Mark as active** (onboarding schools), Suspend (with a confirmation) or Reinstate.
 
 ### Onboarding & migrations — `/super-admin/migrations`
 
@@ -218,7 +222,6 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | GET | `/platform/schools/{id}` | — | `school`, `students`, `staff_by_role`, `fee_flow`, `ai_spend_naira_this_month` |
 | POST | `/platform/schools/{id}/status` | `status`: `active`\|`trial`\|`suspended` | `school`. `422` for the platform row. |
 | POST | `/platform/schools/{id}/ai` | `enabled`: boolean | `school`. `404` for the platform row. |
-| POST | `/platform/schools/{id}/trial` | `trial_ends_at` (date, today or later) | `school` with the new date. `422` unless the school is on trial. |
 | POST | `/platform/schools/{id}/access` | `reason` (10–500) | `201` with `access` (school, operator, reason, opened_at, expires_at, is_live). Closes any grant the operator already holds. `404` for the platform row. |
 | POST | `/platform/access/close` | — | `closed`: how many grants were closed. Nothing open is not an error. |
 | GET | `/platform/access-log` | `?school_id=` | `data[]` of grants, newest first, with `ended_at` and `is_live`; `meta` |
@@ -285,7 +288,6 @@ All routes are under `/api/v1`, require a Sanctum token for a `super_admin`, and
 | `platform.school.ai_toggled` | Old and new `ai_enabled` |
 | `platform.settings.updated` | Keys changed and keys cleared — never values |
 | `platform.school.opened` / `platform.school.closed` | The reason and expiry; when access was ended |
-| `platform.school.trial_changed` | Old and new trial end date (status changes also record the trial date) |
 | `platform.announcement.published` / `.withdrawn` | Title, audience and end time |
 | `platform.user.sessions_revoked` | The administrator whose sessions were revoked, and how many |
 | `platform.result_pin_school_rate_set`, grants | As recorded by the result-PIN console |

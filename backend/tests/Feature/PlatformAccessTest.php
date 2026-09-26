@@ -11,8 +11,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Operator access to a school, trial end dates, and announcements to school
- * administrators.
+ * Operator access to a school, the onboarding status, and announcements to
+ * school administrators.
  *
  * The line the access tests hold: an operator reads a school's records only
  * through a live grant that says who, which school and why. Before this, the
@@ -269,11 +269,16 @@ class PlatformAccessTest extends TestCase
         $this->open($this->graceland, $this->greenfieldAdmin)->assertForbidden();
     }
 
-    // --- Trials -----------------------------------------------------------
+    // --- Onboarding status ------------------------------------------------
 
-    public function test_a_new_trial_school_gets_an_end_date(): void
+    /**
+     * There is no trial clock. The core is free for good (doc §13) and schools
+     * pay per use at result time, so a date after which "the trial ends" had
+     * nothing to switch off. `trial` is kept as an onboarding label only.
+     */
+    public function test_a_new_school_has_no_trial_end_date(): void
     {
-        $this->actingAs($this->operator, 'sanctum')
+        $response = $this->actingAs($this->operator, 'sanctum')
             ->postJson('/api/v1/platform/schools', [
                 'name' => 'Sunrise Academy',
                 'subdomain' => 'sunrise',
@@ -282,55 +287,10 @@ class PlatformAccessTest extends TestCase
                 'admin_email' => 'admin@sunrise.test',
             ])
             ->assertCreated()
-            ->assertJsonPath('school.trial_ends_at', now()->addDays(30)->toDateString());
-    }
+            ->assertJsonPath('school.status', 'trial');
 
-    public function test_a_trial_can_be_extended_and_is_audited(): void
-    {
-        $date = now()->addDays(45)->toDateString();
-
-        $this->actingAs($this->operator, 'sanctum')
-            ->postJson("/api/v1/platform/schools/{$this->graceland->id}/trial", ['trial_ends_at' => $date])
-            ->assertOk()
-            ->assertJsonPath('school.trial_ends_at', $date);
-
-        $this->assertDatabaseHas('audit_logs', ['action' => 'platform.school.trial_changed', 'school_id' => $this->graceland->id]);
-    }
-
-    public function test_trial_dates_are_refused_for_paying_schools_and_the_past(): void
-    {
-        $this->actingAs($this->operator, 'sanctum')
-            ->postJson("/api/v1/platform/schools/{$this->greenfield->id}/trial", ['trial_ends_at' => now()->addDays(10)->toDateString()])
-            ->assertStatus(422);
-
-        $this->actingAs($this->operator, 'sanctum')
-            ->postJson("/api/v1/platform/schools/{$this->graceland->id}/trial", ['trial_ends_at' => now()->subDay()->toDateString()])
-            ->assertStatus(422);
-    }
-
-    public function test_converting_a_trial_to_active_clears_its_end_date(): void
-    {
-        $this->graceland->update(['trial_ends_at' => now()->addDays(5)->toDateString()]);
-
-        $this->actingAs($this->operator, 'sanctum')
-            ->postJson("/api/v1/platform/schools/{$this->graceland->id}/status", ['status' => 'active'])
-            ->assertOk()
-            ->assertJsonPath('school.trial_ends_at', null);
-    }
-
-    public function test_the_overview_flags_trials_ending_soon_and_ended(): void
-    {
-        $this->graceland->update(['trial_ends_at' => now()->addDays(3)->toDateString()]);
-        School::create([
-            'name' => 'Lapsed College', 'slug' => 'lapsed', 'subdomain' => 'lapsed',
-            'status' => 'trial', 'trial_ends_at' => now()->subDays(2)->toDateString(),
-        ]);
-
-        $this->actingAs($this->operator, 'sanctum')
-            ->getJson('/api/v1/platform/overview')
-            ->assertOk()
-            ->assertJsonPath('trials.ending_within_7_days', 1)
-            ->assertJsonPath('trials.ended', 1);
+        $this->assertArrayNotHasKey('trial_ends_at', $response->json('school'));
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('schools', 'trial_ends_at'));
     }
 
     // --- Announcements ----------------------------------------------------
