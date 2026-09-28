@@ -12,8 +12,9 @@ import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 
-/// The administrator's academics hub: timetable, PIN stock, and the one action
-/// only a school admin may take — releasing results.
+/// The administrator's academics hub: generating report cards, releasing
+/// results (the one action only a school admin may take), PIN stock and the
+/// timetable.
 class AcademicsScreen extends ConsumerWidget {
   const AcademicsScreen({super.key});
 
@@ -24,6 +25,16 @@ class AcademicsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenMargin),
         children: [
+          _HubCard(
+            icon: Icons.picture_as_pdf_outlined,
+            title: 'Generate report cards',
+            detail: 'Build term report cards per class',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                  builder: (_) => const GenerateReportCardsScreen()),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           _HubCard(
             icon: Icons.lock_open_outlined,
             title: 'Release results',
@@ -125,9 +136,13 @@ class ResultReleaseScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(releasesProvider),
         ),
         data: (list) {
+          // Withdrawn rows stay in the list with is_released false, and a
+          // school-wide row (no class) covers every class — as the API reads it.
           final released = {
             for (final r in list)
-              '${intOf(r['class_id'])}:${intOf(r['term_id'])}': true,
+              if (r['is_released'] == true)
+                '${r['class_id'] == null ? '*' : intOf(r['class_id'])}:${intOf(r['term_id'])}':
+                    true,
           };
 
           if (classes.isEmpty) {
@@ -150,7 +165,8 @@ class ResultReleaseScreen extends ConsumerWidget {
                     classId: c.id,
                     className: c.name,
                     termId: termId,
-                    released: released['${c.id}:$termId'] ?? false,
+                    released: (released['${c.id}:$termId'] ?? false) ||
+                        (released['*:$termId'] ?? false),
                   ),
                 ),
             ],
@@ -250,6 +266,195 @@ class _ReleaseRowState extends ConsumerState<_ReleaseRow> {
               onPressed: _busy || widget.termId == null ? null : _release,
               child: const Text('Release'),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------------- report cards
+
+/// `{total, ready, pending}` for one class in the selected term.
+final generatedCardsProvider = FutureProvider.autoDispose
+    .family<Map<String, int>, ({int classId, int termId})>((ref, key) async {
+  final api = ref.watch(apiClientProvider);
+  final data = await api.get<dynamic>(
+    Api.generatedReportCards,
+    query: {'term_id': key.termId, 'class_id': key.classId},
+  );
+  final rows = listOf(data, ['data']);
+  return {
+    'total': rows.length,
+    'ready': rows.where((r) => r['ready'] == true).length,
+    'pending': rows.fold(0, (n, r) => n + intOf(r['pending_ai_comments'])),
+  };
+});
+
+/// Queues a class's report cards and follows the run. The PDFs themselves are
+/// checked and opened from the web portal; releasing stays a separate step.
+class GenerateReportCardsScreen extends ConsumerWidget {
+  const GenerateReportCardsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final termId = ref.watch(selectedTermProvider);
+    final classes = ref.watch(classesProvider).valueOrNull ?? const [];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Generate report cards')),
+      body: termId == null
+          ? const EmptyState(
+              icon: Icons.event_busy_outlined,
+              title: 'No term selected',
+              message:
+                  'Set up the current term before generating report cards.',
+            )
+          : classes.isEmpty
+              ? const EmptyState(
+                  icon: Icons.help_outline,
+                  title: 'No classes available',
+                  message:
+                      'This school server does not publish its class list to '
+                      'the app yet.',
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(AppSpacing.screenMargin),
+                  children: [
+                    for (final c in classes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _GenerateRow(
+                          classId: c.id,
+                          className: c.name,
+                          termId: termId,
+                        ),
+                      ),
+                  ],
+                ),
+    );
+  }
+}
+
+class _GenerateRow extends ConsumerStatefulWidget {
+  const _GenerateRow({
+    required this.classId,
+    required this.className,
+    required this.termId,
+  });
+
+  final int classId;
+  final String className;
+  final int termId;
+
+  @override
+  ConsumerState<_GenerateRow> createState() => _GenerateRowState();
+}
+
+class _GenerateRowState extends ConsumerState<_GenerateRow> {
+  bool _running = false;
+  double _progress = 0;
+
+  ({int classId, int termId}) get _key =>
+      (classId: widget.classId, termId: widget.termId);
+
+  Future<void> _generate() async {
+    setState(() {
+      _running = true;
+      _progress = 0;
+    });
+
+    final api = ref.read(apiClientProvider);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final started = mapOf(await api.post<dynamic>(
+        Api.generateReportCards,
+        body: {'term_id': widget.termId, 'class_id': widget.classId},
+      ));
+      final batchId = started['batch_id']?.toString();
+      if (batchId == null) throw StateError('No batch id returned.');
+
+      // Polled, not held open: a class of cards outlives any sane request.
+      // Leaving the screen stops the polling, not the run.
+      while (mounted) {
+        final status = mapOf(await api.get<dynamic>(Api.job(batchId)));
+        if (!mounted) return;
+        setState(
+            () => _progress = numOf(status['progress_percentage']) / 100);
+
+        if (status['finished'] == true || status['cancelled'] == true) {
+          final done = intOf(status['processed']);
+          final failed = intOf(status['failed']);
+          messenger.showSnackBar(SnackBar(
+            content: Text(failed > 0
+                ? '${widget.className}: $done generated, $failed blocked.'
+                : '${widget.className}: $done report card(s) generated.'),
+          ));
+          break;
+        }
+
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(asApiException(error).message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _running = false);
+        ref.invalidate(generatedCardsProvider(_key));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final counts = ref.watch(generatedCardsProvider(_key)).valueOrNull;
+    final total = counts?['total'] ?? 0;
+    final ready = counts?['ready'] ?? 0;
+    final pending = counts?['pending'] ?? 0;
+
+    final String detail;
+    if (counts == null) {
+      detail = 'Checking…';
+    } else if (pending > 0) {
+      detail = '$ready of $total ready · $pending AI comment(s) awaiting review';
+    } else {
+      detail = '$ready of $total ready';
+    }
+
+    return OutlinedCard(
+      statusColor: total > 0 && ready == total
+          ? AppColors.present
+          : AppColors.late,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.className, style: AppText.bodyLg),
+                    Text(
+                      detail,
+                      style: AppText.bodyMd
+                          .copyWith(color: AppColors.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton(
+                onPressed: _running ? null : _generate,
+                child: Text(ready > 0 ? 'Regenerate' : 'Generate'),
+              ),
+            ],
+          ),
+          if (_running) ...[
+            const SizedBox(height: AppSpacing.sm),
+            LinearProgressIndicator(value: _progress == 0 ? null : _progress),
+          ],
         ],
       ),
     );

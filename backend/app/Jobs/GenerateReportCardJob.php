@@ -59,12 +59,13 @@ class GenerateReportCardJob implements ShouldQueue
 
     public function path(): string
     {
-        return sprintf(
-            'report-cards/%d/term-%d/student-%d.pdf',
-            $this->schoolId,
-            $this->termId,
-            $this->studentId
-        );
+        return self::pathFor($this->schoolId, $this->termId, $this->studentId);
+    }
+
+    /** Where a generated card lives — shared with the endpoint that serves it. */
+    public static function pathFor(int $schoolId, int $termId, int $studentId): string
+    {
+        return sprintf('report-cards/%d/term-%d/student-%d.pdf', $schoolId, $termId, $studentId);
     }
 
     public function failed(\Throwable $e): void

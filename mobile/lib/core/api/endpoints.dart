@@ -184,6 +184,8 @@ class Api {
   // Jobs
   static String job(String batchId) => '$version/jobs/$batchId';
   static const generateReportCards = '$version/report-cards/generate';
+  // Which children's cards a run produced, for one class and term.
+  static const generatedReportCards = '$version/report-cards/generated';
 
   // Gamification
   static const leaderboard = '$version/gamification/leaderboard';

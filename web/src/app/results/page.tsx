@@ -15,6 +15,7 @@ import {
   Table,
   inputClass,
 } from '@/components/Page';
+import PublishResults from './PublishResults';
 
 /**
  * Scores, the broadsheet, and the AI comment queue.
@@ -29,7 +30,7 @@ import {
  * field worth 40.
  */
 
-type Tab = 'broadsheet' | 'enter' | 'import' | 'comments';
+type Tab = 'broadsheet' | 'enter' | 'import' | 'comments' | 'publish';
 
 interface CaPart {
   key: string;
@@ -92,8 +93,19 @@ interface Option {
   is_current?: boolean;
 }
 
+/**
+ * Display only — the role cookie is readable on purpose and the API enforces
+ * who may generate and release. Teachers share this page and are not offered
+ * the publishing tab.
+ */
+function isSchoolAdmin(): boolean {
+  if (typeof document === 'undefined') return false;
+  return /(?:^|;\s*)sp_role=school_admin(?:;|$)/.test(document.cookie);
+}
+
 export default function ResultsPage() {
   const [tab, setTab] = useState<Tab>('broadsheet');
+  const [canPublish] = useState(isSchoolAdmin);
 
   const [classes, setClasses] = useState<Option[]>([]);
   const [terms, setTerms] = useState<Option[]>([]);
@@ -317,7 +329,7 @@ export default function ResultsPage() {
   return (
     <PageShell
       title="Results"
-      subtitle="Enter scores, read the broadsheet, and review AI comments before anything is printed."
+      subtitle="Enter scores, read the broadsheet, review AI comments, then generate and release report cards."
     >
       <ErrorNote message={error} />
 
@@ -372,6 +384,7 @@ export default function ResultsPage() {
                 ['enter', 'Enter a score'],
                 ['import', 'Import scores'],
                 ['comments', 'Comments awaiting review'],
+                ...(canPublish ? [['publish', 'Report cards & release']] : []),
               ] as [Tab, string][]
             ).map(([key, label]) => (
               <button
@@ -548,6 +561,17 @@ export default function ResultsPage() {
                 upload it here. Columns are matched by heading, so their order does not matter.
               </p>
             </Card>
+          )}
+
+          {tab === 'publish' && canPublish && classId && termId && (
+            <PublishResults
+              key={`${classId}:${termId}`}
+              classId={classId}
+              termId={termId}
+              className={classes.find((c) => String(c.id) === classId)?.name ?? 'this class'}
+              termName={terms.find((t) => String(t.id) === termId)?.name ?? 'this term'}
+              onReviewComments={() => setTab('comments')}
+            />
           )}
 
           {tab === 'comments' && (

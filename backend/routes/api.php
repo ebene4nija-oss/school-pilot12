@@ -513,6 +513,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::middleware('role:super_admin,school_admin')->group(function () {
             Route::post('/jobs/{batchId}/cancel', [\App\Http\Controllers\Api\V1\JobStatusController::class, 'cancel']);
             Route::post('/report-cards/generate', [\App\Http\Controllers\Api\V1\JobStatusController::class, 'generateReportCards']);
+            Route::get('/report-cards/generated', [\App\Http\Controllers\Api\V1\GeneratedReportCardController::class, 'index']);
+            Route::get('/report-cards/generated/{studentId}/{termId}', [\App\Http\Controllers\Api\V1\GeneratedReportCardController::class, 'download'])->whereNumber('studentId')->whereNumber('termId');
         });
 
         // Teacher-Parent In-App Messaging Routes
