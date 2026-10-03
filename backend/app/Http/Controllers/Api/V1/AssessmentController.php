@@ -28,17 +28,45 @@ class AssessmentController extends Controller
         $user = $request->user();
         $schoolId = $this->schoolId();
 
-        $scheme = CaScheme::activeFor($schoolId);
-
         $validator = Validator::make($request->all(), [
             'term_id' => ['required', \Illuminate\Validation\Rule::exists('terms', 'id')->where('school_id', $schoolId)],
             'student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
             'subject_id' => ['required', \Illuminate\Validation\Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'components' => 'nullable|array',
+            // Absent or exempt; a missing mark is simply not entered (never zero).
+            'result_state' => 'nullable|in:scored,absent,exempt',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $placement = \App\Models\Student::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->with('currentClass:id,level_category')
+            ->find($request->input('student_id'));
+
+        // The scheme in force for this term and section (decision D1): a
+        // newer scheme never reaches a term already being marked.
+        $scheme = CaScheme::forTerm(
+            $schoolId,
+            (int) $request->input('term_id'),
+            \App\Support\Sections::levelGroupOf($placement?->currentClass?->level_category)
+        );
+
+        // Submitted, approved and published results are not edited in place.
+        if ($placement?->class_id) {
+            $blocked = app(\App\Services\Results\BroadsheetWorkflow::class)->editBlockReason(
+                $schoolId,
+                (int) $request->input('term_id'),
+                (int) $placement->class_id,
+                (int) $request->input('student_id'),
+                (int) $request->input('subject_id'),
+            );
+
+            if ($blocked !== null) {
+                return response()->json(['message' => $blocked, 'code' => 'result_locked'], 409);
+            }
         }
 
         $existing = ScoreEntry::where('school_id', $schoolId)
@@ -60,12 +88,11 @@ class AssessmentController extends Controller
         $exam = $marks['exam'];
 
         // Graded on the school's scale for this student's class level.
-        $level = \App\Models\Student::withoutGlobalScopes()
-            ->where('school_id', $schoolId)
-            ->with('currentClass:id,level_category')
-            ->find($request->input('student_id'))?->currentClass?->level_category;
+        $level = $placement?->currentClass?->level_category;
 
         $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $level);
+
+        $state = $request->input('result_state');
 
         $entry = ScoreEntry::updateOrCreate(
             [
@@ -81,6 +108,7 @@ class AssessmentController extends Controller
                 'component_scores' => $marks['component_scores'],
                 'total_score' => $computed['percentage'],
                 'grade' => $computed['grade'],
+                'result_state' => in_array($state, ['absent', 'exempt'], true) ? $state : null,
             ]
         );
 
@@ -215,10 +243,12 @@ class AssessmentController extends Controller
     public function activateCaScheme(Request $request, $id)
     {
         $schoolId = $this->schoolId();
-        $scheme = CaScheme::where('school_id', $schoolId)->findOrFail($id);
+        // Versioned schemes take effect through approval and an effective
+        // term (decision D1), never by being switched on here.
+        $scheme = CaScheme::where('school_id', $schoolId)->whereNull('status')->findOrFail($id);
 
         DB::transaction(function () use ($schoolId, $scheme) {
-            CaScheme::where('school_id', $schoolId)->update(['is_default' => false]);
+            CaScheme::where('school_id', $schoolId)->whereNull('status')->update(['is_default' => false]);
             $scheme->update(['is_default' => true]);
         });
 

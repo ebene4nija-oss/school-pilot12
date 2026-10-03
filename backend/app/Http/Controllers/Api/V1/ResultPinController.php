@@ -448,6 +448,23 @@ class ResultPinController extends Controller
 
         $isReleased = $request->has('is_released') ? $request->boolean('is_released') : true;
 
+        /*
+         * A school that runs results through its approval chain releases only
+         * what the chain approved (decision D2). Withdrawing is never blocked.
+         * Schools that have not switched the chain on release as before.
+         */
+        if ($isReleased && \App\Models\SchoolSectionSetting::for($schoolId)->result_workflow_enabled) {
+            $unapproved = $this->unapprovedClasses($schoolId, $term->id, $request->class_id ? (int) $request->class_id : null);
+
+            if ($unapproved !== []) {
+                return response()->json([
+                    'message' => 'These classes have not finished approval: '.implode(', ', $unapproved).'. Results are released once their broadsheets are approved.',
+                    'code' => 'not_approved',
+                    'classes' => $unapproved,
+                ], 409);
+            }
+        }
+
         $release = ResultRelease::withoutGlobalScopes()->updateOrCreate(
             [
                 'school_id' => $schoolId,
@@ -478,6 +495,43 @@ class ResultPinController extends Controller
                 : 'Results withdrawn. Guardians can no longer open them.',
             'release' => $release,
         ]);
+    }
+
+    /**
+     * Names of classes (one, or every class for a school-wide release) whose
+     * broadsheet for the term is not approved or published.
+     *
+     * @return array<int, string>
+     */
+    private function unapprovedClasses(int $schoolId, int $termId, ?int $classId): array
+    {
+        $classes = \App\Models\SchoolClass::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->when($classId, fn ($q) => $q->whereKey($classId))
+            ->get(['id', 'name']);
+
+        $approved = \App\Models\Broadsheet::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->where('term_id', $termId)
+            ->whereIn('status', ['approved', 'published'])
+            ->pluck('class_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        // A class with nobody in it has nothing to approve.
+        $occupied = \App\Models\Student::withoutGlobalScopes()
+            ->where('school_id', $schoolId)
+            ->whereIn('class_id', $classes->pluck('id'))
+            ->distinct()
+            ->pluck('class_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $classes
+            ->filter(fn ($c) => in_array((int) $c->id, $occupied, true) && ! in_array((int) $c->id, $approved, true))
+            ->pluck('name')
+            ->values()
+            ->all();
     }
 
     public function releases(Request $request)

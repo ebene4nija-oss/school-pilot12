@@ -156,6 +156,14 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/assessment/ca-schemes/{id}/activate', [\App\Http\Controllers\Api\V1\AssessmentController::class, 'activateCaScheme'])->middleware('role:super_admin,school_admin');
 
         /*
+         * Modules built from the TASK specifications. Each file is required
+         * here, inside the authenticated, tenant-bound, module-enforced group,
+         * so every route in them inherits the same guards as the rest of
+         * /api/v1 without repeating them.
+         */
+        require __DIR__.'/modules/results.php';
+
+        /*
          * The fee-structure builder (§7.12).
          *
          * The POST path is unchanged from when this lived on FinanceController —

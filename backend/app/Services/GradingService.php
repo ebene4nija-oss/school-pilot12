@@ -123,46 +123,31 @@ class GradingService
      */
     public function recomputeClassPositions(int $schoolId, int $classId, int $termId): int
     {
-        $studentIds = Student::where('school_id', $schoolId)
-            ->where('class_id', $classId)
-            ->pluck('id');
+        /*
+         * Delegated to the central calculator so that the position printed on
+         * a report card and the one on the broadsheet are the same number,
+         * ranked by the school's own rule (basis, ties, who is eligible). The
+         * default rule is the one this method always applied: mean across
+         * subjects, ties share and the next place skips.
+         */
+        $calc = app(\App\Services\Results\ResultCalculator::class)
+            ->forClass($schoolId, $termId, $classId, ['attendance' => false]);
 
-        if ($studentIds->isEmpty()) {
-            return 0;
-        }
+        $ranked = 0;
 
-        $averages = ScoreEntry::where('school_id', $schoolId)
-            ->where('term_id', $termId)
-            ->whereIn('student_id', $studentIds)
-            ->groupBy('student_id')
-            ->select('student_id')
-            ->selectRaw('AVG(total_score) as average')
-            ->get()
-            ->sortByDesc('average')
-            ->values();
-
-        $position = 0;
-        $seen = 0;
-        $previous = null;
-
-        DB::transaction(function () use ($averages, $schoolId, $termId, &$position, &$seen, &$previous) {
-            foreach ($averages as $row) {
-                $seen++;
-
-                // Equal averages share a position; the run of ties is then
-                // skipped over.
-                if ($previous === null || round((float) $row->average, 4) !== $previous) {
-                    $position = $seen;
-                    $previous = round((float) $row->average, 4);
+        DB::transaction(function () use ($calc, $schoolId, $termId, &$ranked) {
+            foreach ($calc['students'] as $student) {
+                if ($student['position'] !== null) {
+                    $ranked++;
                 }
 
                 ScoreEntry::where('school_id', $schoolId)
                     ->where('term_id', $termId)
-                    ->where('student_id', $row->student_id)
-                    ->update(['position_in_class' => $position]);
+                    ->where('student_id', $student['id'])
+                    ->update(['position_in_class' => $student['position']]);
             }
         });
 
-        return $averages->count();
+        return $ranked;
     }
 }

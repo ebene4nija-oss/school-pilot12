@@ -44,6 +44,20 @@ class TeacherProductivityController extends Controller
 
         $levels = $this->classLevels($schoolId, collect($request->scores)->pluck('student_id')->all());
 
+        // The scheme in force for this term and section, not today's default.
+        $scheme = CaScheme::forTerm($schoolId, (int) $request->term_id, \App\Support\Sections::levelGroupOf(reset($levels) ?: null));
+
+        // Submitted or approved marks are not overwritten in bulk either.
+        $locked = $this->lockedRows($schoolId, (int) $request->term_id, (int) $request->subject_id, collect($request->scores)->pluck('student_id')->all());
+
+        if ($locked !== []) {
+            return response()->json([
+                'message' => 'Some of these marks are locked for review or already approved. Nothing was saved.',
+                'code' => 'result_locked',
+                'locked' => $locked,
+            ], 409);
+        }
+
         $existing = ScoreEntry::where('school_id', $schoolId)
             ->where('term_id', $request->term_id)
             ->where('subject_id', $request->subject_id)
@@ -117,7 +131,7 @@ class TeacherProductivityController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $scheme = CaScheme::activeFor($schoolId);
+        $scheme = CaScheme::forTerm($schoolId, (int) $request->term_id);
         $rows = array_map('str_getcsv', file($request->file('file')->getRealPath(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
         $header = array_map(fn ($h) => $this->headerKey((string) $h), array_shift($rows) ?? []);
 
@@ -187,6 +201,12 @@ class TeacherProductivityController extends Controller
 
             if (! $student) {
                 $errors[] = "Row {$rowNum}: student not found in this school.";
+
+                continue;
+            }
+
+            if ($this->lockedRows($schoolId, (int) $request->term_id, (int) $request->subject_id, [$student->id]) !== []) {
+                $errors[] = "Row {$rowNum}: this student's mark is locked for review or already approved.";
 
                 continue;
             }
@@ -445,6 +465,32 @@ class TeacherProductivityController extends Controller
      *
      * @return array<int|string, string|null> keyed by student id
      */
+    /**
+     * Students whose mark in this subject cannot be written now, with why.
+     *
+     * @return array<int, array{student_id: int, reason: string}>
+     */
+    private function lockedRows(int $schoolId, int $termId, int $subjectId, array $studentIds): array
+    {
+        $workflow = app(\App\Services\Results\BroadsheetWorkflow::class);
+        $classes = Student::withoutGlobalScopes()->where('school_id', $schoolId)->whereIn('id', $studentIds)->pluck('class_id', 'id');
+        $locked = [];
+
+        foreach ($classes as $studentId => $classId) {
+            if (! $classId) {
+                continue;
+            }
+
+            $reason = $workflow->editBlockReason($schoolId, $termId, (int) $classId, (int) $studentId, $subjectId);
+
+            if ($reason !== null) {
+                $locked[] = ['student_id' => (int) $studentId, 'reason' => $reason];
+            }
+        }
+
+        return $locked;
+    }
+
     private function classLevels(int $schoolId, array $studentIds): array
     {
         return DB::table('students')

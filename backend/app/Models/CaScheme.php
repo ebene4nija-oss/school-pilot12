@@ -28,6 +28,16 @@ class CaScheme extends Model
         'exam_weight',
         'is_default',
         'components',
+        'status',
+        'version',
+        'level_group',
+        'effective_term_id',
+        'supersedes_id',
+        'proposed_by',
+        'proposed_at',
+        'approved_by',
+        'approved_at',
+        'decision_note',
     ];
 
     protected $casts = [
@@ -36,7 +46,74 @@ class CaScheme extends Model
         'exam_weight' => 'integer',
         'is_default' => 'boolean',
         'components' => 'array',
+        'version' => 'integer',
+        'proposed_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
+
+    /**
+     * Versioned-scheme lifecycle (decision D1). A legacy scheme has no status
+     * and is governed by `is_default` as before.
+     */
+    public const LIFECYCLE = ['draft', 'proposed', 'approved', 'rejected', 'retired'];
+
+    public function effectiveTerm()
+    {
+        return $this->belongsTo(Term::class, 'effective_term_id');
+    }
+
+    /**
+     * The scheme that governs a term for a level group.
+     *
+     * An approved, versioned scheme applies from the start of its effective
+     * term onward, so a term keeps the scheme it was marked under even after a
+     * newer one is approved: past results are never recalculated. When no
+     * versioned scheme reaches the term, the school's legacy default applies,
+     * exactly as before versioning existed.
+     */
+    public static function forTerm(int $schoolId, ?int $termId, ?string $levelGroup = null): self
+    {
+        if ($termId !== null) {
+            $termStart = Term::withoutGlobalScopes()->whereKey($termId)->first(['start_date'])?->start_date;
+
+            if ($termStart !== null) {
+                // Whole-day comparison: a stored start may carry a time.
+                $termStart = $termStart->toDateString().' 23:59:59';
+                $scheme = static::withoutGlobalScopes()
+                    ->where('ca_schemes.school_id', $schoolId)
+                    ->where('ca_schemes.status', 'approved')
+                    ->where(fn ($q) => $q->whereNull('ca_schemes.level_group')->orWhere('ca_schemes.level_group', $levelGroup))
+                    ->join('terms', 'terms.id', '=', 'ca_schemes.effective_term_id')
+                    ->where('terms.start_date', '<=', $termStart)
+                    // A section's own scheme beats a school-wide one from the same term.
+                    ->orderByDesc('terms.start_date')
+                    ->orderByRaw('CASE WHEN ca_schemes.level_group IS NULL THEN 1 ELSE 0 END')
+                    ->orderByDesc('ca_schemes.version')
+                    ->select('ca_schemes.*')
+                    ->first();
+
+                if ($scheme) {
+                    return $scheme;
+                }
+            }
+        }
+
+        return static::activeFor($schoolId);
+    }
+
+    /** Lifecycle status as shown to people: approved and in force reads as active. */
+    public function displayStatus(): string
+    {
+        if ($this->status === null) {
+            return $this->is_default ? 'active' : 'inactive';
+        }
+
+        if ($this->status === 'approved' && $this->effectiveTerm) {
+            return $this->effectiveTerm->start_date <= now() ? 'active' : 'approved';
+        }
+
+        return $this->status;
+    }
 
     /**
      * The scheme a school marks against, falling back to the Nigerian
@@ -48,7 +125,10 @@ class CaScheme extends Model
      */
     public static function activeFor(int $schoolId): self
     {
+        // Versioned schemes are reached through forTerm(); only legacy ones
+        // (no lifecycle status) are the school's undated default.
         $scheme = static::where('school_id', $schoolId)
+            ->whereNull('status')
             ->orderByDesc('is_default')
             ->orderBy('id')
             ->first();

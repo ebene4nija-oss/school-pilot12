@@ -26,6 +26,7 @@ class ScoreEntry extends Model
         'ai_comment_generated_at',
         'ai_comment_reviewed_at',
         'component_scores',
+        'result_state',
     ];
 
     /** A mark per CA-scheme part, keyed by part: `{ca1: 8, ca2: 9, exam: 55}`. */
