@@ -3,14 +3,34 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\SchoolClass;
 use App\Models\TimetableEntry;
 use App\Models\TimetableVersion;
 use App\Services\TimetableSolverService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TimetableController extends Controller
 {
+    /**
+     * A standard secondary-school day: eight 40-minute periods, a short break
+     * after the third and a long break after the sixth. Used when the caller
+     * does not send its own bell schedule.
+     */
+    public const DEFAULT_SLOTS = [
+        ['id' => 1, 'name' => 'Period 1', 'start_time' => '08:00', 'end_time' => '08:40'],
+        ['id' => 2, 'name' => 'Period 2', 'start_time' => '08:40', 'end_time' => '09:20'],
+        ['id' => 3, 'name' => 'Period 3', 'start_time' => '09:20', 'end_time' => '10:00'],
+        ['id' => 4, 'name' => 'Short break', 'start_time' => '10:00', 'end_time' => '10:20', 'is_break' => true],
+        ['id' => 5, 'name' => 'Period 4', 'start_time' => '10:20', 'end_time' => '11:00'],
+        ['id' => 6, 'name' => 'Period 5', 'start_time' => '11:00', 'end_time' => '11:40'],
+        ['id' => 7, 'name' => 'Period 6', 'start_time' => '11:40', 'end_time' => '12:20'],
+        ['id' => 8, 'name' => 'Long break', 'start_time' => '12:20', 'end_time' => '13:00', 'is_break' => true],
+        ['id' => 9, 'name' => 'Period 7', 'start_time' => '13:00', 'end_time' => '13:40'],
+        ['id' => 10, 'name' => 'Period 8', 'start_time' => '13:40', 'end_time' => '14:20'],
+    ];
+
     protected $solver;
 
     public function __construct(TimetableSolverService $solver)
@@ -18,38 +38,85 @@ class TimetableController extends Controller
         $this->solver = $solver;
     }
 
+    /**
+     * Generate a draft timetable.
+     *
+     * Classes, teacher assignments and the bell schedule may all be sent
+     * explicitly. Any that are left out come from the school's own records:
+     * who teaches which subject to which class (`teacher_subjects`), every
+     * class that has at least one such teacher, and the standard day above.
+     * The web builder sends nothing and relies on this.
+     *
+     * A class with no subject teachers is left out and named in `skipped`,
+     * rather than failing the whole school: it has nothing to schedule, and
+     * one unstaffed class should not stop every other class getting a
+     * timetable. Every 422 carries a `message` a person can act on.
+     */
     public function generate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'class_ids' => 'required|array',
-            'assignments' => 'required|array',
-            'slots' => 'required|array',
+            'class_ids' => 'nullable|array',
+            'assignments' => 'nullable|array',
+            'slots' => 'nullable|array',
             'version_name' => 'nullable|string',
             'max_daily_teacher_workload' => 'nullable|integer|min:1',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $user = $request->user();
         $schoolId = $this->schoolId();
+
+        $classIds = array_map('intval', $request->input('class_ids') ?: []);
+        if ($classIds === []) {
+            $classIds = SchoolClass::where('school_id', $schoolId)->orderBy('order_index')->pluck('id')->all();
+        }
+
+        if ($classIds === []) {
+            return response()->json([
+                'message' => 'This school has no classes yet. Create classes first, then generate a timetable.',
+                'errors' => ['class_ids' => ['No classes found for this school.']],
+            ], 422);
+        }
+
+        $assignments = $request->input('assignments') ?: $this->assignmentsFromRecords($schoolId, $classIds);
+
+        $staffed = array_unique(array_map(fn ($a) => (int) $a['class_id'], $assignments));
+        $skipped = array_values(array_diff($classIds, $staffed));
+        $classIds = array_values(array_intersect($classIds, $staffed));
+
+        if ($classIds === []) {
+            return response()->json([
+                'message' => 'No class has subject teachers assigned yet. Assign a teacher to each subject a class takes, then generate again.',
+                'errors' => ['assignments' => ['No teacher–subject assignments found.']],
+            ], 422);
+        }
 
         $result = $this->solver->generateTimetable(
             $schoolId,
-            $request->class_ids,
-            $request->assignments,
-            $request->slots,
+            $classIds,
+            $assignments,
+            $request->input('slots') ?: self::DEFAULT_SLOTS,
             [
-                'version_name' => $request->input('version_name', 'Automated Draft'),
+                'version_name' => $request->input('version_name', 'Draft '.now()->format('j M Y, H:i')),
                 'max_daily_teacher_workload' => $request->input('max_daily_teacher_workload', 6),
                 'save_draft' => true,
             ]
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
+            $count = count($result['conflicts']);
+
             return response()->json([
-                'message' => 'Scheduling conflicts encountered during generation.',
+                // The first clash in words, with the class named, is what a
+                // client shows; the full list is there for anyone who wants it.
+                'message' => $this->nameClasses($schoolId, $result['conflicts'][0])
+                    .($count > 1 ? ' ('.($count - 1).' more.)' : '')
+                    .' Assign more teachers, or raise the daily limit per teacher.',
                 'conflicts' => $result['conflicts'],
             ], 422);
         }
@@ -58,17 +125,18 @@ class TimetableController extends Controller
             'message' => 'Conflict-free timetable generated and saved as draft.',
             'version' => $result['version'],
             'timetable' => $result['timetable'],
+            'skipped' => SchoolClass::where('school_id', $schoolId)->whereIn('id', $skipped)->orderBy('order_index')->pluck('name'),
         ], 200);
     }
 
     public function versions(Request $request)
     {
-        $user = $request->user();
         $schoolId = $this->schoolId();
 
         $versions = TimetableVersion::where('school_id', $schoolId)
             ->withCount('entries')
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([
@@ -78,7 +146,6 @@ class TimetableController extends Controller
 
     public function publish(Request $request, $id)
     {
-        $user = $request->user();
         $schoolId = $this->schoolId();
 
         $version = TimetableVersion::where('school_id', $schoolId)->where('id', $id)->firstOrFail();
@@ -98,7 +165,6 @@ class TimetableController extends Controller
 
     public function view(Request $request)
     {
-        $user = $request->user();
         $schoolId = $this->schoolId();
 
         $versionId = $request->query('version_id');
@@ -126,10 +192,64 @@ class TimetableController extends Controller
             $query->where('teacher_id', $teacherId);
         }
 
-        $entries = $query->get();
+        $entries = $query->orderBy('id')->get();
+
+        /*
+         * Names alongside the ids, so a client can print a timetable without
+         * a lookup per cell. Added fields only: existing readers are unaffected.
+         */
+        $classNames = SchoolClass::where('school_id', $schoolId)
+            ->whereIn('id', $entries->pluck('school_class_id')->unique())
+            ->pluck('name', 'id');
+
+        $teacherNames = DB::table('users')
+            ->whereIn('id', $entries->pluck('teacher_id')->filter()->unique())
+            ->pluck('name', 'id');
+
+        $entries->each(function (TimetableEntry $entry) use ($classNames, $teacherNames) {
+            $entry->setAttribute('class_name', $classNames[$entry->school_class_id] ?? null);
+            $entry->setAttribute('teacher_name', $entry->teacher_id ? ($teacherNames[$entry->teacher_id] ?? null) : null);
+        });
 
         return response()->json([
             'entries' => $entries,
         ]);
+    }
+
+    /**
+     * Who teaches what to which class, from `teacher_subjects`, in the shape
+     * the solver takes. Ids are cast: the solver compares them strictly, and
+     * not every database driver hands integers back as integers.
+     */
+    private function assignmentsFromRecords(int $schoolId, array $classIds): array
+    {
+        return DB::table('teacher_subjects')
+            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->where('teacher_subjects.school_id', $schoolId)
+            ->whereIn('teacher_subjects.class_id', $classIds)
+            ->orderBy('subjects.name')
+            ->get([
+                'teacher_subjects.class_id',
+                'teacher_subjects.teacher_id',
+                'teacher_subjects.subject_id',
+                'subjects.name as subject_name',
+            ])
+            ->map(fn ($row) => [
+                'class_id' => (int) $row->class_id,
+                'teacher_id' => (int) $row->teacher_id,
+                'subject_id' => (int) $row->subject_id,
+                'subject_name' => $row->subject_name,
+            ])
+            ->all();
+    }
+
+    /** "Class 12" in a solver message becomes "JSS 2". */
+    private function nameClasses(int $schoolId, string $message): string
+    {
+        return preg_replace_callback('/Class (\d+)/', function ($m) use ($schoolId) {
+            $name = SchoolClass::where('school_id', $schoolId)->where('id', (int) $m[1])->value('name');
+
+            return $name ?? $m[0];
+        }, $message);
     }
 }
