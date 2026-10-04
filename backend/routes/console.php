@@ -59,3 +59,19 @@ Schedule::command('exports:sweep')
     ->dailyAt('02:45')
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Applications that never became students lose their personal details once
+ * the school's retention period has passed (sections baseline D4, NDPA doc
+ * §12). Expired offers are closed on the same pass. The reference, section
+ * and outcome are kept so admission statistics survive.
+ */
+Artisan::command('admissions:purge', function () {
+    $count = app(\App\Services\AdmissionService::class)->purgeExpired();
+    $this->info("Removed personal details from {$count} closed application(s).");
+})->purpose('Remove personal details from unaccepted applications past retention');
+
+Schedule::command('admissions:purge')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->runInBackground();

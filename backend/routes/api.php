@@ -165,6 +165,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         require __DIR__.'/modules/history.php';
         require __DIR__.'/modules/students.php';
         require __DIR__.'/modules/progress.php';
+        require __DIR__.'/modules/admissions.php';
 
         /*
          * The fee-structure builder (§7.12).
@@ -1005,6 +1006,17 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
      * only whether the document is genuine, unaltered and still valid.
      */
     Route::middleware('throttle:20,1')->get('/verify-document/{reference}', [\App\Http\Controllers\Api\V1\AcademicHistoryController::class, 'verifyDocument']);
+
+    /*
+     * A school's public application form, only when the school has switched
+     * it on (off by default). Tenant from the subdomain; tight limits because
+     * each submission is a family's personal data.
+     */
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::get('/public/admissions/form', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'publicForm']);
+        Route::post('/public/admissions/apply', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'publicApply']);
+        Route::post('/public/admissions/status', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'publicStatus']);
+    });
 
     // A transfer package by its expiring secret link, for a school not on SchoolPilot.
     Route::middleware('throttle:10,1')->get('/transfer-packages/{token}', [\App\Http\Controllers\Api\V1\TransferController::class, 'packageByLink']);
