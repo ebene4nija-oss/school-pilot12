@@ -120,6 +120,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // child. Idempotent, so a retry on a dropped connection is safe.
         Route::post('/attendance/bulk', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'markBulkAttendance'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/attendance/register', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'classRegister'])->middleware('role:super_admin,school_admin,teacher');
+        Route::get('/attendance/corrections', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'corrections'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/attendance/staff-gps', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'staffGpsClockIn'])->middleware('role:super_admin,school_admin,teacher');
 
         // Timetable Solver Engine & Management

@@ -82,6 +82,8 @@ class AttendanceController extends Controller
             'records.*.student_id' => 'required|integer',
             'records.*.status' => 'required|in:present,absent,late,excused',
             'idempotency_key' => 'required|string|min:8|max:100',
+            // Needed only to change a mark on a past day (admins only).
+            'correction_reason' => 'nullable|string|min:3|max:255',
         ]);
 
         // Scoped per school so two schools cannot collide on a client-generated
@@ -103,7 +105,7 @@ class AttendanceController extends Controller
         $marked = [];
         $rejected = [];
 
-        DB::transaction(function () use ($submitted, $known, $schoolId, $validated, &$marked, &$rejected) {
+        DB::transaction(function () use ($submitted, $known, $schoolId, $validated, $user, &$marked, &$rejected) {
             foreach ($submitted as $studentId => $row) {
                 if (! $known->has($studentId)) {
                     $rejected[] = [
@@ -113,17 +115,11 @@ class AttendanceController extends Controller
                     continue;
                 }
 
-                AttendanceRecord::updateOrCreate(
-                    [
-                        'school_id' => $schoolId,
-                        'student_id' => $studentId,
-                        'date' => $validated['date'],
-                    ],
-                    [
-                        'term_id' => $validated['term_id'],
-                        'status' => $row['status'],
-                    ]
-                );
+                $refusal = $this->record($schoolId, (int) $studentId, $validated['date'], (int) $validated['term_id'], $row['status'], $user, $validated['correction_reason'] ?? null);
+                if ($refusal) {
+                    $rejected[] = ['student_id' => (int) $studentId, 'reason' => $refusal];
+                    continue;
+                }
 
                 $marked[] = ['student_id' => (int) $studentId, 'status' => $row['status']];
             }
@@ -233,17 +229,11 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        $record = AttendanceRecord::updateOrCreate(
-            [
-                'school_id' => $schoolId,
-                'student_id' => $request->student_id,
-                'date' => $request->date,
-            ],
-            [
-                'term_id' => $request->term_id,
-                'status' => $request->status,
-            ]
-        );
+        $refusal = $this->record($schoolId, (int) $request->student_id, $request->date, (int) $request->term_id, $request->status, $user, null);
+        if ($refusal) {
+            return response()->json(['message' => $refusal], 403);
+        }
+        $record = AttendanceRecord::where('school_id', $schoolId)->where('student_id', $request->student_id)->whereDate('date', $request->date)->first();
 
         if ($request->status === 'absent') {
             SendAbsenceAlertsJob::dispatch($schoolId, [(int) $request->student_id], Carbon::parse($request->date)->toDateString());
@@ -253,6 +243,60 @@ class AttendanceController extends Controller
             'message' => 'Student attendance marked successfully',
             'attendance' => $record,
         ]);
+    }
+
+    /**
+     * Write one mark. A first mark, or a change on the same day, goes
+     * straight in; a change to a past day is a correction, which only an
+     * administrator makes, with a reason (TASK 12). Every change of status
+     * is kept in attendance_corrections.
+     *
+     * @return string|null why it was refused
+     */
+    private function record(int $schoolId, int $studentId, string $date, int $termId, string $status, $user, ?string $reason): ?string
+    {
+        $existing = AttendanceRecord::where('school_id', $schoolId)->where('student_id', $studentId)->whereDate('date', $date)->first();
+
+        if (! $existing) {
+            AttendanceRecord::create(['school_id' => $schoolId, 'student_id' => $studentId, 'date' => $date, 'term_id' => $termId, 'status' => $status]);
+
+            return null;
+        }
+        if ($existing->status === $status) {
+            return null;
+        }
+
+        $pastDay = Carbon::parse($date)->lt(Carbon::today());
+        if ($pastDay) {
+            if (! in_array($user->userProfile?->role, ['school_admin', 'super_admin'], true)) {
+                return 'Only an administrator can change attendance for a past day.';
+            }
+            if (! $reason) {
+                return 'Give a reason to correct attendance for a past day.';
+            }
+        }
+
+        DB::table('attendance_corrections')->insert([
+            'school_id' => $schoolId, 'attendance_record_id' => $existing->id, 'student_id' => $studentId, 'date' => Carbon::parse($date)->toDateString(),
+            'from' => $existing->status, 'to' => $status, 'reason' => $reason, 'user_id' => $user->id, 'created_at' => now(),
+        ]);
+        $existing->update(['status' => $status, 'term_id' => $termId]);
+
+        return null;
+    }
+
+    /** A student's (or a class's) correction history. */
+    public function corrections(Request $request)
+    {
+        $schoolId = $this->schoolId();
+
+        return response()->json(['data' => DB::table('attendance_corrections as c')->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+            ->leftJoin('students as s', 's.id', '=', 'c.student_id')->leftJoin('users as su', 'su.id', '=', 's.user_id')
+            ->where('c.school_id', $schoolId)
+            ->when($request->filled('student_id'), fn ($q) => $q->where('c.student_id', $request->integer('student_id')))
+            ->when($request->filled('class_id'), fn ($q) => $q->where('s.class_id', $request->integer('class_id')))
+            ->orderByDesc('c.id')->limit(300)
+            ->get(['c.date', 'c.from', 'c.to', 'c.reason', 'c.created_at', 'u.name as by', 'su.name as student'])]);
     }
 
     public function staffGpsClockIn(Request $request)

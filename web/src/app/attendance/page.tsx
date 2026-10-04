@@ -176,10 +176,15 @@ export default function AttendancePage() {
     setError(null);
     setNotice(null);
 
+    // A changed mark on a past day is a correction: administrators only, with a reason.
+    const today = new Date().toISOString().slice(0, 10);
+    const correctionReason = date < today ? window.prompt('This register is for a past day. If you are changing marks already recorded, give a reason (administrators only). Leave blank if you are marking it for the first time.') : null;
+
     try {
       const result = await fetchApi<{
         marked?: number;
         skipped?: unknown[];
+        rejected?: { student_id: number; reason: string }[];
         idempotent_replay?: boolean;
       }>('/attendance/bulk', {
         method: 'POST',
@@ -195,14 +200,18 @@ export default function AttendancePage() {
            * of marks — so a double tap is recognised as the same submission
            * rather than marking the class twice.
            */
-          idempotency_key: `register-${classId}-${date}-${hash(JSON.stringify(marks))}`,
+          idempotency_key: `register-${classId}-${date}-${hash(JSON.stringify(marks))}-${correctionReason ?? ''}`,
+          correction_reason: correctionReason || undefined,
         }),
       });
 
+      const refused = result.rejected ?? [];
       setNotice(
         result.idempotent_replay
           ? 'This register was already saved — nothing was recorded twice.'
-          : `Register saved for ${register.length} student(s).`,
+          : refused.length
+            ? `Saved, except ${refused.length} student(s): ${refused[0].reason}`
+            : `Register saved for ${register.length} student(s).`,
       );
 
       applyRegister(await fetchRegister());
