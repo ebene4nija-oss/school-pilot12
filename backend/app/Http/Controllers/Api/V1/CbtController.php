@@ -324,9 +324,19 @@ class CbtController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        $question->update($validated);
+        // Answered questions keep the version that was answered (§3 rule 2).
+        $versioning = app(\App\Services\Cbt\QuestionVersioner::class)->update($question, $validated, $request->user());
 
-        return response()->json(['message' => 'Question updated', 'question' => $question->fresh()]);
+        return response()->json(array_filter([
+            'message' => 'Question updated',
+            'question' => $question->fresh(),
+            'versioning' => $versioning,
+            // Results are never changed silently: a scoring edit waits for a
+            // deliberate regrade, and the old results say so meanwhile (§10.6).
+            'regrade_needed' => $versioning['affects_scoring']
+                ? 'This edit changes what is correct on a question students have already answered. Their results are unchanged until you regrade, or keep them with a reason.'
+                : null,
+        ], fn ($v) => $v !== null));
     }
 
     /**
@@ -756,7 +766,24 @@ class CbtController extends Controller
             ], 422);
         }
 
+        // Schools that approve exams first (§5.6, a per-school setting).
+        if ($blocked = CbtOversightController::approvalBlock($exam, $request->user())) {
+            return response()->json(['error' => $blocked, 'code' => 'approval_required'], 409);
+        }
+
         $exam->update(['status' => 'published', 'total_marks' => $this->recalculateTotalMarks($exam)]);
+
+        // Scheduling warnings (§5.5) are reported, not blocking; a stated
+        // reason for going ahead anyway goes on the record.
+        $warnings = CbtOversightController::scheduleWarnings($exam->fresh());
+
+        if ($warnings !== [] && $request->filled('override_reason')) {
+            \App\Models\AuditLog::create([
+                'school_id' => $exam->school_id, 'user_id' => $request->user()->id, 'action' => 'cbt.schedule_warning_overridden',
+                'auditable_type' => CbtExam::class, 'auditable_id' => $exam->id,
+                'new_values' => ['warnings' => $warnings, 'reason' => $request->input('override_reason')],
+            ]);
+        }
 
         // A subset draw selects whole groups, never individual sub-questions
         // (§6.6). Where N cannot be composed exactly out of whole groups the
@@ -780,6 +807,7 @@ class CbtController extends Controller
             'exam' => $exam->fresh(),
             'questions_per_candidate' => $effective,
             'notice' => $notice,
+            'warnings' => $warnings ?: null,
         ], fn ($value) => $value !== null));
     }
 
@@ -1188,6 +1216,7 @@ class CbtController extends Controller
         });
 
         $this->exams->logEvent($attempt, 'manually_graded', ['by' => $request->user()->id]);
+        app(\App\Services\Cbt\CbtResultLedger::class)->record($attempt->fresh(), 'manual_marking', $request->user());
 
         return response()->json([
             'message' => 'Marks recorded',

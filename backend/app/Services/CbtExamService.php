@@ -978,6 +978,11 @@ class CbtExamService
 
             $this->logEvent($attempt, $reason, ['percentage' => $percentage]);
 
+            // Revision 1 of the result, pinned to the question versions served.
+            $ledger = app(\App\Services\Cbt\CbtResultLedger::class);
+            $ledger->pinVersions($attempt);
+            $ledger->record($attempt->fresh(), $reason === 'manual_submit' ? 'submitted' : $reason);
+
             return $attempt->fresh();
         });
     }

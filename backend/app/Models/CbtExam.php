@@ -36,6 +36,11 @@ class CbtExam extends Model
         'integrity_settings',
         'total_marks',
         'created_by',
+        'approval_status',
+        'approval_note',
+        'approved_by',
+        'approved_at',
+        'exam_type',
     ];
 
     protected $casts = [

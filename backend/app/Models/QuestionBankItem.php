@@ -64,6 +64,7 @@ class QuestionBankItem extends Model
         'exam_body',
         'status',
         'created_by',
+        'version',
     ];
 
     protected $casts = [

@@ -23,6 +23,7 @@ class CbtAttemptAnswer extends Model
         'feedback',
         'flagged_for_review',
         'time_spent_seconds',
+        'question_version',
     ];
 
     protected $casts = [

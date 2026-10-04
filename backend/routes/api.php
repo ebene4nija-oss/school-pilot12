@@ -166,6 +166,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         require __DIR__.'/modules/students.php';
         require __DIR__.'/modules/progress.php';
         require __DIR__.'/modules/admissions.php';
+        require __DIR__.'/modules/cbt.php';
 
         /*
          * The fee-structure builder (§7.12).
