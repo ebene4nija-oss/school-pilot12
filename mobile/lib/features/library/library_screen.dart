@@ -50,6 +50,16 @@ class LibraryBooksView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(libraryBooksProvider(studentId));
 
+    // A school that does not run its library on SchoolPilot answers 403/404.
+    // That is a fact about the school, not an error to show anyone.
+    final failure = value.hasError ? asApiException(value.error!) : null;
+    if (failure != null && (failure.isForbidden || failure.isNotFound)) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.screenMargin),
+        child: Text('The school library is not on SchoolPilot.', style: AppText.bodyMd),
+      );
+    }
+
     return CachedView<dynamic>(
       value: value,
       onRetry: () => ref.invalidate(libraryBooksProvider(studentId)),

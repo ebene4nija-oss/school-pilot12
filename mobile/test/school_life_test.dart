@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:schoolpilot/core/data/cached.dart';
 import 'package:schoolpilot/core/sync/sync_service.dart';
+import 'package:schoolpilot/features/child/child_school_life.dart';
 import 'package:schoolpilot/features/hostel/hostel_screen.dart';
 import 'package:schoolpilot/features/idcard/id_card_screen.dart';
 import 'package:schoolpilot/features/timetable/timetable_screen.dart';
@@ -101,5 +104,43 @@ void main() {
       expect(find.text('Reported lost'), findsOneWidget);
       expect(find.text('Security staff scan this to check the card.'), findsNothing);
     });
+  });
+
+  testWidgets("a parent sees each piece of homework's state, marks and the teacher's note", (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          childLearningProvider.overrideWith((ref, id) async => Cached<dynamic>(
+                fetchedAt: DateTime.now(),
+                data: {
+                  'children': [
+                    {
+                      'student_id': id,
+                      'upcoming_classes': [],
+                      'materials': null,
+                      'virtual_attendance': {'counts': {'present': 3, 'absent': 1}, 'recent': []},
+                      'assignments': {
+                        'pending': [
+                          {'id': 1, 'title': 'Fractions worksheet', 'subject': 'Maths', 'due_date': '2026-10-09', 'state': 'returned', 'return_note': 'Show your working'},
+                        ],
+                        'submitted': [],
+                        'graded': [
+                          {'id': 2, 'title': 'Essay', 'subject': 'English', 'due_date': '2026-10-01', 'state': 'graded', 'marks_awarded': 8, 'marks_available': 10},
+                        ],
+                      },
+                    },
+                  ],
+                },
+              )),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChildLearningView(childId: 5))),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Returned to redo'), findsOneWidget);
+    expect(find.text('Teacher: Show your working'), findsOneWidget);
+    expect(find.text('8 / 10'), findsOneWidget);
+    expect(find.text('present: 3'), findsOneWidget);
   });
 }

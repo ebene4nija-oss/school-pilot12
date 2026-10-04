@@ -12,6 +12,7 @@ import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
 import '../dashboard/home_screen.dart';
 import 'absence_alert_switch.dart';
+import 'child_school_life.dart';
 
 final behaviourProvider =
     FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
@@ -59,6 +60,8 @@ class _ChildScreenState extends ConsumerState<ChildScreen> {
                     segments: const [
                       ButtonSegment(value: 0, label: Text('Attendance')),
                       ButtonSegment(value: 1, label: Text('Behaviour')),
+                      ButtonSegment(value: 2, label: Text('Learning')),
+                      ButtonSegment(value: 3, label: Text('More')),
                     ],
                     selected: {_tab},
                     showSelectedIcon: false,
@@ -67,9 +70,12 @@ class _ChildScreenState extends ConsumerState<ChildScreen> {
                 ),
                 if (_tab == 0) const AbsenceAlertSwitch(),
                 Expanded(
-                  child: _tab == 0
-                      ? const _AttendanceView()
-                      : const _BehaviourView(),
+                  child: switch (_tab) {
+                    0 => const _AttendanceView(),
+                    1 => const _BehaviourView(),
+                    2 => ChildLearningView(childId: childId),
+                    _ => ChildMoreView(childId: childId),
+                  },
                 ),
               ],
             ),
