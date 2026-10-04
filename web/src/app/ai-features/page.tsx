@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, ErrorNote, Loading, PageShell } from '@/components/Page';
+import TutorControls from '@/components/TutorControls';
 
 /**
  * Which AI features this school uses.
@@ -111,6 +112,7 @@ export default function AiFeaturesPage() {
           </Card>
         </div>
       )}
+      <TutorControls />
     </PageShell>
   );
 }

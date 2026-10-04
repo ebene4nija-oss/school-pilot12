@@ -199,6 +199,8 @@ class AiStudioController extends Controller
             'conversation_id' => 'nullable|integer',
             'subject_id' => 'nullable|integer',
             'homework_id' => 'nullable|integer',
+            // "practice": the tutor sets questions to try rather than explaining (TASK 15).
+            'mode' => 'nullable|in:chat,practice',
         ]);
 
         if ($validator->fails()) {
@@ -211,10 +213,24 @@ class AiStudioController extends Controller
             return response()->json(['error' => 'Only enrolled students can use the tutor.'], 403);
         }
 
+        // The school's rules first, before a conversation exists or a token is spent.
+        $subjectId = $request->filled('conversation_id')
+            ? TutorConversation::where('student_id', $student->id)->whereKey($request->integer('conversation_id'))->value('subject_id')
+            : ($request->filled('subject_id') ? $request->integer('subject_id') : null);
+        try {
+            app(\App\Services\TutorPolicy::class)->assertMayAsk($student, $subjectId ? (int) $subjectId : null);
+        } catch (\App\Exceptions\DomainRefusal $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        }
+
         $conversation = $this->resolveConversation($request, $student);
 
+        $message = $request->input('mode') === 'practice'
+            ? 'Set me five practice questions on this, one at a time. Wait for my answer to each before giving feedback, and do not show the answers first: '.$request->input('message')
+            : $request->input('message');
+
         try {
-            $result = $tutor->reply($conversation, $student, $request->input('message'));
+            $result = $tutor->reply($conversation, $student, $message);
         } catch (\RuntimeException $e) {
             // 503 rather than 500: the tutor being switched off or
             // unconfigured is an expected state, not a crash.

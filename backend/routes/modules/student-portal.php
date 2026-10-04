@@ -29,3 +29,10 @@ Route::middleware('role:school_admin')->group(function () {
     Route::post('/timetable/substitutions/{id}/cancel', [\App\Http\Controllers\Api\V1\CoverController::class, 'cancel'])->whereNumber('id');
 });
 Route::get('/timetable/my-cover', [\App\Http\Controllers\Api\V1\CoverController::class, 'mine'])->middleware('role:teacher,school_admin');
+
+// The school's control over the student AI tutor (TASK 15).
+Route::middleware('role:school_admin')->group(function () {
+    Route::get('/ai/tutor/settings', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'settings']);
+    Route::put('/ai/tutor/settings', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'update']);
+    Route::get('/ai/tutor/usage', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'usage']);
+});
