@@ -76,6 +76,13 @@ class MoreScreen extends ConsumerWidget {
               label: role == UserRole.teacher ? 'My lessons and rooms' : 'Timetable',
               onTap: () => context.push('/timetable'),
             ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.videocam_outlined,
+              label: 'Virtual class attendance',
+              detail: 'Read from Zoom or Meet, match names, correct',
+              onTap: () => context.push('/virtual-classes'),
+            ),
           if (role != UserRole.parent)
             _Tile(
               icon: Icons.menu_book_outlined,

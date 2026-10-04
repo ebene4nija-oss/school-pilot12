@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:schoolpilot/core/data/cached.dart';
 import 'package:schoolpilot/core/sync/sync_service.dart';
 import 'package:schoolpilot/features/child/child_school_life.dart';
+import 'package:schoolpilot/features/classes/virtual_attendance_screen.dart';
 import 'package:schoolpilot/features/hostel/hostel_screen.dart';
 import 'package:schoolpilot/features/idcard/id_card_screen.dart';
 import 'package:schoolpilot/features/timetable/timetable_screen.dart';
@@ -142,5 +143,32 @@ void main() {
     expect(find.text('Teacher: Show your working'), findsOneWidget);
     expect(find.text('8 / 10'), findsOneWidget);
     expect(find.text('present: 3'), findsOneWidget);
+  });
+
+  testWidgets('a teacher sees time in the call and who still needs matching', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          virtualRegisterProvider.overrideWith((ref, id) async => {
+                'source': 'provider',
+                'provider_sync': {'status': 'synced', 'can_sync': true},
+                'counts': {'present': 1, 'absent': 1},
+                'unmatched': [
+                  {'participant_key': 'ipad', 'name': "Mummy's iPad"},
+                ],
+                'students': [
+                  {'student_id': 1, 'name': 'Ada Obi', 'status': 'present', 'minutes_in_call': 40, 'minutes_connected': 12},
+                  {'student_id': 2, 'name': 'Tunde Bello', 'status': 'absent', 'minutes_in_call': 0, 'minutes_connected': 40},
+                ],
+              }),
+        ],
+        child: const MaterialApp(home: VirtualRegisterScreen(liveClass: {'id': 9, 'title': 'Fractions live'})),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('40 min in call'), findsOneWidget);
+    expect(find.text("Mummy's iPad"), findsOneWidget);
+    expect(find.text('Read the report again'), findsOneWidget);
   });
 }

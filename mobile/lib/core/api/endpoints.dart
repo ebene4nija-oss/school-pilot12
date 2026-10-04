@@ -209,6 +209,16 @@ class Api {
   static String learningMaterialLink(int id) =>
       '$version/learning-materials/$id/link';
   static String liveClassJoin(int id) => '$version/live-classes/$id/join';
+  static const liveClasses = '$version/live-classes';
+  static String liveClassAttendance(int id) =>
+      '$version/live-classes/$id/attendance';
+  static String liveClassCorrectAttendance(int id, int studentId) =>
+      '$version/live-classes/$id/attendance/$studentId';
+  // Read who was in the Zoom / Meet call, and say who an unknown name was.
+  static String liveClassProviderAttendance(int id) =>
+      '$version/live-classes/$id/provider-attendance';
+  static String liveClassProviderMatch(int id) =>
+      '$version/live-classes/$id/provider-attendance/match';
   static String liveClassHeartbeat(int id) =>
       '$version/live-classes/$id/heartbeat';
 

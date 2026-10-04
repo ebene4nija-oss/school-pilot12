@@ -63,7 +63,13 @@ class LiveClassController extends Controller
             $query->where('class_id', $classId);
         }
 
-        $sessions = $query->orderBy('scheduled_for')->paginate(50);
+        // `recent=1`: the last fortnight and today, newest first — what a
+        // teacher checks attendance for after a lesson.
+        if ($request->boolean('recent')) {
+            $query->whereBetween('scheduled_for', [now()->subDays(14), now()->endOfDay()]);
+        }
+
+        $sessions = $query->orderBy('scheduled_for', $request->boolean('recent') ? 'desc' : 'asc')->paginate(50);
 
         return response()->json([
             'data' => collect($sessions->items())->map(fn (LiveClass $session) => $this->present($session, $role)),

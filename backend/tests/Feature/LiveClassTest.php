@@ -142,6 +142,18 @@ class LiveClassTest extends TestCase
             ->assertJsonValidationErrors('meeting_url');
     }
 
+    public function test_recent_lists_the_last_fortnight_newest_first(): void
+    {
+        $this->schedule(['title' => 'Last month', 'scheduled_for' => now()->subDays(30)]);
+        $this->schedule(['title' => 'Last week', 'scheduled_for' => now()->subDays(7)]);
+        $this->schedule(['title' => 'This morning', 'scheduled_for' => now()->startOfDay()->addHours(8)]);
+        $this->schedule(['title' => 'Next week', 'scheduled_for' => now()->addDays(7)]);
+
+        $titles = array_column($this->actingAs($this->teacher, 'sanctum')->getJson('/api/v1/live-classes?recent=1')->assertOk()->json('data'), 'title');
+
+        $this->assertSame(['This morning', 'Last week'], $titles);
+    }
+
     public function test_a_student_sees_only_their_own_classes_sessions(): void
     {
         $this->schedule(['class_id' => $this->jss1->id, 'title' => 'JSS 1 Maths']);

@@ -376,7 +376,9 @@ admission number, class) stays school-wide.
 | Session bootstrap | `GET /user` |
 | Register push device | `POST /notifications/devices` |
 | Message threads | `GET /messages/threads`, `GET /messages/threads/{id}`, `POST /messages/send` |
-| Timetable | `GET /timetable/view` |
+| Timetable | Student: `GET /me/timetable` (own class week, with venues). Teacher: `GET /timetable/view?mine=1`. Admin: `GET /timetable/view` |
+| My library books | `GET /library/me`, `POST /library/loans/{id}/renew`, `GET /library/books`, `POST /library/reservations`, `DELETE /library/reservations/{id}` |
+| My ID card | `GET /me/id-card` — **never cached**, so a card reported lost reads as lost at once |
 | Subjects | `GET /subjects`, `GET /classes/{classId}/subjects` |
 
 ### Admin
@@ -416,6 +418,10 @@ admission number, class) stays school-wide.
 | Behaviour report | `POST /students/behavior-report` |
 | Comment bank | `GET /teacher/comment-bank` |
 | Leave request | `POST /hr/leave`, `GET /hr/leave`, `POST /hr/leave/{id}/cancel` |
+| Lesson venue (tap a lesson in My lessons) | `GET /timetable/entries/{id}/free-venues`, `PUT /timetable/entries/{id}/venue`, `POST /timetable/entries/{id}/venue-changes` |
+| Library desk (camera scan) | `GET /library/borrowers`, `POST /library/loans`, `POST /library/returns`, `GET /library/loans?status=overdue` |
+| Virtual class attendance | `GET /live-classes?recent=1`, `GET /live-classes/{id}/attendance`, `POST /live-classes/{id}/provider-attendance`, `POST /live-classes/{id}/provider-attendance/match`, `PUT /live-classes/{id}/attendance/{studentId}` |
+| My payslips (also admins) | `GET /me/payslips` |
 | CBT authoring (light) | `GET /cbt/exams`, `POST /cbt/exams`, `POST /cbt/exams/{id}/publish`, `GET /cbt/exams/{id}/results` |
 | AI Studio | `POST /ai/lesson-plan`, `POST /ai/exam-generation`, `POST /ai/homework-ideas`, `POST /ai/translate` |
 
@@ -435,6 +441,9 @@ admission number, class) stays school-wide.
 | AI tutor | `POST /ai/tutor-chat`, `GET /ai/tutor/conversations`, `GET /ai/tutor/conversations/{id}`, `GET /ai/tutor/mastery` |
 | Portfolio | `GET /students/{id}/portfolio` |
 | Gamification | `GET /gamification/profile/{studentId?}`, `GET /gamification/leaderboard`, `POST /gamification/activity` |
+| Today's lessons (Home) | `GET /me/dashboard` — periods with venue and cover teacher |
+| Virtual classes and materials (Learn) | `GET /me/learning`, `POST /live-classes/{id}/join`, `POST /live-classes/{id}/heartbeat`, `GET /learning-materials/{id}/link` (ten-minute signed URL opened in the phone's own viewer; the token never leaves secure storage) |
+| Hostel (boarders) | `GET /me/hostel` |
 
 ### Parent
 
@@ -452,6 +461,8 @@ admission number, class) stays school-wide.
 | My PINs | `GET /result-checker/my-pins` |
 | Pickup authorisation | `POST /parent/pickup-authorization` |
 | Consent | `POST /compliance/parental-consent`, `POST /compliance/parental-consent/{id}/withdraw` |
+| Child → Learning | `GET /parent/learning?student_id=` |
+| Child → More | `GET /library/children/{studentId}`, `GET /parent/hostel`, `GET /parent/id-cards` (a 403/404 hides the section: the school does not use it) |
 
 ## B5. Attendance — hardware-free, offline-first
 
