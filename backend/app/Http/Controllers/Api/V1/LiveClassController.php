@@ -107,9 +107,62 @@ class LiveClassController extends Controller
             'passcode' => 'nullable|string|max:255',
             'scheduled_for' => 'required|date',
             'duration_minutes' => 'required|integer|min:5|max:480',
+            'objectives' => 'nullable|string|max:4000',
+            'lesson_plan_id' => ['nullable', Rule::exists('lesson_plans', 'id')->where('school_id', $schoolId)],
+            'recording_enabled' => 'nullable|boolean',
+            // Weekly on the same weekday and time, up to this date (§3.1).
+            'repeat_weekly_until' => 'nullable|date|after:scheduled_for|before:+6 months',
+            'material_ids' => 'nullable|array|max:20',
+            'material_ids.*' => ['integer', Rule::exists('learning_materials', 'id')->where('school_id', $schoolId)],
         ]);
 
+        $lms = app(\App\Services\Lms\LmsService::class);
+
+        // A teacher schedules for the classes they teach (§18.3).
+        if ($request->user()->userProfile?->role === 'teacher' && ! empty($validated['class_id'])
+            && ! $lms->teachesClass($request->user(), (int) $validated['class_id'], isset($validated['arm_id']) ? (int) $validated['arm_id'] : null)) {
+            return response()->json(['message' => 'You can only schedule virtual classes for classes you teach.'], 403);
+        }
+
+        // Recording stays off until the school has a policy (§16).
+        if (($validated['recording_enabled'] ?? false) && ! \App\Models\LmsSetting::for($schoolId)->recording_allowed) {
+            return response()->json(['message' => 'This school has not allowed lesson recording.', 'errors' => ['recording_enabled' => ['Recording is not allowed by school policy.']]], 422);
+        }
+
+        $dates = [\Illuminate\Support\Carbon::parse($validated['scheduled_for'])];
+        if (! empty($validated['repeat_weekly_until'])) {
+            $until = \Illuminate\Support\Carbon::parse($validated['repeat_weekly_until'])->endOfDay();
+            while (($next = end($dates)->copy()->addWeek())->lte($until)) {
+                $dates[] = $next;
+            }
+        }
+        $seriesId = count($dates) > 1 ? (string) \Illuminate\Support\Str::uuid() : null;
+
+        foreach (array_slice($dates, 1) as $date) {
+            $this->createSession($request, $schoolId, $validated, $date, $seriesId);
+        }
+        $session = $this->createSession($request, $schoolId, $validated, $dates[0], $seriesId);
+
+        $students = $lms->studentsOf($schoolId, $session->class_id, $session->arm_id);
+        $when = $session->scheduled_for->format('D j M, g:ia');
+        \App\Support\InAppNotifier::send($schoolId, $students->pluck('user_id')->map(fn ($id) => (int) $id)->all(), 'lms', 'Virtual class scheduled', "{$session->title}: {$when}".($seriesId ? ', weekly' : '').'.');
+        \App\Support\InAppNotifier::send($schoolId, $lms->guardianUserIds($students->pluck('id')->all()), 'lms', 'Virtual class scheduled', "{$session->title} for your child: {$when}".($seriesId ? ', weekly' : '').'.');
+
+        return response()->json([
+            'message' => count($dates) > 1 ? 'Scheduled '.count($dates).' weekly sessions' : 'Virtual class scheduled',
+            'sessions' => count($dates),
+            'data' => $this->present($session->fresh(['teacher', 'schoolClass', 'arm', 'subject']), $request->user()->userProfile?->role),
+        ], 201);
+    }
+
+    private function createSession(Request $request, int $schoolId, array $validated, \Illuminate\Support\Carbon $date, ?string $seriesId): LiveClass
+    {
         $session = LiveClass::create([
+            'scheduled_for' => $date,
+            'series_id' => $seriesId,
+            'objectives' => $validated['objectives'] ?? null,
+            'lesson_plan_id' => $validated['lesson_plan_id'] ?? null,
+            'recording_enabled' => (bool) ($validated['recording_enabled'] ?? false),
             'school_id' => $schoolId,
             'class_id' => $validated['class_id'] ?? null,
             'arm_id' => $validated['arm_id'] ?? null,
@@ -123,15 +176,19 @@ class LiveClassController extends Controller
             'meeting_url' => $validated['meeting_url'],
             'meeting_id' => $validated['meeting_id'] ?? null,
             'passcode' => $validated['passcode'] ?? null,
-            'scheduled_for' => $validated['scheduled_for'],
             'duration_minutes' => $validated['duration_minutes'],
             'status' => 'scheduled',
         ]);
 
-        return response()->json([
-            'message' => 'Virtual class scheduled',
-            'data' => $this->present($session->fresh(['teacher', 'schoolClass', 'arm', 'subject']), $request->user()->userProfile?->role),
-        ], 201);
+        // Materials the teacher attaches become visible to the class through it.
+        $lms = app(\App\Services\Lms\LmsService::class);
+        foreach (\App\Models\LearningMaterial::whereIn('id', $validated['material_ids'] ?? [])->get() as $m) {
+            if ((int) $m->uploaded_by === $request->user()->id || $lms->isAdmin($request->user())) {
+                \App\Models\LearningMaterialAccess::create(['school_id' => $schoolId, 'material_id' => $m->id, 'target_type' => 'live_class', 'live_class_id' => $session->id]);
+            }
+        }
+
+        return $session;
     }
 
     public function update(Request $request, int $id)
@@ -214,6 +271,13 @@ class LiveClassController extends Controller
             'meeting_url' => $revealJoinDetails ? $session->meeting_url : null,
             'meeting_id' => $revealJoinDetails ? $session->meeting_id : null,
             'passcode' => $revealJoinDetails ? $session->passcode : null,
+            'objectives' => $session->objectives,
+            'lesson_plan_id' => $session->lesson_plan_id,
+            'series_id' => $session->series_id,
+            'recording_enabled' => (bool) $session->recording_enabled,
+            // Families are told before a recorded lesson, not after (§16).
+            'recording_notice' => $session->recording_enabled ? \App\Models\LmsSetting::for((int) $session->school_id)->recording_notice : null,
+            'cancel_reason' => $session->cancel_reason,
         ];
     }
 }

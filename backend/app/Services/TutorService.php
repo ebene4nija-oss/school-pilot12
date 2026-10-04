@@ -164,7 +164,7 @@ class TutorService
         $lines[] = 'Class: ' . ($student->currentClass?->name ?? 'unknown');
 
         $homework = Homework::where('school_id', $student->school_id)
-            ->where('class_id', $student->class_id)
+            ->setFor($student)
             ->where('due_date', '>=', now()->subWeek()->toDateString())
             ->with('subject')
             ->orderBy('due_date')

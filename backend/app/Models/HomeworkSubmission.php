@@ -25,12 +25,19 @@ class HomeworkSubmission extends Model
         'graded_by',
         'graded_at',
         'status',
+        'resubmissions',
+        'returned_at',
+        'return_note',
+        'submitted_by',
+        'parent_assisted',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'graded_at' => 'datetime',
         'is_late' => 'boolean',
+        'returned_at' => 'datetime',
+        'parent_assisted' => 'boolean',
         'marks_awarded' => 'decimal:2',
         'marks_available' => 'decimal:2',
     ];

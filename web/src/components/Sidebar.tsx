@@ -22,7 +22,7 @@ import { fetchApi } from '@/lib/api';
  * link is a courtesy and not a control.
  */
 
-type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent';
+export type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent';
 
 type Item = {
   href: string;
@@ -101,6 +101,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/report-entries', icon: '⭐', label: 'Ratings & comments', roles: ['school_admin', 'teacher'] },
       { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'], module: 'cbt' },
       { href: '/cbt-oversight', icon: '🛰️', label: 'CBT monitor & regrade', roles: ['school_admin', 'teacher'], module: 'cbt' },
+      { href: '/learning', icon: '📖', label: 'Learning', roles: ['school_admin', 'teacher', 'student', 'parent'] },
       { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'live_classes' },
     ],
   },
@@ -135,7 +136,7 @@ interface Me {
 }
 
 /** The role cookie is set non-httpOnly on purpose, for exactly this. */
-function roleFromCookie(): Role | null {
+export function roleFromCookie(): Role | null {
   if (typeof document === 'undefined') return null;
 
   const match = document.cookie.match(/(?:^|;\s*)sp_role=([^;]+)/);

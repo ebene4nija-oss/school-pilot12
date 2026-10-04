@@ -387,7 +387,7 @@ class AnalyticsController extends Controller
             ->get(['subject_name', 'slot_name', 'start_time', 'end_time', 'is_break']);
 
         $homework = Homework::where('school_id', $schoolId)
-            ->where('class_id', $student->class_id)
+            ->setFor($student)
             ->where('due_date', '>=', now()->toDateString())
             ->with('subject:id,name')
             ->orderBy('due_date')

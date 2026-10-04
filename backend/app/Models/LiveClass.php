@@ -33,6 +33,11 @@ class LiveClass extends Model
         'status',
         'started_at',
         'ended_at',
+        'lesson_plan_id',
+        'objectives',
+        'series_id',
+        'recording_enabled',
+        'cancel_reason',
     ];
 
     protected $casts = [
@@ -40,6 +45,7 @@ class LiveClass extends Model
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
         'duration_minutes' => 'integer',
+        'recording_enabled' => 'boolean',
     ];
 
     public function teacher()

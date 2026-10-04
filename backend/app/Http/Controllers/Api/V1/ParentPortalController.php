@@ -144,7 +144,7 @@ class ParentPortalController extends Controller
 
         // 1. Homework & Assignments
         $homework = Homework::where('school_id', $schoolId)
-            ->where('class_id', $student->class_id)
+            ->setFor($student)
             ->where('due_date', '>=', now()->toDateString())
             ->with(['subject:id,name', 'teacher:id,name'])
             ->orderBy('due_date', 'asc')
@@ -250,12 +250,25 @@ class ParentPortalController extends Controller
             'title'      => 'required|string|max:255',
             'description'=> 'required|string',
             'due_date'   => 'required|date',
+            // TASK 14 §6.1; all optional so existing clients keep working.
+            'arm_id' => ['nullable', \Illuminate\Validation\Rule::exists('arms', 'id')->where('class_id', $request->input('class_id'))],
+            'max_score' => 'nullable|numeric|min:1|max:1000',
+            'submission_type' => 'nullable|in:text,file,text_or_file',
+            'allow_late' => 'nullable|boolean',
+            'allow_parent_assist' => 'nullable|boolean',
+            'draft' => 'nullable|boolean',
+            'lesson_plan_id' => ['nullable', \Illuminate\Validation\Rule::exists('lesson_plans', 'id')->where('school_id', $schoolId)],
+            'student_ids' => 'nullable|array|max:200',
+            'student_ids.*' => [\Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)->where('class_id', $request->input('class_id'))],
+            'material_ids' => 'nullable|array|max:20',
+            'material_ids.*' => [\Illuminate\Validation\Rule::exists('learning_materials', 'id')->where('school_id', $schoolId)],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $draft = $request->boolean('draft');
         $homework = Homework::create([
             'school_id' => $schoolId,
             'class_id' => $request->class_id,
@@ -264,12 +277,52 @@ class ParentPortalController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'due_date' => $request->due_date,
+            'arm_id' => $request->input('arm_id'),
+            'max_score' => $request->input('max_score'),
+            'submission_type' => $request->input('submission_type', 'text'),
+            'allow_late' => $request->boolean('allow_late', true),
+            'allow_parent_assist' => $request->boolean('allow_parent_assist'),
+            'lesson_plan_id' => $request->input('lesson_plan_id'),
+            'status' => $draft ? 'draft' : 'published',
+            'published_at' => $draft ? null : now(),
         ]);
 
+        foreach (array_unique($request->input('student_ids', [])) as $studentId) {
+            \Illuminate\Support\Facades\DB::table('homework_targets')->insert(['homework_id' => $homework->id, 'student_id' => $studentId]);
+        }
+        foreach (array_unique($request->input('material_ids', [])) as $materialId) {
+            \Illuminate\Support\Facades\DB::table('homework_materials')->insert(['homework_id' => $homework->id, 'material_id' => $materialId]);
+        }
+
+        if (! $draft) {
+            $this->announceHomework($homework);
+        }
+
         return response()->json([
-            'message' => 'Homework assigned successfully',
+            'message' => $draft ? 'Saved as a draft.' : 'Homework assigned successfully',
             'homework' => $homework->load(['subject', 'schoolClass']),
         ], 201);
+    }
+
+    /** Publish a draft assignment. */
+    public function publishHomework(Request $request, $homeworkId)
+    {
+        $homework = Homework::where('school_id', $this->schoolId())->where('status', 'draft')->findOrFail($homeworkId);
+        abort_unless((int) $homework->teacher_id === $request->user()->id || in_array($request->user()->userProfile?->role, ['school_admin', 'super_admin'], true), 403);
+        $homework->update(['status' => 'published', 'published_at' => now()]);
+        $this->announceHomework($homework);
+
+        return response()->json(['message' => 'Published. Students have been told.', 'homework' => $homework->fresh()]);
+    }
+
+    /** Students are told; so are parents in sections where the school involves them closely. */
+    private function announceHomework(Homework $homework): void
+    {
+        $lms = app(\App\Services\Lms\LmsService::class);
+        $students = $lms->studentsOf((int) $homework->school_id, (int) $homework->class_id, $homework->arm_id, $homework->targetStudentIds());
+        $due = $homework->due_date?->format('D j M');
+        \App\Support\InAppNotifier::send((int) $homework->school_id, $students->pluck('user_id')->map(fn ($id) => (int) $id)->all(), 'lms', 'New assignment', "{$homework->title}, due {$due}.");
+        \App\Support\InAppNotifier::send((int) $homework->school_id, $lms->guardianUserIds($students->pluck('id')->all()), 'lms', 'New assignment for your child', "{$homework->title}, due {$due}.");
     }
 
     /**

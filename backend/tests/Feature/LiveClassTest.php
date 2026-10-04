@@ -49,6 +49,10 @@ class LiveClassTest extends TestCase
 
         $this->jss1 = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'JSS 1', 'level' => 'JSS']);
         $this->jss2 = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'JSS 2', 'level' => 'JSS']);
+
+        // Mr Chidi teaches JSS 1 Mathematics; he does not teach JSS 2.
+        $maths = \App\Models\Subject::create(['school_id' => $this->school->id, 'name' => 'Mathematics', 'code' => 'MTH']);
+        \Illuminate\Support\Facades\DB::table('teacher_subjects')->insert(['school_id' => $this->school->id, 'teacher_id' => $this->teacher->id, 'subject_id' => $maths->id, 'class_id' => $this->jss1->id]);
     }
 
     private function makeUser(string $name, string $email, string $role): User
@@ -108,6 +112,20 @@ class LiveClassTest extends TestCase
             ->assertJsonPath('data.status', 'scheduled')
             // Defaults to the teacher scheduling it.
             ->assertJsonPath('data.teacher', 'Mr Chidi');
+    }
+
+    public function test_a_teacher_cannot_schedule_for_a_class_they_do_not_teach(): void
+    {
+        $this->actingAs($this->teacher, 'sanctum')
+            ->postJson('/api/v1/live-classes', [
+                'title' => 'Not my class',
+                'class_id' => $this->jss2->id,
+                'provider' => 'zoom',
+                'meeting_url' => 'https://zoom.us/j/1',
+                'scheduled_for' => now()->addDay()->toIso8601String(),
+                'duration_minutes' => 45,
+            ])
+            ->assertForbidden();
     }
 
     public function test_a_joining_link_must_be_a_url(): void

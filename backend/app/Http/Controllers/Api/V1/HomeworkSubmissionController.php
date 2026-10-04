@@ -61,7 +61,7 @@ class HomeworkSubmissionController extends Controller
                     return response()->json(['error' => 'Student record not found.'], 403);
                 }
 
-                $query->where('class_id', $student->class_id);
+                $query->setFor($student);
                 break;
 
             case 'parent':
@@ -74,7 +74,7 @@ class HomeworkSubmissionController extends Controller
                     ]);
                 }
 
-                $query->where('class_id', $student->class_id);
+                $query->setFor($student);
                 break;
 
             case 'teacher':
@@ -94,6 +94,11 @@ class HomeworkSubmissionController extends Controller
                 if ($request->filled('class_id')) {
                     $query->where('class_id', (int) $request->input('class_id'));
                 }
+        }
+
+        // A draft is the setting teacher's alone until published.
+        if ($role === 'teacher') {
+            $query->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'published')->orWhere('teacher_id', $user->id));
         }
 
         if ($request->filled('subject_id')) {
@@ -138,6 +143,13 @@ class HomeworkSubmissionController extends Controller
                 'class_name' => $homework->schoolClass?->name,
                 'subject' => $homework->subject?->name,
                 'teacher' => $homework->teacher?->name,
+                'max_score' => $homework->max_score !== null ? (float) $homework->max_score : null,
+                'submission_type' => $homework->submission_type ?? 'text',
+                'allow_late' => $homework->allow_late ?? true,
+                'publish_status' => $homework->status ?? 'published',
+                'materials' => DB::table('homework_materials')->join('learning_materials', 'learning_materials.id', '=', 'homework_materials.material_id')
+                    ->where('homework_materials.homework_id', $homework->id)->where('learning_materials.status', 'published')
+                    ->get(['learning_materials.id', 'learning_materials.title', 'learning_materials.type']),
             ];
 
             if (! $student) {
@@ -166,6 +178,8 @@ class HomeworkSubmissionController extends Controller
                     ? (float) $submission->marks_available
                     : null,
                 'teacher_feedback' => $submission?->teacher_feedback,
+                'return_note' => $submission?->status === 'returned' ? $submission->return_note : null,
+                'resubmissions' => (int) ($submission->resubmissions ?? 0),
             ];
         });
 
@@ -227,15 +241,47 @@ class HomeworkSubmissionController extends Controller
             return response()->json(['error' => 'Only enrolled students can submit homework.'], 403);
         }
 
-        $validated = $request->validate([
-            'body' => 'required|string|max:20000',
-        ]);
-
         $homework = Homework::where('school_id', $student->school_id)->findOrFail($homeworkId);
 
-        // Class binding: an assignment set for JSS1 is not submittable by SS3.
-        if ((int) $homework->class_id !== (int) $student->class_id) {
+        // Class binding: an assignment set for JSS1 is not submittable by SS3,
+        // nor one set for named students by anybody else.
+        if (! $homework->isFor($student) || ($homework->status ?? 'published') !== 'published') {
             return response()->json(['error' => 'This homework was not set for your class.'], 403);
+        }
+
+        return $this->submitFor($request, $homework, $student, false);
+    }
+
+    /**
+     * A parent submitting for a young child (§6.2), only where the teacher
+     * allowed it and the school permits it for the child's section.
+     */
+    public function storeForChild(Request $request, $homeworkId)
+    {
+        $student = Student::where('id', (int) $request->input('student_id'))->first();
+        abort_unless($student && $student->isGuardedBy($request->user()), 404);
+
+        $homework = Homework::where('school_id', $student->school_id)->findOrFail($homeworkId);
+        abort_unless($homework->isFor($student) && ($homework->status ?? 'published') === 'published', 404);
+
+        $lms = app(\App\Services\Lms\LmsService::class);
+        $allowedSections = \App\Models\LmsSetting::for((int) $student->school_id)->parent_assist_sections ?? [];
+        abort_unless($homework->allow_parent_assist && in_array($lms->sectionOfClass($student->class_id), $allowedSections, true), 403, 'This assignment is for your child to submit.');
+
+        return $this->submitFor($request, $homework, $student, true);
+    }
+
+    private function submitFor(Request $request, Homework $homework, Student $student, bool $byParent)
+    {
+        $type = $homework->submission_type ?? 'text';
+        $maxKb = \App\Models\LmsSetting::for((int) $student->school_id)->max_upload_mb * 1024;
+        $validated = $request->validate([
+            'body' => ($type === 'text' ? 'required' : 'nullable').'|string|max:20000',
+            'files' => ($type === 'file' ? 'required' : 'nullable').'|array|max:5',
+            'files.*' => "file|max:{$maxKb}|mimes:pdf,doc,docx,odt,rtf,txt,jpg,jpeg,png,webp,heic,ppt,pptx,mp3,m4a,mp4",
+        ]);
+        if ($type === 'text_or_file' && empty($validated['body']) && empty($validated['files'])) {
+            return response()->json(['message' => 'Type an answer or attach a file.', 'errors' => ['body' => ['Type an answer or attach a file.']]], 422);
         }
 
         $existing = HomeworkSubmission::where('homework_id', $homework->id)
@@ -249,29 +295,93 @@ class HomeworkSubmissionController extends Controller
         }
 
         $now = now();
+        $pastDue = $homework->due_date && $now->gt($homework->due_date->endOfDay());
+
+        // Work returned for correction may always come back; otherwise the
+        // teacher's late policy decides.
+        if (! $existing && $pastDue && $homework->allow_late === false) {
+            return response()->json(['error' => 'The deadline has passed and this assignment does not accept late work.'], 409);
+        }
 
         // Lateness is judged once, at submission. Re-reading the due date at
         // display time would let a teacher who extends a deadline retroactively
         // clear (or create) late marks.
         $isLate = $existing
             ? $existing->is_late
-            : ($homework->due_date && $now->gt($homework->due_date->endOfDay()));
+            : (bool) $pastDue;
 
-        $submission = HomeworkSubmission::updateOrCreate(
-            ['homework_id' => $homework->id, 'student_id' => $student->id],
-            [
-                'school_id' => $student->school_id,
-                'body' => $validated['body'],
-                'submitted_at' => $now,
-                'is_late' => $isLate,
-                'status' => 'submitted',
-            ]
-        );
+        $submission = DB::transaction(function () use ($homework, $student, $validated, $now, $isLate, $existing, $request, $byParent) {
+            $submission = HomeworkSubmission::updateOrCreate(
+                ['homework_id' => $homework->id, 'student_id' => $student->id],
+                [
+                    'school_id' => $student->school_id,
+                    'body' => $validated['body'] ?? $existing?->body,
+                    'submitted_at' => $now,
+                    'is_late' => $isLate,
+                    'status' => 'submitted',
+                    'resubmissions' => $existing?->status === 'returned' ? $existing->resubmissions + 1 : ($existing->resubmissions ?? 0),
+                    'submitted_by' => $request->user()->id,
+                    'parent_assisted' => $byParent,
+                ]
+            );
+
+            if (! empty($validated['files'])) {
+                // A new set of files replaces the last; old files are removed.
+                foreach (\App\Models\HomeworkSubmissionFile::where('submission_id', $submission->id)->get() as $old) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($old->path);
+                    $old->delete();
+                }
+                foreach ($validated['files'] as $file) {
+                    \App\Models\HomeworkSubmissionFile::create([
+                        'school_id' => $student->school_id, 'submission_id' => $submission->id,
+                        'path' => $file->storeAs("lms/submissions/{$student->school_id}", \Illuminate\Support\Str::uuid().'.'.strtolower($file->getClientOriginalExtension()), 'local'),
+                        'name' => $file->getClientOriginalName(), 'mime' => $file->getMimeType(), 'size_bytes' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            return $submission;
+        });
 
         return response()->json([
             'message' => $isLate ? 'Submitted after the due date.' : 'Submitted.',
-            'submission' => $submission,
+            'submission' => $submission->fresh(),
+            'files' => \App\Models\HomeworkSubmissionFile::where('submission_id', $submission->id)->get(['id', 'name', 'size_bytes']),
         ], $existing ? 200 : 201);
+    }
+
+    /** Send work back for correction (§6.3); the student may resubmit. */
+    public function returnForCorrection(Request $request, $submissionId)
+    {
+        $schoolId = $this->schoolId();
+        $submission = HomeworkSubmission::where('school_id', $schoolId)->findOrFail($submissionId);
+        $homework = Homework::where('school_id', $schoolId)->findOrFail($submission->homework_id);
+        $this->authorizeMarking($request, $homework);
+        $validated = $request->validate(['note' => 'required|string|min:3|max:2000']);
+
+        $submission->update(['status' => 'returned', 'returned_at' => now(), 'return_note' => $validated['note'], 'marks_awarded' => null, 'graded_at' => null]);
+        $userId = Student::whereKey($submission->student_id)->value('user_id');
+        \App\Support\InAppNotifier::send($schoolId, [(int) $userId], 'lms', 'Homework returned for correction', "{$homework->title}: {$validated['note']}");
+
+        return response()->json(['message' => 'Returned for correction.', 'submission' => $submission->fresh()]);
+    }
+
+    /** A submitted file: the student, their guardians, and the marking teacher. */
+    public function file(Request $request, $fileId)
+    {
+        $file = \App\Models\HomeworkSubmissionFile::where('school_id', $this->schoolId())->findOrFail($fileId);
+        $submission = HomeworkSubmission::findOrFail($file->submission_id);
+        $student = Student::findOrFail($submission->student_id);
+        $user = $request->user();
+        $role = $user->userProfile?->role;
+
+        $allowed = (int) $student->user_id === $user->id
+            || ($role === 'parent' && $student->isGuardedBy($user))
+            || in_array($role, ['school_admin', 'super_admin'], true)
+            || ($role === 'teacher' && (int) Homework::whereKey($submission->homework_id)->value('teacher_id') === $user->id);
+        abort_unless($allowed, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($file->path, $file->name);
     }
 
     /** A student's own submission for one assignment. */
@@ -307,8 +417,11 @@ class HomeworkSubmissionController extends Controller
 
         $this->authorizeMarking($request, $homework);
 
+        $targets = $homework->targetStudentIds();
         $students = Student::where('school_id', $schoolId)
             ->where('class_id', $homework->class_id)
+            ->when($homework->arm_id, fn ($q) => $q->where('arm_id', $homework->arm_id))
+            ->when($targets !== [], fn ($q) => $q->whereIn('id', $targets))
             ->with('user:id,name')
             ->orderBy('admission_number')
             ->get();
@@ -331,6 +444,9 @@ class HomeworkSubmissionController extends Controller
                 'marks_awarded' => $submission?->marks_awarded !== null ? (float) $submission->marks_awarded : null,
                 'submission_id' => $submission?->id,
                 'body' => $submission?->body,
+                'parent_assisted' => (bool) $submission?->parent_assisted,
+                'resubmissions' => (int) ($submission->resubmissions ?? 0),
+                'files' => $submission ? \App\Models\HomeworkSubmissionFile::where('submission_id', $submission->id)->get(['id', 'name', 'size_bytes']) : [],
             ];
         });
 
@@ -363,7 +479,7 @@ class HomeworkSubmissionController extends Controller
             'teacher_feedback' => 'nullable|string|max:5000',
         ]);
 
-        $available = $validated['marks_available'] ?? $submission->marks_available ?? 10;
+        $available = $validated['marks_available'] ?? $submission->marks_available ?? ($homework->max_score !== null ? (float) $homework->max_score : 10);
 
         if ($validated['marks_awarded'] > $available) {
             return response()->json([
@@ -379,6 +495,9 @@ class HomeworkSubmissionController extends Controller
             'graded_at' => now(),
             'status' => 'graded',
         ]);
+
+        $userId = Student::whereKey($submission->student_id)->value('user_id');
+        \App\Support\InAppNotifier::send($schoolId, [(int) $userId], 'lms', 'Homework marked', "{$homework->title} has been marked.".(! empty($validated['teacher_feedback']) ? ' Your teacher left feedback.' : ''));
 
         return response()->json(['message' => 'Marked.', 'submission' => $submission->fresh()]);
     }

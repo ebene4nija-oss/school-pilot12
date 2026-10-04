@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { fetchApi } from '@/lib/api';
+import { errorText, fetchApi } from '@/lib/api';
+import { roleFromCookie } from '@/components/Sidebar';
 import {
   Badge,
   Button,
@@ -11,6 +12,8 @@ import {
   Field,
   Loading,
   PageShell,
+  Table,
+  Cell,
   inputClass,
 } from '@/components/Page';
 
@@ -45,7 +48,25 @@ interface Session {
   meeting_url: string | null;
   meeting_id: string | null;
   passcode: string | null;
+  objectives: string | null;
+  series_id: string | null;
+  recording_enabled: boolean;
+  recording_notice: string | null;
+  cancel_reason: string | null;
 }
+
+interface AttendanceRow {
+  student_id: number;
+  name: string | null;
+  minutes_connected: number;
+  joins: number;
+  rejoined: boolean;
+  status: 'present' | 'late' | 'partial' | 'absent';
+  corrected: boolean;
+  correction_reason: string | null;
+}
+
+const ATTENDANCE_TONE = { present: 'green', late: 'amber', partial: 'amber', absent: 'red' } as const;
 
 interface ClassOption {
   id: number;
@@ -92,6 +113,85 @@ export default function LiveClassPage() {
   const [passcode, setPasscode] = useState('');
   const [scheduledFor, setScheduledFor] = useState('');
   const [duration, setDuration] = useState('45');
+  const [objectives, setObjectives] = useState('');
+  const [repeatUntil, setRepeatUntil] = useState('');
+  const [role] = useState(roleFromCookie);
+  const staff = role === 'school_admin' || role === 'teacher' || role === 'super_admin';
+  const [attendance, setAttendance] = useState<{ id: number; title: string; rows: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } } | null>(null);
+  const [inClass, setInClass] = useState<{ id: number; notice: string | null } | null>(null);
+
+  /*
+   * Attendance is time in the lesson (TASK 14 §3.3): while the lesson page is
+   * open the browser pings once a minute, and closing it says so. Joining
+   * alone is not attendance.
+   */
+  useEffect(() => {
+    if (!inClass) return;
+    const ping = (leaving = false) =>
+      fetchApi(`/live-classes/${inClass.id}/heartbeat`, { method: 'POST', body: JSON.stringify({ leaving }) }).catch(() => undefined);
+    const timer = window.setInterval(() => ping(), 60_000);
+    const leave = () => {
+      navigator.sendBeacon?.(`/api/backend/live-classes/${inClass.id}/heartbeat`, new Blob([JSON.stringify({ leaving: true })], { type: 'application/json' }));
+    };
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('pagehide', leave);
+      ping(true);
+    };
+  }, [inClass]);
+
+  async function join(session: Session) {
+    setError(null);
+    // Open the tab inside the click, so pop-up blockers allow it.
+    const tab = window.open('', '_blank');
+    try {
+      const res = await fetchApi<{ meeting_url: string; recording_notice: string | null }>(`/live-classes/${session.id}/join`, { method: 'POST' });
+      if (tab) tab.location.href = res.meeting_url;
+      else window.location.assign(res.meeting_url);
+      setInClass({ id: session.id, notice: res.recording_notice });
+    } catch (err) {
+      tab?.close();
+      setError(errorText(err, 'Could not join the class.'));
+    }
+  }
+
+  async function openAttendance(id: number, title: string) {
+    try {
+      const res = await fetchApi<{ students: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } }>(`/live-classes/${id}/attendance`);
+      setAttendance({ id, title, rows: res.students, rules: res.rules });
+    } catch (err) {
+      setError(errorText(err, 'Could not load attendance.'));
+    }
+  }
+
+  async function correct(row: AttendanceRow, status: AttendanceRow['status']) {
+    if (!attendance) return;
+    const reason = window.prompt(`Why change ${row.name ?? 'this student'} to ${status}? (kept on the record)`);
+    if (!reason) return;
+    try {
+      await fetchApi(`/live-classes/${attendance.id}/attendance/${row.student_id}`, { method: 'PUT', body: JSON.stringify({ status, reason }) });
+      await openAttendance(attendance.id, attendance.title);
+    } catch (err) {
+      setError(errorText(err, 'Could not correct attendance.'));
+    }
+  }
+
+  async function cancel(session: Session) {
+    const reason = window.prompt('Reason for cancelling (students and parents will see it)?');
+    if (!reason) return;
+    const wholeSeries = session.series_id ? window.confirm('Cancel the rest of this weekly series too?') : false;
+    setBusy(true);
+    try {
+      const res = await fetchApi<{ message: string }>(`/live-classes/${session.id}/cancel`, { method: 'POST', body: JSON.stringify({ reason, whole_series: wholeSeries }) });
+      setNotice(res.message);
+      await load(onlyUpcoming);
+    } catch (err) {
+      setError(errorText(err, 'Could not cancel.'));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const load = useCallback(async (upcoming: boolean) => {
     const res = await fetchApi<{ data: Session[] }>(
@@ -144,10 +244,14 @@ export default function LiveClassPage() {
           // right one, since the teacher typed the time they mean locally.
           scheduled_for: new Date(scheduledFor).toISOString(),
           duration_minutes: Number(duration),
+          objectives: objectives.trim() || null,
+          repeat_weekly_until: repeatUntil || null,
         }),
       });
 
-      setNotice('Virtual class scheduled.');
+      setNotice(repeatUntil ? 'Weekly classes scheduled. Students and parents have been told.' : 'Virtual class scheduled. Students and parents have been told.');
+      setObjectives('');
+      setRepeatUntil('');
       setTitle('');
       setMeetingUrl('');
       setMeetingId('');
@@ -156,7 +260,7 @@ export default function LiveClassPage() {
       setShowForm(false);
       await load(onlyUpcoming);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That class could not be scheduled.');
+      setError(errorText(err, 'That class could not be scheduled.'));
     } finally {
       setBusy(false);
     }
@@ -198,9 +302,11 @@ export default function LiveClassPage() {
           >
             {onlyUpcoming ? 'Show all' : 'Upcoming only'}
           </Button>
-          <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
-            {showForm ? 'Cancel' : 'Schedule a class'}
-          </Button>
+          {staff && (
+            <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
+              {showForm ? 'Cancel' : 'Schedule a class'}
+            </Button>
+          )}
         </div>
       }
     >
@@ -210,6 +316,63 @@ export default function LiveClassPage() {
         <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}
         </p>
+      )}
+
+      {inClass && (
+        <p role="status" className="mb-6 rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
+          You are in class. Keep this page open while the lesson runs: your attendance is the time it stays open.
+          {inClass.notice && <span className="mt-1 block font-medium">Recording: {inClass.notice}</span>}
+          <button type="button" className="ml-2 underline" onClick={() => setInClass(null)}>
+            I have left the class
+          </button>
+        </p>
+      )}
+
+      {attendance && (
+        <Card
+          title={`Attendance · ${attendance.title}`}
+          description={`Present: at least ${attendance.rules.present_percent}% of the lesson. Late: joined more than ${attendance.rules.late_grace_minutes} minutes after the start. Time is counted from SchoolPilot's lesson page, so correct anyone whose connection failed.`}
+          className="mb-6"
+        >
+          <Table columns={['Student', 'Time', 'Status', 'Correct']}>
+            {attendance.rows.map((row) => (
+              <tr key={row.student_id}>
+                <Cell>{row.name}</Cell>
+                <Cell>
+                  {row.minutes_connected} min{row.rejoined ? ` · rejoined ${row.joins - 1}×` : ''}
+                </Cell>
+                <Cell>
+                  <Badge tone={ATTENDANCE_TONE[row.status]}>{row.status}</Badge>
+                  {row.corrected && (
+                    <span className="ml-1 text-xs text-ink-muted" title={row.correction_reason ?? ''}>
+                      corrected
+                    </span>
+                  )}
+                </Cell>
+                <Cell>
+                  <select
+                    className={inputClass}
+                    value=""
+                    onChange={(e) => e.target.value && correct(row, e.target.value as AttendanceRow['status'])}
+                    aria-label={`Correct ${row.name ?? 'student'}`}
+                  >
+                    <option value="">Change…</option>
+                    {(['present', 'late', 'partial', 'absent'] as const)
+                      .filter((st) => st !== row.status)
+                      .map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                  </select>
+                </Cell>
+              </tr>
+            ))}
+          </Table>
+          <Button className="mt-4" variant="secondary" onClick={() => setAttendance(null)}>
+            Close
+          </Button>
+        </Card>
       )}
 
       {showForm && (
@@ -331,6 +494,16 @@ export default function LiveClassPage() {
               />
             </Field>
 
+            <Field label="Repeat weekly until (optional)">
+              <input type="date" value={repeatUntil} onChange={(e) => setRepeatUntil(e.target.value)} className={inputClass} />
+            </Field>
+
+            <div className="sm:col-span-2">
+              <Field label="Learning objectives (optional)">
+                <textarea rows={2} value={objectives} onChange={(e) => setObjectives(e.target.value)} className={inputClass} />
+              </Field>
+            </div>
+
             <div className="sm:col-span-2">
               <Button type="submit" disabled={busy || !scheduledFor}>
                 {busy ? 'Saving…' : 'Schedule class'}
@@ -378,6 +551,18 @@ export default function LiveClassPage() {
                       <p className="mt-2 text-sm text-ink-muted">{session.description}</p>
                     )}
 
+                    {session.objectives && (
+                      <p className="mt-2 text-sm text-ink">
+                        <span className="font-medium">Objectives:</span> {session.objectives}
+                      </p>
+                    )}
+
+                    {session.cancel_reason && <p className="mt-2 text-sm text-negative">Cancelled: {session.cancel_reason}</p>}
+
+                    {session.recording_enabled && (
+                      <p className="mt-2 text-xs text-caution">This lesson is recorded. {session.recording_notice}</p>
+                    )}
+
                     {session.meeting_id && (
                       <p className="mt-2 text-xs text-ink-muted">
                         Meeting ID {session.meeting_id}
@@ -387,7 +572,9 @@ export default function LiveClassPage() {
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    {session.meeting_url ? (
+                    {!staff && session.is_joinable ? (
+                      <Button onClick={() => join(session)}>Join</Button>
+                    ) : session.meeting_url ? (
                       <a
                         href={session.meeting_url}
                         target="_blank"
@@ -402,18 +589,24 @@ export default function LiveClassPage() {
                       </span>
                     )}
 
-                    {session.status === 'scheduled' && (
+                    {staff && session.status === 'scheduled' && (
                       <div className="flex gap-2">
                         <Button variant="secondary" disabled={busy} onClick={() => setStatus(session, 'live')}>
                           Mark live
                         </Button>
-                        <Button variant="secondary" disabled={busy} onClick={() => setStatus(session, 'cancelled')}>
+                        <Button variant="secondary" disabled={busy} onClick={() => cancel(session)}>
                           Cancel
                         </Button>
                       </div>
                     )}
 
-                    {session.status === 'live' && (
+                    {staff && session.class && session.status !== 'cancelled' && (
+                      <Button variant="secondary" onClick={() => openAttendance(session.id, session.title)}>
+                        Attendance
+                      </Button>
+                    )}
+
+                    {staff && session.status === 'live' && (
                       <Button variant="secondary" disabled={busy} onClick={() => setStatus(session, 'ended')}>
                         End session
                       </Button>

@@ -75,3 +75,18 @@ Schedule::command('admissions:purge')
     ->dailyAt('03:00')
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * LMS reminders (TASK 14 §11): a virtual class about to start, and homework
+ * due tomorrow that has not been handed in. Each reminder is sent once (the
+ * service dedupes), so the run frequency only sets how early it arrives.
+ */
+Artisan::command('lms:remind', function () {
+    $sent = app(\App\Services\Lms\LmsService::class)->sendReminders();
+    $this->info("Reminded {$sent['classes']} class(es) and {$sent['deadlines']} student(s) with work due.");
+})->purpose('Send virtual-class and homework-deadline reminders');
+
+Schedule::command('lms:remind')
+    ->everyTenMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
