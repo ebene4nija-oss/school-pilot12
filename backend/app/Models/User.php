@@ -15,6 +15,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Account statuses that cannot sign in or use a token: suspended or
+     * archived by an admin, or "left" — a member of staff separated in HR.
+     */
+    public const BLOCKED_STATUSES = ['suspended', 'archived', 'left'];
+
+    /**
      * Always eager-load the tenant profile — it is accessed on every
      * authenticated request by BelongsToTenant scope, RequireRole
      * middleware, and controller getSchoolId() helpers.

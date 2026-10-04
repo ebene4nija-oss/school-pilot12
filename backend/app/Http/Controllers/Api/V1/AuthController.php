@@ -35,6 +35,19 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
+        /*
+         * A switched-off account does not sign in. Suspending a user used to
+         * delete their tokens only, so they could sign straight back in; a
+         * member of staff who has left the school must not.
+         */
+        if (in_array($user->status, User::BLOCKED_STATUSES, true)) {
+            return response()->json([
+                'message' => $user->status === 'left'
+                    ? 'This account belongs to someone who has left the school. Contact the school if this is wrong.'
+                    : 'This account has been switched off. Contact your school administrator.',
+            ], 403);
+        }
+
         $profile = $user->userProfile;
 
         /*

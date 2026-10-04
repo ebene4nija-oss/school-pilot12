@@ -26,6 +26,9 @@ type Member = {
   designation: string | null;
   qualification: string | null;
   employment_date: string | null;
+  staff_record_id: number | null;
+  left_on: string | null;
+  left_reason: string | null;
 };
 
 type ImportRow = { line: number; status: 'ready' | 'error'; errors: string[]; name: string | null; email: string | null; role: string | null };
@@ -57,13 +60,15 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
+  const [group, setGroup] = useState<'current' | 'left'>('current');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
-  const load = useCallback(async (term: string, roleFilter: string) => {
+  const load = useCallback(async (term: string, roleFilter: string, which: string) => {
     const params = new URLSearchParams();
+    if (which === 'left') params.set('group', 'left');
     if (term.trim()) params.set('search', term.trim());
     if (roleFilter) params.set('role', roleFilter);
 
@@ -83,9 +88,25 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => void load(search, role), search ? 250 : 0);
+    const timer = setTimeout(() => void load(search, role, group), search ? 250 : 0);
     return () => clearTimeout(timer);
-  }, [load, search, role, refreshKey]);
+  }, [load, search, role, group, refreshKey]);
+
+  /** Bring someone who left back: their sign-in works again. */
+  async function reengage(member: Member) {
+    if (!member.staff_record_id || !window.confirm(`Re-engage ${member.name}? They will be able to sign in again.`)) return;
+    setBusyId(member.user_id);
+    setError(null);
+    try {
+      await fetchApi(`/hr/staff/${member.staff_record_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'active', note: 'Re-engaged' }) });
+      setNotice(`${member.name} is back on the staff list and can sign in.`);
+      await load(search, role, group);
+    } catch (err) {
+      setError(errorText(err, 'That change could not be saved.'));
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   /**
    * A teacher sees the classes they teach. Some — an exams officer, a head of
@@ -118,7 +139,10 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
   }
 
   return (
-    <Card title="Staff directory" description="Everyone with a staff login at this school.">
+    <Card
+      title={group === 'left' ? 'Left members' : 'Staff directory'}
+      description={group === 'left' ? 'Staff who have left the school. Their records are kept; they cannot sign in.' : 'Everyone with a staff login at this school.'}
+    >
       <ErrorNote message={error} />
       {notice && (
         <p role="status" className="mb-4 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
@@ -127,6 +151,10 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select value={group} onChange={(e) => setGroup(e.target.value as 'current' | 'left')} aria-label="Which staff" className={`${inputClass} max-w-[11rem]`}>
+          <option value="current">Current staff</option>
+          <option value="left">Left members</option>
+        </select>
         <input
           type="search"
           value={search}
@@ -148,7 +176,26 @@ export function StaffList({ refreshKey }: { refreshKey: number }) {
       {loading ? (
         <Loading />
       ) : members.length === 0 ? (
-        <Empty>{search || role ? 'Nobody matches that.' : 'No staff added yet. Add one, or import a CSV.'}</Empty>
+        <Empty>{search || role ? 'Nobody matches that.' : group === 'left' ? 'Nobody has left.' : 'No staff added yet. Add one, or import a CSV.'}</Empty>
+      ) : group === 'left' ? (
+        <Table columns={['Name', 'Role', 'Staff ID', 'Left on', 'Reason', '']}>
+          {members.map((m) => (
+            <tr key={m.user_id}>
+              <Cell className="font-medium">{m.name}</Cell>
+              <Cell>{ROLE_LABEL[m.role] ?? m.role}</Cell>
+              <Cell className="font-mono text-xs">{m.staff_id ?? '—'}</Cell>
+              <Cell>{m.left_on ?? '—'}</Cell>
+              <Cell>{m.left_reason?.replace('_', ' ') ?? '—'}</Cell>
+              <Cell>
+                {m.staff_record_id && (
+                  <button disabled={busyId === m.user_id} onClick={() => reengage(m)} className="text-xs font-medium text-info underline hover:text-brand disabled:opacity-60">
+                    Re-engage
+                  </button>
+                )}
+              </Cell>
+            </tr>
+          ))}
+        </Table>
       ) : (
         <Table columns={['Name', 'Role', 'Sees students', 'Staff ID', 'Designation', 'Phone', 'Email']}>
           {members.map((m) => (

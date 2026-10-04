@@ -38,7 +38,7 @@ class HrPayrollController extends Controller
     public function setStatus(Request $request, int $id): JsonResponse
     {
         $schoolId = $this->schoolId();
-        $staff = Staff::where('school_id', $schoolId)->with('user:id,name')->findOrFail($id);
+        $staff = Staff::where('school_id', $schoolId)->with('user:id,name,status')->findOrFail($id);
         $data = $request->validate([
             'status' => 'required|in:active,on_leave,suspended,separated',
             'note' => 'nullable|string|max:255',
@@ -56,9 +56,17 @@ class HrPayrollController extends Controller
         DB::table('staff_status_events')->insert(['school_id' => $schoolId, 'staff_id' => $staff->id, 'from' => $from, 'to' => $data['status'], 'note' => $data['note'] ?? ($data['separation_reason'] ?? null), 'user_id' => $request->user()->id, 'created_at' => now()]);
 
         $handover = null;
+        if ($from === 'separated' && $data['status'] !== 'separated' && $staff->user?->status === 'left') {
+            // Re-engaged: they can sign in again.
+            $staff->user->forceFill(['status' => 'active'])->save();
+        }
         if ($data['status'] === 'separated' && $from !== 'separated') {
             // The card stops working; the duties are listed for reassignment rather than silently dropped.
             app(IdCardLifecycleService::class)->holderLeft('staff', $staff->id, $schoolId, $request->user()->id);
+            if ($staff->user) {
+                $staff->user->forceFill(['status' => 'left'])->save();
+                $staff->user->tokens()->delete();
+            }
             DB::table('hostel_staff_assignments')->where('user_id', $staff->user_id)->whereNull('ends_on')->update(['ends_on' => $data['separated_on'], 'updated_at' => now()]);
             $handover = [
                 'subjects_taught' => DB::table('teacher_subjects')->where('school_id', $schoolId)->where('teacher_id', $staff->user_id)->count(),
@@ -70,7 +78,7 @@ class HrPayrollController extends Controller
         AuditLog::create(['school_id' => $schoolId, 'user_id' => $request->user()->id, 'action' => 'hr.staff_status_changed', 'auditable_type' => Staff::class, 'auditable_id' => $staff->id, 'new_values' => ['from' => $from, 'to' => $data['status']]]);
 
         return response()->json(['staff' => $staff->fresh(), 'handover' => $handover, 'message' => $handover
-            ? "{$staff->user?->name} is recorded as separated. Their ID card is revoked. Reassign their classes and duties; their login stays as it is until you change it in Staff & leave."
+            ? "{$staff->user?->name} is recorded as separated. Their ID card is revoked. They have moved to Left members and can no longer sign in. Reassign their classes and duties."
             : 'Status updated.']);
     }
 

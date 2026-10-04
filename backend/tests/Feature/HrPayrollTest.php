@@ -162,6 +162,38 @@ class HrPayrollTest extends TestCase
         $this->assertSame('separated', $history[0]['to']);
     }
 
+    public function test_a_member_who_leaves_moves_to_left_members_and_cannot_sign_in(): void
+    {
+        $bello = $this->bello->user;
+        $token = $bello->createToken('t')->plainTextToken;
+        $this->as($this->admin)->putJson("{$this->host}/hr/staff/{$this->bello->id}/status", ['status' => 'separated', 'separated_on' => '2026-09-30', 'separation_reason' => 'resigned'])
+            ->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'can no longer sign in'));
+
+        $this->assertSame('left', $bello->fresh()->status);
+        $this->assertSame(0, $bello->tokens()->count());
+        $this->app['auth']->forgetGuards();
+        $this->postJson("{$this->host}/auth/login", ['email' => $bello->email, 'password' => 'password123'])->assertForbidden();
+        $this->withToken($token)->getJson("{$this->host}/me/payslips")->assertUnauthorized();
+
+        // Current staff and left members are listed apart.
+        $current = collect($this->as($this->admin)->getJson("{$this->host}/staff/directory")->json('data'))->pluck('name');
+        $this->assertNotContains('Mrs Bello', $current);
+        $left = $this->as($this->admin)->getJson("{$this->host}/staff/directory?group=left")->json('data');
+        $this->assertSame(['Mrs Bello', '2026-09-30', 'resigned'], [$left[0]['name'], $left[0]['left_on'], $left[0]['left_reason']]);
+
+        // Re-engaged: they can sign in again.
+        $this->as($this->admin)->putJson("{$this->host}/hr/staff/{$this->bello->id}/status", ['status' => 'active'])->assertOk();
+        $this->assertSame('active', $bello->fresh()->status);
+        $this->app['auth']->forgetGuards();
+        $this->postJson("{$this->host}/auth/login", ['email' => $bello->email, 'password' => 'password123'])->assertOk();
+    }
+
+    public function test_a_suspended_user_cannot_sign_back_in(): void
+    {
+        $this->chidi->user->update(['status' => 'suspended']);
+        $this->postJson("{$this->host}/auth/login", ['email' => $this->chidi->user->email, 'password' => 'password123'])->assertForbidden();
+    }
+
     public function test_leave_days_show_on_the_payslip_and_percentages_are_bounded(): void
     {
         $this->setUpPay();

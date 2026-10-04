@@ -41,6 +41,13 @@ class StaffDirectoryController extends Controller
             ->whereHas('userProfile', fn ($q) => $q->where('school_id', $schoolId)->whereIn('role', self::ROLES))
             ->with('userProfile:id,user_id,role,phone,sees_all_students');
 
+        // Left members are kept, with their records, in their own list.
+        if ($request->input('group') === 'left') {
+            $query->where('status', 'left');
+        } else {
+            $query->where(fn ($q) => $q->whereNull('status')->orWhere('status', '!=', 'left'));
+        }
+
         if ($request->filled('role') && in_array($request->role, self::ROLES, true)) {
             $query->whereHas('userProfile', fn ($q) => $q->where('role', $request->role));
         }
@@ -67,6 +74,10 @@ class StaffDirectoryController extends Controller
                 'designation' => $staff->get($u->id)?->designation,
                 'qualification' => $staff->get($u->id)?->qualification,
                 'employment_date' => $staff->get($u->id)?->employment_date?->toDateString(),
+                'staff_record_id' => $staff->get($u->id)?->id,
+                'account_status' => $u->status,
+                'left_on' => $staff->get($u->id)?->separated_on?->toDateString(),
+                'left_reason' => $staff->get($u->id)?->separation_reason,
             ]),
             'counts' => UserProfile::where('school_id', $schoolId)
                 ->whereIn('role', self::ROLES)

@@ -41,6 +41,12 @@ class BindTenantFromUser
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (in_array($request->user()?->status, \App\Models\User::BLOCKED_STATUSES, true)) {
+            $request->user()->currentAccessToken()?->delete();
+
+            return response()->json(['message' => 'This account has been switched off.'], 401);
+        }
+
         $profile = $request->user()?->userProfile;
 
         if ($profile) {
