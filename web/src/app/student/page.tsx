@@ -15,7 +15,7 @@ import LibraryBooks from '@/components/LibraryBooks';
 
 type Tab = 'today' | 'subjects' | 'results';
 
-interface Period { day: string; slot_name: string; start_time: string | null; end_time: string | null; subject_name: string | null; is_break: boolean; teacher: string | null }
+interface Period { day: string; slot_name: string; start_time: string | null; end_time: string | null; subject_name: string | null; is_break: boolean; teacher: string | null; venue?: string | null; cover_teacher?: string | null }
 interface Dashboard {
   student: { name: string; class: string | null; arm: string | null };
   term: { name: string } | null;
@@ -115,7 +115,7 @@ export default function StudentHome() {
                   {dash.today.periods.map((p, i) => (
                     <li key={i} className={p.is_break ? 'text-ink-muted' : ''}>
                       <span className="inline-block w-24 font-mono text-xs">{time(p.start_time)}–{time(p.end_time)}</span>
-                      {p.is_break ? 'Break' : p.subject_name}{p.teacher && <span className="text-ink-muted"> · {p.teacher}</span>}
+                      {p.is_break ? 'Break' : p.subject_name}{p.teacher && <span className="text-ink-muted"> · {p.cover_teacher ? `${p.cover_teacher} (cover)` : p.teacher}</span>}{!p.is_break && p.venue && <span className="text-ink-muted"> · {p.venue}</span>}
                     </li>
                   ))}
                 </ul>

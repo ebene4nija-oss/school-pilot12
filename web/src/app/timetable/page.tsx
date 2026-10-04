@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, Table, inputClass } from '@/components/Page';
 import TimetableCover from '@/components/TimetableCover';
+import TimetableVenues from '@/components/TimetableVenues';
 
 /**
  * Timetable builder (§7.5).
@@ -35,6 +36,7 @@ type Entry = {
   end_time?: string | null;
   subject_name?: string | null;
   teacher_name?: string | null;
+  venue_name?: string | null;
   is_break: boolean | number;
 };
 
@@ -288,6 +290,7 @@ export default function TimetablePage() {
                                   <td key={d} className="px-3 py-2">
                                     <div className="font-medium text-brand">{cell?.subject_name ?? '—'}</div>
                                     {cell?.teacher_name && <div className="text-xs text-ink-muted">{cell.teacher_name}</div>}
+                                    {cell?.venue_name && <div className="text-xs text-ink-faint">{cell.venue_name}</div>}
                                   </td>
                                 );
                               })}
@@ -303,6 +306,7 @@ export default function TimetablePage() {
           )}
         </div>
       )}
+      <TimetableVenues />
       <TimetableCover />
     </PageShell>
   );

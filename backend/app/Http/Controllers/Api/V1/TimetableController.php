@@ -151,12 +151,19 @@ class TimetableController extends Controller
         $version = TimetableVersion::where('school_id', $schoolId)->where('id', $id)->firstOrFail();
 
         // A teacher in two classes at once is caught here, not on Monday morning (TASK 07).
-        $clashes = app(\App\Services\Timetable\CoverService::class)->clashes($version->id);
+        // Two classes in one lab at once likewise (TASK 07 venues).
+        $clashes = array_merge(
+            app(\App\Services\Timetable\CoverService::class)->clashes($version->id),
+            app(\App\Services\Timetable\VenueService::class)->clashes($version->id, $schoolId),
+        );
         if ($clashes !== []) {
             $first = $clashes[0];
+            $what = ($first['type'] ?? 'teacher') === 'venue'
+                ? "{$first['venue']} has {$first['classes'][0]} and {$first['classes'][1]}"
+                : ($first['teacher'] ?? 'A teacher')." is in {$first['classes'][0]} and {$first['classes'][1]}";
 
             return response()->json([
-                'message' => count($clashes).' clash(es): '.($first['teacher'] ?? 'A teacher')." is in {$first['classes'][0]} and {$first['classes'][1]} on {$first['day']} ({$first['slot']}). Fix the version before publishing.",
+                'message' => count($clashes)." clash(es): {$what} on {$first['day']} ({$first['slot']}). Fix the version before publishing.",
                 'clashes' => $clashes,
             ], 422);
         }
@@ -180,7 +187,8 @@ class TimetableController extends Controller
 
         $versionId = $request->query('version_id');
         $classId = $request->query('class_id');
-        $teacherId = $request->query('teacher_id');
+        // `mine=1`: the signed-in teacher's own lessons.
+        $teacherId = $request->boolean('mine') ? $request->user()->id : $request->query('teacher_id');
 
         $query = TimetableEntry::whereHas('version', function ($q) use ($schoolId) {
             $q->where('school_id', $schoolId);
@@ -217,7 +225,10 @@ class TimetableController extends Controller
             ->whereIn('id', $entries->pluck('teacher_id')->filter()->unique())
             ->pluck('name', 'id');
 
-        $entries->each(function (TimetableEntry $entry) use ($classNames, $teacherNames) {
+        $venueNames = app(\App\Services\Timetable\VenueService::class)->namesFor($entries, $schoolId);
+
+        $entries->each(function (TimetableEntry $entry) use ($classNames, $teacherNames, $venueNames) {
+            $entry->setAttribute('venue_name', $venueNames[$entry->id] ?? null);
             $entry->setAttribute('class_name', $classNames[$entry->school_class_id] ?? null);
             $entry->setAttribute('teacher_name', $entry->teacher_id ? ($teacherNames[$entry->teacher_id] ?? null) : null);
         });

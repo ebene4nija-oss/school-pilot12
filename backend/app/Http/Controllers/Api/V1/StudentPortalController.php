@@ -233,6 +233,12 @@ class StudentPortalController extends Controller
     /** Today's cover teachers, where a lesson's own teacher is away. */
     private function withCover(Collection $periods, Student $student): Collection
     {
+        $venues = app(\App\Services\Timetable\VenueService::class)->namesFor(
+            DB::table('timetable_entries')->whereIn('id', $periods->pluck('entry_id'))->get(['id', 'school_class_id', 'venue_id']),
+            (int) $student->school_id, now()->toDateString(),
+        );
+        $periods = $periods->map(fn ($p) => (object) array_merge((array) $p, ['venue' => $venues[$p->entry_id] ?? null]));
+
         $cover = DB::table('timetable_substitutions as s')->join('users as u', 'u.id', '=', 's.substitute_teacher_id')
             ->where('s.school_id', $student->school_id)->whereDate('s.date', now()->toDateString())->where('s.status', 'covered')
             ->whereIn('s.entry_id', $periods->pluck('entry_id'))->pluck('u.name', 's.entry_id');

@@ -119,7 +119,7 @@ class CoverService
             for ($i = 0; $i < $list->count(); $i++) {
                 for ($j = $i + 1; $j < $list->count(); $j++) {
                     if ($this->overlaps($list[$i], $list[$j])) {
-                        $out[] = ['teacher' => $list[$i]->teacher, 'day' => $list[$i]->day_of_week, 'slot' => $list[$i]->slot_name, 'classes' => [$list[$i]->class, $list[$j]->class]];
+                        $out[] = ['type' => 'teacher', 'teacher' => $list[$i]->teacher, 'day' => $list[$i]->day_of_week, 'slot' => $list[$i]->slot_name, 'classes' => [$list[$i]->class, $list[$j]->class]];
                     }
                 }
             }
