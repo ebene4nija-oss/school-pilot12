@@ -90,3 +90,16 @@ Schedule::command('lms:remind')
     ->everyTenMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Library (doc §9.2): lapse uncollected reservation holds, remind readers of
+ * books due tomorrow, and send one overdue notice per loan.
+ */
+Artisan::command('library:daily', function () {
+    $r = app(\App\Services\Library\LibraryService::class)->dailyRun();
+    $this->info("Expired {$r['expired']} hold(s); {$r['due']} due reminder(s); {$r['overdue']} overdue notice(s).");
+})->purpose('Library holds, due reminders and overdue notices');
+
+Schedule::command('library:daily')
+    ->dailyAt('07:00')
+    ->withoutOverlapping();

@@ -16,6 +16,7 @@ import {
   Table,
   inputClass,
 } from '@/components/Page';
+import LibraryDesk from '@/components/LibraryDesk';
 
 /**
  * The library catalogue.
@@ -147,6 +148,10 @@ export default function LibraryPage() {
     }
   }
 
+  const reloadCatalogue = useCallback(() => {
+    load(search).catch(() => undefined);
+  }, [load, search]);
+
   const onLoan = books.reduce((sum, b) => sum + b.on_loan, 0);
   const overdue = books.reduce((sum, b) => sum + b.overdue, 0);
 
@@ -245,6 +250,8 @@ export default function LibraryPage() {
               </div>
             )}
           </Card>
+
+          <LibraryDesk onChange={reloadCatalogue} />
 
           <Card title="Catalogue">
             <form

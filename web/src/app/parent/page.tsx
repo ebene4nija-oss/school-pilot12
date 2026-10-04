@@ -6,6 +6,7 @@ import { Badge, Card, Empty, ErrorNote, Loading, PageShell } from '@/components/
 import ParentTransfers from '@/components/ParentTransfers';
 import ParentHostel from '@/components/ParentHostel';
 import ParentIdCards from '@/components/ParentIdCards';
+import { ParentLibrary } from '@/components/LibraryBooks';
 
 /**
  * A parent's page on the web portal: their children, each child's recent
@@ -183,6 +184,7 @@ export default function ParentHome() {
       )}
       <ParentHostel />
       <ParentIdCards />
+      <ParentLibrary kids={children} />
       <ParentTransfers />
     </PageShell>
   );

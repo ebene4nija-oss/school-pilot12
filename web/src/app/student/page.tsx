@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
+import LibraryBooks from '@/components/LibraryBooks';
 
 /**
  * The student's own portal: today, My Subjects and My Results (TASK 02, 06,
@@ -141,6 +142,7 @@ export default function StudentHome() {
               {dash.unread_notifications > 0 && <p className="mt-3 text-sm"><Badge tone="blue">{dash.unread_notifications} unread</Badge> notifications</p>}
             </Card>
           </div>
+          <LibraryBooks />
         </div>
       ))}
 
