@@ -16,6 +16,7 @@ import {
   inputClass,
 } from '@/components/Page';
 import PublishResults from './PublishResults';
+import CourseworkCa from './CourseworkCa';
 
 /**
  * Scores, the broadsheet, and the AI comment queue.
@@ -30,7 +31,7 @@ import PublishResults from './PublishResults';
  * field worth 40.
  */
 
-type Tab = 'broadsheet' | 'enter' | 'import' | 'comments' | 'publish';
+type Tab = 'broadsheet' | 'enter' | 'coursework' | 'import' | 'comments' | 'publish';
 
 interface CaPart {
   key: string;
@@ -382,6 +383,7 @@ export default function ResultsPage() {
               [
                 ['broadsheet', 'Broadsheet'],
                 ['enter', 'Enter a score'],
+                ['coursework', 'CA from coursework'],
                 ['import', 'Import scores'],
                 ['comments', 'Comments awaiting review'],
                 ...(canPublish ? [['publish', 'Report cards & release']] : []),
@@ -515,6 +517,8 @@ export default function ResultsPage() {
               </form>
             </Card>
           )}
+
+          {tab === 'coursework' && <CourseworkCa classId={classId} termId={termId} subjects={subjects} parts={parts} />}
 
           {tab === 'import' && (
             <Card

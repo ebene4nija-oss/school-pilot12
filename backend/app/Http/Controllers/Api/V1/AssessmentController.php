@@ -41,85 +41,19 @@ class AssessmentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $placement = \App\Models\Student::withoutGlobalScopes()
-            ->where('school_id', $schoolId)
-            ->with('currentClass:id,level_category')
-            ->find($request->input('student_id'));
-
-        // The scheme in force for this term and section (decision D1): a
-        // newer scheme never reaches a term already being marked.
-        $scheme = CaScheme::forTerm(
-            $schoolId,
-            (int) $request->input('term_id'),
-            \App\Support\Sections::levelGroupOf($placement?->currentClass?->level_category)
-        );
-
-        // Submitted, approved and published results are not edited in place.
-        if ($placement?->class_id) {
-            $blocked = app(\App\Services\Results\BroadsheetWorkflow::class)->editBlockReason(
+        // The same writer CA-from-coursework uses: the scheme in force, the
+        // broadsheet locks, grading and class positions.
+        try {
+            ['entry' => $entry, 'scheme' => $scheme] = app(\App\Services\Results\ScoreWriter::class)->write(
                 $schoolId,
                 (int) $request->input('term_id'),
-                (int) $placement->class_id,
                 (int) $request->input('student_id'),
                 (int) $request->input('subject_id'),
+                $request->only(['components', 'first_ca', 'second_ca', 'exam']),
+                $request->input('result_state'),
             );
-
-            if ($blocked !== null) {
-                return response()->json(['message' => $blocked, 'code' => 'result_locked'], 409);
-            }
-        }
-
-        $existing = ScoreEntry::where('school_id', $schoolId)
-            ->where('term_id', $request->input('term_id'))
-            ->where('student_id', $request->input('student_id'))
-            ->where('subject_id', $request->input('subject_id'))
-            ->value('component_scores');
-
-        // A mark per part of the school's scheme (any number of CAs), or the
-        // classic first_ca / second_ca / exam fields. See ScoreInput.
-        $marks = \App\Services\ScoreInput::resolve(
-            $scheme,
-            $request->only(['components', 'first_ca', 'second_ca', 'exam']),
-            is_string($existing) ? json_decode($existing, true) : $existing,
-        );
-
-        $firstCa = $marks['first_ca'];
-        $secondCa = $marks['second_ca'];
-        $exam = $marks['exam'];
-
-        // Graded on the school's scale for this student's class level.
-        $level = $placement?->currentClass?->level_category;
-
-        $computed = $grading->total($scheme, $firstCa, $secondCa, $exam, $level);
-
-        $state = $request->input('result_state');
-
-        $entry = ScoreEntry::updateOrCreate(
-            [
-                'school_id' => $schoolId,
-                'term_id' => $request->input('term_id'),
-                'student_id' => $request->input('student_id'),
-                'subject_id' => $request->input('subject_id'),
-            ],
-            [
-                'first_ca' => $firstCa,
-                'second_ca' => $secondCa,
-                'exam' => $exam,
-                'component_scores' => $marks['component_scores'],
-                'total_score' => $computed['percentage'],
-                'grade' => $computed['grade'],
-                'result_state' => in_array($state, ['absent', 'exempt'], true) ? $state : null,
-            ]
-        );
-
-        // Positions shift for the whole class whenever one mark changes, so
-        // they are recomputed here rather than left null (doc §7.7 requires
-        // class ranking; the column was never written to before).
-        $student = Student::where('school_id', $schoolId)->find($request->input('student_id'));
-
-        if ($student && $student->class_id) {
-            $grading->recomputeClassPositions($schoolId, $student->class_id, (int) $request->input('term_id'));
-            $entry->refresh();
+        } catch (\App\Exceptions\DomainRefusal $e) {
+            return response()->json(['message' => $e->getMessage(), 'code' => 'result_locked'], 409);
         }
 
         return response()->json([
