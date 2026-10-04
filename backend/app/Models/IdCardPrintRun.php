@@ -25,6 +25,10 @@ class IdCardPrintRun extends Model
         'error',
         'requested_by',
         'completed_at',
+        'physical_status',
+        'confirmed_by',
+        'confirmed_at',
+        'misprinted_card_ids',
     ];
 
     protected $casts = [
@@ -36,6 +40,8 @@ class IdCardPrintRun extends Model
         'pdf_bytes' => 'integer',
         'expires_at' => 'datetime',
         'completed_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'misprinted_card_ids' => 'array',
     ];
 
     /**

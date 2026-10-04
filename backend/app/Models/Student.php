@@ -92,6 +92,15 @@ class Student extends Model
     protected static function booted(): void
     {
         static::updated(function (Student $student) {
+            // Leaving the school ends the ID card (TASK 18 §22.15).
+            if ($student->wasChanged('status') && $student->getOriginal('status') === 'active' && $student->status !== 'active') {
+                try {
+                    app(\App\Services\IdCard\IdCardLifecycleService::class)->holderLeft('student', $student->id, (int) $student->school_id, auth()->id());
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             foreach (StudentRecordChange::TRACKED as $field) {
                 if (! $student->wasChanged($field)) {
                     continue;

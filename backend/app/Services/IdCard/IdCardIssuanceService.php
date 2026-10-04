@@ -71,7 +71,7 @@ class IdCardIssuanceService
         return $this->createCard($schoolId, $holderType, $holderId, [
             'session_id' => $session?->id,
             'issued_on' => Carbon::today(),
-            'expires_on' => $this->resolveExpiry($holderType, $session, $options['expires_on'] ?? null),
+            'expires_on' => $this->resolveExpiry($schoolId, $holderType, $session, $options['expires_on'] ?? null),
             'issued_by' => $options['issued_by'] ?? null,
             'replaces_id' => $options['replaces_id'] ?? null,
         ]);
@@ -97,6 +97,8 @@ class IdCardIssuanceService
             'revoked_reason' => $reason,
             'revoked_by' => $userId,
         ]);
+
+        app(IdCardLifecycleService::class)->event($card, 'revoked', 'active', 'revoked', $reason, $userId);
 
         return $card->fresh();
     }
@@ -178,7 +180,7 @@ class IdCardIssuanceService
 
         for ($attempt = 0; $attempt < self::SERIAL_ATTEMPTS; $attempt++) {
             try {
-                return IdCard::create(array_merge($attributes, [
+                $card = IdCard::create(array_merge($attributes, [
                     'school_id' => $schoolId,
                     'holder_type' => $holderType,
                     'holder_id' => $holderId,
@@ -189,7 +191,14 @@ class IdCardIssuanceService
                     'verify_token' => Str::random(40),
                     'status' => 'active',
                     'print_count' => 0,
+                    'production_status' => 'generated',
                 ]));
+
+                app(IdCardLifecycleService::class)->event($card, 'generated', null, 'generated',
+                    ! empty($attributes['replaces_id']) ? 'Replaces card '.IdCard::withoutGlobalScopes()->whereKey($attributes['replaces_id'])->value('serial') : null,
+                    $attributes['issued_by'] ?? null);
+
+                return $card;
             } catch (QueryException $e) {
                 if (!$this->isUniqueViolation($e)) {
                     throw $e;
@@ -291,14 +300,17 @@ class IdCardIssuanceService
      * card has no natural end, so it runs until revoked — which the
      * verification page states in words rather than showing a blank field.
      */
-    private function resolveExpiry(string $holderType, ?AcademicSession $session, ?string $override): ?Carbon
+    private function resolveExpiry(int $schoolId, string $holderType, ?AcademicSession $session, ?string $override): ?Carbon
     {
         if ($override) {
             return Carbon::parse($override);
         }
 
         if ($holderType === 'staff') {
-            return null;
+            // Valid while employed, unless the school sets a renewal period.
+            $months = \App\Models\IdCardSetting::for($schoolId)->staff_validity_months;
+
+            return $months ? Carbon::today()->addMonths($months) : null;
         }
 
         if ($session && $session->end_date) {

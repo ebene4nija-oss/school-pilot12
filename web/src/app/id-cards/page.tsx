@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi, ApiError } from '@/lib/api';
+import IdCardRegister from '@/components/IdCardRegister';
 
 /**
  * ID card printing and design.
@@ -49,6 +50,7 @@ type PrintRun = {
   downloadable: boolean;
   expires_in_days: number | null;
   created_at: string;
+  physical_status?: string;
 };
 
 type Template = {
@@ -76,7 +78,7 @@ const REASON_TONE: Record<string, string> = {
 };
 
 export default function IdCardsPage() {
-  const [tab, setTab] = useState<'print' | 'designs'>('print');
+  const [tab, setTab] = useState<'print' | 'cards' | 'designs'>('print');
 
   return (
     <div className="flex min-h-screen bg-canvas text-ink">
@@ -95,6 +97,7 @@ export default function IdCardsPage() {
           {(
             [
               ['print', 'Print cards'],
+              ['cards', 'Cards & issuance'],
               ['designs', 'Card designs'],
             ] as const
           ).map(([key, label]) => (
@@ -112,7 +115,7 @@ export default function IdCardsPage() {
           ))}
         </nav>
 
-        {tab === 'print' ? <PrintPanel /> : <DesignPanel />}
+        {tab === 'print' ? <PrintPanel /> : tab === 'cards' ? <IdCardRegister /> : <DesignPanel />}
       </main>
     </div>
   );
@@ -468,7 +471,25 @@ function PrintPanel() {
                       </td>
                       <td>{run.card_count || '—'}</td>
                       <td>{run.sheet_count || '—'}</td>
-                      <td className="text-right">
+                      <td className="space-x-2 whitespace-nowrap text-right">
+                        {run.status === 'completed' && run.physical_status !== 'printed' && (
+                          <button
+                            onClick={async () => {
+                              // Downloading the PDF prints nothing: this is the step that says the sheets exist.
+                              if (!window.confirm(`Confirm run #${run.id} has been physically printed? Its cards move to "awaiting collection".`)) return;
+                              try {
+                                await fetchApi(`/id-cards/print-runs/${run.id}/confirm-printed`, { method: 'POST', body: '{}' });
+                                await loadRuns();
+                              } catch (err) {
+                                setError(err instanceof ApiError ? err.message : 'Could not confirm the print.');
+                              }
+                            }}
+                            className="rounded bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-soft"
+                          >
+                            Mark printed
+                          </button>
+                        )}
+                        {run.physical_status === 'printed' && <span className="text-xs text-positive">Printed</span>}
                         {run.downloadable ? (
                           <a
                             href={`/api/backend/id-cards/print-runs/${run.id}/download`}

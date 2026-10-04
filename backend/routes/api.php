@@ -169,6 +169,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         require __DIR__.'/modules/cbt.php';
         require __DIR__.'/modules/hostel.php';
         require __DIR__.'/modules/lms.php';
+        require __DIR__.'/modules/id-cards.php';
 
         /*
          * The fee-structure builder (§7.12).

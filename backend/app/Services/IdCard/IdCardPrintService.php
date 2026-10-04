@@ -250,6 +250,9 @@ class IdCardPrintService
             'completed_at' => now(),
         ]);
 
+        // A print file exists; nothing has been printed yet (TASK 18 §11).
+        app(IdCardLifecycleService::class)->printFileMade($issued, $run);
+
         return $run->fresh();
     }
 

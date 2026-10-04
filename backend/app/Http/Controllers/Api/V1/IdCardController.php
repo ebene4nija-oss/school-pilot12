@@ -303,6 +303,8 @@ class IdCardController extends Controller
             'detail' => 'This code does not match any card issued through SchoolPilot.',
         ];
 
+        app(\App\Services\IdCard\IdCardLifecycleService::class)->logVerification($card, $payload['status'], $request->user('sanctum')?->id);
+
         if ($request->get('format') === 'json') {
             return response()->json($payload, $payload['found'] ? 200 : 404);
         }
@@ -316,9 +318,9 @@ class IdCardController extends Controller
             ->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
-    private function verificationPayload(IdCard $card): array
+    public function verificationPayload(IdCard $card): array
     {
-        $status = $card->effectiveStatus();
+        $status = app(\App\Services\IdCard\IdCardLifecycleService::class)->verificationStatus($card);
         $holder = $card->holder();
         $school = $card->school;
 
@@ -326,6 +328,7 @@ class IdCardController extends Controller
             'active' => ['Valid card', 'This card is current.'],
             'expired' => ['Expired card', 'This card has passed its expiry date and is no longer current.'],
             'replaced' => ['Superseded card', 'A newer card has been issued to this holder. This one is no longer current.'],
+            'not_issued' => ['Card not yet issued', 'This card has been made but the school has not handed it over yet, so it is not in use.'],
             'revoked' => ['Card withdrawn', match ($card->revoked_reason) {
                 'lost' => 'This card was reported lost and is no longer valid.',
                 'stolen' => 'This card was reported stolen and is no longer valid.',

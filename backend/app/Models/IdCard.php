@@ -45,6 +45,12 @@ class IdCard extends Model
         'template_checksum',
         'photo_fingerprint',
         'issued_by',
+        'production_status',
+        'printed_at',
+        'handed_over_at',
+        'handed_over_by',
+        'collected_by',
+        'misprints',
     ];
 
     protected $casts = [
@@ -53,7 +59,13 @@ class IdCard extends Model
         'revoked_at' => 'datetime',
         'last_printed_at' => 'datetime',
         'print_count' => 'integer',
+        'printed_at' => 'datetime',
+        'handed_over_at' => 'datetime',
+        'misprints' => 'integer',
     ];
+
+    /** Production stages, in order (TASK 18 §12). */
+    public const PRODUCTION = ['generated', 'print_ready', 'printed', 'issued'];
 
     /**
      * The token never serialises.
