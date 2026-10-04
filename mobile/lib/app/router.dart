@@ -14,6 +14,7 @@ import '../features/dashboard/home_screen.dart';
 import '../features/finance/fees_screen.dart';
 import '../features/gradebook/comment_review_screen.dart';
 import '../features/gradebook/gradebook_tab.dart';
+import '../features/hostel/hostel_screen.dart';
 import '../features/idcard/id_card_screen.dart';
 import '../features/learn/learn_tab.dart';
 import '../features/learn/tutor_chat_screen.dart';
@@ -88,6 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/library', builder: (_, __) => const LibraryScreen()),
       GoRoute(path: '/library/desk', builder: (_, __) => const LibraryDeskScreen()),
       GoRoute(path: '/id-card', builder: (_, __) => const IdCardScreen()),
+      GoRoute(path: '/hostel', builder: (_, __) => const HostelScreen()),
       GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
 
       ShellRoute(

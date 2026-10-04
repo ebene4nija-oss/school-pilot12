@@ -38,24 +38,32 @@ class OutlinedCard extends StatelessWidget {
             borderRadius: AppRadius.cardRadius,
             border: Border.all(color: AppColors.outlineVariant),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (statusColor != null)
-                Container(
-                  width: 4,
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(AppRadius.card),
-                    ),
+          // Only a card with a status bar needs the bar stretched to its
+          // height, and IntrinsicHeight is what gives the stretch a finite
+          // height inside a scrolling list (without it the card asserted,
+          // "forces an infinite height"). Cards without a bar skip both, so
+          // exam content such as maths and HTML is never measured twice.
+          child: statusColor == null
+              ? Padding(padding: padding, child: child)
+              : IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        width: 4,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(AppRadius.card),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(padding: padding, child: child),
+                      ),
+                    ],
                   ),
                 ),
-              Expanded(
-                child: Padding(padding: padding, child: child),
-              ),
-            ],
-          ),
         ),
       ),
     );

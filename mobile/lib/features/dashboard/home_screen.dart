@@ -10,6 +10,7 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import '../learn/learning_widgets.dart';
 import 'dashboard_providers.dart';
 
 /// One route, four dashboards. Which one you get is decided by the role the
@@ -382,6 +383,7 @@ class _StudentDashboard extends ConsumerWidget {
               value: '${attendance.toStringAsFixed(0)}%',
             ),
           ]),
+          const TodayLessonsCard(),
           const SizedBox(height: AppSpacing.sm),
           _pad(
             OutlinedCard(

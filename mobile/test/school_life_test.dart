@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:schoolpilot/core/sync/sync_service.dart';
+import 'package:schoolpilot/features/hostel/hostel_screen.dart';
+import 'package:schoolpilot/features/idcard/id_card_screen.dart';
 import 'package:schoolpilot/features/timetable/timetable_screen.dart';
 
 void main() {
@@ -55,6 +58,48 @@ void main() {
       expect(subjectOf({'subject_name': 'Agric'}), 'Agric');
       expect(isBreak({'is_break': 1}), isTrue);
       expect(isBreak({'subject_name': 'Short break'}), isTrue);
+    });
+  });
+
+  group('school life cards', () {
+    Future<void> pump(WidgetTester tester, Widget child) =>
+        tester.pumpWidget(MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))));
+
+    testWidgets('a day student is told there is no boarding place', (tester) async {
+      await pump(tester, const HostelSummary(summary: {'boarding': null}));
+      expect(find.text('Not a boarder'), findsOneWidget);
+    });
+
+    testWidgets("a boarder sees their bed, whether they are in, and their leave", (tester) async {
+      await pump(
+        tester,
+        const HostelSummary(summary: {
+          'boarding': {'status': 'active', 'category': 'full'},
+          'hostel': 'Unity House',
+          'room': 'A2',
+          'bed': '3',
+          'presence': 'on_leave',
+          'leave': [
+            {'leave_type': 'weekend', 'depart_at': '2026-10-09T15:00:00Z', 'return_at': '2026-10-11T17:00:00Z', 'status': 'departed'},
+          ],
+          'charges': [],
+        }),
+      );
+      expect(find.text('Unity House · Room A2 · Bed 3'), findsOneWidget);
+      expect(find.text('Away on leave'), findsOneWidget);
+      expect(find.text('Away'), findsOneWidget);
+    });
+
+    testWidgets('a card that is no longer valid says why and shows no code', (tester) async {
+      await pump(
+        tester,
+        const DigitalIdCard(card: {
+          'serial': 'HT-S-0001', 'status': 'lost', 'valid': false, 'headline': 'Reported lost',
+          'holder_name': 'Ada Obi', 'role': 'Student', 'school': 'Hilltop', 'photo': null, 'qr': null,
+        }),
+      );
+      expect(find.text('Reported lost'), findsOneWidget);
+      expect(find.text('Security staff scan this to check the card.'), findsNothing);
     });
   });
 }

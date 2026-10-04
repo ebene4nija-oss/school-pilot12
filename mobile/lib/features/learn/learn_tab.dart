@@ -11,6 +11,7 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/cbt_attempt_screen.dart';
+import 'learning_widgets.dart';
 
 final availableExamsProvider =
     FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
@@ -52,6 +53,7 @@ class LearnTab extends ConsumerWidget {
       ref.watch(homeworkProvider).valueOrNull?.data,
       ['homework'],
     );
+    final learning = mapOf(ref.watch(myLearningProvider).valueOrNull?.data);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Learn')),
@@ -64,6 +66,7 @@ class LearnTab extends ConsumerWidget {
           return RefreshableList(
             onRefresh: () async {
               ref.invalidate(homeworkProvider);
+              ref.invalidate(myLearningProvider);
               ref.invalidate(availableExamsProvider);
               await ref.read(availableExamsProvider.future);
             },
@@ -96,6 +99,7 @@ class LearnTab extends ConsumerWidget {
                   ),
                 ),
               ),
+              VirtualClassesSection(classes: listOf(learning['upcoming_classes'])),
               /*
                * Homework first. It is the thing with a deadline attached, and
                * a pupil opening this tab in the evening is far more often
@@ -113,6 +117,7 @@ class LearnTab extends ConsumerWidget {
                     child: _HomeworkCard(work: work),
                   ),
               ],
+              MaterialsSection(materials: listOf(learning['materials'])),
               const SectionHeader('Exams and tests'),
               if (list.isEmpty)
                 const Padding(
