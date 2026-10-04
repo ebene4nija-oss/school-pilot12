@@ -40,7 +40,8 @@ class SchoolFeatures
         'cbt' => '#^cbt(/|$)#',
         'live_classes' => '#^live-classes(/|$)#',
         'transport' => '#^transport(/|$)#',
-        'hostel' => '#^hostel(/|$)#',
+        // Includes the family and student hostel views.
+        'hostel' => '#^(parent/|me/)?hostel(/|$)#',
         'library' => '#^library(/|$)#',
         'clinic' => '#^health/clinic#',
     ];

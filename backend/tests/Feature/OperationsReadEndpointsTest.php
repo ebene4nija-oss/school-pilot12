@@ -246,19 +246,12 @@ class OperationsReadEndpointsTest extends TestCase
 
     public function test_room_list_counts_real_occupancy(): void
     {
-        $roomId = DB::table('rooms')->insertGetId([
-            'school_id' => $this->school->id,
-            'hostel_name' => 'Unity House',
-            'room_number' => 'RM-101',
-            'capacity' => 4,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
-
-        DB::table('bed_assignments')->insert([
-            'room_id' => $roomId,
-            'student_id' => $this->student->id,
-            'bed_number' => 'B1',
-            'created_at' => now(), 'updated_at' => now(),
+        // The hostel model behind the original endpoints (HostelService).
+        $roomId = $this->makeRoom(4);
+        $bed = \App\Models\HostelBed::where('room_id', $roomId)->where('label', 'B1')->firstOrFail();
+        \App\Models\HostelAllocation::create([
+            'school_id' => $this->school->id, 'student_id' => $this->student->id, 'bed_id' => $bed->id,
+            'starts_on' => now()->toDateString(), 'status' => 'active',
         ]);
 
         $this->actingAs($this->admin, 'sanctum')
@@ -337,13 +330,8 @@ class OperationsReadEndpointsTest extends TestCase
      */
     public function test_a_student_cannot_be_placed_in_another_schools_room(): void
     {
-        $foreignRoom = DB::table('rooms')->insertGetId([
-            'school_id' => $this->otherSchool->id,
-            'hostel_name' => 'Rival House',
-            'room_number' => 'RM-001',
-            'capacity' => 4,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        $rival = \App\Models\Hostel::create(['school_id' => $this->otherSchool->id, 'name' => 'Rival House', 'status' => 'active']);
+        $foreignRoom = \App\Models\HostelRoom::create(['school_id' => $this->otherSchool->id, 'hostel_id' => $rival->id, 'name' => 'RM-001', 'capacity' => 4, 'status' => 'available'])->id;
 
         $this->actingAs($this->admin, 'sanctum')
             ->postJson('/api/v1/hostel/assign-bed', [
@@ -470,13 +458,10 @@ class OperationsReadEndpointsTest extends TestCase
 
     private function makeRoom(int $capacity): int
     {
-        return DB::table('rooms')->insertGetId([
-            'school_id' => $this->school->id,
-            'hostel_name' => 'Unity House',
-            'room_number' => 'RM-'.fake()->unique()->numberBetween(100, 999),
-            'capacity' => $capacity,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        $hostel = \App\Models\Hostel::firstOrCreate(['school_id' => $this->school->id, 'name' => 'Unity House'], ['status' => 'active']);
+
+        return app(\App\Services\Hostel\HostelService::class)
+            ->createRoom($hostel, ['name' => 'RM-'.fake()->unique()->numberBetween(100, 999), 'capacity' => $capacity])->id;
     }
 
     private function makeStudent(string $name, string $admissionNumber): Student

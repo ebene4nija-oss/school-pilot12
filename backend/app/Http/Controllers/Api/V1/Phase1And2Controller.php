@@ -301,51 +301,35 @@ class Phase1And2Controller extends Controller
         return response()->json(['data' => $book]);
     }
 
-    /**
-     * Hostel rooms with live occupancy, counted from actual bed assignments.
-     *
-     * `bed_assignments` has no `school_id` of its own — it is owned through its
-     * room — so the count joins back through `rooms` to stay inside the tenant.
+    /*
+     * The original hostel endpoints, kept for existing clients, now reading
+     * and writing the full hostel model (HostelService) so there is one
+     * source of truth. Shapes and error fields are unchanged. New work uses
+     * /hostel/structure, /hostel/allocations and the rest of the module.
      */
+
+    /** Hostel rooms with live occupancy, counted from active allocations. */
     public function rooms(Request $request)
     {
-        $schoolId = $this->getSchoolId($request);
-
-        $rooms = DB::table('rooms')
-            ->where('rooms.school_id', $schoolId)
-            ->orderBy('rooms.hostel_name')
-            ->orderBy('rooms.room_number')
-            ->get();
-
-        $occupancy = DB::table('bed_assignments')
-            ->join('rooms', 'bed_assignments.room_id', '=', 'rooms.id')
-            ->where('rooms.school_id', $schoolId)
-            ->selectRaw('bed_assignments.room_id, COUNT(*) as total')
-            ->groupBy('bed_assignments.room_id')
-            ->pluck('total', 'room_id');
+        $rooms = app(\App\Services\Hostel\HostelService::class)->rooms($this->getSchoolId($request));
 
         return response()->json([
-            'data' => $rooms->map(function ($room) use ($occupancy) {
-                $occupied = (int) ($occupancy[$room->id] ?? 0);
-                $capacity = (int) $room->capacity;
-
-                return [
-                    'id' => (int) $room->id,
-                    'hostel_name' => $room->hostel_name,
-                    'room_number' => $room->room_number,
-                    'capacity' => $capacity,
-                    'occupied' => $occupied,
-                    'beds_free' => max($capacity - $occupied, 0),
-                    // Reported, not inferred by the page: a room over capacity
-                    // is an allocation error somebody has to see.
-                    'is_full' => $occupied >= $capacity,
-                    'is_over_capacity' => $occupied > $capacity,
-                ];
-            }),
+            'data' => $rooms->map(fn ($r) => [
+                'id' => $r['id'],
+                'hostel_name' => $r['hostel'],
+                'room_number' => $r['name'],
+                'capacity' => $r['capacity'],
+                'occupied' => $r['occupied'],
+                'beds_free' => max($r['capacity'] - $r['occupied'], 0),
+                // Reported, not inferred by the page: a room over capacity
+                // is an allocation error somebody has to see.
+                'is_full' => $r['occupied'] >= $r['capacity'],
+                'is_over_capacity' => $r['occupied'] > $r['capacity'],
+            ])->values(),
         ]);
     }
 
-    /** Create a hostel room. */
+    /** Create a hostel room (and its hostel, the first time a name is used). */
     public function storeRoom(Request $request)
     {
         $validated = $request->validate([
@@ -355,17 +339,10 @@ class Phase1And2Controller extends Controller
         ]);
 
         $schoolId = $this->getSchoolId($request);
+        $hostel = \App\Models\Hostel::firstOrCreate(['school_id' => $schoolId, 'name' => $validated['hostel_name']], ['status' => 'active']);
+        $room = app(\App\Services\Hostel\HostelService::class)->createRoom($hostel, ['name' => $validated['room_number'], 'capacity' => $validated['capacity']]);
 
-        $id = DB::table('rooms')->insertGetId([
-            'school_id' => $schoolId,
-            'hostel_name' => $validated['hostel_name'],
-            'room_number' => $validated['room_number'],
-            'capacity' => $validated['capacity'],
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'Room created', 'id' => $id], 201);
+        return response()->json(['message' => 'Room created', 'id' => $room->id], 201);
     }
 
     /** Who is in which bed, for one school. */
@@ -373,103 +350,74 @@ class Phase1And2Controller extends Controller
     {
         $schoolId = $this->getSchoolId($request);
 
-        $assignments = DB::table('bed_assignments')
-            ->join('rooms', 'bed_assignments.room_id', '=', 'rooms.id')
-            ->join('students', 'bed_assignments.student_id', '=', 'students.id')
-            // The student's name is on `users`; `students` holds only the
-            // enrolment record.
+        $assignments = DB::table('hostel_allocations as a')
+            ->join('hostel_beds as b', 'b.id', '=', 'a.bed_id')
+            ->join('hostel_rooms as r', 'r.id', '=', 'b.room_id')
+            ->join('hostels as h', 'h.id', '=', 'r.hostel_id')
+            ->join('students', 'a.student_id', '=', 'students.id')
             ->join('users', 'students.user_id', '=', 'users.id')
-            ->where('rooms.school_id', $schoolId)
+            ->where('a.school_id', $schoolId)
+            ->where('a.status', 'active')
             ->select([
-                'bed_assignments.id',
-                'bed_assignments.bed_number',
-                'bed_assignments.room_id',
-                'rooms.hostel_name',
-                'rooms.room_number',
+                'a.id',
+                'b.label as bed_number',
+                'r.id as room_id',
+                'h.name as hostel_name',
+                'r.name as room_number',
                 'students.id as student_id',
                 'users.name as student_name',
                 'students.admission_number',
             ])
-            ->orderBy('rooms.hostel_name')
-            ->orderBy('rooms.room_number')
+            ->orderBy('h.name')
+            ->orderBy('r.name')
             ->get();
 
         return response()->json(['data' => $assignments]);
     }
 
-    // 4. Hostel & Boarding Bed Allocation
+    /** Put a student in a bed, by room and bed label. */
     public function assignBed(Request $request)
     {
         $schoolId = $this->getSchoolId($request);
 
-        /*
-         * Both the room and the student are checked against this school.
-         * `exists:rooms,id` alone let a school admin assign one of their
-         * students into another school's room — `bed_assignments` carries no
-         * `school_id`, so nothing downstream would ever have caught it.
-         */
         $validated = $request->validate([
-            'room_id' => ['required', \Illuminate\Validation\Rule::exists('rooms', 'id')->where('school_id', $schoolId)],
+            'room_id' => ['required', \Illuminate\Validation\Rule::exists('hostel_rooms', 'id')->where('school_id', $schoolId)],
             'student_id' => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
             'bed_number' => 'required|string|max:32',
         ]);
 
-        // A bed holds one student, and a student sleeps in one bed.
-        $bedTaken = DB::table('bed_assignments')
-            ->where('room_id', $validated['room_id'])
-            ->where('bed_number', $validated['bed_number'])
-            ->exists();
+        // The old form typed a bed label freely; an unknown label becomes a
+        // bed in the room, still subject to the room's capacity.
+        $bed = \App\Models\HostelBed::firstOrCreate(
+            ['room_id' => $validated['room_id'], 'label' => $validated['bed_number']],
+            ['school_id' => $schoolId, 'status' => 'available']
+        );
 
-        if ($bedTaken) {
-            return response()->json([
-                'message' => 'That bed is already assigned.',
-                'errors' => ['bed_number' => ['This bed is occupied.']],
-            ], 422);
+        try {
+            $allocation = app(\App\Services\Hostel\HostelService::class)->allocate($schoolId, (int) $validated['student_id'], $bed, $request->user(), ['legacy' => true, 'reason' => 'Assigned from the room list']);
+        } catch (\App\Services\Hostel\AllocationRefused $e) {
+            if ($bed->wasRecentlyCreated) {
+                $bed->delete();
+            }
+
+            return response()->json(['message' => $e->getMessage(), 'errors' => [$e->field => [$e->getMessage()]]], 422);
+        } catch (\App\Exceptions\DomainRefusal $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $alreadyPlaced = DB::table('bed_assignments')
-            ->where('student_id', $validated['student_id'])
-            ->exists();
-
-        if ($alreadyPlaced) {
-            return response()->json([
-                'message' => 'That student already has a bed. Release the current assignment first.',
-                'errors' => ['student_id' => ['Student is already assigned a bed.']],
-            ], 422);
-        }
-
-        $room = DB::table('rooms')->where('id', $validated['room_id'])->first();
-
-        $occupied = DB::table('bed_assignments')->where('room_id', $validated['room_id'])->count();
-
-        if ($room && $occupied >= (int) $room->capacity) {
-            return response()->json([
-                'message' => 'That room is at capacity.',
-                'errors' => ['room_id' => ['Room is full.']],
-            ], 422);
-        }
-
-        $id = DB::table('bed_assignments')->insertGetId(array_merge($validated, [
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]));
-
-        return response()->json(['message' => 'Bed assigned successfully', 'id' => $id], 201);
+        return response()->json(['message' => 'Bed assigned successfully', 'id' => $allocation->id], 201);
     }
 
-    /** Release a bed, when a boarder leaves or moves room. */
+    /** Release a bed: the allocation ends; its history stays. */
     public function releaseBed(Request $request, $assignmentId)
     {
-        $schoolId = $this->getSchoolId($request);
+        $allocation = \App\Models\HostelAllocation::where('school_id', $this->getSchoolId($request))->where('status', 'active')->find($assignmentId);
 
-        $deleted = DB::table('bed_assignments')
-            ->whereIn('room_id', DB::table('rooms')->where('school_id', $schoolId)->select('id'))
-            ->where('id', $assignmentId)
-            ->delete();
-
-        if (! $deleted) {
+        if (! $allocation) {
             return response()->json(['message' => 'Bed assignment not found'], 404);
         }
+
+        app(\App\Services\Hostel\HostelService::class)->endAllocation($allocation, $request->user(), 'Released from the room list');
 
         return response()->json(['message' => 'Bed released']);
     }
