@@ -103,3 +103,27 @@ Artisan::command('library:daily', function () {
 Schedule::command('library:daily')
     ->dailyAt('07:00')
     ->withoutOverlapping();
+
+/*
+ * Virtual-class attendance from Zoom / Google Meet (TASK 14 §3.3): read each
+ * finished class's participant report. Reports appear some minutes after a
+ * meeting ends, so a class without one yet is tried again next run.
+ */
+Artisan::command('lms:sync-attendance', function () {
+    $svc = app(\App\Services\Lms\ProviderAttendanceService::class);
+    $done = 0;
+    foreach ($svc->due() as $lc) {
+        try {
+            $svc->sync($lc);
+            $done++;
+        } catch (\App\Exceptions\DomainRefusal $e) {
+            // Recorded on the class; retried or shown to the teacher.
+        }
+    }
+    $this->info("Read attendance for {$done} class(es).");
+})->purpose('Read virtual-class attendance from the video provider');
+
+Schedule::command('lms:sync-attendance')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

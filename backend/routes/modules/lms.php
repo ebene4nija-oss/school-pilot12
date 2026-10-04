@@ -42,6 +42,9 @@ Route::middleware('role:school_admin,teacher')->group(function () {
     Route::get('/live-classes/{id}/attendance', [VirtualClassroomController::class, 'attendance'])->whereNumber('id');
     Route::put('/live-classes/{id}/attendance/{studentId}', [VirtualClassroomController::class, 'correct'])->whereNumber('id')->whereNumber('studentId');
     Route::post('/live-classes/{id}/cancel', [VirtualClassroomController::class, 'cancel'])->whereNumber('id');
+    // Attendance from the Zoom / Meet participant report.
+    Route::post('/live-classes/{id}/provider-attendance', [\App\Http\Controllers\Api\V1\ProviderAttendanceController::class, 'sync'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::post('/live-classes/{id}/provider-attendance/match', [\App\Http\Controllers\Api\V1\ProviderAttendanceController::class, 'assign'])->whereNumber('id');
 
     Route::get('/lms/overview', [LmsDashboardController::class, 'overview']);
 });
@@ -57,4 +60,11 @@ Route::middleware('role:student')->group(function () {
 Route::middleware('role:parent')->group(function () {
     Route::get('/parent/learning', [LmsDashboardController::class, 'parent']);
     Route::post('/parent/homework/{homeworkId}/submit', [HomeworkSubmissionController::class, 'storeForChild'])->whereNumber('homeworkId')->middleware('throttle:20,1');
+});
+
+// The school's own Zoom / Google Workspace account, for reading attendance.
+Route::middleware('role:school_admin')->group(function () {
+    Route::get('/live-classes/providers', [\App\Http\Controllers\Api\V1\ProviderAttendanceController::class, 'connections']);
+    Route::put('/live-classes/providers/{provider}', [\App\Http\Controllers\Api\V1\ProviderAttendanceController::class, 'connect'])->whereIn('provider', ['zoom', 'google_meet'])->middleware('throttle:10,1');
+    Route::delete('/live-classes/providers/{provider}', [\App\Http\Controllers\Api\V1\ProviderAttendanceController::class, 'disconnect'])->whereIn('provider', ['zoom', 'google_meet']);
 });

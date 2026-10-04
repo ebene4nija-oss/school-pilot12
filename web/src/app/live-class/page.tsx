@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { roleFromCookie } from '@/components/Sidebar';
+import ProviderConnections from './ProviderConnections';
 import {
   Badge,
   Button,
@@ -59,6 +60,7 @@ interface AttendanceRow {
   student_id: number;
   name: string | null;
   minutes_connected: number;
+  minutes_in_call?: number | null;
   joins: number;
   rejoined: boolean;
   status: 'present' | 'late' | 'partial' | 'absent';
@@ -67,6 +69,12 @@ interface AttendanceRow {
 }
 
 const ATTENDANCE_TONE = { present: 'green', late: 'amber', partial: 'amber', absent: 'red' } as const;
+
+interface ProviderInfo {
+  source: 'provider' | 'page';
+  provider_sync: { status: string | null; synced_at: string | null; error: string | null; can_sync: boolean };
+  unmatched: { participant_key: string; name: string | null; joined_at: string; left_at: string }[];
+}
 
 interface ClassOption {
   id: number;
@@ -117,7 +125,8 @@ export default function LiveClassPage() {
   const [repeatUntil, setRepeatUntil] = useState('');
   const [role] = useState(roleFromCookie);
   const staff = role === 'school_admin' || role === 'teacher' || role === 'super_admin';
-  const [attendance, setAttendance] = useState<{ id: number; title: string; rows: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } } | null>(null);
+  const [attendance, setAttendance] = useState<({ id: number; title: string; rows: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } } & ProviderInfo) | null>(null);
+  const [matchTo, setMatchTo] = useState<Record<string, string>>({});
   const [inClass, setInClass] = useState<{ id: number; notice: string | null } | null>(null);
 
   /*
@@ -158,10 +167,32 @@ export default function LiveClassPage() {
 
   async function openAttendance(id: number, title: string) {
     try {
-      const res = await fetchApi<{ students: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } }>(`/live-classes/${id}/attendance`);
-      setAttendance({ id, title, rows: res.students, rules: res.rules });
+      const res = await fetchApi<{ students: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } } & ProviderInfo>(`/live-classes/${id}/attendance`);
+      setAttendance({ id, title, rows: res.students, rules: res.rules, source: res.source, provider_sync: res.provider_sync, unmatched: res.unmatched ?? [] });
     } catch (err) {
       setError(errorText(err, 'Could not load attendance.'));
+    }
+  }
+
+  /** Read who was in the Zoom / Meet call, from the provider's report. */
+  async function readFromProvider() {
+    if (!attendance) return;
+    try {
+      const res = await fetchApi<{ message: string }>(`/live-classes/${attendance.id}/provider-attendance`, { method: 'POST' });
+      setNotice(res.message);
+    } catch (err) {
+      setError(errorText(err, 'Could not read attendance from the provider.'));
+    }
+    await openAttendance(attendance.id, attendance.title);
+  }
+
+  async function matchParticipant(key: string) {
+    if (!attendance || !matchTo[key]) return;
+    try {
+      await fetchApi(`/live-classes/${attendance.id}/provider-attendance/match`, { method: 'POST', body: JSON.stringify({ participant_key: key, student_id: Number(matchTo[key]), remember: true }) });
+      await openAttendance(attendance.id, attendance.title);
+    } catch (err) {
+      setError(errorText(err, 'Could not match that participant.'));
     }
   }
 
@@ -320,7 +351,7 @@ export default function LiveClassPage() {
 
       {inClass && (
         <p role="status" className="mb-6 rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-          You are in class. Keep this page open while the lesson runs: your attendance is the time it stays open.
+          You are in class. Keep this page open while the lesson runs, and stay in the call under your own name: your attendance is the time you are there.
           {inClass.notice && <span className="mt-1 block font-medium">Recording: {inClass.notice}</span>}
           <button type="button" className="ml-2 underline" onClick={() => setInClass(null)}>
             I have left the class
@@ -331,15 +362,39 @@ export default function LiveClassPage() {
       {attendance && (
         <Card
           title={`Attendance · ${attendance.title}`}
-          description={`Present: at least ${attendance.rules.present_percent}% of the lesson. Late: joined more than ${attendance.rules.late_grace_minutes} minutes after the start. Time is counted from SchoolPilot's lesson page, so correct anyone whose connection failed.`}
+          description={`Present: at least ${attendance.rules.present_percent}% of the lesson. Late: joined more than ${attendance.rules.late_grace_minutes} minutes after the start. ${attendance.source === 'provider' ? 'Time is from the video provider’s own report of who was in the call.' : 'Time is counted from SchoolPilot’s lesson page until the provider’s report is read.'} Correct anyone whose connection failed.`}
           className="mb-6"
         >
+          {attendance.provider_sync.can_sync && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+              <Button variant="secondary" onClick={readFromProvider}>{attendance.source === 'provider' ? 'Read the report again' : 'Read from Zoom / Meet'}</Button>
+              {attendance.provider_sync.synced_at && <span className="text-ink-muted">Read {formatWhen(attendance.provider_sync.synced_at)}</span>}
+              {attendance.provider_sync.status === 'waiting' && <Badge tone="amber">report not ready yet, will retry</Badge>}
+              {attendance.provider_sync.error && attendance.provider_sync.status !== 'synced' && <span className="text-xs text-negative">{attendance.provider_sync.error}</span>}
+            </div>
+          )}
+          {attendance.unmatched.length > 0 && (
+            <div className="mb-4 rounded-lg border border-line-soft p-3">
+              <p className="mb-2 text-sm font-semibold">In the call, not matched to a student</p>
+              {attendance.unmatched.map((u) => (
+                <div key={u.participant_key} className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="min-w-[10rem]">{u.name ?? 'Unknown'}</span>
+                  <select className={`${inputClass} max-w-xs`} value={matchTo[u.participant_key] ?? ''} onChange={(e) => setMatchTo({ ...matchTo, [u.participant_key]: e.target.value })} aria-label={`Who is ${u.name ?? 'this'}`}>
+                    <option value="">Who is this?</option>
+                    {attendance.rows.map((r) => <option key={r.student_id} value={r.student_id}>{r.name}</option>)}
+                  </select>
+                  <Button variant="secondary" disabled={!matchTo[u.participant_key]} onClick={() => matchParticipant(u.participant_key)}>Match</Button>
+                </div>
+              ))}
+              <p className="text-xs text-ink-muted">The match is remembered for this class, so the same name is recognised next time.</p>
+            </div>
+          )}
           <Table columns={['Student', 'Time', 'Status', 'Correct']}>
             {attendance.rows.map((row) => (
               <tr key={row.student_id}>
                 <Cell>{row.name}</Cell>
                 <Cell>
-                  {row.minutes_connected} min{row.rejoined ? ` · rejoined ${row.joins - 1}×` : ''}
+                  {attendance.source === 'provider' ? `${row.minutes_in_call ?? 0} min in call` : `${row.minutes_connected} min${row.rejoined ? ` · rejoined ${row.joins - 1}×` : ''}`}
                 </Cell>
                 <Cell>
                   <Badge tone={ATTENDANCE_TONE[row.status]}>{row.status}</Badge>
@@ -618,6 +673,7 @@ export default function LiveClassPage() {
           ))}
         </ul>
       )}
+      {role === 'school_admin' && <ProviderConnections />}
     </PageShell>
   );
 }

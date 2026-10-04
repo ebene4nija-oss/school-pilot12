@@ -219,14 +219,19 @@ class LmsService
         if ($p?->corrected_status) {
             return $p->corrected_status;
         }
-        if (! $p || ! $p->first_joined_at) {
+        // Once the provider's participant report is read, time in the call
+        // is the measure; until then, time on the lesson page.
+        [$joined, $seconds] = $lc->provider_sync_status === 'synced'
+            ? [$p?->provider_first_joined_at, (int) ($p?->provider_seconds ?? 0)]
+            : [$p?->first_joined_at, (int) ($p?->seconds_connected ?? 0)];
+        if (! $joined) {
             return 'absent';
         }
-        if ($p->first_joined_at->gt($lc->scheduled_for->copy()->addMinutes($settings->late_grace_minutes))) {
+        if ($joined->gt($lc->scheduled_for->copy()->addMinutes($settings->late_grace_minutes))) {
             return 'late';
         }
 
-        return $p->seconds_connected >= $lc->duration_minutes * 60 * $settings->present_percent / 100 ? 'present' : 'partial';
+        return $seconds >= $lc->duration_minutes * 60 * $settings->present_percent / 100 ? 'present' : 'partial';
     }
 
     /** Students a class session or assignment is for. */

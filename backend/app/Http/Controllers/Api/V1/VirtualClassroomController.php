@@ -33,7 +33,7 @@ class VirtualClassroomController extends Controller
         $p = $this->lms->join($lc, $student);
 
         return response()->json([
-            'meeting_url' => $lc->meeting_url, 'meeting_id' => $lc->meeting_id, 'passcode' => $lc->passcode,
+            'meeting_url' => $this->joinUrl($lc, $student, $request->user()->name), 'meeting_id' => $lc->meeting_id, 'passcode' => $lc->passcode,
             'recording_notice' => $lc->recording_enabled ? LmsSetting::for($lc->school_id)->recording_notice : null,
             'joins' => $p->joins,
             'heartbeat_seconds' => 60,
@@ -64,6 +64,7 @@ class VirtualClassroomController extends Controller
                 'student_id' => $s->id, 'name' => $s->user?->name, 'admission_number' => $s->admission_number,
                 'first_joined_at' => $p?->first_joined_at?->toIso8601String(), 'last_left_at' => $p?->last_left_at?->toIso8601String(),
                 'minutes_connected' => $p ? round($p->seconds_connected / 60, 1) : 0, 'joins' => $p->joins ?? 0,
+                'minutes_in_call' => $lc->provider_sync_status === 'synced' ? round(($p?->provider_seconds ?? 0) / 60, 1) : null,
                 'rejoined' => ($p->joins ?? 0) > 1,
                 'status' => $this->lms->status($p, $lc, $settings),
                 'corrected' => (bool) $p?->corrected_status, 'correction_reason' => $p?->correction_reason,
@@ -75,6 +76,10 @@ class VirtualClassroomController extends Controller
             'rules' => ['present_percent' => $settings->present_percent, 'late_grace_minutes' => $settings->late_grace_minutes],
             'counts' => $rows->countBy('status'),
             'students' => $rows,
+            'source' => $lc->provider_sync_status === 'synced' ? 'provider' : 'page',
+            'provider_sync' => ['status' => $lc->provider_sync_status, 'synced_at' => $lc->provider_synced_at?->toIso8601String(), 'error' => $lc->provider_sync_error,
+                'can_sync' => in_array($lc->provider, \App\Services\Lms\ProviderAttendanceService::PROVIDERS, true)],
+            'unmatched' => app(\App\Services\Lms\ProviderAttendanceService::class)->unmatched($lc),
         ]);
     }
 
@@ -112,6 +117,19 @@ class VirtualClassroomController extends Controller
         InAppNotifier::send($lc->school_id, $this->lms->guardianUserIds($students->pluck('id')->all()), 'lms', 'Virtual class cancelled', $text);
 
         return response()->json(['message' => "Cancelled {$sessions->count()} session(s). Students and parents were told.", 'cancelled' => $sessions->count()]);
+    }
+
+    /**
+     * Zoom's join link takes the name to show in the call. "Ada Obi (HT/001)"
+     * lets the participant report be matched to the right student.
+     */
+    private function joinUrl(LiveClass $lc, Student $student, string $name): ?string
+    {
+        if ($lc->provider !== 'zoom' || ! $lc->meeting_url || ! $student->admission_number) {
+            return $lc->meeting_url;
+        }
+
+        return $lc->meeting_url.(str_contains($lc->meeting_url, '?') ? '&' : '?').'uname='.rawurlencode("{$name} ({$student->admission_number})");
     }
 
     /** @return array{0: LiveClass, 1: Student} */

@@ -38,6 +38,10 @@ class LiveClass extends Model
         'series_id',
         'recording_enabled',
         'cancel_reason',
+        'provider_sync_status',
+        'provider_synced_at',
+        'provider_sync_error',
+        'provider_sync_attempts',
     ];
 
     protected $casts = [
@@ -46,6 +50,8 @@ class LiveClass extends Model
         'ended_at' => 'datetime',
         'duration_minutes' => 'integer',
         'recording_enabled' => 'boolean',
+        'provider_synced_at' => 'datetime',
+        'provider_sync_attempts' => 'integer',
     ];
 
     public function teacher()

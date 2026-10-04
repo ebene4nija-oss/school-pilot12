@@ -18,6 +18,7 @@ class LiveClassParticipant extends Model
     protected $fillable = [
         'school_id', 'live_class_id', 'student_id', 'first_joined_at', 'last_left_at', 'last_seen_at', 'connected',
         'seconds_connected', 'joins', 'corrected_status', 'corrected_by', 'correction_reason', 'corrected_at',
+        'provider_seconds', 'provider_first_joined_at',
     ];
 
     protected $casts = [
@@ -28,5 +29,7 @@ class LiveClassParticipant extends Model
         'connected' => 'boolean',
         'seconds_connected' => 'integer',
         'joins' => 'integer',
+        'provider_seconds' => 'integer',
+        'provider_first_joined_at' => 'datetime',
     ];
 }
