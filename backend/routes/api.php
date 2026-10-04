@@ -30,6 +30,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
         ->middleware('throttle:password-reset');
 
+    // A learning material opened from the mobile app in the phone's own viewer.
+    // No session: the ten-minute signature issued by /learning-materials/{id}/link
+    // is the permission.
+    Route::get('/learning-materials/{id}/file', [\App\Http\Controllers\Api\V1\LearningMaterialController::class, 'signedFile'])
+        ->whereNumber('id')->middleware(['signed', 'throttle:60,1'])->name('learning-materials.file');
+
     // Authenticated Protected Routes
     //
     // BindTenantFromUser runs after authentication because the tenant

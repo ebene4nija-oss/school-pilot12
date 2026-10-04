@@ -81,11 +81,20 @@ class SyncService extends ValueNotifier<SyncState> {
     try {
       for (final item in await _outbox.due()) {
         try {
-          await _api.replay(
+          final res = await _api.replay(
             method: item.method,
             path: item.path,
             body: item.body,
           );
+
+          // A 200 can still refuse some rows: a register synced the day after
+          // it was taken is a past-day correction, which only an admin may
+          // make. Those rows are kept and shown, not silently dropped.
+          final refused = refusedRows(res.data);
+          if (refused != null) {
+            await _outbox.markFailed(item, refused);
+            continue;
+          }
           await _outbox.remove(item.id);
         } catch (error) {
           final failure = asApiException(error);
@@ -108,6 +117,22 @@ class SyncService extends ValueNotifier<SyncState> {
       value = value.copyWith(syncing: false);
       await refreshCounts();
     }
+  }
+
+  /// The server's "these rows were not saved" list, as one line a person can
+  /// act on, or null when everything went in.
+  @visibleForTesting
+  static String? refusedRows(Object? body) {
+    if (body is! Map) return null;
+    final rejected = body['rejected'];
+    if (rejected is! List || rejected.isEmpty) return null;
+
+    final first = rejected.first;
+    final reason = first is Map ? first['reason']?.toString() : null;
+    final count = rejected.length;
+
+    return '$count ${count == 1 ? 'row was' : 'rows were'} not saved'
+        '${reason == null || reason.isEmpty ? '.' : ': $reason'}';
   }
 
   Future<void> retryFailed() async {

@@ -73,8 +73,33 @@ class MoreScreen extends ConsumerWidget {
           if (role == UserRole.teacher || role.isAdmin)
             _Tile(
               icon: Icons.calendar_month_outlined,
-              label: 'Timetable',
+              label: role == UserRole.teacher ? 'My lessons and rooms' : 'Timetable',
               onTap: () => context.push('/timetable'),
+            ),
+          if (role != UserRole.parent)
+            _Tile(
+              icon: Icons.menu_book_outlined,
+              label: 'My library books',
+              onTap: () => context.push('/library'),
+            ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.qr_code_scanner,
+              label: 'Library desk',
+              detail: 'Lend and take back books by scanning',
+              onTap: () => context.push('/library/desk'),
+            ),
+          if (role != UserRole.parent)
+            _Tile(
+              icon: Icons.badge_outlined,
+              label: 'My ID card',
+              onTap: () => context.push('/id-card'),
+            ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.receipt_long_outlined,
+              label: 'My payslips',
+              onTap: () => context.push('/payslips'),
             ),
           if (role == UserRole.student)
             _Tile(

@@ -194,4 +194,54 @@ class Api {
       : '$version/gamification/profile/$studentId';
 
   static const health = '$version/health';
+
+  // Student portal: today with venues and cover teachers.
+  static const myDashboard = '$version/me/dashboard';
+  // The student's own class week, with each lesson's venue.
+  static const myTimetable = '$version/me/timetable';
+
+  // Learning: materials, virtual classes, the student's learning record.
+  static const myLearning = '$version/me/learning';
+  static const parentLearning = '$version/parent/learning';
+  static const learningMaterials = '$version/learning-materials';
+  // A ten-minute signed URL the phone's own viewer can open; the app's token
+  // never leaves secure storage.
+  static String learningMaterialLink(int id) =>
+      '$version/learning-materials/$id/link';
+  static String liveClassJoin(int id) => '$version/live-classes/$id/join';
+  static String liveClassHeartbeat(int id) =>
+      '$version/live-classes/$id/heartbeat';
+
+  // Library
+  static const libraryBooks = '$version/library/books';
+  static const libraryMine = '$version/library/me';
+  static String libraryChild(int studentId) =>
+      '$version/library/children/$studentId';
+  static const libraryLoans = '$version/library/loans';
+  static const libraryReturns = '$version/library/returns';
+  static String libraryRenew(int loanId) =>
+      '$version/library/loans/$loanId/renew';
+  static const libraryReservations = '$version/library/reservations';
+  static String libraryReservation(int id) =>
+      '$version/library/reservations/$id';
+  static const libraryBorrowers = '$version/library/borrowers';
+
+  // Hostel (boarders and their parents)
+  static const myHostel = '$version/me/hostel';
+  static const parentHostel = '$version/parent/hostel';
+
+  // Digital ID cards, where the school issues them
+  static const myIdCard = '$version/me/id-card';
+  static const parentIdCards = '$version/parent/id-cards';
+
+  // Staff payslips (approved and paid months only)
+  static const myPayslips = '$version/me/payslips';
+
+  // Timetable venues: where a teacher's lesson is held
+  static String freeVenues(int entryId) =>
+      '$version/timetable/entries/$entryId/free-venues';
+  static String entryVenue(int entryId) =>
+      '$version/timetable/entries/$entryId/venue';
+  static String entryVenueChange(int entryId) =>
+      '$version/timetable/entries/$entryId/venue-changes';
 }

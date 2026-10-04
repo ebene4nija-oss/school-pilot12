@@ -20,6 +20,7 @@ Route::put('/lms/settings', [LearningMaterialController::class, 'updateSettings'
 
 // The library: everyone reads what is shared with them; staff publish.
 Route::get('/learning-materials', [LearningMaterialController::class, 'index'])->middleware('role:school_admin,teacher,student,parent');
+Route::get('/learning-materials/{id}/link', [LearningMaterialController::class, 'link'])->whereNumber('id')->middleware(['role:school_admin,teacher,student,parent', 'throttle:120,1']);
 Route::get('/learning-materials/{id}/download', [LearningMaterialController::class, 'download'])->whereNumber('id')->middleware(['role:school_admin,teacher,student,parent', 'throttle:120,1']);
 Route::middleware('role:school_admin,teacher')->group(function () {
     Route::post('/learning-materials', [LearningMaterialController::class, 'store'])->middleware('throttle:30,1');

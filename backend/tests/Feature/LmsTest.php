@@ -112,6 +112,21 @@ class LmsTest extends TestCase
     // Materials (criteria 1, 2, 11)
     // ==================================================================
 
+    public function test_the_app_opens_a_material_through_a_short_lived_signed_link(): void
+    {
+        $id = $this->upload($this->teacher, [['target_type' => 'class', 'class_id' => $this->jss1->id]])->assertCreated()->json('material.id');
+
+        $this->as($this->emeka)->getJson("{$this->host}/learning-materials/{$id}/link")->assertNotFound();
+        $url = $this->as($this->ada)->getJson("{$this->host}/learning-materials/{$id}/link")->assertOk()->json('url');
+        $this->app['auth']->forgetGuards();
+
+        // No session needed: the signature is the permission, and it cannot be bent to another file.
+        $this->get($url)->assertOk()->assertDownload('fractions.pdf');
+        $this->get(str_replace("/learning-materials/{$id}/file", '/learning-materials/'.($id + 1).'/file', $url))->assertForbidden();
+        $this->travel(11)->minutes();
+        $this->get($url)->assertForbidden();
+    }
+
     public function test_a_material_reaches_its_class_and_nobody_else(): void
     {
         $id = $this->upload($this->teacher, [['target_type' => 'class', 'class_id' => $this->jss1->id]])->assertCreated()->json('material.id');

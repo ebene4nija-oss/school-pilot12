@@ -264,6 +264,42 @@ class LearningMaterialController extends Controller
             : response()->file($path, $headers + ['Content-Disposition' => 'inline']);
     }
 
+    /**
+     * A link the phone's own browser or PDF viewer can open. The app's token
+     * lives in secure storage and never leaves it, so instead of handing it to
+     * the browser the API signs a URL for this one file, valid for ten minutes.
+     */
+    public function link(Request $request, int $id): JsonResponse
+    {
+        $m = LearningMaterial::where('school_id', $this->schoolId())->findOrFail($id);
+        abort_unless($this->lms->canSee($request->user(), $m), 404);
+        $this->recordOpen($request, $m);
+
+        if ($m->type === 'link') {
+            return response()->json(['url' => $m->url, 'expires_at' => null]);
+        }
+        abort_unless($m->file_path && Storage::disk('local')->exists($m->file_path), 404, 'The file is no longer available.');
+        $expires = now()->addMinutes(10);
+
+        return response()->json([
+            'url' => \Illuminate\Support\Facades\URL::temporarySignedRoute('learning-materials.file', $expires, ['id' => $m->id]),
+            'expires_at' => $expires->toIso8601String(),
+        ]);
+    }
+
+    /** The file behind a signed link. The signature is the permission. */
+    public function signedFile(int $id)
+    {
+        $m = LearningMaterial::withoutGlobalScopes()->where('status', 'published')->findOrFail($id);
+        abort_unless($m->file_path && Storage::disk('local')->exists($m->file_path), 404, 'The file is no longer available.');
+        $path = Storage::disk('local')->path($m->file_path);
+        $headers = ['Content-Type' => $m->mime ?: 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store'];
+
+        return $m->downloadable
+            ? response()->download($path, $m->file_name ?: basename($path), $headers)
+            : response()->file($path, $headers + ['Content-Disposition' => 'inline']);
+    }
+
     /** Who it reached: targeted students, and which of them opened it (§8.2). */
     public function reach(Request $request, int $id): JsonResponse
     {

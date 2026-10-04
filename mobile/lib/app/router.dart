@@ -14,8 +14,11 @@ import '../features/dashboard/home_screen.dart';
 import '../features/finance/fees_screen.dart';
 import '../features/gradebook/comment_review_screen.dart';
 import '../features/gradebook/gradebook_tab.dart';
+import '../features/idcard/id_card_screen.dart';
 import '../features/learn/learn_tab.dart';
 import '../features/learn/tutor_chat_screen.dart';
+import '../features/library/library_desk_screen.dart';
+import '../features/library/library_screen.dart';
 import '../features/messages/messages_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/more/notifications_screen.dart';
@@ -23,6 +26,7 @@ import '../features/more/pending_sync_screen.dart';
 import '../features/more/profile_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/shell/app_shell.dart';
+import '../features/staff/payslips_screen.dart';
 import '../features/students/students_screen.dart';
 import '../features/timetable/timetable_screen.dart';
 import 'navigation.dart';
@@ -81,6 +85,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/gradebook/comments',
         builder: (_, __) => const CommentReviewScreen(),
       ),
+      GoRoute(path: '/library', builder: (_, __) => const LibraryScreen()),
+      GoRoute(path: '/library/desk', builder: (_, __) => const LibraryDeskScreen()),
+      GoRoute(path: '/id-card', builder: (_, __) => const IdCardScreen()),
+      GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
 
       ShellRoute(
         builder: (context, state, child) =>

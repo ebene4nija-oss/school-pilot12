@@ -126,6 +126,10 @@ class TimetableVenueTest extends TestCase
         $this->assertSame('Science Lab', $periods['P2']['venue']);
         $this->assertSame('JSS 2 Room', $periods['P1']['venue']);
 
+        // The week view carries the standing venue, without one-day moves.
+        $week = collect($this->as($ada)->getJson("{$this->host}/me/timetable")->assertOk()->json('days.Monday'))->keyBy('slot_name');
+        $this->assertSame('JSS 2 Room', $week['P2']['venue']);
+
         // The lab is now taken at P2 that day, but not on other Mondays.
         $other = DB::table('timetable_entries')->insertGetId(['timetable_version_id' => $this->version, 'school_class_id' => $this->jss1->id, 'subject_name' => 'Agric', 'teacher_id' => $this->bello->id, 'day_of_week' => 'Monday', 'slot_name' => 'P2', 'start_time' => '08:40', 'end_time' => '09:20', 'is_break' => false, 'created_at' => now(), 'updated_at' => now()]);
         $this->as($this->bello)->postJson("{$this->host}/timetable/entries/{$other}/venue-changes", ['date' => '2026-10-05', 'venue_id' => $this->lab->id])->assertStatus(409);

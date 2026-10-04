@@ -83,7 +83,15 @@ class StudentPortalController extends Controller
     {
         $student = $this->student($request);
 
-        return response()->json(['days' => $this->timetable($student)->groupBy('day')->sortBy(fn ($v, $day) => array_search($day, self::DAYS, true))]);
+        $periods = $this->timetable($student);
+        // Where each lesson is held, week to week (the class's own room unless moved).
+        $venues = app(\App\Services\Timetable\VenueService::class)->namesFor(
+            DB::table('timetable_entries')->whereIn('id', $periods->pluck('entry_id'))->get(['id', 'school_class_id', 'venue_id']),
+            (int) $student->school_id,
+        );
+        $periods = $periods->map(fn ($p) => (object) array_merge((array) $p, ['venue' => $venues[$p->entry_id] ?? null]));
+
+        return response()->json(['days' => $periods->groupBy('day')->sortBy(fn ($v, $day) => array_search($day, self::DAYS, true))]);
     }
 
     /** My Subjects (06): what the student is enrolled in, with what each subject holds for them. */

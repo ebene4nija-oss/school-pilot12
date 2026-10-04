@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>SchoolPilot uses the camera to scan QR codes and book barcodes, and to photograph homework.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SchoolPilot checks you are at school when you clock in.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SchoolPilot lets you choose a photo to hand in with homework or a profile.</string>
 </dict>
 </plist>
