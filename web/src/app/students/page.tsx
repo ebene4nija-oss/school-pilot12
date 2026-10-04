@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { fetchApi, uploadApi } from '@/lib/api';
 import type { Student } from '@/types/api';
 import EnrolStudentForm, { type ClassOption } from '@/components/EnrolStudentForm';
+import StudentDirectory from '@/components/StudentDirectory';
 
 type ImportRow = {
   line: number;
@@ -566,47 +567,8 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* Live Roster Table */}
-        <div className="bg-surface border border-line-soft rounded-xl overflow-hidden shadow-lg">
-          <div className="p-4 border-b border-line-soft flex justify-between items-center">
-            <h3 className="font-semibold text-ink">Live Enrolled Students Roster</h3>
-            <span className="text-xs bg-surface-raised text-ink px-2.5 py-1 rounded-full">{students.length} Records</span>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-sm text-ink-muted">Loading live student database records...</div>
-          ) : students.length === 0 ? (
-            <div className="p-8 text-center text-sm text-ink-muted">No student records found in live backend database.</div>
-          ) : (
-            <table className="w-full text-left text-sm text-ink">
-              <thead className="bg-canvas text-ink-muted text-xs font-semibold uppercase">
-                <tr>
-                  <th className="p-3.5">Admission No</th>
-                  <th className="p-3.5">Student Name</th>
-                  <th className="p-3.5">Class</th>
-                  <th className="p-3.5">Gender</th>
-                  <th className="p-3.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {students.map((student) => (
-                  <tr key={student.id} className="hover:bg-surface-sunken transition">
-                    <td className="p-3.5 font-mono text-positive text-xs">{student.admission_number || `SP-${student.id}`}</td>
-                    {/* Flat on the resource: the endpoint folds the user in. */}
-                    <td className="p-3.5 font-medium text-ink">{student.name ?? '—'}</td>
-                    <td className="p-3.5 text-xs text-ink-muted">{[student.class, student.arm].filter(Boolean).join(' ') || '—'}</td>
-                    <td className="p-3.5 capitalize">{student.gender}</td>
-                    <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-positive-soft text-positive border border-positive/20 text-xs font-medium rounded-md capitalize">
-                        {student.status ?? 'active'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {/* The student list: server-side search, filters, scope and bulk actions. */}
+        {activeTab === 'roster' && <StudentDirectory />}
       </main>
     </div>
   );

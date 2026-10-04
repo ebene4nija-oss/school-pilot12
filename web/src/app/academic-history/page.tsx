@@ -40,7 +40,12 @@ function isAdmin(): boolean {
 
 export default function AcademicHistoryPage() {
   const [admin] = useState(isAdmin);
-  const [picked, setPicked] = useState<PickedStudent | null>(null);
+  // Opened from the student list with ?student_id=…
+  const [picked, setPicked] = useState<PickedStudent | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const id = Number(new URLSearchParams(window.location.search).get('student_id'));
+    return id ? { id, name: null, admission_number: null, class: null } : null;
+  });
   const [tab, setTab] = useState<Tab>('overview');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [docs, setDocs] = useState<{ types: Record<string, string>; data: Doc[] } | null>(null);

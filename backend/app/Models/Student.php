@@ -84,6 +84,41 @@ class Student extends Model
         'emergency_contacts',
     ];
 
+    /**
+     * Changes to the fields that matter are recorded with who, when and why,
+     * whichever code path makes them (View Students spec §3 rule 5). Old
+     * values are never lost to an overwrite.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (Student $student) {
+            foreach (StudentRecordChange::TRACKED as $field) {
+                if (! $student->wasChanged($field)) {
+                    continue;
+                }
+
+                try {
+                    StudentRecordChange::withoutGlobalScopes()->create([
+                        'school_id' => $student->school_id,
+                        'student_id' => $student->id,
+                        'field' => $field,
+                        'old_value' => self::plain($student->getOriginal($field)),
+                        'new_value' => self::plain($student->getAttribute($field)),
+                        'reason' => StudentRecordChange::currentReason(),
+                        'changed_by' => auth()->id(),
+                    ]);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        });
+    }
+
+    private static function plain(mixed $value): ?string
+    {
+        return $value instanceof \DateTimeInterface ? $value->format('Y-m-d') : ($value === null ? null : (string) $value);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

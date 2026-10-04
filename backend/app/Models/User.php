@@ -70,6 +70,36 @@ class User extends Authenticatable
         return $this->hasOne(UserProfile::class);
     }
 
+    /** A student's name change is part of their record's history. */
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if (! $user->wasChanged('name')) {
+                return;
+            }
+
+            $student = Student::withoutGlobalScopes()->where('user_id', $user->id)->first(['id', 'school_id']);
+
+            if (! $student) {
+                return;
+            }
+
+            try {
+                StudentRecordChange::withoutGlobalScopes()->create([
+                    'school_id' => $student->school_id,
+                    'student_id' => $student->id,
+                    'field' => 'name',
+                    'old_value' => $user->getOriginal('name'),
+                    'new_value' => $user->name,
+                    'reason' => StudentRecordChange::currentReason(),
+                    'changed_by' => auth()->id(),
+                ]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
+    }
+
     public function customRoles()
     {
         return $this->belongsToMany(CustomRole::class, 'user_roles', 'user_id', 'custom_role_id')
