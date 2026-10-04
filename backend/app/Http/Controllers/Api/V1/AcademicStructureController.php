@@ -141,21 +141,8 @@ class AcademicStructureController extends Controller
      */
     private function resolveCurrentTerm(Collection $terms): ?Term
     {
-        $today = now()->startOfDay();
-
-        $containing = $terms->first(
-            fn (Term $term) => $term->start_date && $term->end_date
-                && $today->gte($term->start_date) && $today->lte($term->end_date)
-        );
-
-        if ($containing) {
-            return $containing;
-        }
-
-        // `$terms` arrives ordered by start_date descending, so the first row
-        // that has already started is the most recent one.
-        return $terms->firstWhere('is_current', true)
-            ?? $terms->first(fn (Term $term) => $term->start_date && $term->start_date->lte($today));
+        // Shared with every module that needs "this term" (see CurrentTerm).
+        return \App\Support\CurrentTerm::pick($terms);
     }
 
 }

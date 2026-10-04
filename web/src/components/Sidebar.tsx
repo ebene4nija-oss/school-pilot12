@@ -79,6 +79,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'People',
     items: [
       { href: '/students', icon: '🎓', label: 'Students', roles: ['school_admin', 'teacher'] },
+      { href: '/progress', icon: '📈', label: 'Progress & analysis', roles: ['school_admin', 'teacher'] },
       { href: '/academic-history', icon: '📚', label: 'Academic history', roles: ['school_admin', 'teacher'] },
       { href: '/transfers', icon: '🔁', label: 'Transfers', roles: ['school_admin'] },
       { href: '/staff', icon: '👩‍🏫', label: 'Staff & leave', roles: ['school_admin'] },

@@ -470,6 +470,12 @@ class BroadsheetWorkflow
             $broadsheet->update(['report_cards_stale' => true]);
             $this->grading->recomputeClassPositions($broadsheet->school_id, $broadsheet->class_id, $broadsheet->term_id);
 
+            // Progress reports already downloaded no longer match (PRD §15.4).
+            \App\Models\ProgressReportExport::withoutGlobalScopes()
+                ->where('school_id', $broadsheet->school_id)
+                ->where('student_id', $correction->student_id)
+                ->update(['outdated' => true]);
+
             // A closed term's locked record follows, as a new version.
             app(\App\Services\History\AcademicRecordService::class)
                 ->applyBroadsheetCorrection($broadsheet->fresh(), (int) $correction->student_id, $correction->reason, $user);
