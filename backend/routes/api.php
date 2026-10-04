@@ -162,6 +162,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * /api/v1 without repeating them.
          */
         require __DIR__.'/modules/results.php';
+        require __DIR__.'/modules/history.php';
 
         /*
          * The fee-structure builder (§7.12).
@@ -995,6 +996,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
      * gate, repeatedly, by people who are in a hurry.
      */
     Route::middleware('throttle:20,1')->get('/verify-id/{token}', [\App\Http\Controllers\Api\V1\IdCardController::class, 'verify']);
+
+    /*
+     * Transcripts and transfer certificates carry a QR pointing here. Public
+     * because the person checking is usually at another school; it reveals
+     * only whether the document is genuine, unaltered and still valid.
+     */
+    Route::middleware('throttle:20,1')->get('/verify-document/{reference}', [\App\Http\Controllers\Api\V1\AcademicHistoryController::class, 'verifyDocument']);
+
+    // A transfer package by its expiring secret link, for a school not on SchoolPilot.
+    Route::middleware('throttle:10,1')->get('/transfer-packages/{token}', [\App\Http\Controllers\Api\V1\TransferController::class, 'packageByLink']);
 
     // OpenAPI / Swagger Documentation Spec
     Route::get('/docs/openapi.json', [\App\Http\Controllers\Api\V1\SwaggerDocController::class, 'getSpec']);

@@ -24,7 +24,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use RuntimeException;
+use App\Exceptions\DomainRefusal;
 
 /**
  * The broadsheet: consolidated class results, their review, and the record of
@@ -910,7 +910,7 @@ class BroadsheetController extends Controller
             return response()->json($action(), $status);
         } catch (AuthorisationFailure $e) {
             return response()->json(['message' => $e->getMessage()], 403);
-        } catch (RuntimeException $e) {
+        } catch (DomainRefusal $e) {
             return response()->json(['message' => $e->getMessage()], 409);
         }
     }

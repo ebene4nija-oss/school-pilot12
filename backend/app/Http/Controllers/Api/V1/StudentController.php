@@ -152,105 +152,21 @@ class StudentController extends Controller
 
         $resets = app(PasswordResetService::class);
 
-        [$student, $newGuardianUsers] = DB::transaction(function () use ($request, $admin, $schoolId, $directory) {
-            /*
-             * Never seen by anyone, including the admin creating the record.
-             * It exists so the row is never briefly stored with a guessable
-             * password; the student receives a setup link instead, sent once
-             * the transaction has committed.
-             */
-            $tempPassword = bin2hex(random_bytes(32));
+        $passportPhotoPath = $request->passport_photo_path;
+        if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
+            $file = $request->file('avatar') ?? $request->file('passport_photo');
+            $passportPhotoPath = $file->store('students/avatars', 'public');
+        }
 
-            $passportPhotoPath = $request->passport_photo_path;
-            if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
-                $file = $request->file('avatar') ?? $request->file('passport_photo');
-                $passportPhotoPath = $file->store('students/avatars', 'public');
-            }
-
-            $user = User::create([
-                'name' => $request->name,
-                'email' => filled($request->email) ? strtolower(trim($request->email)) : null,
-                'password' => Hash::make($tempPassword),
-            ]);
-
-            UserProfile::create([
-                'school_id' => $schoolId,
-                'user_id' => $user->id,
-                'role' => 'student',
-                'phone' => GuardianDirectory::canonicalPhone($request->phone),
-                'avatar_url' => $passportPhotoPath,
-            ]);
-
-            // Same format as the importer, so a school's numbers read as one
-            // series however each child was enrolled.
-            $admission = filled($request->admission_number)
-                ? trim($request->admission_number)
-                : $this->nextAdmissionNumber($schoolId);
-
-            $student = Student::create([
-                'school_id' => $schoolId,
-                'user_id' => $user->id,
-                'class_id' => $request->class_id,
-                'arm_id' => $request->arm_id,
-                'admission_number' => $admission,
-                'gender' => $request->gender,
-                'date_of_birth' => $request->date_of_birth,
-                'state_of_origin' => $request->state_of_origin,
-                'lga' => $request->lga,
-                'religion' => $request->religion,
-                'previous_school' => $request->previous_school,
-                'blood_group' => $request->blood_group,
-                'allergies' => $request->allergies,
-                'medical_notes' => $request->medical_notes,
-                'birth_certificate_reference' => $request->birth_certificate_reference,
-                'passport_photo_path' => $passportPhotoPath,
-                'emergency_contacts' => $request->emergency_contacts,
-                'status' => 'active',
-            ]);
-
-            // Joins the current session straight away, or the next rollover
-            // would skip a child enrolled mid-year.
-            $sessionId = AcademicSession::where('school_id', $schoolId)->where('is_current', true)->value('id');
-
-            if ($sessionId && $request->class_id) {
-                StudentEnrollment::create([
-                    'school_id' => $schoolId,
-                    'student_id' => $student->id,
-                    'session_id' => $sessionId,
-                    'class_id' => $request->class_id,
-                    'arm_id' => $request->arm_id,
-                    'status' => 'active',
-                    'enrolled_on' => now()->toDateString(),
-                    'recorded_by' => $admin->id,
-                ]);
-            }
-
-            $newGuardianUsers = [];
-
-            foreach (array_values($request->input('guardians', [])) as $index => $details) {
-                $result = $directory->findOrCreate($schoolId, $details);
-
-                if (! $student->guardians()->whereKey($result['guardian']->id)->exists()) {
-                    $student->guardians()->attach($result['guardian']->id, ['is_primary' => $index === 0]);
-                }
-
-                if ($result['created']) {
-                    $newGuardianUsers[] = $result['guardian']->user;
-                }
-            }
-
-            AuditLog::create([
-                'school_id' => $schoolId,
-                'user_id' => $admin->id,
-                'action' => 'student.created',
-                'auditable_type' => Student::class,
-                'auditable_id' => $student->id,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-
-            return [$student, $newGuardianUsers];
-        });
+        // The same path an accepted admission or an approved transfer takes.
+        [$student, $newGuardianUsers] = app(\App\Services\StudentEnrolmentService::class)->enrol(
+            $schoolId,
+            $validator->validated(),
+            $admin,
+            $passportPhotoPath,
+            $request->ip(),
+            $request->userAgent(),
+        );
 
         $school = School::find($schoolId);
 
@@ -372,17 +288,7 @@ class StudentController extends Controller
     /** YYYY/NNNN, continuing the school's series. */
     private function nextAdmissionNumber(int $schoolId): string
     {
-        $sequence = (int) Student::withoutGlobalScopes()->where('school_id', $schoolId)->count();
-
-        do {
-            $sequence++;
-            $candidate = sprintf('%s/%04d', now()->format('Y'), $sequence);
-        } while (Student::withoutGlobalScopes()
-            ->where('school_id', $schoolId)
-            ->where('admission_number', $candidate)
-            ->exists());
-
-        return $candidate;
+        return app(\App\Services\StudentEnrolmentService::class)->nextAdmissionNumber($schoolId);
     }
 
     public function show(Request $request, $id)

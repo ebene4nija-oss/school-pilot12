@@ -20,7 +20,7 @@ use App\Services\ScoreInput;
 use App\Services\Sections\HeadResolver;
 use App\Support\Sections;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
+use App\Exceptions\DomainRefusal;
 
 /**
  * A class's results moving through review (decision D2, broadsheet spec §9).
@@ -35,7 +35,7 @@ use RuntimeException;
  *  - Final approval freezes a hashed snapshot. A later change is a correction:
  *    it waits for approval, then produces a new version and keeps the old one.
  *
- * Failures are RuntimeException with a sentence fit to show the user; the
+ * Failures are DomainRefusal with a sentence fit to show the user; the
  * controller turns them into 409/403 responses.
  */
 class BroadsheetWorkflow
@@ -149,7 +149,7 @@ class BroadsheetWorkflow
     public function submitSubject(Broadsheet $broadsheet, int $subjectId, User $user): BroadsheetSubjectSubmission
     {
         if (! in_array($broadsheet->status, ['draft', 'returned', 'rejected'], true)) {
-            throw new RuntimeException('This broadsheet is already under review; subjects can only be handed in before review starts or after a return.');
+            throw new DomainRefusal('This broadsheet is already under review; subjects can only be handed in before review starts or after a return.');
         }
 
         $this->authorise($broadsheet, 'subject_teacher', $user, $subjectId);
@@ -206,7 +206,7 @@ class BroadsheetWorkflow
     public function approve(Broadsheet $broadsheet, User $user, ?string $note = null): array
     {
         if ($broadsheet->status !== 'in_review') {
-            throw new RuntimeException('Only a broadsheet under review can be approved.');
+            throw new DomainRefusal('Only a broadsheet under review can be approved.');
         }
 
         $role = $broadsheet->currentStepRole();
@@ -214,13 +214,13 @@ class BroadsheetWorkflow
         $validation = $this->validator->validate($calc, $broadsheet);
 
         if ($validation['errors'] > 0) {
-            throw new RuntimeException("{$validation['errors']} error(s) must be fixed before this step can be approved.");
+            throw new DomainRefusal("{$validation['errors']} error(s) must be fixed before this step can be approved.");
         }
 
         $isFinal = $broadsheet->current_step === count($broadsheet->steps) - 1;
 
         if ($isFinal && $validation['unresolved_warnings'] > 0) {
-            throw new RuntimeException("{$validation['unresolved_warnings']} warning(s) need a recorded override before final approval.");
+            throw new DomainRefusal("{$validation['unresolved_warnings']} warning(s) need a recorded override before final approval.");
         }
 
         return DB::transaction(function () use ($broadsheet, $user, $note, $role, $calc, $validation, $isFinal) {
@@ -228,7 +228,7 @@ class BroadsheetWorkflow
                 $departments = $this->hodDepartmentsFor($broadsheet, $calc, $user);
 
                 if ($departments === []) {
-                    throw new RuntimeException('You are not the head of any department with a subject on this broadsheet.');
+                    throw new DomainRefusal('You are not the head of any department with a subject on this broadsheet.');
                 }
 
                 foreach ($departments as $department) {
@@ -276,7 +276,7 @@ class BroadsheetWorkflow
     public function returnItems(Broadsheet $broadsheet, User $user, array $items, string $reason): Broadsheet
     {
         if ($broadsheet->status !== 'in_review') {
-            throw new RuntimeException('Only a broadsheet under review can be returned. Approved results change through a correction.');
+            throw new DomainRefusal('Only a broadsheet under review can be returned. Approved results change through a correction.');
         }
 
         $this->authoriseReviewer($broadsheet, $user);
@@ -289,7 +289,7 @@ class BroadsheetWorkflow
                     ->first();
 
                 if (! $submission) {
-                    throw new RuntimeException('A returned subject is not on this broadsheet.');
+                    throw new DomainRefusal('A returned subject is not on this broadsheet.');
                 }
 
                 $submission->update([
@@ -308,7 +308,7 @@ class BroadsheetWorkflow
     public function reject(Broadsheet $broadsheet, User $user, string $reason): Broadsheet
     {
         if ($broadsheet->status !== 'in_review') {
-            throw new RuntimeException('Only a broadsheet under review can be rejected.');
+            throw new DomainRefusal('Only a broadsheet under review can be rejected.');
         }
 
         $this->authoriseReviewer($broadsheet, $user);
@@ -334,11 +334,11 @@ class BroadsheetWorkflow
         $issue = collect($validation['issues'])->first(fn ($i) => $i['code'] === $code && $i['key'] === $key);
 
         if (! $issue) {
-            throw new RuntimeException('That issue is not on this broadsheet any more.');
+            throw new DomainRefusal('That issue is not on this broadsheet any more.');
         }
 
         if ($issue['severity'] !== 'warning') {
-            throw new RuntimeException('Only warnings can be overridden. Errors have to be fixed.');
+            throw new DomainRefusal('Only warnings can be overridden. Errors have to be fixed.');
         }
 
         $override = BroadsheetOverride::withoutGlobalScopes()->updateOrCreate(
@@ -355,7 +355,7 @@ class BroadsheetWorkflow
     public function publish(Broadsheet $broadsheet, User $user): Broadsheet
     {
         if ($broadsheet->status !== 'approved') {
-            throw new RuntimeException('Only approved results can be published.');
+            throw new DomainRefusal('Only approved results can be published.');
         }
 
         $this->authoriseRelease($broadsheet, $user);
@@ -379,7 +379,7 @@ class BroadsheetWorkflow
     public function requestCorrection(Broadsheet $broadsheet, User $user, int $studentId, int $subjectId, array $newValues, string $reason): BroadsheetCorrection
     {
         if (! $broadsheet->isLocked()) {
-            throw new RuntimeException('Results that are not yet approved are edited directly, not corrected.');
+            throw new DomainRefusal('Results that are not yet approved are edited directly, not corrected.');
         }
 
         $allowed = $this->heads->canAct($user, $broadsheet->school_id, 'subject_teacher', $broadsheet->class_id, $broadsheet->level_group, $subjectId)
@@ -394,7 +394,7 @@ class BroadsheetWorkflow
         $student = collect($calc['students'])->firstWhere('id', $studentId);
 
         if (! $student || ! isset($student['results'][$subjectId])) {
-            throw new RuntimeException('That student and subject are not on this broadsheet.');
+            throw new DomainRefusal('That student and subject are not on this broadsheet.');
         }
 
         $current = $student['results'][$subjectId];
@@ -424,7 +424,7 @@ class BroadsheetWorkflow
         $broadsheet = Broadsheet::withoutGlobalScopes()->findOrFail($correction->broadsheet_id);
 
         if ($correction->status !== 'pending') {
-            throw new RuntimeException('This correction has already been decided.');
+            throw new DomainRefusal('This correction has already been decided.');
         }
 
         if (! $this->canDecideCorrections($broadsheet, $user)) {
@@ -432,7 +432,7 @@ class BroadsheetWorkflow
         }
 
         if ($correction->requested_by === $user->id && $user->userProfile?->role !== 'school_admin') {
-            throw new RuntimeException('A correction needs approval from someone other than the person who requested it.');
+            throw new DomainRefusal('A correction needs approval from someone other than the person who requested it.');
         }
 
         return DB::transaction(function () use ($correction, $broadsheet, $user, $approve, $note) {
@@ -449,7 +449,7 @@ class BroadsheetWorkflow
             $validation = $this->validator->validate($calc, $broadsheet);
 
             if ($validation['errors'] > 0) {
-                throw new RuntimeException('The corrected marks would leave the broadsheet with errors: '.collect($validation['issues'])->where('severity', 'error')->pluck('message')->first());
+                throw new DomainRefusal('The corrected marks would leave the broadsheet with errors: '.collect($validation['issues'])->where('severity', 'error')->pluck('message')->first());
             }
 
             BroadsheetVersion::withoutGlobalScopes()
@@ -469,6 +469,10 @@ class BroadsheetWorkflow
 
             $broadsheet->update(['report_cards_stale' => true]);
             $this->grading->recomputeClassPositions($broadsheet->school_id, $broadsheet->class_id, $broadsheet->term_id);
+
+            // A closed term's locked record follows, as a new version.
+            app(\App\Services\History\AcademicRecordService::class)
+                ->applyBroadsheetCorrection($broadsheet->fresh(), (int) $correction->student_id, $correction->reason, $user);
             $this->log($broadsheet, 'correction_applied', $user, $note, ['correction_id' => $correction->id, 'version' => $version->version]);
 
             return $correction->fresh();

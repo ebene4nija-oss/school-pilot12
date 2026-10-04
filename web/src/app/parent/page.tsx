@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Card, Empty, ErrorNote, Loading, PageShell } from '@/components/Page';
+import ParentTransfers from '@/components/ParentTransfers';
 
 /**
  * A parent's page on the web portal: their children, each child's recent
@@ -178,6 +179,7 @@ export default function ParentHome() {
           })}
         </div>
       )}
+      <ParentTransfers />
     </PageShell>
   );
 }
