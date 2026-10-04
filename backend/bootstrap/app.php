@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RequireRole::class,
             'require.2fa' => \App\Http\Middleware\RequireTwoFactorEnrolment::class,
         ]);
+
+        // Every uploaded file is looked inside before a controller keeps it.
+        $middleware->api(append: [\App\Http\Middleware\ScanUploads::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

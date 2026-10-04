@@ -192,4 +192,16 @@ return [
         ],
     ],
 
+    /*
+     * Optional virus scanning of uploads with ClamAV (free software on the
+     * server). Unset = off; content checks still run. Host is a hostname or
+     * a clamd unix socket path. When set, uploads are refused if ClamAV is
+     * unreachable unless fail_open is true.
+     */
+    'clamav' => [
+        'host' => env('CLAMAV_HOST'),
+        'port' => (int) env('CLAMAV_PORT', 3310),
+        'fail_open' => (bool) env('CLAMAV_FAIL_OPEN', false),
+    ],
+
 ];
