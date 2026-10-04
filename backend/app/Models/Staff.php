@@ -30,6 +30,11 @@ class Staff extends Model
         'leave_allocations',
         'employment_date',
         'employment_history',
+        'employment_status',
+        'employment_type',
+        'department',
+        'separated_on',
+        'separation_reason',
     ];
 
     protected $casts = [
@@ -37,6 +42,7 @@ class Staff extends Model
         'employment_history' => 'array',
         'leave_allocations' => 'array',
         'employment_date' => 'date',
+        'separated_on' => 'date',
         'salary' => 'decimal:2',
     ];
 

@@ -110,6 +110,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Operations',
     items: [
       { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin', 'bursar'] },
+      { href: '/payroll', icon: '💼', label: 'Payroll', roles: ['school_admin', 'bursar', 'teacher', 'nurse'] },
       { href: '/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['school_admin', 'bursar'] },
       { href: '/library', icon: '📚', label: 'Library', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'library' },
       { href: '/hostel', icon: '🛏️', label: 'Hostel', roles: ['school_admin', 'teacher', 'nurse'], module: 'hostel' },

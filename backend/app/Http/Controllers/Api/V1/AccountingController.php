@@ -22,7 +22,8 @@ class AccountingController extends Controller
         $schoolId = $this->schoolId();
 
         $validator = Validator::make($request->all(), [
-            'staff_id'     => ['required', \Illuminate\Validation\Rule::exists('users', 'id')],
+            // Someone on this school's staff, not any user on the platform.
+            'staff_id'     => ['required', \Illuminate\Validation\Rule::exists('user_profiles', 'user_id')->where('school_id', $schoolId)],
             'month_year'   => 'required|string',
             'basic_salary' => 'required|numeric|min:0',
             'allowances'   => 'nullable|numeric|min:0',
