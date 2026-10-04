@@ -150,6 +150,17 @@ class TimetableController extends Controller
 
         $version = TimetableVersion::where('school_id', $schoolId)->where('id', $id)->firstOrFail();
 
+        // A teacher in two classes at once is caught here, not on Monday morning (TASK 07).
+        $clashes = app(\App\Services\Timetable\CoverService::class)->clashes($version->id);
+        if ($clashes !== []) {
+            $first = $clashes[0];
+
+            return response()->json([
+                'message' => count($clashes).' clash(es): '.($first['teacher'] ?? 'A teacher')." is in {$first['classes'][0]} and {$first['classes'][1]} on {$first['day']} ({$first['slot']}). Fix the version before publishing.",
+                'clashes' => $clashes,
+            ], 422);
+        }
+
         // Unpublish other versions for this school
         TimetableVersion::where('school_id', $schoolId)->update(['status' => 'draft']);
 

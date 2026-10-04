@@ -62,7 +62,7 @@ class StudentPortalController extends Controller
         return response()->json([
             'student' => ['name' => $student->user?->name, 'class' => $student->currentClass?->name, 'arm' => $student->currentArm?->name, 'admission_number' => $student->admission_number],
             'term' => $term ? ['id' => $term->id, 'name' => $term->name] : null,
-            'today' => ['day' => $today, 'periods' => $this->timetable($student)->where('day', $today)->values()],
+            'today' => ['day' => $today, 'periods' => $this->withCover($this->timetable($student)->where('day', $today)->values(), $student)],
             'attendance' => ['marked_days' => $marked, 'present' => ($attendance['present'] ?? 0) + ($attendance['late'] ?? 0), 'absent' => $attendance['absent'] ?? 0, 'late' => $attendance['late'] ?? 0,
                 'rate' => $marked ? round((($attendance['present'] ?? 0) + ($attendance['late'] ?? 0)) / $marked * 100, 1) : null],
             'subjects_count' => $this->subjectsOf($student)->count(),
@@ -227,7 +227,17 @@ class StudentPortalController extends Controller
         return DB::table('timetable_entries as e')->join('timetable_versions as v', 'v.id', '=', 'e.timetable_version_id')
             ->leftJoin('users as u', 'u.id', '=', 'e.teacher_id')
             ->where('v.school_id', $student->school_id)->where('v.status', 'published')->where('e.school_class_id', $student->class_id)
-            ->orderBy('e.start_time')->get(['e.day_of_week as day', 'e.slot_name', 'e.start_time', 'e.end_time', 'e.subject_id', 'e.subject_name', 'e.is_break', 'u.name as teacher']);
+            ->orderBy('e.start_time')->get(['e.id as entry_id', 'e.day_of_week as day', 'e.slot_name', 'e.start_time', 'e.end_time', 'e.subject_id', 'e.subject_name', 'e.is_break', 'u.name as teacher']);
+    }
+
+    /** Today's cover teachers, where a lesson's own teacher is away. */
+    private function withCover(Collection $periods, Student $student): Collection
+    {
+        $cover = DB::table('timetable_substitutions as s')->join('users as u', 'u.id', '=', 's.substitute_teacher_id')
+            ->where('s.school_id', $student->school_id)->whereDate('s.date', now()->toDateString())->where('s.status', 'covered')
+            ->whereIn('s.entry_id', $periods->pluck('entry_id'))->pluck('u.name', 's.entry_id');
+
+        return $periods->map(fn ($p) => isset($cover[$p->entry_id]) ? (object) array_merge((array) $p, ['cover_teacher' => $cover[$p->entry_id]]) : $p)->values();
     }
 
     private function exams(Student $student): Collection

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, Table, inputClass } from '@/components/Page';
+import TimetableCover from '@/components/TimetableCover';
 
 /**
  * Timetable builder (§7.5).
@@ -302,6 +303,7 @@ export default function TimetablePage() {
           )}
         </div>
       )}
+      <TimetableCover />
     </PageShell>
   );
 }
