@@ -63,6 +63,7 @@ export function landingPathFor(role: SessionRole | null): string {
   if (role === 'bursar') return '/finance';
   // The school's dashboard refuses parents; their page is their children.
   if (role === 'parent') return '/parent';
+  if (role === 'student') return '/student';
   return '/';
 }
 

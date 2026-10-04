@@ -69,6 +69,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
       { href: '/parent', icon: '👨‍👩‍👧', label: 'My children', roles: ['parent'] },
+      { href: '/student', icon: '🏠', label: 'My school day', roles: ['student'] },
       { href: '/parent/results', icon: '📄', label: 'Results', roles: ['parent'] },
       { href: '/parent/fees', icon: '💳', label: 'Fees', roles: ['parent'] },
       { href: '/parent/messages', icon: '💬', label: 'Messages', roles: ['parent'] },

@@ -68,6 +68,11 @@ export function proxy(request: NextRequest) {
     if (role === 'parent') {
       return NextResponse.redirect(new URL('/parent', request.url));
     }
+
+    // And a student: their own portal, not the school's dashboard.
+    if (role === 'student') {
+      return NextResponse.redirect(new URL('/student', request.url));
+    }
   }
 
   return NextResponse.next();
