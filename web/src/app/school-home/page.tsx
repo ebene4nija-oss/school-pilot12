@@ -15,9 +15,10 @@ import {
 /**
  * School public portal & branded login: the school's front door.
  *
- * Served at `/` to signed-out visitors — the proxy rewrites rather than
- * redirects, so the address a parent types and the one a search engine indexes
- * is the school's own root. Signed-in users still get their dashboard there.
+ * Rendered at `/` for signed-out visitors by app/page.tsx (not a redirect and
+ * not a proxy rewrite), so the address a parent types and the one a search
+ * engine indexes is the school's own root. Signed-in users get their dashboard
+ * there instead.
  *
  * Everything on this page comes from `/public/school-profile`, which answers
  * from an allowlist of institutional fields: nothing about a student, parent,

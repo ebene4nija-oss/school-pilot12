@@ -53,6 +53,11 @@ echo "==> web: npm ci && next build"
     cd web
     npm ci
     npm run build
+    # Start the standalone server the way production does (127.0.0.1, plain
+    # http) and send it Apache's headers (Host, X-Forwarded-Proto: https).
+    # Release bd6cc77 passed every other check and still returned 500 on every
+    # school's address; this is the check that would have caught it.
+    npm run test:smoke
 )
 
 echo "==> web: staging standalone output"

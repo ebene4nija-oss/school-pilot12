@@ -28,13 +28,17 @@ export function proxy(request: NextRequest) {
 
   /*
    * A signed-out visitor at the root sees the school's public home — its
-   * name, crest, contact details and the sign-in form — rather than being
-   * bounced to /login. A rewrite, not a redirect, so the school's own address
-   * is the one search engines index. Where the host names no school, that
-   * page sends the visitor on to /login itself.
+   * name, crest, admissions and the sign-in form — rather than being bounced
+   * to /login. app/page.tsx chooses between that and the dashboard itself.
+   *
+   * Never a rewrite here: Next proxies a rewrite whose origin differs from
+   * the server's own as an external request, and behind Apache
+   * (X-Forwarded-Proto: https, a standalone server bound to 127.0.0.1) the
+   * origins differ, which turned every visit into a TLS call to the
+   * plain-http Node port and a 500. scripts/smoke-proxy-headers.mjs guards it.
    */
   if (!hasSession && pathname === '/') {
-    return NextResponse.rewrite(new URL('/school-home', request.url));
+    return NextResponse.next();
   }
 
   if (!hasSession) {
