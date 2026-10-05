@@ -348,7 +348,8 @@ class IdCardPrintService
     // Internals
     // ------------------------------------------------------------------
 
-    private function schoolLogo(int $schoolId): string
+    /** The school's crest as a data URI ready for a card, or '' when it has none. */
+    public function schoolLogo(int $schoolId): string
     {
         $school = School::find($schoolId);
         $resolved = $this->photos->resolve($school->logo_url ?? null, ['width' => 10.0, 'height' => 10.0]);

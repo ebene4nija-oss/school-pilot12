@@ -400,6 +400,9 @@ class IdCardTemplateService
             'holder' => [
                 'type' => $card->holder_type,
                 'name' => $name,
+                // normal | long | very-long: designs size the name from this,
+                // because the PDF renderer cannot shrink text to fit a box.
+                'name_fit' => IdCardGallery::nameFit($name),
                 'photo_url' => $extra['photo'] ?? '',
                 'gender' => $holder->gender ?? '',
                 // A single labelled identifier, so one design can print
@@ -470,6 +473,7 @@ class IdCardTemplateService
             'holder' => [
                 'type' => $holderType,
                 'name' => $isStudent ? 'Adaeze Nwosu' : 'Mr. Tunde Bakare',
+                'name_fit' => 'normal',
                 'initials' => $isStudent ? 'Adaeze Nwosu' : 'Tunde Bakare',
                 'photo_url' => '',
                 'gender' => $isStudent ? 'female' : 'male',

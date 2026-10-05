@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\IdCard;
 use App\Models\IdCardTemplate;
 use App\Services\IdCard\CardImpositionService;
+use App\Services\IdCard\IdCardGallery;
 use App\Services\IdCard\IdCardTemplateService;
 use App\Services\ReportCard\TemplateException;
 use Illuminate\Http\Request;
@@ -211,6 +212,126 @@ class IdCardTemplateController extends Controller
         $template->delete();
 
         return response()->json(['message' => 'Design deleted. Cards already issued from it are unaffected.']);
+    }
+
+    // ------------------------------------------------------------------
+    // Gallery: ready-made designs in the school's own colours (TASK 18)
+    // ------------------------------------------------------------------
+
+    /** The six designs, and which of them this school already uses. */
+    public function gallery(Request $request)
+    {
+        $schoolId = $this->getSchoolId($request);
+        $mine = IdCardTemplate::withoutGlobalScopes()->where('school_id', $schoolId)
+            ->where('slug', 'like', IdCardGallery::SLUG_PREFIX.'%')
+            ->orderByDesc('version')->get(['id', 'slug', 'status', 'version', 'regions']);
+
+        return response()->json([
+            'designs' => array_map(function (array $d) use ($mine) {
+                $latest = $mine->firstWhere('slug', IdCardGallery::SLUG_PREFIX.$d['key']);
+                $colours = $latest?->regions[0] ?? [];
+
+                return $d + [
+                    // The school's last choice of colours, so a redesign starts from them.
+                    'school_primary' => $colours['primary'] ?? null,
+                    'school_accent' => $colours['accent'] ?? null,
+                    'template_id' => $latest?->id,
+                    'live' => $latest?->status === 'active',
+                ];
+            }, app(IdCardGallery::class)->list()),
+        ]);
+    }
+
+    /**
+     * A gallery design in chosen colours, with this school's name, crest and
+     * contact details, a working sample QR code, and a fictional holder — no
+     * real child's face while choosing colours. `long_name=1` tries the
+     * longest names a school is likely to have.
+     */
+    public function galleryPreview(Request $request, string $key)
+    {
+        $schoolId = $this->getSchoolId($request);
+
+        try {
+            $bundle = app(IdCardGallery::class)->bundle($key, $request->query('primary'), $request->query('accent'));
+            $template = new IdCardTemplate([
+                'holder_type' => $bundle['holder_type'],
+                'front' => $bundle['front'],
+                'back' => $bundle['back'],
+                'styles' => $bundle['styles'],
+                'card_geometry' => $this->templates->normaliseGeometry($bundle['card']),
+            ]);
+
+            $context = $this->templates->sampleContext($bundle['holder_type']);
+            $school = \App\Models\School::find($schoolId);
+            $context['school'] = array_merge($context['school'], array_filter([
+                'name' => $school?->name, 'address' => $school?->address, 'phone' => $school?->phone, 'email' => $school?->email,
+                'logo_url' => app(\App\Services\IdCard\IdCardPrintService::class)->schoolLogo((int) $schoolId),
+            ]));
+            $context['verification']['qr_code_url'] = app(\App\Services\QrCodeService::class)->dataUriFor($context['verification']['verify_url'], 4) ?? '';
+            if ($request->boolean('long_name')) {
+                $name = $bundle['holder_type'] === 'staff' ? 'Mrs. Oluwaseyi Chukwuemeka-Adebayo' : 'Oluwadamilare Chukwuemeka Adebayo-Okonkwo';
+                $context['holder']['name'] = $name;
+                $context['holder']['name_fit'] = IdCardGallery::nameFit($name);
+            }
+
+            $html = $this->singleCardDocument(
+                $this->templates->renderSides($template, $context),
+                $this->templates->stylesFor($template, $bundle['holder_type']),
+                $this->templates->geometryFor($template),
+            );
+        } catch (TemplateException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        if ($request->get('format') === 'json') {
+            return response()->json(['html' => $html]);
+        }
+
+        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+    }
+
+    /**
+     * Use a gallery design: imported as this school's own draft (a new
+     * version each time colours change), and made live straight away when
+     * asked. Cards already printed keep their own design.
+     */
+    public function galleryUse(Request $request, string $key)
+    {
+        $data = $request->validate([
+            'primary' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'accent' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'activate' => 'boolean',
+        ]);
+        $schoolId = (int) $this->getSchoolId($request);
+
+        try {
+            $template = $this->templates->import(
+                app(IdCardGallery::class)->bundle($key, $data['primary'] ?? null, $data['accent'] ?? null),
+                $schoolId,
+                $request->user()?->id,
+            );
+            if ($data['activate'] ?? false) {
+                $this->templates->renderSides($template, $this->templates->sampleContext($template->holder_type));
+                $this->imposition->plan($this->templates->geometryFor($template));
+                $template->activate();
+            }
+        } catch (TemplateException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        \App\Models\AuditLog::create([
+            'school_id' => $schoolId, 'user_id' => $request->user()?->id, 'action' => 'id_card.gallery_design_used',
+            'auditable_type' => IdCardTemplate::class, 'auditable_id' => $template->id,
+            'new_values' => ['design' => $key, 'version' => $template->version, 'activated' => (bool) ($data['activate'] ?? false)],
+        ]);
+
+        return response()->json([
+            'message' => ($data['activate'] ?? false)
+                ? "\"{$template->name}\" is now your {$template->holder_type} ID card design. Cards already printed are unchanged."
+                : "\"{$template->name}\" saved as a draft. Make it live when you are ready.",
+            'template' => $template->fresh(),
+        ], 201);
     }
 
     /**

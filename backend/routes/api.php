@@ -747,6 +747,10 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         */
         Route::get('/id-cards/template-contract', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'contract'])->middleware('role:super_admin,school_admin');
         Route::get('/id-cards/templates', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'index'])->middleware('role:super_admin,school_admin');
+        // Ready-made designs in the school's colours (TASK 18).
+        Route::get('/id-cards/gallery', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'gallery'])->middleware('role:super_admin,school_admin');
+        Route::get('/id-cards/gallery/{key}/preview', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'galleryPreview'])->where('key', '[a-z-]+')->middleware('role:super_admin,school_admin');
+        Route::post('/id-cards/gallery/{key}', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'galleryUse'])->where('key', '[a-z-]+')->middleware('role:super_admin,school_admin');
         Route::post('/id-cards/templates', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'import'])->middleware('role:super_admin,school_admin');
         Route::get('/id-cards/templates/{id}', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'show'])->middleware('role:super_admin,school_admin');
         Route::get('/id-cards/templates/{id}/preview', [\App\Http\Controllers\Api\V1\IdCardTemplateController::class, 'preview'])->middleware('role:super_admin,school_admin');

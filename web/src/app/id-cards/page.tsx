@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi, ApiError } from '@/lib/api';
 import IdCardRegister from '@/components/IdCardRegister';
+import DesignGallery from './DesignGallery';
 
 /**
  * ID card printing and design.
@@ -609,6 +610,8 @@ function DesignPanel() {
   };
 
   return (
+    <div className="space-y-6">
+    <DesignGallery onChanged={() => { load().catch(() => undefined); }} />
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <section className="space-y-4">
         {error && <Banner tone="error">{error}</Banner>}
@@ -616,8 +619,8 @@ function DesignPanel() {
 
         {templates.length === 0 ? (
           <div className="rounded-lg border border-line-soft bg-surface p-5 text-sm text-ink-muted">
-            No custom designs yet. Cards print with the built-in design, which is a complete,
-            correct card — importing one is how a school puts its own crest and colours on it.
+            No designs saved yet. Cards print with the built-in design until you choose one above
+            or import your own.
           </div>
         ) : (
           templates.map((template) => {
@@ -725,7 +728,7 @@ function DesignPanel() {
       </section>
 
       <section className="space-y-3 rounded-lg border border-line-soft bg-surface p-5">
-        <h2 className="font-semibold text-ink">Import a design</h2>
+        <h2 className="font-semibold text-ink">Import a design (for designers)</h2>
         <p className="text-sm text-ink-muted">
           Paste a design bundle. It lands as a draft — preview it, then make it live when you are
           happy. Nothing changes what you print until you activate it.
@@ -754,6 +757,7 @@ function DesignPanel() {
           {busy ? 'Importing…' : 'Import as draft'}
         </button>
       </section>
+    </div>
     </div>
   );
 }
