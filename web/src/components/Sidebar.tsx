@@ -126,6 +126,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Administration',
     items: [
       { href: '/school-profile', icon: '🏫', label: 'School profile', roles: ['school_admin'] },
+      { href: '/admissions/settings', icon: '📨', label: 'Admissions settings', roles: ['school_admin'] },
       { href: '/ai-features', icon: '🤖', label: 'AI features', roles: ['school_admin'] },
       { href: '/security', icon: '🔐', label: 'Security', roles: ['school_admin'] },
       { href: '/director', icon: '👑', label: 'Director console', roles: ['school_admin'], className: 'font-semibold' },

@@ -245,7 +245,15 @@ class AdmissionController extends Controller
     {
         $s = AdmissionSetting::for($this->schoolId());
 
-        return response()->json($s->toArray() + ['document_types' => AdmissionSetting::DOCUMENTS, 'sections' => Sections::SECTIONS, 'required_documents' => $s->required_documents ?: AdmissionSetting::DEFAULT_DOCUMENTS]);
+        $school = School::find($this->schoolId());
+
+        return response()->json($s->toArray() + [
+            'document_types' => AdmissionSetting::DOCUMENTS,
+            'sections' => Sections::SECTIONS,
+            'required_documents' => $s->required_documents ?: AdmissionSetting::DEFAULT_DOCUMENTS,
+            // Offered as starting values for the admissions contacts.
+            'school_contacts' => ['phone' => $school?->phone, 'email' => $school?->email],
+        ]);
     }
 
     public function updateSettings(Request $request): JsonResponse
@@ -260,10 +268,62 @@ class AdmissionController extends Controller
             'retention_days' => 'sometimes|integer|min:30|max:3650',
             'offer_validity_days' => 'sometimes|integer|min:1|max:90',
             'offer_letter_note' => 'sometimes|nullable|string|max:2000',
+
+            // How parents reach the school about admissions (school's choice).
+            'admissions_status' => 'sometimes|nullable|in:open,closed',
+            'admission_session' => ['sometimes', 'nullable', 'string', 'regex:/^\d{4}\/\d{4}$/'],
+            'instructions' => 'sometimes|nullable|string|max:1000',
+            'closed_message' => 'sometimes|nullable|string|max:500',
+            'whatsapp_enabled' => 'sometimes|boolean',
+            'whatsapp_number' => 'sometimes|nullable|string|max:20',
+            'whatsapp_message' => 'sometimes|nullable|string|max:300',
+            'email_enabled' => 'sometimes|boolean',
+            'admissions_email' => 'sometimes|nullable|email|max:255',
+            'email_subject' => 'sometimes|nullable|string|max:150',
+            'phone_enabled' => 'sometimes|boolean',
+            'admissions_phone' => 'sometimes|nullable|string|max:20',
+        ], [
+            'admission_session.regex' => 'Write the session like 2026/2027.',
         ]);
 
+        foreach (['whatsapp_number' => true, 'admissions_phone' => false] as $field => $mobileOnly) {
+            if (! empty($data[$field])) {
+                $number = \App\Services\SmsService::normaliseNumber($data[$field]);
+                $pattern = $mobileOnly ? '/^\+234[789][01]\d{8}$/' : '/^\+234\d{9,10}$/';
+
+                if (! preg_match($pattern, $number)) {
+                    return response()->json(['message' => 'Check the phone numbers.', 'errors' => [
+                        $field => [$mobileOnly ? 'Enter a Nigerian WhatsApp number, e.g. 0803 123 4567.' : 'Enter a Nigerian phone number, e.g. 0803 123 4567.'],
+                    ]], 422);
+                }
+
+                $data[$field] = $number;
+            }
+        }
+
         $s = AdmissionSetting::withoutGlobalScopes()->firstOrNew(['school_id' => $this->schoolId()]);
-        $s->fill($data)->save();
+        $s->fill($data);
+
+        // Checked on the result, not the request: turning WhatsApp on in one
+        // save and adding its number in the next would otherwise slip through.
+        $errors = [];
+        $methods = ['public_form_enabled' => null, 'whatsapp_enabled' => 'whatsapp_number', 'email_enabled' => 'admissions_email', 'phone_enabled' => 'admissions_phone'];
+
+        foreach ($methods as $switch => $contact) {
+            if ($contact && $s->{$switch} && blank($s->{$contact})) {
+                $errors[$contact] = ['Add the contact for this method, or turn it off.'];
+            }
+        }
+
+        if ($s->admissions_status === 'open' && ! collect(array_keys($methods))->contains(fn ($m) => $s->{$m})) {
+            $errors['admissions_status'] = ['Turn on at least one way for parents to reach you before opening admissions.'];
+        }
+
+        if ($errors !== []) {
+            return response()->json(['message' => 'Admissions settings were not saved.', 'errors' => $errors], 422);
+        }
+
+        $s->save();
         AuditLog::create(['school_id' => $this->schoolId(), 'user_id' => $request->user()->id, 'action' => 'admission.settings_updated', 'auditable_type' => AdmissionSetting::class, 'auditable_id' => $s->id, 'new_values' => $data]);
 
         return $this->settings();
@@ -280,6 +340,8 @@ class AdmissionController extends Controller
 
         return response()->json([
             'school' => $school->name,
+            'session' => $s->admission_session,
+            'instructions' => $s->instructions,
             'sections' => collect($s->open_sections ?: array_keys(Sections::SECTIONS))->mapWithKeys(fn ($k) => [$k => Sections::SECTIONS[$k] ?? $k]),
             'required_documents' => collect($s->open_sections ?: [])->mapWithKeys(fn ($k) => [$k => array_map(fn ($t) => AdmissionSetting::DOCUMENTS[$t], $s->documentsFor($k))]),
             'privacy' => 'We use these details only to consider this application. If the child is not admitted, the details are removed after '.$s->retention_days.' days.',
@@ -323,7 +385,7 @@ class AdmissionController extends Controller
     private function publicSchool(Request $request): School
     {
         $school = $request->attributes->get('tenant_school');
-        abort_unless($school && AdmissionSetting::for($school->id)->public_form_enabled, 404, 'This school does not take applications online.');
+        abort_unless($school && AdmissionSetting::for($school->id)->acceptsOnline(), 404, 'This school is not taking applications online.');
 
         return $school;
     }

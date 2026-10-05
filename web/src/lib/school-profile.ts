@@ -38,9 +38,29 @@ export interface PublicSchool {
 
 export type SocialNetwork = 'facebook' | 'instagram' | 'x' | 'youtube' | 'linkedin' | 'tiktok';
 
+/**
+ * How this school takes admission enquiries: its own choice of the online
+ * form, WhatsApp, email and phone (School Settings → Admissions). null when
+ * the school has never set its admissions status.
+ */
+export type PublicAdmissions =
+  | {
+      status: 'open';
+      session: string | null;
+      instructions: string | null;
+      methods: {
+        online: boolean;
+        whatsapp: { number: string; message: string | null } | null;
+        email: { address: string; subject: string | null } | null;
+        phone: string | null;
+      };
+    }
+  | { status: 'closed'; session: string | null; closed_message: string | null };
+
 export interface PublicSchoolProfile {
   published: boolean;
   admissions_open: boolean;
+  admissions?: PublicAdmissions | null;
   school: PublicSchool;
 }
 

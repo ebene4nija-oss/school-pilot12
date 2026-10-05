@@ -14,7 +14,8 @@ import type { NextRequest } from 'next/server';
  * Treating a redirect as security is how role-gated SPAs leak data.
  */
 
-const PUBLIC_PATHS = ['/login', '/verify-result', '/robots.txt', '/sitemap.xml'];
+// /apply: a school's online admission form, for parents with no account.
+const PUBLIC_PATHS = ['/login', '/apply', '/verify-result', '/robots.txt', '/sitemap.xml'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

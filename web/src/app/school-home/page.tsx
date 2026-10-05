@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Globe, Mail, MapPin, Phone } from 'lucide-react';
 import { SignInForm } from '@/components/SignInForm';
 import { PoweredBySchoolPilot, SchoolCrest } from '@/components/SchoolBrand';
+import { SchoolAdmissions } from '@/components/SchoolAdmissions';
 import {
   accentOf,
   getPublicSchoolProfile,
@@ -84,7 +85,8 @@ export default async function SchoolHomePage() {
   // No school on this host (local development, the apex): the plain sign-in.
   if (!profile) redirect('/login');
 
-  const { school, published, admissions_open: admissionsOpen } = profile;
+  const { school, published } = profile;
+  const admissions = profile.admissions ?? null;
   const accent = accentOf(school);
   const socials = Object.entries(school.social_links ?? {}).filter(([, url]) => url) as [SocialNetwork, string][];
   const hasContact = published && Boolean(school.address || school.phone || school.email || school.website);
@@ -109,7 +111,7 @@ export default async function SchoolHomePage() {
 
           <nav aria-label="School" className="flex shrink-0 items-center gap-1 text-sm">
             {published && school.about && <NavLink href="#about">About</NavLink>}
-            {admissionsOpen && <NavLink href="#admissions">Admissions</NavLink>}
+            {admissions && <NavLink href="#admissions">Admissions</NavLink>}
             {hasContact && <NavLink href="#contact">Contact</NavLink>}
             <a
               href="#sign-in"
@@ -162,38 +164,7 @@ export default async function SchoolHomePage() {
           </section>
         )}
 
-        {admissionsOpen && (
-          <section id="admissions" className="scroll-mt-20 border-t border-line-soft">
-            <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-              <h2 className="text-xl font-semibold" style={{ color: accent }}>
-                Admissions are open
-              </h2>
-              <p className="mt-2 max-w-3xl text-ink-muted">
-                {school.name} is accepting applications. Contact the school office to ask about places,
-                entrance assessments and fees.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {school.phone && (
-                  <a
-                    href={`tel:${school.phone.replace(/[^\d+]/g, '')}`}
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-white"
-                    style={{ backgroundColor: accent }}
-                  >
-                    Call {school.phone}
-                  </a>
-                )}
-                {school.email && (
-                  <a
-                    href={`mailto:${school.email}?subject=${encodeURIComponent('Admissions enquiry')}`}
-                    className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-medium text-ink"
-                  >
-                    Email the school
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+        {admissions && <SchoolAdmissions admissions={admissions} schoolName={school.name} accent={accent} />}
 
         {hasContact && (
           <section id="contact" className="scroll-mt-20 border-t border-line-soft bg-white">

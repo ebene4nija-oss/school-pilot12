@@ -89,9 +89,14 @@ class SchoolProfileController extends Controller
             ];
         }
 
+        // How this school takes admission enquiries is its own choice: any mix
+        // of the online form, WhatsApp, email and phone (AdmissionSetting).
+        $admissions = $published ? AdmissionSetting::for($school->id)->publicSummary() : null;
+
         return response()->json([
             'published' => $published,
-            'admissions_open' => $published && AdmissionSetting::for($school->id)->public_form_enabled,
+            'admissions_open' => ($admissions['status'] ?? null) === 'open',
+            'admissions' => $admissions,
             'school' => $profile,
         ])->header('Cache-Control', 'public, max-age=300');
     }
