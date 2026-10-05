@@ -12,7 +12,9 @@ use App\Models\LiveClass;
 use App\Models\ResultRelease;
 use App\Models\School;
 use App\Models\ScoreEntry;
+use App\Http\Resources\StudentResource;
 use App\Models\Student;
+use App\Models\StudentClassHistory;
 use App\Models\Subject;
 use App\Models\Term;
 use App\Services\Lms\LmsService;
@@ -60,10 +62,12 @@ class StudentPortalController extends Controller
         $features = SchoolFeatures::aiFeatures($school);
 
         return response()->json([
-            'student' => ['name' => $student->user?->name, 'class' => $student->currentClass?->name, 'arm' => $student->currentArm?->name, 'admission_number' => $student->admission_number],
+            'student' => ['id' => $student->id, 'name' => $student->user?->name, 'class' => $student->currentClass?->name, 'arm' => $student->currentArm?->name, 'admission_number' => $student->admission_number],
             'term' => $term ? ['id' => $term->id, 'name' => $term->name] : null,
             'today' => ['day' => $today, 'periods' => $this->withCover($this->timetable($student)->where('day', $today)->values(), $student)],
             'attendance' => ['marked_days' => $marked, 'present' => ($attendance['present'] ?? 0) + ($attendance['late'] ?? 0), 'absent' => $attendance['absent'] ?? 0, 'late' => $attendance['late'] ?? 0,
+                // Excused days count as school days, so they lower the rate; say so.
+                'excused' => $attendance['excused'] ?? 0,
                 'rate' => $marked ? round((($attendance['present'] ?? 0) + ($attendance['late'] ?? 0)) / $marked * 100, 1) : null],
             'subjects_count' => $this->subjectsOf($student)->count(),
             'assignments_due' => $homework->reject(fn ($h) => in_array($h->id, $handedIn, true))->take(5)->map(fn ($h) => ['id' => $h->id, 'title' => $h->title, 'subject' => $h->subject?->name, 'due_date' => $h->due_date->toDateString()])->values(),
@@ -191,6 +195,80 @@ class StudentPortalController extends Controller
                 'comment' => in_array($s->ai_comment_status, ['pending_approval', 'rejected'], true) ? null : $s->teacher_comment,
             ]),
         ]);
+    }
+
+    /**
+     * My profile (TASK 03, the student's own view). The roster's field list
+     * via StudentResource, so nothing new is exposed and the health record
+     * stays behind its audited endpoint. Guardians by name and relationship
+     * only: their phone numbers are theirs, not the child's to read (§12).
+     */
+    public function profile(Request $request): JsonResponse
+    {
+        $student = $this->student($request);
+        $student->loadMissing('user:id,name,email');
+        $account = $request->user()->userProfile;
+        $term = CurrentTerm::for($student->school_id);
+        $attendance = $term ? AttendanceRecord::where('student_id', $student->id)->where('term_id', $term->id)->get()->countBy('status') : collect();
+
+        $guardians = $student->guardians()->with('user:id,name')->get()->map(fn ($g) => [
+            'name' => $g->user?->name,
+            'relationship' => $g->relationship,
+        ])->values();
+
+        $history = StudentClassHistory::where('student_id', $student->id)
+            ->with(['fromClass:id,name', 'toClass:id,name', 'fromArm:id,name', 'toArm:id,name', 'session:id,name'])
+            ->orderByDesc('created_at')->get()
+            ->map(fn ($h) => [
+                'date' => $h->created_at?->toDateString(),
+                'action' => $h->action,
+                'from' => trim(($h->fromClass?->name ?? '').' '.($h->fromArm?->name ?? '')) ?: null,
+                'to' => trim(($h->toClass?->name ?? '').' '.($h->toArm?->name ?? '')) ?: null,
+                'session' => $h->session?->name,
+            ])->values();
+
+        return response()->json([
+            'student' => (new StudentResource($student))->resolve($request),
+            'account' => ['phone' => $account?->phone, 'avatar_url' => $account?->avatar_url],
+            'guardians' => $guardians,
+            'class_history' => $history,
+            'term' => $term ? ['id' => $term->id, 'name' => $term->name] : null,
+            'attendance' => [
+                'present' => $attendance['present'] ?? 0, 'late' => $attendance['late'] ?? 0,
+                'absent' => $attendance['absent'] ?? 0, 'excused' => $attendance['excused'] ?? 0,
+                'marked_days' => $attendance->sum(),
+            ],
+        ]);
+    }
+
+    /**
+     * My tests (TASK 09): papers set for my class, upcoming, open and past,
+     * each with my attempts. `/cbt/available` answers "what can I sit now";
+     * this answers "where is the result of the test I sat last week". A score
+     * appears only where the exam shows results to candidates.
+     */
+    public function tests(Request $request): JsonResponse
+    {
+        $student = $this->student($request);
+        $exams = $this->exams($student);
+        $attempts = CbtAttempt::where('student_id', $student->id)->whereIn('exam_id', $exams->pluck('id'))->orderBy('attempt_number')->get()->groupBy('exam_id');
+
+        return response()->json(['data' => $exams->map(fn (CbtExam $e) => [
+            'exam_id' => $e->id,
+            'title' => $e->title,
+            'subject' => $e->subject?->name,
+            'duration_minutes' => $e->duration_minutes,
+            'opens_at' => $e->opens_at?->toIso8601String(),
+            'closes_at' => $e->closes_at?->toIso8601String(),
+            'state' => $e->opens_at?->isFuture() ? 'upcoming' : ($e->closes_at?->isPast() ? 'closed' : 'open'),
+            'attempts' => $attempts->get($e->id, collect())->map(fn (CbtAttempt $a) => [
+                'attempt_id' => $a->id,
+                'attempt_number' => $a->attempt_number,
+                'status' => $a->status,
+                'submitted_at' => $a->submitted_at?->toIso8601String(),
+                'percentage' => $e->show_results_immediately && $a->percentage !== null && $a->isFinalised() ? (float) $a->percentage : null,
+            ])->values(),
+        ])->values()]);
     }
 
     // ==================================================================

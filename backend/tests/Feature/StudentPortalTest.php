@@ -182,5 +182,66 @@ class StudentPortalTest extends TestCase
     {
         $this->actingAs($this->teacher, 'sanctum')->getJson("{$this->host}/me/dashboard")->assertForbidden();
         $this->actingAs($this->user('Mrs Obi', 'parent'), 'sanctum')->getJson("{$this->host}/me/results")->assertForbidden();
+        $this->actingAs($this->teacher, 'sanctum')->getJson("{$this->host}/me/profile")->assertForbidden();
+    }
+
+    public function test_the_dashboard_names_the_student_and_counts_excused_days(): void
+    {
+        foreach (['present', 'excused'] as $i => $status) {
+            AttendanceRecord::create(['school_id' => $this->school->id, 'term_id' => $this->term->id, 'student_id' => $this->ada->id, 'date' => now()->subDays($i + 1)->toDateString(), 'status' => $status]);
+        }
+
+        $d = $this->as($this->ada)->getJson("{$this->host}/me/dashboard")->assertOk()->json();
+        $this->assertSame($this->ada->id, $d['student']['id']);
+        $this->assertSame(1, $d['attendance']['excused']);
+        $this->assertEquals(50.0, $d['attendance']['rate']);
+    }
+
+    public function test_my_profile_is_my_own_record_without_health_data_or_guardian_contacts(): void
+    {
+        $this->ada->forceFill(['blood_group' => 'O+', 'medical_notes' => 'Asthma', 'gender' => 'female'])->save();
+        $mum = $this->user('Mrs Obi', 'parent');
+        $mum->userProfile->update(['phone' => '08031234567']);
+        $guardian = \App\Models\Guardian::create(['school_id' => $this->school->id, 'user_id' => $mum->id, 'relationship' => 'mother']);
+        DB::table('student_guardian')->insert(['student_id' => $this->ada->id, 'guardian_id' => $guardian->id]);
+
+        $res = $this->as($this->ada)->getJson("{$this->host}/me/profile")->assertOk();
+        $body = $res->json();
+
+        $this->assertSame('Ada Obi', $body['student']['name']);
+        $this->assertSame('JSS 1', $body['student']['class']);
+        $this->assertSame([['name' => 'Mrs Obi', 'relationship' => 'mother']], $body['guardians']);
+        $this->assertStringNotContainsString('Asthma', $res->getContent());
+        $this->assertStringNotContainsString('08031234567', $res->getContent());
+        $this->assertArrayNotHasKey('blood_group', $body['student']);
+    }
+
+    public function test_my_tests_list_my_attempts_and_only_released_scores(): void
+    {
+        $hidden = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Mid-term test', 'status' => 'published', 'show_results_immediately' => false]);
+        $shown = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Quiz 1', 'status' => 'published', 'show_results_immediately' => true]);
+        $later = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Exam', 'status' => 'published', 'opens_at' => now()->addWeek()]);
+        foreach ([$hidden, $shown] as $exam) {
+            CbtAttempt::create(['school_id' => $this->school->id, 'exam_id' => $exam->id, 'student_id' => $this->ada->id, 'attempt_number' => 1, 'seed' => 42, 'status' => 'graded', 'percentage' => 80]);
+        }
+        CbtAttempt::create(['school_id' => $this->school->id, 'exam_id' => $shown->id, 'student_id' => $this->bayo->id, 'attempt_number' => 1, 'seed' => 7, 'status' => 'graded', 'percentage' => 20]);
+
+        $tests = collect($this->as($this->ada)->getJson("{$this->host}/me/tests")->assertOk()->json('data'))->keyBy('title');
+        $this->assertNull($tests['Mid-term test']['attempts'][0]['percentage']);
+        $this->assertEquals(80, $tests['Quiz 1']['attempts'][0]['percentage']);
+        $this->assertCount(1, $tests['Quiz 1']['attempts'], 'Never another student\'s attempt.');
+        $this->assertSame('upcoming', $tests['Exam']['state']);
+        $this->assertSame([], $tests['Exam']['attempts']);
+    }
+
+    public function test_my_submission_lists_the_files_handed_in(): void
+    {
+        $hw = Homework::create(['school_id' => $this->school->id, 'class_id' => $this->jss1->id, 'subject_id' => $this->maths->id, 'teacher_id' => $this->teacher->id, 'title' => 'Fractions', 'description' => 'x', 'due_date' => now()->addDays(2)->toDateString(), 'status' => 'published']);
+        $sub = HomeworkSubmission::create(['school_id' => $this->school->id, 'homework_id' => $hw->id, 'student_id' => $this->ada->id, 'body' => 'x', 'submitted_at' => now(), 'status' => 'submitted']);
+        \App\Models\HomeworkSubmissionFile::create(['school_id' => $this->school->id, 'submission_id' => $sub->id, 'path' => 'lms/x.pdf', 'name' => 'working.pdf', 'mime' => 'application/pdf', 'size_bytes' => 1200]);
+
+        $files = $this->as($this->ada)->getJson("{$this->host}/academics/homework/{$hw->id}/my-submission")->assertOk()->json('files');
+        $this->assertSame('working.pdf', $files[0]['name']);
+        $this->assertSame([], $this->as($this->bayo)->getJson("{$this->host}/academics/homework/{$hw->id}/my-submission")->json('files'));
     }
 }

@@ -15,6 +15,8 @@ Route::middleware('role:student')->group(function () {
     Route::get('/me/subjects', [StudentPortalController::class, 'subjects']);
     Route::get('/me/subjects/{id}', [StudentPortalController::class, 'subject'])->whereNumber('id');
     Route::get('/me/results', [StudentPortalController::class, 'results']);
+    Route::get('/me/profile', [StudentPortalController::class, 'profile']);
+    Route::get('/me/tests', [StudentPortalController::class, 'tests']);
 });
 
 /*

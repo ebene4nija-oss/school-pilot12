@@ -400,6 +400,10 @@ class HomeworkSubmissionController extends Controller
         return response()->json([
             'submitted' => $submission !== null,
             'submission' => $submission,
+            // What was handed in, so a student can check the right file went.
+            'files' => $submission
+                ? \App\Models\HomeworkSubmissionFile::where('submission_id', $submission->id)->get(['id', 'name', 'size_bytes'])
+                : [],
         ]);
     }
 

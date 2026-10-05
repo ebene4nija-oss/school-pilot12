@@ -78,6 +78,30 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },
     ],
   },
+  /*
+   * The student's own menu: every student screen the API offers (TASK 02–15),
+   * which used to be three links and a line telling them to use the app.
+   */
+  {
+    heading: 'My school',
+    items: [
+      { href: '/student/timetable', icon: '🗓️', label: 'Timetable', roles: ['student'] },
+      { href: '/student/homework', icon: '📝', label: 'Homework', roles: ['student'] },
+      { href: '/student/tests', icon: '💻', label: 'Tests (CBT)', roles: ['student'], module: 'cbt' },
+      { href: '/student/results', icon: '📄', label: 'Results & report card', roles: ['student'] },
+      { href: '/student/progress', icon: '📈', label: 'My progress', roles: ['student'] },
+      { href: '/student/tutor', icon: '🤖', label: 'AI tutor', roles: ['student'] },
+      { href: '/student/notifications', icon: '🔔', label: 'Notifications', roles: ['student'] },
+    ],
+  },
+  {
+    heading: 'Me',
+    items: [
+      { href: '/student/profile', icon: '👤', label: 'My profile', roles: ['student'] },
+      { href: '/student/fees', icon: '💳', label: 'My fees', roles: ['student'] },
+      { href: '/student/hostel', icon: '🛏️', label: 'Hostel', roles: ['student'], module: 'hostel' },
+    ],
+  },
   {
     heading: 'People',
     items: [
@@ -216,7 +240,7 @@ export default function Sidebar() {
     .sort((a, b) => b.length - a.length)[0];
 
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between bg-brand p-4 text-white/75">
+    <aside className="flex min-h-screen w-64 shrink-0 print:hidden flex-col justify-between bg-brand p-4 text-white/75">
       <div>
         <div className="mb-6 flex items-center space-x-3 px-2">
           <Image src="/brand/mark-white.png" alt="" width={32} height={32} className="h-8 w-8" priority />

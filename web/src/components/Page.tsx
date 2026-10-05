@@ -24,9 +24,9 @@ export function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-canvas text-ink">
+    <div className="flex min-h-screen bg-canvas text-ink print:bg-white">
       <Sidebar />
-      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">
+      <main className="flex-1 overflow-x-hidden p-6 lg:p-8 print:p-0">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-headline text-2xl font-bold text-brand">{title}</h1>

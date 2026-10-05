@@ -1,26 +1,28 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { errorText, fetchApi } from '@/lib/api';
-import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
+import { Badge, Button, Card, Empty, ErrorNote, Loading, PageShell, StatTile } from '@/components/Page';
 import LibraryBooks from '@/components/LibraryBooks';
+import { when } from '@/lib/student';
 
 /**
- * The student's own portal: today, My Subjects and My Results (TASK 02, 06,
- * 10). Everything here is the signed-in student's own record. Results show
- * only for a released term, and only once unlocked where the school uses
- * result PINs; a teacher comment shows only once a teacher has written or
- * approved it.
+ * The student's own portal: today and My Subjects (TASK 02, 06). Everything
+ * here is the signed-in student's own record, and each card leads to the
+ * full screen for it — the week's timetable, homework, tests, results, the
+ * AI tutor and notifications all have their own pages now. A teacher comment
+ * or a mark shows only where the API releases it.
  */
 
-type Tab = 'today' | 'subjects' | 'results';
+type Tab = 'today' | 'subjects';
 
 interface Period { day: string; slot_name: string; start_time: string | null; end_time: string | null; subject_name: string | null; is_break: boolean; teacher: string | null; venue?: string | null; cover_teacher?: string | null }
 interface Dashboard {
-  student: { name: string; class: string | null; arm: string | null };
+  student: { id: number; name: string; class: string | null; arm: string | null };
   term: { name: string } | null;
   today: { day: string; periods: Period[] };
-  attendance: { marked_days: number; rate: number | null; absent: number; late: number };
+  attendance: { marked_days: number; rate: number | null; absent: number; late: number; excused?: number };
   subjects_count: number;
   assignments_due: { id: number; title: string; subject: string | null; due_date: string }[];
   upcoming_tests: { id: number; title: string; subject: string | null; opens_at: string | null }[];
@@ -40,25 +42,17 @@ interface SubjectDetail {
   tests: { id: number; title: string; opens_at: string | null; submitted: boolean; percentage: number | null }[];
   results: { term: string; total: number; grade: string | null }[];
 }
-interface ResultSheet {
-  status: 'released' | 'not_released' | 'no_scores' | 'locked';
-  message?: string;
-  average?: number;
-  subjects?: { subject: string; state: string; components: Record<string, number>; total: number | null; grade: string | null; position: number | null; comment: string | null }[];
-}
+interface Gamification { points: number; current_streak: number; badges: string[] | null }
 
 const time = (t: string | null) => (t ? t.slice(0, 5) : '');
-const when = (iso: string) => new Date(iso).toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const label = (k: string) => k.replaceAll('_', ' ').replace(/\bca(\d)?\b/i, (m) => m.toUpperCase());
+const linkClass = 'mt-3 inline-block text-sm text-brand underline';
 
 export default function StudentHome() {
   const [tab, setTab] = useState<Tab>('today');
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [subjects, setSubjects] = useState<SubjectRow[] | null>(null);
   const [detail, setDetail] = useState<SubjectDetail | null>(null);
-  const [terms, setTerms] = useState<{ id: number; name: string; released: boolean }[]>([]);
-  const [termId, setTermId] = useState('');
-  const [sheet, setSheet] = useState<ResultSheet | null>(null);
+  const [game, setGame] = useState<Gamification | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,22 +60,15 @@ export default function StudentHome() {
       try {
         if (tab === 'today' && !dash) setDash(await fetchApi<Dashboard>('/me/dashboard'));
         if (tab === 'subjects' && !subjects) setSubjects((await fetchApi<{ data: SubjectRow[] }>('/me/subjects')).data);
-        if (tab === 'results' && terms.length === 0) {
-          const res = await fetchApi<{ terms: { id: number; name: string; released: boolean }[] }>('/me/results');
-          setTerms(res.terms);
-          const first = res.terms.find((t) => t.released);
-          if (first) setTermId(String(first.id));
-        }
       } catch (err) {
         setError(errorText(err, 'Could not load.'));
       }
     })();
-  }, [tab, dash, subjects, terms.length]);
+  }, [tab, dash, subjects]);
 
   useEffect(() => {
-    if (!termId) return;
-    fetchApi<ResultSheet>(`/me/results?term_id=${termId}`).then(setSheet).catch((err) => setError(errorText(err, 'Could not load results.')));
-  }, [termId]);
+    fetchApi<{ data: Gamification }>('/gamification/profile').then((r) => setGame(r.data)).catch(() => undefined);
+  }, []);
 
   async function openSubject(id: number) {
     try {
@@ -94,16 +81,18 @@ export default function StudentHome() {
   return (
     <PageShell title={dash ? `Hello, ${dash.student.name.split(' ')[0]}` : 'My school day'} subtitle={dash ? [dash.student.class, dash.student.arm, dash.term?.name].filter(Boolean).join(' · ') : undefined}>
       <nav className="mb-5 flex flex-wrap gap-2" aria-label="Portal sections">
-        {([['today', 'Today'], ['subjects', 'My subjects'], ['results', 'My results']] as [Tab, string][]).map(([k, l]) => (
+        {([['today', 'Today'], ['subjects', 'My subjects']] as [Tab, string][]).map(([k, l]) => (
           <Button key={k} variant={tab === k ? 'primary' : 'secondary'} onClick={() => { setTab(k); setDetail(null); }}>{l}</Button>
         ))}
+        <Link href="/student/results" className="rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium text-ink hover:bg-surface-sunken">My results</Link>
       </nav>
       <ErrorNote message={error} />
 
       {tab === 'today' && (!dash ? <Loading /> : (
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile label="Attendance this term" value={dash.attendance.rate !== null ? `${dash.attendance.rate}%` : '—'} tone="green" hint={`${dash.attendance.absent} absent · ${dash.attendance.late} late`} />
+            <StatTile label="Attendance this term" value={dash.attendance.rate !== null ? `${dash.attendance.rate}%` : '—'} tone="green"
+              hint={[`${dash.attendance.absent} absent`, `${dash.attendance.late} late`, dash.attendance.excused ? `${dash.attendance.excused} excused` : null].filter(Boolean).join(' · ')} />
             <StatTile label="Homework due" value={dash.assignments_due.length} tone={dash.assignments_due.length ? 'amber' : 'slate'} />
             <StatTile label="Subjects" value={dash.subjects_count} />
             <StatTile label="New materials" value={dash.new_materials} tone="blue" hint="last two weeks" />
@@ -120,28 +109,46 @@ export default function StudentHome() {
                   ))}
                 </ul>
               )}
+              <Link href="/student/timetable" className={linkClass}>Whole week (printable)</Link>
             </Card>
             <Card title="Homework due">
               {dash.assignments_due.length === 0 ? <Empty>Nothing due. Well done.</Empty> : (
                 <ul className="space-y-1 text-sm">{dash.assignments_due.map((a) => <li key={a.id}><span className="font-medium">{a.title}</span> · {a.subject} · due {a.due_date}</li>)}</ul>
               )}
-              <a href="/learning" className="mt-3 inline-block text-sm text-brand underline">All my learning</a>
+              <Link href="/student/homework" className={linkClass}>Hand in homework</Link>
             </Card>
             <Card title="Tests and virtual classes">
               {dash.upcoming_tests.length === 0 && dash.virtual_classes.length === 0 ? <Empty>Nothing coming up.</Empty> : (
                 <ul className="space-y-1 text-sm">
                   {dash.upcoming_tests.map((t) => <li key={`t${t.id}`}>📝 {t.title} · {t.subject}{t.opens_at ? ` · opens ${when(t.opens_at)}` : ''}</li>)}
-                  {dash.virtual_classes.map((c) => <li key={`c${c.id}`}>🎥 {c.title} · {when(c.scheduled_for)}{c.is_joinable && <a href="/live-class" className="ml-2 text-brand underline">Join</a>}</li>)}
+                  {dash.virtual_classes.map((c) => <li key={`c${c.id}`}>🎥 {c.title} · {when(c.scheduled_for)}{c.is_joinable && <Link href="/live-class" className="ml-2 text-brand underline">Join</Link>}</li>)}
                 </ul>
               )}
+              <span className="flex gap-4">
+                <Link href="/student/tests" className={linkClass}>My tests</Link>
+                <Link href="/learning" className={linkClass}>All my learning</Link>
+              </span>
             </Card>
             <Card title="Results and help">
               <p className="text-sm">{dash.results?.released ? 'This term’s results are out.' : 'This term’s results have not been released yet.'}</p>
-              {dash.results?.released && <Button className="mt-2" variant="secondary" onClick={() => setTab('results')}>See my results</Button>}
-              {dash.tutor_available && <p className="mt-3 text-sm text-ink-muted">Stuck on something? The AI tutor can explain it, step by step, in the SchoolPilot app. It helps you learn; your teacher still marks your work.</p>}
-              {dash.unread_notifications > 0 && <p className="mt-3 text-sm"><Badge tone="blue">{dash.unread_notifications} unread</Badge> notifications</p>}
+              {dash.results?.released && <Link href="/student/results" className="mt-2 inline-block rounded-lg border border-line px-3.5 py-2 text-sm font-medium hover:bg-surface-sunken">See my results</Link>}
+              {dash.tutor_available && <p className="mt-3 text-sm text-ink-muted">Stuck on something? <Link href="/student/tutor" className="text-brand underline">Ask the AI tutor</Link> to explain it step by step. It helps you learn; your teacher still marks your work.</p>}
+              <p className="mt-3 text-sm">
+                <Link href="/student/notifications" className="hover:underline">
+                  {dash.unread_notifications > 0 ? <><Badge tone="blue">{dash.unread_notifications} unread</Badge> notifications</> : 'Notifications'}
+                </Link>
+              </p>
             </Card>
           </div>
+          {game && (game.points > 0 || (game.badges ?? []).length > 0) && (
+            <Card title="My badges">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge tone="blue">{game.points} points</Badge>
+                {game.current_streak > 1 && <Badge tone="amber">{game.current_streak}-day streak</Badge>}
+                {(game.badges ?? []).map((b) => <Badge key={b} tone="green">🏅 {b}</Badge>)}
+              </div>
+            </Card>
+          )}
           <LibraryBooks />
         </div>
       ))}
@@ -173,11 +180,13 @@ export default function StudentHome() {
               {detail.assignments.length === 0 ? <Empty>None.</Empty> : (
                 <ul className="space-y-1 text-sm">{detail.assignments.map((a) => <li key={a.id}>{a.title} · due {a.due_date} <Badge tone={a.status === 'graded' ? 'green' : a.status === 'missed' ? 'red' : a.status === 'not_submitted' ? 'amber' : 'blue'}>{a.status.replaceAll('_', ' ')}</Badge>{a.marks_awarded !== null && ` ${a.marks_awarded}`}</li>)}</ul>
               )}
+              <Link href="/student/homework" className={linkClass}>Hand in homework</Link>
             </Card>
             <Card title="Tests">
               {detail.tests.length === 0 ? <Empty>None.</Empty> : (
                 <ul className="space-y-1 text-sm">{detail.tests.map((t) => <li key={t.id}>{t.title} {t.submitted ? <Badge tone="green">done{t.percentage !== null ? ` · ${t.percentage}%` : ''}</Badge> : t.opens_at && <span className="text-ink-muted">· {when(t.opens_at)}</span>}</li>)}</ul>
               )}
+              <Link href="/student/tests" className={linkClass}>My tests</Link>
             </Card>
             <Card title="Results by term">
               {detail.results.length === 0 ? <Empty>No released results yet.</Empty> : (
@@ -185,31 +194,6 @@ export default function StudentHome() {
               )}
             </Card>
           </div>
-        </div>
-      )}
-
-      {tab === 'results' && (
-        <div className="space-y-5">
-          <select className={`${inputClass} max-w-xs`} value={termId} onChange={(e) => setTermId(e.target.value)} aria-label="Term">
-            <option value="">Choose a term…</option>
-            {terms.map((t) => <option key={t.id} value={t.id} disabled={!t.released}>{t.name}{t.released ? '' : ' (not released)'}</option>)}
-          </select>
-          {sheet && sheet.status !== 'released' && <Empty>{sheet.message}</Empty>}
-          {sheet?.status === 'released' && sheet.subjects && (
-            <Card title={`Average: ${sheet.average}`}>
-              <Table columns={['Subject', 'Scores', 'Total', 'Grade', 'Comment']}>
-                {sheet.subjects.map((s) => (
-                  <tr key={s.subject}>
-                    <Cell className="font-medium">{s.subject}</Cell>
-                    <Cell className="text-xs text-ink-muted">{s.state !== 'scored' ? s.state : Object.entries(s.components).map(([k, v]) => `${label(k)} ${v}`).join(' · ')}</Cell>
-                    <Cell>{s.total ?? '—'}</Cell>
-                    <Cell>{s.grade && <Badge tone="blue">{s.grade}</Badge>}{s.position ? <span className="ml-1 text-xs text-ink-muted">pos. {s.position}</span> : null}</Cell>
-                    <Cell className="text-sm">{s.comment ?? ''}</Cell>
-                  </tr>
-                ))}
-              </Table>
-            </Card>
-          )}
         </div>
       )}
     </PageShell>
