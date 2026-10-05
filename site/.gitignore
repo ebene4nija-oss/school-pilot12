@@ -1,0 +1,8 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+# Generated from ../web/public/brand by scripts/sync-brand.mjs
+public/brand/
+.env*.local
