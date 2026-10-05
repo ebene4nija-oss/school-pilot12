@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "SchoolPilot — K-12 School Management Platform",
   description:
     "Cloud-based school management platform for private K-12 schools in Nigeria.",
+  // Everything in the portal is behind sign-in. Only a school's published
+  // public home (app/school-home) opts back in to indexing.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

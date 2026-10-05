@@ -14,7 +14,7 @@ import type { NextRequest } from 'next/server';
  * Treating a redirect as security is how role-gated SPAs leak data.
  */
 
-const PUBLIC_PATHS = ['/login', '/verify-result'];
+const PUBLIC_PATHS = ['/login', '/verify-result', '/robots.txt', '/sitemap.xml'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,6 +24,17 @@ export function proxy(request: NextRequest) {
   }
 
   const hasSession = request.cookies.has('sp_token');
+
+  /*
+   * A signed-out visitor at the root sees the school's public home — its
+   * name, crest, contact details and the sign-in form — rather than being
+   * bounced to /login. A rewrite, not a redirect, so the school's own address
+   * is the one search engines index. Where the host names no school, that
+   * page sends the visitor on to /login itself.
+   */
+  if (!hasSession && pathname === '/') {
+    return NextResponse.rewrite(new URL('/school-home', request.url));
+  }
 
   if (!hasSession) {
     const loginUrl = new URL('/login', request.url);
