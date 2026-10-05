@@ -127,3 +127,11 @@ Schedule::command('lms:sync-attendance')
     ->everyFifteenMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+/*
+ * Delete marketing leads that never became schools, 12 months after last
+ * contact — the retention the privacy notice states (Landing PRD §12.4).
+ */
+Schedule::command('marketing:prune-leads')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();

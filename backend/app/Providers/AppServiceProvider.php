@@ -82,5 +82,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('webhooks', function (Request $request) {
             return Limit::perMinute(300)->by($request->ip());
         });
+
+        // Marketing-site lead forms: a person sends one or two, a script sends
+        // hundreds (Landing PRD §14.2).
+        RateLimiter::for('marketing-leads', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('lead-min|'.$request->ip()),
+                Limit::perDay(20)->by('lead-day|'.$request->ip()),
+            ];
+        });
     }
 }

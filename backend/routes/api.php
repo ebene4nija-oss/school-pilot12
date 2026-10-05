@@ -10,6 +10,24 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+/*
+ * The public marketing site (schoolpilot.org.ng, Landing PRD §14.2).
+ *
+ * Outside tenant resolution on purpose: the site is on the apex domain, whose
+ * first label is not a school and would 404 there, and none of these routes
+ * concern one school's data.
+ */
+Route::prefix('public')->group(function () {
+    Route::post('/leads', [\App\Http\Controllers\Api\V1\PublicMarketingController::class, 'storeLead'])
+        ->middleware('throttle:marketing-leads');
+    Route::post('/leads/touch', [\App\Http\Controllers\Api\V1\PublicMarketingController::class, 'touch'])
+        ->middleware('throttle:30,1');
+    Route::get('/schools/resolve', [\App\Http\Controllers\Api\V1\PublicMarketingController::class, 'resolveSchool'])
+        ->middleware('throttle:20,1');
+    Route::get('/stats', [\App\Http\Controllers\Api\V1\PublicMarketingController::class, 'stats'])
+        ->middleware('throttle:60,1');
+});
+
 Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(function () {
 
     // Auth endpoints — login carries its own stricter limiter (5/min per
@@ -802,6 +820,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
              * school is asking for help.
              */
             Route::get('/platform/overview', [\App\Http\Controllers\Api\V1\PlatformController::class, 'overview']);
+
+            // Leads from the marketing site (Landing PRD §12).
+            Route::get('/platform/leads', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'index']);
+            Route::put('/platform/leads/{id}', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'update'])->whereNumber('id');
+            Route::post('/platform/leads/{id}/ref', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'attachRef'])->whereNumber('id');
 
             /*
              * Platform settings and AI configuration (doc §5). Integration keys,

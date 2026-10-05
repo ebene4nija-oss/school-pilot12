@@ -204,4 +204,21 @@ return [
         'fail_open' => (bool) env('CLAMAV_FAIL_OPEN', false),
     ],
 
+    /*
+     * The public marketing site (site/, schoolpilot.org.ng).
+     *
+     * Turnstile is Cloudflare's privacy-friendly bot check; with no secret set
+     * the lead form skips it (local, tests). Stats thresholds hide each public
+     * total until it is no longer an embarrassing number (Landing PRD §8.3).
+     */
+    'marketing' => [
+        'tenant_domain' => env('TENANT_DOMAIN', 'schoolpilot.org.ng'),
+        'turnstile_secret' => env('TURNSTILE_SECRET_KEY'),
+        'stats_thresholds' => [
+            'schools' => (int) env('MARKETING_STATS_MIN_SCHOOLS', 10),
+            'students' => (int) env('MARKETING_STATS_MIN_STUDENTS', 1000),
+            'teachers' => (int) env('MARKETING_STATS_MIN_TEACHERS', 100),
+        ],
+    ],
+
 ];
