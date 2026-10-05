@@ -115,6 +115,20 @@ class MoreScreen extends ConsumerWidget {
               label: 'My payslips',
               onTap: () => context.push('/payslips'),
             ),
+          if (role == UserRole.schoolAdmin)
+            _Tile(
+              icon: Icons.payments_outlined,
+              label: 'Payroll',
+              detail: 'Prepare, approve and record payment',
+              onTap: () => context.push('/payroll'),
+            ),
+          if (role == UserRole.schoolAdmin)
+            _Tile(
+              icon: Icons.link,
+              label: 'Zoom and Google Meet',
+              detail: 'Read virtual-class attendance from the call',
+              onTap: () => context.push('/video-providers'),
+            ),
           if (role == UserRole.student)
             _Tile(
               icon: Icons.emoji_events_outlined,

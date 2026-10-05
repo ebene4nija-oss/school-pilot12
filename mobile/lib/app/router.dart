@@ -10,6 +10,7 @@ import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/child/child_screen.dart';
 import '../features/classes/classes_tab.dart';
+import '../features/classes/video_providers_screen.dart';
 import '../features/classes/virtual_attendance_screen.dart';
 import '../features/dashboard/home_screen.dart';
 import '../features/finance/fees_screen.dart';
@@ -28,6 +29,7 @@ import '../features/more/pending_sync_screen.dart';
 import '../features/more/profile_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/shell/app_shell.dart';
+import '../features/staff/payroll_screen.dart';
 import '../features/staff/payslips_screen.dart';
 import '../features/students/students_screen.dart';
 import '../features/timetable/timetable_screen.dart';
@@ -92,6 +94,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/id-card', builder: (_, __) => const IdCardScreen()),
       GoRoute(path: '/hostel', builder: (_, __) => const HostelScreen()),
       GoRoute(path: '/virtual-classes', builder: (_, __) => const VirtualClassesScreen()),
+      GoRoute(path: '/payroll', builder: (_, __) => const PayrollScreen()),
+      GoRoute(path: '/video-providers', builder: (_, __) => const VideoProvidersScreen()),
       GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
 
       ShellRoute(

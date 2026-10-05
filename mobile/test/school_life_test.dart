@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:schoolpilot/core/data/cached.dart';
 import 'package:schoolpilot/core/sync/sync_service.dart';
 import 'package:schoolpilot/features/child/child_school_life.dart';
+import 'package:schoolpilot/features/classes/video_providers_screen.dart';
 import 'package:schoolpilot/features/classes/virtual_attendance_screen.dart';
+import 'package:schoolpilot/features/gradebook/coursework_ca_screen.dart';
 import 'package:schoolpilot/features/hostel/hostel_screen.dart';
 import 'package:schoolpilot/features/idcard/id_card_screen.dart';
+import 'package:schoolpilot/features/staff/payroll_screen.dart';
 import 'package:schoolpilot/features/timetable/timetable_screen.dart';
 
 void main() {
@@ -170,5 +173,68 @@ void main() {
     expect(find.text('40 min in call'), findsOneWidget);
     expect(find.text("Mummy's iPad"), findsOneWidget);
     expect(find.text('Read the report again'), findsOneWidget);
+  });
+
+  group('coursework CA parts', () {
+    test('a school marking in parts offers only its CAs, never the exam', () {
+      final parts = caPartsOf({
+        'ca_scheme': {
+          'components': [
+            {'key': 'ca1', 'name': '1st CA', 'max': 10, 'kind': 'ca'},
+            {'key': 'ca2', 'name': 'Project', 'max': 10, 'kind': 'ca'},
+            {'key': 'ca3', 'name': '3rd CA', 'max': 10, 'kind': 'ca'},
+            {'key': 'exam', 'name': 'Exam', 'max': 70, 'kind': 'exam'},
+          ],
+        },
+      });
+      expect(parts.map((p) => p['key']), ['ca1', 'ca2', 'ca3']);
+    });
+
+    test('a classic scheme becomes its two CAs', () {
+      final parts = caPartsOf({'ca_scheme': {'first_ca_weight': 20, 'second_ca_weight': 20, 'exam_weight': 60}});
+      expect(parts.map((p) => '${p['name']}/${p['max']}'), ['1st CA/20', '2nd CA/20']);
+      expect(caPartsOf(const {}), isEmpty);
+    });
+  });
+
+  testWidgets('a draft payroll with a negative payslip warns before approval', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          payrollRunProvider.overrideWith((ref, id) async => {
+                'run': {'id': id, 'period': '2026-10', 'version': 1, 'status': 'draft', 'total_gross': '300000.00', 'total_net': '250000.00', 'staff_count': 2},
+                'payslips': [
+                  {'name': 'Mr Chidi', 'gross': 180000, 'total_deductions': 31500, 'net': 148500},
+                  {'name': 'Mrs Bello', 'gross': 120000, 'total_deductions': 130000, 'net': -10000},
+                ],
+              }),
+        ],
+        child: const MaterialApp(home: PayrollRunScreen(runId: 3)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('October 2026'), findsOneWidget);
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.textContaining('deductions larger than pay'), findsOneWidget);
+    expect(find.text('Record as paid today'), findsNothing);
+  });
+
+  testWidgets('Google Meet is connected from a computer; Zoom can be connected here', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          videoProvidersProvider.overrideWith((ref) async => [
+                {'provider': 'zoom', 'status': 'failing', 'last_error': 'Zoom did not accept these credentials.'},
+              ]),
+        ],
+        child: const MaterialApp(home: VideoProvidersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Failing'), findsOneWidget);
+    expect(find.text('Replace details'), findsOneWidget);
+    expect(find.textContaining('Connect from the web portal'), findsOneWidget);
   });
 }

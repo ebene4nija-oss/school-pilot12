@@ -46,6 +46,10 @@ class Api {
   static const assessmentScore = '$version/assessment/score';
   static const broadsheet = '$version/assessment/broadsheet';
   static const caSchemes = '$version/assessment/ca-schemes';
+  // A CA filled from homework and quizzes; the teacher adjusts, then applies.
+  static const courseworkSources = '$version/assessment/coursework-ca/sources';
+  static const courseworkSuggest = '$version/assessment/coursework-ca/suggest';
+  static const courseworkApply = '$version/assessment/coursework-ca/apply';
   static String aiComment(int scoreId) =>
       '$version/assessment/score/$scoreId/ai-comment';
   static String reviewComment(int scoreId) =>
@@ -246,6 +250,19 @@ class Api {
 
   // Staff payslips (approved and paid months only)
   static const myPayslips = '$version/me/payslips';
+
+  // Payroll runs (admin): prepare, approve, record payment, reopen.
+  static const payrollRuns = '$version/payroll/runs';
+  static String payrollRun(int id) => '$version/payroll/runs/$id';
+  static String payrollApprove(int id) => '$version/payroll/runs/$id/approve';
+  static String payrollPaid(int id) => '$version/payroll/runs/$id/paid';
+  static String payrollReopen(int id) => '$version/payroll/runs/$id/reopen';
+
+  // The school's own Zoom / Google Workspace account, for reading
+  // virtual-class attendance. Credentials go up, never come back.
+  static const videoProviders = '$version/live-classes/providers';
+  static String videoProvider(String provider) =>
+      '$version/live-classes/providers/$provider';
 
   // Timetable venues: where a teacher's lesson is held
   static String freeVenues(int entryId) =>

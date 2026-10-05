@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/ui/pickers.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'coursework_ca_screen.dart';
 import 'score_entry_screen.dart';
 
 final mySubjectsProvider =
@@ -124,6 +125,33 @@ class GradebookTab extends ConsumerWidget {
                                 ),
                                 style: AppText.bodyLg,
                               ),
+                            ),
+                            // A CA filled from homework and quizzes, which
+                            // the teacher checks and adjusts before entry.
+                            IconButton(
+                              tooltip: 'CA from coursework',
+                              icon: const Icon(Icons.playlist_add_check,
+                                  color: AppColors.secondary),
+                              onPressed: (classId == null || termId == null)
+                                  ? null
+                                  : () => Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => CourseworkCaScreen(
+                                            subjectId: intOf(
+                                              subject['subject_id'] ??
+                                                  subject['id'] ??
+                                                  subject['subject']?['id'],
+                                            ),
+                                            subjectName: stringOf(
+                                              subject['name'] ??
+                                                  subject['subject']?['name'],
+                                              'Subject',
+                                            ),
+                                            classId: classId,
+                                            termId: termId,
+                                          ),
+                                        ),
+                                      ),
                             ),
                             const Icon(Icons.chevron_right,
                                 color: AppColors.outline),

@@ -400,6 +400,8 @@ admission number, class) stays school-wide.
 | PIN inventory & sales | `GET /result-pins/inventory`, `GET /result-pins/batches`, `POST /result-pins/counter-sale`, `GET /result-pins/sales-report` |
 | Report-card run | `POST /report-cards/generate` → poll `GET /jobs/{batchId}` |
 | Broadcast | `POST /notifications/broadcast` (channel picker must state that SMS is billed per message) |
+| Payroll | `GET /payroll/runs`, `GET /payroll/runs/{id}`, `POST /payroll/runs`, `POST /payroll/runs/{id}/approve` (a 409 for self-approval prompts for the recorded reason), `POST /payroll/runs/{id}/paid`, `POST /payroll/runs/{id}/reopen` — never cached. Salary structures and pay items stay on the web |
+| Zoom and Google Meet | `GET /live-classes/providers`, `PUT /live-classes/providers/zoom`, `DELETE /live-classes/providers/{provider}`. Google Meet is connected from the web (a key file is pasted) |
 
 ### Teacher
 
@@ -422,6 +424,7 @@ admission number, class) stays school-wide.
 | Library desk (camera scan) | `GET /library/borrowers`, `POST /library/loans`, `POST /library/returns`, `GET /library/loans?status=overdue` |
 | Virtual class attendance | `GET /live-classes?recent=1`, `GET /live-classes/{id}/attendance`, `POST /live-classes/{id}/provider-attendance`, `POST /live-classes/{id}/provider-attendance/match`, `PUT /live-classes/{id}/attendance/{studentId}` |
 | My payslips (also admins) | `GET /me/payslips` |
+| CA from coursework (Gradebook) | `GET /assessment/coursework-ca/sources`, `POST /assessment/coursework-ca/suggest`, `POST /assessment/coursework-ca/apply`; CA parts from `GET /assessment/broadsheet` |
 | CBT authoring (light) | `GET /cbt/exams`, `POST /cbt/exams`, `POST /cbt/exams/{id}/publish`, `GET /cbt/exams/{id}/results` |
 | AI Studio | `POST /ai/lesson-plan`, `POST /ai/exam-generation`, `POST /ai/homework-ideas`, `POST /ai/translate` |
 
