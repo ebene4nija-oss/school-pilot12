@@ -32,6 +32,16 @@ class School extends Model
         'email_daily_limit',
         'absence_alerts_enabled',
         'absence_alerts_sms',
+        'short_name',
+        'motto',
+        'about',
+        'hero_image_url',
+        'state',
+        'lga',
+        'website',
+        'social_links',
+        'school_type',
+        'brand_color',
     ];
 
     /** Never serialised: it carries the school's AI key. */
@@ -53,6 +63,10 @@ class School extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'geofence_radius_meters' => 'integer',
+        'social_links' => 'array',
+        'public_profile_published' => 'boolean',
+        'public_profile_published_at' => 'datetime',
+        'hero_image_confirmed_at' => 'datetime',
     ];
 
     /**

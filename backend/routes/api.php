@@ -300,6 +300,19 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * so the role list here is the outer fence, not the check.
          */
         /*
+         * The school's public profile: what its subdomain shows signed-out
+         * visitors, and whether search engines may index it. School admin only.
+         */
+        Route::middleware('role:school_admin')->group(function () {
+            Route::get('/school/profile', [\App\Http\Controllers\Api\V1\SchoolProfileController::class, 'show']);
+            Route::put('/school/profile', [\App\Http\Controllers\Api\V1\SchoolProfileController::class, 'update']);
+            Route::post('/school/profile/images/{kind}', [\App\Http\Controllers\Api\V1\SchoolProfileController::class, 'uploadImage'])
+                ->whereIn('kind', ['logo', 'hero'])->middleware('throttle:10,1');
+            Route::delete('/school/profile/images/{kind}', [\App\Http\Controllers\Api\V1\SchoolProfileController::class, 'removeImage'])
+                ->whereIn('kind', ['logo', 'hero']);
+        });
+
+        /*
          * Absence alerts: off until the school switches them on, and then only
          * for parents who opt in, per child. The school office can record a
          * parent's choice for them (a phone-only parent cannot sign in).
@@ -1055,6 +1068,13 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/public/admissions/apply', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'publicApply']);
         Route::post('/public/admissions/status', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'publicStatus']);
     });
+
+    /*
+     * The school's own front door: name, crest and hero for its sign-in page,
+     * and — once the admin publishes — about, contact and admissions. Tenant
+     * from the subdomain; institutional fields only, never a person's data.
+     */
+    Route::get('/public/school-profile', [\App\Http\Controllers\Api\V1\SchoolProfileController::class, 'publicShow']);
 
     // A transfer package by its expiring secret link, for a school not on SchoolPilot.
     Route::middleware('throttle:10,1')->get('/transfer-packages/{token}', [\App\Http\Controllers\Api\V1\TransferController::class, 'packageByLink']);
