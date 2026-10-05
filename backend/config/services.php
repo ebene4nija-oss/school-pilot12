@@ -219,6 +219,19 @@ return [
             'students' => (int) env('MARKETING_STATS_MIN_STUDENTS', 1000),
             'teachers' => (int) env('MARKETING_STATS_MIN_TEACHERS', 100),
         ],
+
+        // Managed from the console (Platform settings > Website); empty here.
+        'site' => [
+            'whatsapp_number' => null,
+            'response_minutes' => 0,
+            'demo_school_url' => null,
+            'contact_email' => null,
+            'contact_address' => null,
+            'privacy_email' => null,
+            'trust_show_ai' => false,
+            'trust_show_backups' => false,
+            'legal_reviewed' => false,
+        ],
     ],
 
 ];

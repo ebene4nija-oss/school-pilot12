@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
+import { site } from "@/lib/site";
 
 /**
  * Privacy, terms and data policy. Marked as drafts until legal review signs
- * them off (Landing PRD §24, item 7); set NEXT_PUBLIC_LEGAL_REVIEWED=1 then.
+ * them off (Landing PRD §24, item 7); switched off in the console then
+ * (Super Admin > Website > Legal pages reviewed).
  */
 export function LegalPage({ title, updated, children }: { title: string; updated: string; children: ReactNode }) {
-  const reviewed = process.env.NEXT_PUBLIC_LEGAL_REVIEWED === "1";
+  const reviewed = site.legalReviewed;
 
   return (
     <section data-hero className="bg-canvas py-12 md:py-16">

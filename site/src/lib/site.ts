@@ -1,33 +1,62 @@
 /**
- * Site-wide settings. Everything that differs between environments comes
- * from NEXT_PUBLIC_* variables baked in at build time (see .env.example).
+ * Site-wide settings.
  *
- * Several are open owner decisions (Landing PRD §24): the WhatsApp Business
- * number, the public demo school and the contact details. Until each is set,
- * the site leaves it out rather than showing a made-up value.
+ * What an operator decides (Landing PRD §24) comes from the console: Super
+ * Admin > Website. scripts/fetch-site-config.mjs pulls it into
+ * src/generated/site-config.json before every build, so a console change
+ * shows after the next rebuild. NEXT_PUBLIC_* variables are only a fallback
+ * for local development without the API.
+ *
+ * Anything not set is left off the site rather than shown as a placeholder.
  */
+import generated from "@/generated/site-config.json";
+
+type Console = Partial<{
+  whatsapp_number: string | null;
+  response_minutes: number;
+  demo_school_url: string | null;
+  contact_email: string | null;
+  contact_address: string | null;
+  privacy_email: string | null;
+  trust_show_ai: boolean;
+  trust_show_backups: boolean;
+  legal_reviewed: boolean;
+}>;
+
+const fromConsole = generated as Console;
+const env = process.env;
 
 export const site = {
   name: "SchoolPilot",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://schoolpilot.org.ng",
-  tenantDomain: process.env.NEXT_PUBLIC_TENANT_DOMAIN ?? "schoolpilot.org.ng",
-  apiBase: (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1").replace(/\/$/, ""),
+  url: env.NEXT_PUBLIC_SITE_URL ?? "https://schoolpilot.org.ng",
+  tenantDomain: env.NEXT_PUBLIC_TENANT_DOMAIN ?? "schoolpilot.org.ng",
+  apiBase: (env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1").replace(/\/$/, ""),
 
   /** Digits only, international form, e.g. 2348031234567. Unset = no WhatsApp CTA. */
-  whatsappNumber: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, ""),
+  whatsappNumber: (fromConsole.whatsapp_number ?? env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, ""),
 
-  /** The public Greenfield Academy demo (Phase 1b). Unset = no demo-school links. */
-  demoSchoolUrl: process.env.NEXT_PUBLIC_DEMO_SCHOOL_URL ?? "",
+  /** Minutes the forms promise a reply within; 0 = "by the next working day". */
+  responseMinutes: fromConsole.response_minutes ?? Number(env.NEXT_PUBLIC_RESPONSE_MINUTES ?? 0),
 
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
-  contactAddress: process.env.NEXT_PUBLIC_CONTACT_ADDRESS ?? "",
-  privacyEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? "",
+  /** The public Greenfield Academy demo. Unset = no demo-school links. */
+  demoSchoolUrl: fromConsole.demo_school_url ?? env.NEXT_PUBLIC_DEMO_SCHOOL_URL ?? "",
 
-  turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
+  contactEmail: fromConsole.contact_email ?? env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
+  contactAddress: fromConsole.contact_address ?? env.NEXT_PUBLIC_CONTACT_ADDRESS ?? "",
+  privacyEmail: fromConsole.privacy_email ?? env.NEXT_PUBLIC_PRIVACY_EMAIL ?? "",
+
+  /** /trust sections held back until their precondition is met (§13). */
+  trustShowAi: fromConsole.trust_show_ai ?? env.NEXT_PUBLIC_TRUST_SHOW_AI === "1",
+  trustShowBackups: fromConsole.trust_show_backups ?? env.NEXT_PUBLIC_TRUST_SHOW_BACKUPS === "1",
+
+  /** Drops the "draft awaiting legal review" note on the legal pages. */
+  legalReviewed: fromConsole.legal_reviewed ?? env.NEXT_PUBLIC_LEGAL_REVIEWED === "1",
+
+  turnstileSiteKey: env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
 
   /** Self-hosted Plausible or Umami, cookieless. Unset = no analytics script. */
-  analyticsDomain: process.env.NEXT_PUBLIC_ANALYTICS_DOMAIN ?? "",
-  analyticsScript: process.env.NEXT_PUBLIC_ANALYTICS_SCRIPT ?? "",
+  analyticsDomain: env.NEXT_PUBLIC_ANALYTICS_DOMAIN ?? "",
+  analyticsScript: env.NEXT_PUBLIC_ANALYTICS_SCRIPT ?? "",
 
   /** Working hours stated on every success screen (Landing PRD §11.3). */
   responseHours: "8am–6pm, Monday to Saturday",

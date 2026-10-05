@@ -38,7 +38,7 @@ type Source = 'console' | 'server' | 'unset' | 'unreadable';
 interface Setting {
   key: string;
   label: string;
-  type: 'secret' | 'string' | 'select' | 'bool' | 'number' | 'integer' | 'email' | 'naira';
+  type: 'secret' | 'string' | 'select' | 'bool' | 'number' | 'integer' | 'email' | 'naira' | 'phone' | 'url';
   help: string | null;
   options: string[] | null;
   min: number | null;
@@ -85,14 +85,22 @@ export default function PlatformSettings({
   section,
   title,
   subtitle,
+  children,
 }: {
-  /** `ai` is the AI group alone; `integrations` is every other group. */
-  section: 'ai' | 'integrations';
+  /**
+   * `ai` is the AI group alone, `website` the marketing site's group alone,
+   * `integrations` every other group.
+   */
+  section: 'ai' | 'integrations' | 'website';
   title: string;
   subtitle: string;
+  /** Extra cards under the settings, e.g. the website's screenshots. */
+  children?: React.ReactNode;
 }) {
   const [allGroups, setGroups] = useState<Group[]>([]);
-  const groups = allGroups.filter((group) => (section === 'ai') === (group.key === 'ai'));
+  const groups = allGroups.filter((group) =>
+    section === 'integrations' ? group.key !== 'ai' && group.key !== 'website' : group.key === section,
+  );
   const [usage, setUsage] = useState<AiUsage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +181,11 @@ export default function PlatformSettings({
         for (const setting of group.settings) delete next[setting.key];
         return next;
       });
-      setNotice(`${group.label} saved. It takes effect immediately.`);
+      setNotice(
+        group.key === 'website'
+          ? 'Website saved. It shows on the public site after the next site rebuild.'
+          : `${group.label} saved. It takes effect immediately.`,
+      );
 
       if (section === 'ai') {
         const ai = await fetchApi<AiUsage>('/platform/ai-usage').catch(() => null);
@@ -238,6 +250,8 @@ export default function PlatformSettings({
               {group.key === 'ai' && usage && <AiUsagePanel usage={usage} />}
             </Card>
           ))}
+
+          {children}
 
           <p className="text-xs text-ink-muted">
             Keys are encrypted with this server&apos;s application key before they are stored. If that
@@ -426,7 +440,7 @@ function Control({
         <div>
           <input
             id={id}
-            type={numeric ? 'number' : setting.type === 'email' ? 'email' : 'text'}
+            type={numeric ? 'number' : setting.type === 'email' ? 'email' : setting.type === 'phone' ? 'tel' : setting.type === 'url' ? 'url' : 'text'}
             step={setting.type === 'integer' ? '1' : setting.type === 'number' ? 'any' : undefined}
             min={numeric ? (setting.min ?? undefined) : undefined}
             max={numeric ? (setting.max ?? undefined) : undefined}

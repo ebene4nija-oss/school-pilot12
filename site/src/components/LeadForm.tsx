@@ -33,7 +33,7 @@ const SECTIONS = [
   ["ss", "SS"],
 ] as const;
 
-const responseMinutes = Number(process.env.NEXT_PUBLIC_RESPONSE_MINUTES ?? 0);
+const responseMinutes = site.responseMinutes;
 
 /** What the visitor is told to expect: only the promise the team can keep. */
 function responsePromise() {

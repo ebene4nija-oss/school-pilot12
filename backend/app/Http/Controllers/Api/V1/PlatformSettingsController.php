@@ -295,6 +295,22 @@ class PlatformSettingsController extends Controller
 
                 return filter_var($address, FILTER_VALIDATE_EMAIL) ? $address : ['Enter a valid email address.'];
 
+            case 'phone':
+                // Stored as international digits (2348031234567), the form
+                // wa.me links need.
+                $number = \App\Services\SmsService::normaliseNumber((string) $raw);
+
+                return preg_match('/^\+234[789][01]\d{8}$/', $number)
+                    ? ltrim($number, '+')
+                    : ['Enter a Nigerian mobile number, e.g. 0803 123 4567.'];
+
+            case 'url':
+                $url = trim((string) $raw);
+
+                return filter_var($url, FILTER_VALIDATE_URL) && str_starts_with($url, 'https://') && mb_strlen($url) <= 255
+                    ? $url
+                    : ['Enter a full https:// address.'];
+
             case 'select':
                 return in_array($raw, $definition['options'], true)
                     ? (string) $raw

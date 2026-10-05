@@ -6,3 +6,6 @@ next-env.d.ts
 # Generated from ../web/public/brand by scripts/sync-brand.mjs
 public/brand/
 .env*.local
+# Pulled from the console by scripts/fetch-site-config.mjs
+src/generated/
+public/screens/

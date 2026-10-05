@@ -10,14 +10,14 @@ export const metadata: Metadata = {
 
 /*
  * Every statement here must be true (Landing PRD §13). Two sections are held
- * back until their condition is met:
- *  - "AI and your data": until the cross-border transfer documentation is
- *    confirmed. Turn on with NEXT_PUBLIC_TRUST_SHOW_AI=1.
- *  - Backups and restore testing: until the first restore drill is logged.
- *    Turn on with NEXT_PUBLIC_TRUST_SHOW_BACKUPS=1.
+ * back until their condition is met, each switched on in the console
+ * (Super Admin > Website):
+ *  - "AI and your data": once the cross-border transfer documentation is
+ *    confirmed.
+ *  - Backups and restore testing: once the first restore drill is logged.
  */
-const showAi = process.env.NEXT_PUBLIC_TRUST_SHOW_AI === "1";
-const showBackups = process.env.NEXT_PUBLIC_TRUST_SHOW_BACKUPS === "1";
+const showAi = site.trustShowAi;
+const showBackups = site.trustShowBackups;
 
 export default function TrustPage() {
   return (

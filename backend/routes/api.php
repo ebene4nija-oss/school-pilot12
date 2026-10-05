@@ -26,6 +26,9 @@ Route::prefix('public')->group(function () {
         ->middleware('throttle:20,1');
     Route::get('/stats', [\App\Http\Controllers\Api\V1\PublicMarketingController::class, 'stats'])
         ->middleware('throttle:60,1');
+    // Read by the site's build: console-managed contacts, switches and screenshots.
+    Route::get('/site-config', [\App\Http\Controllers\Api\V1\PlatformWebsiteController::class, 'siteConfig'])
+        ->middleware('throttle:30,1');
 });
 
 Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(function () {
@@ -838,6 +841,11 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/leads', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'index']);
             Route::put('/platform/leads/{id}', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'update'])->whereNumber('id');
             Route::post('/platform/leads/{id}/ref', [\App\Http\Controllers\Api\V1\PlatformLeadController::class, 'attachRef'])->whereNumber('id');
+
+            // The marketing site's screenshots, slot by slot.
+            Route::get('/platform/website/screens', [\App\Http\Controllers\Api\V1\PlatformWebsiteController::class, 'screens']);
+            Route::post('/platform/website/screens/{slot}', [\App\Http\Controllers\Api\V1\PlatformWebsiteController::class, 'upload']);
+            Route::delete('/platform/website/screens/{slot}', [\App\Http\Controllers\Api\V1\PlatformWebsiteController::class, 'destroy']);
 
             /*
              * Platform settings and AI configuration (doc §5). Integration keys,

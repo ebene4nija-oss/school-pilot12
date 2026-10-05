@@ -27,19 +27,22 @@ Only through four public endpoints, all under `/api/v1/public` (see `backend/app
 
 Leads appear for operators at `GET /api/v1/platform/leads`.
 
-## Things that stay hidden until decided
+## Managed from the console
 
-The site leaves out anything not yet real rather than showing a placeholder:
+Operators set the site's contacts, switches and screenshots in the Super Admin console under **Website**. Before every build, `scripts/fetch-site-config.mjs` reads `GET /api/v1/public/site-config`, writes `src/generated/site-config.json`, and downloads the screenshots into `public/screens/` as WebP. **A change in the console shows on the site after the next rebuild.**
 
-| Setting | Until set |
+| Console setting | Until it's set |
 | --- | --- |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | No WhatsApp button; "Book a demo" becomes the primary CTA |
-| `NEXT_PUBLIC_DEMO_SCHOOL_URL` | No "try the demo school" links |
-| `NEXT_PUBLIC_RESPONSE_MINUTES` | Forms promise a reply "by the next working day" |
-| `NEXT_PUBLIC_TRUST_SHOW_AI=1` | /trust omits the AI section (needs cross-border transfer documentation) |
-| `NEXT_PUBLIC_TRUST_SHOW_BACKUPS=1` | /trust omits backups (needs the first restore drill) |
-| `NEXT_PUBLIC_LEGAL_REVIEWED=1` | Legal pages carry a "draft awaiting legal review" note |
-| Contact email, address, privacy email | Not shown |
+| WhatsApp Business number | No WhatsApp button; "Book a demo" becomes the primary CTA |
+| Reply promise (minutes) | Forms promise a reply "by the next working day" |
+| Demo school link | No "try the demo school" links |
+| Contact email, office address, data-protection email | Not shown |
+| Show "AI and your data" | /trust omits it (needs cross-border transfer documentation) |
+| Show backups | /trust omits it (needs the first restore drill) |
+| Legal pages reviewed | Legal pages carry a "draft awaiting legal review" note |
+| Product screenshots (9 slots) | Each slot shows a labelled "Screenshot to capture" frame, never a mock-up |
+
+Set `SITE_CONFIG_REQUIRED=1` on the production build so it fails if the API can't be reached, instead of shipping without the console's values. Locally, the build keeps the last config it fetched and the `NEXT_PUBLIC_*` values in `.env.local` act as a fallback.
 
 Prices are never shown on the site; bands say "Price confirmed on WhatsApp" until final prices are approved in writing.
 
@@ -51,19 +54,19 @@ Pricing: the core is free, CBT included. Schools pay one charge per term, by stu
 
 ## Screenshots
 
-`ProductShot` shows a real screenshot from `public/screens/` or, if the file is missing, a labelled "Screenshot to capture" frame (never a mock-up). Capture these from the seeded Greenfield Academy demo tenant (`php artisan db:seed --class=DemoSchoolSeeder`), as WebP:
+Uploaded in the console (Super Admin > Website > Product screenshots), one per slot, from the Greenfield Academy demo school only (`php artisan db:seed --class=DemoSchoolSeeder`). The build resizes them to 1280 px wide (desktop) or 390 px (phone) WebP.
 
-| File | Size | Screen |
-| --- | --- | --- |
-| `admin-dashboard.webp` | 1280×800 | School admin dashboard |
-| `admin-dashboard-phone.webp` | 390×844 | Admin dashboard, mobile app |
-| `broadsheet.webp` | 1280×800 | A class broadsheet with positions |
-| `cbt-exam.webp` | 1280×800 | Student CBT exam screen |
-| `fees-outstanding.webp` | 1280×800 | Invoices and outstanding balances |
-| `student-profile.webp` | 1280×800 | Student profile |
-| `score-entry-phone.webp` | 390×844 | Teacher score entry, mobile |
-| `parent-app-phone.webp` | 390×844 | Parent app: result and balance |
-| `student-app-phone.webp` | 390×844 | Student app: materials and assignments |
+| Slot | Screen |
+| --- | --- |
+| `admin-dashboard` | School admin dashboard |
+| `admin-dashboard-phone` | Admin dashboard, mobile app |
+| `broadsheet` | A class broadsheet with positions |
+| `cbt-exam` | Student CBT exam screen |
+| `fees-outstanding` | Invoices and outstanding balances |
+| `student-profile` | Student profile |
+| `score-entry-phone` | Teacher score entry, mobile |
+| `parent-app-phone` | Parent app: result and fee balance |
+| `student-app-phone` | Student app: materials and assignments |
 
 ## Performance budget
 

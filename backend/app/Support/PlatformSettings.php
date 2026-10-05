@@ -226,6 +226,71 @@ class PlatformSettings
                 'type' => 'string',
                 'help' => 'Optional — read from the service-account JSON when left empty.',
             ],
+
+            // ------------------------------------------------------- Website
+            /*
+             * The public marketing site (site/, Landing PRD §24). It reads these
+             * through /public/site-config when it is built, so a change here
+             * shows on the site after the next rebuild. Anything left empty is
+             * left off the site rather than shown as a placeholder.
+             */
+            'services.marketing.site.whatsapp_number' => [
+                'group' => 'website',
+                'label' => 'WhatsApp Business number',
+                'type' => 'phone',
+                'help' => 'The number behind every "Chat on WhatsApp" button, e.g. 0803 123 4567. Empty: the site has no WhatsApp button and "Book a demo" becomes the main one.',
+            ],
+            'services.marketing.site.response_minutes' => [
+                'group' => 'website',
+                'label' => 'Reply promise, in minutes',
+                'type' => 'integer',
+                'min' => 0,
+                'max' => 1440,
+                'help' => 'What the forms promise: "we\'ll message you within N minutes during working hours". Only set what the team can keep. Empty or 0: "by the next working day".',
+            ],
+            'services.marketing.site.demo_school_url' => [
+                'group' => 'website',
+                'label' => 'Demo school link',
+                'type' => 'url',
+                'help' => 'The public demo school, e.g. https://demo.schoolpilot.org.ng. Empty: no "try the demo school" links.',
+            ],
+            'services.marketing.site.contact_email' => [
+                'group' => 'website',
+                'label' => 'Contact email',
+                'type' => 'email',
+                'help' => 'Shown in the footer and on the contact page.',
+            ],
+            'services.marketing.site.contact_address' => [
+                'group' => 'website',
+                'label' => 'Office address',
+                'type' => 'string',
+                'max' => 200,
+                'help' => 'A real, verified address. Shown in the footer and on the contact page.',
+            ],
+            'services.marketing.site.privacy_email' => [
+                'group' => 'website',
+                'label' => 'Data-protection contact email',
+                'type' => 'email',
+                'help' => 'Shown on the privacy notice and the Security & trust page.',
+            ],
+            'services.marketing.site.trust_show_ai' => [
+                'group' => 'website',
+                'label' => 'Show "AI and your data" on Security & trust',
+                'type' => 'bool',
+                'help' => 'Only once the cross-border transfer documentation has been confirmed.',
+            ],
+            'services.marketing.site.trust_show_backups' => [
+                'group' => 'website',
+                'label' => 'Show backups on Security & trust',
+                'type' => 'bool',
+                'help' => 'Only after the first restore drill has been completed and logged.',
+            ],
+            'services.marketing.site.legal_reviewed' => [
+                'group' => 'website',
+                'label' => 'Legal pages reviewed',
+                'type' => 'bool',
+                'help' => 'Removes the "draft awaiting legal review" note from Privacy, Terms and Data policy. Only once legal review has signed them off.',
+            ],
         ];
     }
 
@@ -238,6 +303,7 @@ class PlatformSettings
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',
             'push' => 'Push notifications',
+            'website' => 'Website',
         ];
     }
 
