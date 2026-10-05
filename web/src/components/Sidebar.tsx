@@ -47,6 +47,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Operator',
     items: [
       { href: '/super-admin', icon: '🛡️', label: 'Schools', roles: ['super_admin'], className: 'font-semibold' },
+      { href: '/super-admin/leads', icon: '📞', label: 'Website leads', roles: ['super_admin'] },
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
       { href: '/super-admin/report-card-requests', icon: '🖨️', label: 'Report card requests', roles: ['super_admin'], badge: 'rc_requests' },
