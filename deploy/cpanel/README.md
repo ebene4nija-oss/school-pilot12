@@ -277,6 +277,28 @@ This does **not** undo migrations. If the bad release changed the schema in a
 way the previous one cannot read, restore the pre-deploy dump
 (`/home/schoolpilotorg/backups/`) as well.
 
+### Marketing site on the apex
+
+`https://schoolpilot.org.ng/` is the public website (`site/` in the repo), not
+the school portal: no school lives on the apex, and operators sign in at
+`admin.schoolpilot.org.ng`. It ships separately from the app because it is
+static and is rebuilt whenever Super Admin → Website changes.
+
+```bash
+# on your machine — reads Website settings from the live API
+./deploy/cpanel/build-site-release.sh        # -> dist/schoolpilot-site-<sha>.tar.gz
+
+# on the server
+sudo deploy/cpanel/deploy-site.sh /home/schoolpilotorg/uploads/schoolpilot-site-<sha>.tar.gz
+```
+
+It is served by the "marketing site on the apex" rules in
+`apache/schoolpilot.conf` (installed as in §1.9; needs `mod_rewrite`). Those
+rules act only on `schoolpilot.org.ng` / `www.` and only once
+`/home/schoolpilotorg/site/current` exists; `/api`, `/storage`, `/up` and
+`/.well-known` on the apex still reach Laravel, and school subdomains are not
+affected. Roll back by pointing `site/current` at the previous release.
+
 ---
 
 ## 3. Verify before the first school
