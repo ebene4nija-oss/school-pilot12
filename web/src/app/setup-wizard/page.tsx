@@ -49,7 +49,7 @@ export default function SetupChecklistPage() {
 
     (async () => {
       try {
-        const [terms, classes, subjects, students, reportSetup] = await Promise.all([
+        const [terms, classes, subjects, students, reportSetup, profilePublished] = await Promise.all([
           probe('/terms'),
           probe('/classes'),
           probe('/subjects'),
@@ -57,6 +57,10 @@ export default function SetupChecklistPage() {
           // Done when the marking scheme and the ratings/comments are both saved.
           fetchApi<{ configured: boolean; ca_scheme: { saved: boolean } }>('/report-settings')
             .then((r) => (r.configured && r.ca_scheme.saved ? 1 : 0))
+            .catch(() => null),
+          // Done once the school's public page is published.
+          fetchApi<{ profile: { published: boolean } }>('/school/profile')
+            .then((r) => (r.profile.published ? 1 : 0))
             .catch(() => null),
         ]);
 
@@ -106,6 +110,13 @@ export default function SetupChecklistPage() {
             count: null,
             href: '/timetable',
             hrefLabel: 'Timetable',
+          },
+          {
+            label: 'School profile published',
+            detail: 'Crest, hero photo, about and contact details on your own address, so parents can find the school and sign in from there.',
+            count: profilePublished,
+            href: '/school-profile',
+            hrefLabel: 'School profile',
           },
           {
             label: 'Administrator 2FA',
