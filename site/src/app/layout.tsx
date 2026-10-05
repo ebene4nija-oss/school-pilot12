@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 const workSans = Work_Sans({ subsets: ["latin"], variable: "--font-work-sans", display: "swap", weight: ["600", "700"] });
 
 const description =
-  "Results, CBT, fees, staff and parents in one login. Built for Nigerian private schools, Nursery to SS3. Free for almost everything.";
+  "The all-in-one school management system for Nigerian private schools: results, CBT with a computer-lab client, LMS, fees and administration. Free for almost everything.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),

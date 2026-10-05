@@ -10,7 +10,8 @@ export const faqGroups: { title: string; items: Faq[] }[] = [
   {
     title: "The product",
     items: [
-      { id: "what", q: "What is SchoolPilot?", a: "One platform for a school's academics, people, money and parents, on the web and on Android and iOS." },
+      { id: "what", q: "What is SchoolPilot?", a: "An all-in-one school management system: results, CBT with a computer-lab client, an LMS, fees and school administration, on the web and on Android and iOS." },
+      { id: "all-in-one", q: "Do we still need separate CBT or LMS software?", a: "No. CBT, the computer-lab client and the LMS are part of SchoolPilot and use the same students, classes and subjects as your results." },
       { id: "who", q: "Who is it for?", a: "Private Nigerian schools, Nursery to SS3, from about 50 to 3,000 students." },
       { id: "sections", q: "Can each section run differently?", a: "Yes. Nursery, Primary, JSS and SS each get their own assessment scheme; nursery can use developmental ratings instead of scores." },
       { id: "hardware", q: "Do we need to buy any machines?", a: "No. Nothing to buy, ever. Attendance and transport use phones; CBT uses the computers you already have." },
@@ -22,7 +23,7 @@ export const faqGroups: { title: string; items: Faq[] }[] = [
       { id: "ca", q: "Can we set our own CA structure?", a: "Yes: the number of CAs, their weights and your grading, per section." },
       { id: "cbt", q: "Does it do CBT?", a: "Yes, online and offline on your own lab computers." },
       { id: "reports", q: "Report cards and broadsheets?", a: "Yes: broadsheets with class and subject positions, report-card templates, and comments a teacher approves." },
-      { id: "learning", q: "Can students learn from home?", a: "Yes: learning materials, assignments with online submission, virtual classes on Zoom or Google Meet, and an AI tutor for revision." },
+      { id: "learning", q: "Is there an LMS?", a: "Yes, built in: learning materials, assignments with online submission, lesson plans, virtual classes on Zoom or Google Meet, and an AI tutor for revision." },
     ],
   },
   {

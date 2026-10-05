@@ -6,16 +6,17 @@
  */
 
 export const hero = {
-  eyebrow: "For Nigerian private schools · Nursery to SS3",
+  eyebrow: "All-in-one school management · Nursery to SS3",
   headline: "Run your whole school from one login.",
-  sub: "Students, results, CBT, fees, staff and parents, connected. Built for Nigerian private schools, from Nursery to SS3. Free for almost everything.",
-  proof: ["Free 24-hour data migration", "No hardware to buy", "CBT works offline"],
+  sub: "One all-in-one system for your school: results, CBT with a computer-lab client, an LMS, fees and school administration, connected for staff, students and parents. Built for Nigerian private schools. Free for almost everything.",
+  proof: ["One system, one login", "Free 24-hour data migration", "CBT works offline in your lab"],
 };
 
 export const proofStrip = [
+  "All-in-one",
   "Nothing to buy",
   "Free 24-hour migration",
-  "Offline CBT",
+  "CBT lab client",
   "NDPA-first",
   "Web, Android and iOS",
 ];
@@ -31,7 +32,7 @@ export type Problem = {
 
 /**
  * The four problems the homepage leads with (Landing spec §3): results, fees,
- * CBT and digital learning. The whole-school view lives on the Admin role tab and the
+ * CBT and the LMS. The whole-school view lives on the Admin role tab and the
  * school-leaders page.
  */
 export const problems: Problem[] = [
@@ -54,19 +55,32 @@ export const problems: Problem[] = [
   {
     id: "cbt",
     pain: "“Light and internet fail in the middle of exams.”",
-    fix: "CBT runs on the offline desktop app on your own lab computers, with shuffled questions, time limits and automatic marking.",
+    fix: "The SchoolPilot CBT lab client runs the paper over your computer lab's own network, so the exam needs no internet. Answers upload afterwards and are marked automatically.",
     outcome: "CBT that keeps going through a power cut or network outage.",
     href: "/features/cbt/",
     linkLabel: "See how CBT works",
   },
   {
-    id: "digital-learning",
+    id: "lms",
     pain: "“Learning stops when the closing bell rings.”",
-    fix: "Learning materials, assignments with online submission, virtual classes on Zoom or Google Meet, and an AI tutor for revision.",
+    fix: "The built-in LMS: learning materials, assignments with online submission, lesson plans, virtual classes on Zoom or Google Meet, and an AI tutor.",
     outcome: "Lessons, homework and revision that carry on after school hours.",
-    href: "/features/digital-learning/",
-    linkLabel: "See digital learning",
+    href: "/features/lms/",
+    linkLabel: "See the LMS",
   },
+];
+
+/**
+ * "Everything in one system": the all-in-one block. Each area links to the
+ * page that explains it; together they are the whole school.
+ */
+export const allInOne = [
+  { id: "academics", title: "Academics & results", items: "CA schemes, score entry, broadsheets, positions, report cards, result PINs", href: "/features/results-report-cards/" },
+  { id: "cbt", title: "CBT + lab client", items: "Online CBT, plus a computer-lab client that runs exams with no internet", href: "/features/cbt/" },
+  { id: "lms", title: "LMS", items: "Learning materials, assignments, lesson plans, virtual classes, AI tutor", href: "/features/lms/" },
+  { id: "finance", title: "Fees & finance", items: "Invoices, instalments, scholarships, online payment, expenses", href: "/features/fees-finance/" },
+  { id: "admin", title: "School administration", items: "Admissions, attendance, timetable, HR and payroll, communication, boarding, library, transport, ID cards", href: "/features/school-administration/" },
+  { id: "people", title: "Apps for everyone", items: "Admin, teachers, parents and students on web, Android and iOS", href: "/solutions/school-owners/" },
 ];
 
 /** "One term in SchoolPilot": the signature section (Landing PRD §6.2). */
@@ -163,7 +177,7 @@ export type Faq = { id: string; q: string; a: string };
 
 /** The six objections on the homepage; /faq opens with the same six. */
 export const objections: Faq[] = [
-  { id: "power", q: "Our internet and light are unreliable.", a: "CBT runs on an offline desktop app on the computers you already have, and syncs when the connection returns. Staff use the mobile apps." },
+  { id: "power", q: "Our internet and light are unreliable.", a: "CBT runs in your computer lab with the SchoolPilot lab client, over the lab's own network, with no internet during the exam. Answers upload afterwards. Staff use the mobile apps." },
   { id: "staff", q: "My teachers are not computer people.", a: "Everything daily works on a phone. We move your records in for you and train your staff during setup." },
   { id: "mid-session", q: "We're mid-session. Switching now would be chaos.", a: "We migrate your current records free within 24 hours. Start with results and add the rest when you're ready." },
   { id: "cost", q: "What does it really cost?", a: "The core is free, CBT included. You pay one charge per term, by student band, when you generate results." },

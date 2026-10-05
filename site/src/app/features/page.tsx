@@ -5,23 +5,17 @@ import { CtaBand, PageHero, Section } from "@/components/Blocks";
 
 export const metadata: Metadata = {
   title: "Features",
-  description: "Results, CBT, fees, student records and digital learning for Nigerian private schools, in one connected platform.",
+  description: "The all-in-one school management system for Nigerian private schools: results, CBT with a computer-lab client, LMS, fees and school administration.",
   alternates: { canonical: "/features/" },
 };
 
 /** Everything else the platform covers, without a page of its own yet. */
 const more = [
-  "Attendance with absence alerts",
-  "Timetable and exam timetable",
-  "Admissions with an online form",
-  "HR, payroll and payslips",
   "Result checker with PINs",
-  "Messaging and notifications",
-  "Hostel and sick bay",
-  "Library",
-  "Bus tracking via the driver's phone",
-  "ID cards",
+  "Nursery developmental ratings",
+  "Student transfers between schools",
   "Session rollover",
+  "Insights on student progress",
   "One-click data export",
 ];
 
@@ -30,7 +24,7 @@ export default function FeaturesHub() {
     <>
       <PageHero
         eyebrow="Features"
-        title="Every part of your school, connected."
+        title="One all-in-one system for your whole school."
         sub="Start with the problem that costs you most. Each one below is solved in the same login, with the same records."
       />
       <Section id="solutions">

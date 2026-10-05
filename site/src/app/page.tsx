@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { hero, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
+import { allInOne, hero, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
 import { CtaBand, FaqList, Section } from "@/components/Blocks";
 import { DemoSchoolLink, PrimaryCta, SecondaryCta } from "@/components/Cta";
 import { ProductShot } from "@/components/ProductShot";
@@ -103,6 +103,27 @@ export default function Home() {
         </div>
       </Section>
 
+      {/* 4b · All in one */}
+      <Section
+        id="all-in-one"
+        tone="sunken"
+        eyebrow="All-in-one"
+        title="Everything your school runs, in one system."
+        intro="No separate CBT tool, LMS, fees spreadsheet and payroll file. One SchoolPilot, one set of records, one login for each person."
+      >
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {allInOne.map((area) => (
+            <li key={area.id}>
+              <Link href={area.href} className="flex h-full flex-col rounded-2xl border border-line-soft bg-surface p-5 hover:border-brand">
+                <span className="font-display text-lg font-semibold text-brand">{area.title}</span>
+                <span className="mt-2 text-[0.95rem] text-ink-muted">{area.items}</span>
+                <span className="mt-auto pt-3 text-sm font-semibold text-brand underline underline-offset-4">Learn more →</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
       {/* 5 · One term in SchoolPilot */}
       <Section
         id="one-term"
@@ -161,7 +182,7 @@ export default function Home() {
           <div className="rounded-2xl border border-line-soft bg-surface p-6">
             <p className="eyebrow">Free, forever</p>
             <p className="mt-3 text-ink">
-              Student records · Staff & HR · Attendance · Timetable · Fees tracking · Communication · AI Studio · AI Tutor · Admissions · Parent and student apps
+              CBT and the computer-lab client · LMS · Student records · Staff, HR & payroll · Attendance · Timetable · Fees tracking · Admissions · Communication · AI Studio · AI Tutor · Parent and student apps
             </p>
           </div>
           <div className="rounded-2xl border-2 border-brand bg-surface p-6">
