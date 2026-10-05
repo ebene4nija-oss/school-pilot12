@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { fetchApi, ApiError } from '@/lib/api';
 import IdCardRegister from '@/components/IdCardRegister';
 import DesignGallery from './DesignGallery';
+import CardDesigner, { type DesignerStart, type Layout } from './CardDesigner';
 
 /**
  * ID card printing and design.
@@ -57,6 +58,7 @@ type PrintRun = {
 type Template = {
   id: number;
   name: string;
+  slug?: string;
   version: number;
   holder_type: HolderType;
   status: string;
@@ -546,6 +548,8 @@ function RunStatus({ run }: { run: PrintRun }) {
 function DesignPanel() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [bundle, setBundle] = useState('');
+  // The designer: closed, a fresh card, or an existing design being edited.
+  const [designing, setDesigning] = useState<{ start?: DesignerStart } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -612,6 +616,26 @@ function DesignPanel() {
   return (
     <div className="space-y-6">
     <DesignGallery onChanged={() => { load().catch(() => undefined); }} />
+    {designing ? (
+      <CardDesigner
+        key={designing.start?.name ?? 'new'}
+        start={designing.start}
+        onSaved={() => { load().catch(() => undefined); }}
+        onClose={() => setDesigning(null)}
+      />
+    ) : (
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line-soft bg-surface p-5">
+        <div className="mr-auto">
+          <h2 className="font-semibold text-ink">Use your own design</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Upload the card your school designed in Canva or at a print shop, then drag the photo, name and QR code onto it. Or start from a blank card.
+          </p>
+        </div>
+        <button type="button" onClick={() => setDesigning({})} className="rounded bg-brand-soft px-4 py-2 text-sm font-semibold text-white hover:bg-brand">
+          Design your own card
+        </button>
+      </div>
+    )}
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <section className="space-y-4">
         {error && <Banner tone="error">{error}</Banner>}
@@ -692,6 +716,25 @@ function DesignPanel() {
                   >
                     Preview full sheet
                   </a>
+                  {template.slug?.startsWith('designer-') && (
+                    <button
+                      disabled={busy}
+                      onClick={async () => {
+                        try {
+                          const res = await fetchApi<{ template: Template & { regions?: { designer?: Layout }[]; assets?: { front_background?: string; back_background?: string } | null } }>(`/id-cards/templates/${template.id}`);
+                          const layout = res.template.regions?.[0]?.designer;
+                          if (!layout) throw new Error('This design has no saved layout.');
+                          setDesigning({ start: { name: res.template.name, holder_type: res.template.holder_type, layout, assets: res.template.assets ?? {} } });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Could not open the design.');
+                        }
+                      }}
+                      className="rounded bg-surface-raised px-3 py-1.5 font-semibold text-ink hover:bg-line disabled:opacity-50"
+                    >
+                      Edit in designer
+                    </button>
+                  )}
                   {template.status !== 'active' && (
                     <>
                       <button

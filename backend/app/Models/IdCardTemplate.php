@@ -27,6 +27,7 @@ class IdCardTemplate extends Model
         'styles',
         'card_geometry',
         'regions',
+        'assets',
         'validation_report',
         'checksum',
         'status',
@@ -37,6 +38,7 @@ class IdCardTemplate extends Model
     protected $casts = [
         'card_geometry' => 'array',
         'regions' => 'array',
+        'assets' => 'array',
         'validation_report' => 'array',
         'version' => 'integer',
         'imported_at' => 'datetime',

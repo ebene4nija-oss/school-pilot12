@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\IdCard;
 use App\Models\IdCardTemplate;
 use App\Services\IdCard\CardImpositionService;
+use App\Services\IdCard\CardBackgroundService;
+use App\Services\IdCard\CardLayoutCompiler;
 use App\Services\IdCard\IdCardGallery;
 use App\Services\IdCard\IdCardTemplateService;
 use App\Services\ReportCard\TemplateException;
@@ -262,18 +264,7 @@ class IdCardTemplateController extends Controller
                 'card_geometry' => $this->templates->normaliseGeometry($bundle['card']),
             ]);
 
-            $context = $this->templates->sampleContext($bundle['holder_type']);
-            $school = \App\Models\School::find($schoolId);
-            $context['school'] = array_merge($context['school'], array_filter([
-                'name' => $school?->name, 'address' => $school?->address, 'phone' => $school?->phone, 'email' => $school?->email,
-                'logo_url' => app(\App\Services\IdCard\IdCardPrintService::class)->schoolLogo((int) $schoolId),
-            ]));
-            $context['verification']['qr_code_url'] = app(\App\Services\QrCodeService::class)->dataUriFor($context['verification']['verify_url'], 4) ?? '';
-            if ($request->boolean('long_name')) {
-                $name = $bundle['holder_type'] === 'staff' ? 'Mrs. Oluwaseyi Chukwuemeka-Adebayo' : 'Oluwadamilare Chukwuemeka Adebayo-Okonkwo';
-                $context['holder']['name'] = $name;
-                $context['holder']['name_fit'] = IdCardGallery::nameFit($name);
-            }
+            $context = $this->previewContext((int) $schoolId, $bundle['holder_type'], $request->boolean('long_name'));
 
             $html = $this->singleCardDocument(
                 $this->templates->renderSides($template, $context),
@@ -332,6 +323,204 @@ class IdCardTemplateController extends Controller
                 : "\"{$template->name}\" saved as a draft. Make it live when you are ready.",
             'template' => $template->fresh(),
         ], 201);
+    }
+
+    /**
+     * Sample data for choosing a design: this school's name, crest and contact
+     * details, a working sample QR code, and a fictional holder — never a real
+     * child's face. Optionally the longest names a school is likely to have.
+     */
+    private function previewContext(int $schoolId, string $holderType, bool $longName): array
+    {
+        $context = $this->templates->sampleContext($holderType);
+        $school = \App\Models\School::find($schoolId);
+        $context['school'] = array_merge($context['school'], array_filter([
+            'name' => $school?->name, 'address' => $school?->address, 'phone' => $school?->phone, 'email' => $school?->email,
+            'logo_url' => app(\App\Services\IdCard\IdCardPrintService::class)->schoolLogo($schoolId),
+        ]));
+        $context['verification']['qr_code_url'] = app(\App\Services\QrCodeService::class)->dataUriFor($context['verification']['verify_url'], 4) ?? '';
+        if ($longName) {
+            $name = $holderType === 'staff' ? 'Mrs. Oluwaseyi Chukwuemeka-Adebayo' : 'Oluwadamilare Chukwuemeka Adebayo-Okonkwo';
+            $context['holder']['name'] = $name;
+            $context['holder']['name_fit'] = IdCardGallery::nameFit($name);
+        }
+
+        return $context;
+    }
+
+    // ------------------------------------------------------------------
+    // Designer: the school's own artwork with live fields placed on it
+    // ------------------------------------------------------------------
+
+    /** What can be placed on a card, with sample values to show while designing. */
+    public function designerFields()
+    {
+        $sample = ['student' => $this->templates->sampleContext('student'), 'staff' => $this->templates->sampleContext('staff')];
+
+        return response()->json([
+            'fields' => collect(CardLayoutCompiler::FIELDS)->map(fn ($f, $key) => [
+                'key' => $key,
+                'label' => $f[0],
+                'caption' => $f[2] === '{{ holder.id_label }}' ? null : $f[2],
+                'for' => $f[3],
+                'sample' => [
+                    'student' => $this->sampleValue($sample['student'], $key),
+                    'staff' => $this->sampleValue($sample['staff'], $key),
+                ],
+            ])->values(),
+            'card_mm' => ['landscape' => [85.6, 54], 'portrait' => [54, 85.6]],
+            'print_px' => CardBackgroundService::PRINT_PX,
+        ]);
+    }
+
+    private function sampleValue(array $context, string $key): string
+    {
+        [$group, $field] = explode('.', $key);
+        if ($key === 'holder.class') {
+            return trim(($context['holder']['class'] ?? '').' '.($context['holder']['arm'] ?? ''));
+        }
+
+        return (string) ($context[$group][$field] ?? '');
+    }
+
+    /** Upload artwork for one side. The server redraws it; the original is not kept. */
+    public function uploadBackground(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|file|mimes:png,jpg,jpeg|max:6144',
+            'orientation' => 'required|in:landscape,portrait',
+        ]);
+
+        try {
+            $stored = app(CardBackgroundService::class)->store($request->file('image'), (int) $this->getSchoolId($request), $request->input('orientation'));
+        } catch (TemplateException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json($stored, 201);
+    }
+
+    /** An uploaded background, for the designer to draw under the fields. */
+    public function background(Request $request, string $ref)
+    {
+        $bytes = app(CardBackgroundService::class)->bytes((int) $this->getSchoolId($request), $ref);
+        abort_if($bytes === null, 404);
+
+        return response($bytes, 200, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=86400']);
+    }
+
+    /** The layout as it will print, rendered by the same engine as a print run's cards. */
+    public function designerPreview(Request $request)
+    {
+        $data = $this->designerInput($request);
+        $schoolId = (int) $this->getSchoolId($request);
+
+        try {
+            $compiled = app(CardLayoutCompiler::class)->compile($data['layout'], $data['name'] ?? 'Draft', $data['holder_type'], $this->assetsFor($schoolId, $data));
+            $bundle = $compiled['bundle'];
+            $template = new IdCardTemplate([
+                'school_id' => $schoolId,
+                'holder_type' => $bundle['holder_type'],
+                'front' => $bundle['front'],
+                'back' => $bundle['back'],
+                'styles' => $this->sanitizerCss($bundle['styles']),
+                'card_geometry' => $this->templates->normaliseGeometry($bundle['card']),
+                'assets' => $this->assetsFor($schoolId, $data),
+            ]);
+            $html = $this->singleCardDocument(
+                $this->templates->renderSides($template, $this->previewContext($schoolId, $bundle['holder_type'], $request->boolean('long_name'))),
+                $this->templates->stylesFor($template, $bundle['holder_type']),
+                $this->templates->geometryFor($template),
+            );
+        } catch (TemplateException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['html' => $html, 'warnings' => $compiled['warnings']]);
+    }
+
+    /**
+     * Save the layout as a design: a draft, or live at once. Saving again
+     * under the same name makes a new version; cards already printed keep
+     * the design they were printed with.
+     */
+    public function designerSave(Request $request)
+    {
+        $data = $this->designerInput($request, true);
+        $schoolId = (int) $this->getSchoolId($request);
+
+        try {
+            $compiled = app(CardLayoutCompiler::class)->compile($data['layout'], $data['name'], $data['holder_type'], $this->assetsFor($schoolId, $data));
+            $template = $this->templates->import(
+                $compiled['bundle'] + ['slug' => 'designer-'.\Illuminate\Support\Str::slug($data['name']), 'assets' => $this->assetsFor($schoolId, $data)],
+                $schoolId,
+                $request->user()?->id,
+            );
+            if ($compiled['warnings'] !== []) {
+                $report = $template->validation_report;
+                $report['warnings'] = array_values(array_unique(array_merge($report['warnings'] ?? [], $compiled['warnings'])));
+                $template->update(['validation_report' => $report]);
+            }
+            if ($data['activate'] ?? false) {
+                $this->templates->renderSides($template, $this->templates->sampleContext($template->holder_type));
+                $this->imposition->plan($this->templates->geometryFor($template));
+                $template->activate();
+            }
+        } catch (TemplateException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        \App\Models\AuditLog::create([
+            'school_id' => $schoolId, 'user_id' => $request->user()?->id, 'action' => 'id_card.designer_saved',
+            'auditable_type' => IdCardTemplate::class, 'auditable_id' => $template->id,
+            'new_values' => ['name' => $template->name, 'version' => $template->version, 'activated' => (bool) ($data['activate'] ?? false)],
+        ]);
+
+        return response()->json([
+            'message' => ($data['activate'] ?? false)
+                ? "\"{$template->name}\" is now your {$template->holder_type} ID card design. Cards already printed are unchanged."
+                : "\"{$template->name}\" v{$template->version} saved as a draft.",
+            'template' => $template->fresh(),
+            'warnings' => $compiled['warnings'],
+        ], 201);
+    }
+
+    private function designerInput(Request $request, bool $saving = false): array
+    {
+        $data = $request->validate([
+            'name' => ($saving ? 'required' : 'nullable').'|string|min:2|max:80',
+            'holder_type' => 'required|in:student,staff',
+            'layout' => 'required|array',
+            'layout.orientation' => 'required|in:landscape,portrait',
+            'assets' => 'nullable|array',
+            'assets.front_background' => 'nullable|string|size:32',
+            'assets.back_background' => 'nullable|string|size:32',
+            'activate' => 'boolean',
+        ]);
+
+        // validate() keeps only the nested keys it names; the compiler checks
+        // every element itself, so the whole layout is passed on.
+        $data['layout'] = (array) $request->input('layout');
+
+        return $data;
+    }
+
+    /** @throws TemplateException */
+    private function assetsFor(int $schoolId, array $data): array
+    {
+        $assets = array_filter((array) ($data['assets'] ?? []));
+        foreach ($assets as $ref) {
+            if (! app(CardBackgroundService::class)->exists($schoolId, (string) $ref)) {
+                throw new TemplateException('A background image for this design is missing. Upload it again.');
+            }
+        }
+
+        return $assets;
+    }
+
+    private function sanitizerCss(string $css): string
+    {
+        return app(\App\Services\ReportCard\HtmlSanitizer::class)->sanitizeCss($css, IdCardTemplateService::MAX_STYLES_BYTES)['css'];
     }
 
     /**

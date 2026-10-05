@@ -509,9 +509,56 @@ replacing this design should keep something equivalent.
 | `GET` | `/api/v1/id-cards/holders/{type}/{id}` | admin |
 | `POST` | `/api/v1/id-cards/{id}/revoke` | admin |
 | `POST` | `/api/v1/id-cards/{id}/replace` | admin |
+| `GET` | `/api/v1/id-cards/gallery` | admin |
+| `GET` | `/api/v1/id-cards/gallery/{key}/preview` | admin — `?primary=&accent=&long_name=1` |
+| `POST` | `/api/v1/id-cards/gallery/{key}` | admin — `{primary, accent, activate}` |
+| `GET` | `/api/v1/id-cards/designer/fields` | admin |
+| `POST` | `/api/v1/id-cards/designer/backgrounds` | admin — multipart `image`, `orientation` |
+| `GET` | `/api/v1/id-cards/designer/backgrounds/{ref}` | admin |
+| `POST` | `/api/v1/id-cards/designer/preview` | admin — `{holder_type, layout, assets, long_name}` |
+| `POST` | `/api/v1/id-cards/designer` | admin — `{name, holder_type, layout, assets, activate}` |
 | `GET` | `/api/v1/verify-id/{token}` | **public**, throttled |
 
 Everything except the last requires `school_admin` or `super_admin`. A teacher
 can see a class roster but has no business minting the identity documents for
 it, and the print-run endpoints hand back a PDF of every child's face in a
 class.
+
+## 13. The gallery and the designer
+
+Most schools never write a bundle. Two paths produce one for them, and both
+end in the same import, sanitiser, preview, imposition and verification as a
+bundle written by hand:
+
+- **The gallery** — six ready-made designs, three for students and three for
+  staff (`IdCardGallery`). A school picks one and its main and accent
+  colours; text colour is chosen for contrast automatically. Slugs start
+  `gallery-`.
+- **The designer** — the school uploads its own artwork (a card exported
+  from Canva or a print shop, PNG or JPG) and places live fields on it, or
+  starts blank (`CardLayoutCompiler`). The layout is kept in
+  `regions[0].designer` so the design can be edited later. Slugs start
+  `designer-`.
+
+Uploaded artwork is decoded and redrawn by the server as a fresh JPEG
+(`CardBackgroundService`): nothing of the original file survives except its
+pixels. It is stored by reference in the template's `assets` and added to the
+stylesheet once per document at render time (`.card.side-front` /
+`.card.side-back` background), so a 400-card run carries each image once per
+sheet rather than once per card, and the stylesheet byte limit stays a limit
+on what a school writes.
+
+Holder data available to a design gains one derived field:
+`holder.name_fit` is `normal`, `long` or `very-long` from the name's length,
+because dompdf cannot shrink text to fit a box. Designs size the name from it.
+
+Rules the designer enforces: the name and the QR code must be on the card;
+the QR code is kept square, at least 12mm and on white; items stay on the
+card; free text is escaped and may not contain `{{` or `}}`; a warning is
+given for anything within 2mm of the edge or smaller than 5pt.
+
+Learned by rendering every design through dompdf: pin positioned parts from
+the top-left (not `bottom:`/`right:`), lay positioned content out as tables
+(dompdf drops images inside a positioned `<div>`), and centre text in a bar
+with padding rather than `line-height`.
+

@@ -160,6 +160,19 @@ class IdCardTemplateService
 
         $styleResult = $this->sanitizer->sanitizeCss($styles, self::MAX_STYLES_BYTES);
 
+        // Uploaded artwork, by reference only: the server re-encoded each
+        // image on upload, and it must be this school's.
+        $assets = [];
+        foreach ((array) ($bundle['assets'] ?? []) as $slot => $ref) {
+            if (! in_array($slot, ['front_background', 'back_background'], true)) {
+                throw new TemplateException("Unknown design asset \"{$slot}\".");
+            }
+            if (! app(CardBackgroundService::class)->exists($schoolId, (string) $ref)) {
+                throw new TemplateException('A background image for this design is missing. Upload it again.');
+            }
+            $assets[$slot] = (string) $ref;
+        }
+
         $slug = Str::slug($bundle['slug'] ?? $name);
         $version = (int) ($bundle['version'] ?? 0);
 
@@ -197,6 +210,7 @@ class IdCardTemplateService
             'styles' => $styleResult['css'],
             'card_geometry' => $geometry,
             'regions' => array_values((array) ($bundle['regions'] ?? [])),
+            'assets' => $assets ?: null,
             'validation_report' => [
                 'warnings' => array_values(array_unique($warnings)),
                 'markup_removals' => array_values(array_unique($removals)),
@@ -205,7 +219,7 @@ class IdCardTemplateService
                 'double_sided' => $back !== '',
                 'validated_at' => now()->toIso8601String(),
             ],
-            'checksum' => hash('sha256', $front . '|' . $back . '|' . $styleResult['css']),
+            'checksum' => hash('sha256', $front . '|' . $back . '|' . $styleResult['css'] . '|' . json_encode($assets)),
             'status' => 'draft',
             'imported_by' => $userId,
             'imported_at' => now(),
@@ -340,8 +354,25 @@ class IdCardTemplateService
     public function stylesFor(?IdCardTemplate $template, string $holderType = 'student'): string
     {
         $css = $template?->styles ?? $this->defaultStyles($holderType);
+        $css = $this->sanitizer->sanitizeCss($css, self::MAX_STYLES_BYTES)['css'];
 
-        return $this->sanitizer->sanitizeCss($css, self::MAX_STYLES_BYTES)['css'];
+        /*
+         * Uploaded artwork joins the stylesheet here, once per document. An
+         * <img> in each card would repeat the image on every card of a
+         * 400-card run; a background on the side's class is drawn once per
+         * sheet. Added after sanitising: it is a server-encoded JPEG, and the
+         * stylesheet byte limit is for what a school writes, not for pixels.
+         */
+        foreach (['front', 'back'] as $side) {
+            $ref = $template?->assets["{$side}_background"] ?? null;
+            $uri = $ref ? app(CardBackgroundService::class)->dataUri((int) $template->school_id, $ref) : '';
+            if ($uri !== '') {
+                $css .= "
+.card.side-{$side} { background-image: url({$uri}); background-size: 100% 100%; background-repeat: no-repeat; }";
+            }
+        }
+
+        return $css;
     }
 
     public function geometryFor(?IdCardTemplate $template): array
