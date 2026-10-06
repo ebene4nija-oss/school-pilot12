@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
 import ChildSwitcher, { useChildren } from '@/components/ChildSwitcher';
+import Receipt, { type ReceiptData } from '@/components/Receipt';
 
 /**
  * A parent's view of their child's fees: what was billed, what is paid, and
@@ -36,6 +37,10 @@ export default function ParentFeesPage() {
   const [paying, setPaying] = useState<number | null>(null);
   const [amounts, setAmounts] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [school, setSchool] = useState('');
+
+  useEffect(() => { fetchApi<{ school: { name: string } | null }>('/user').then((u) => setSchool(u.school?.name ?? '')).catch(() => undefined); }, []);
 
   const load = useCallback(async () => {
     if (!selected) return;
@@ -79,6 +84,7 @@ export default function ParentFeesPage() {
 
   return (
     <PageShell title="Fees" subtitle="What has been billed, what is paid, and paying the balance online.">
+      <div className={receipt ? 'print:hidden' : ''}>
       <ErrorNote message={childError ?? error} />
 
       {!children ? (
@@ -150,7 +156,7 @@ export default function ParentFeesPage() {
                 {statement.invoices.every((inv) => !inv.payments?.length) ? (
                   <Empty>No payments yet.</Empty>
                 ) : (
-                  <Table columns={['Receipt', 'Date', 'Invoice', 'Amount', 'Paid by', 'Reference']}>
+                  <Table columns={['Receipt', 'Date', 'Invoice', 'Amount', 'Paid by', 'Reference', '']}>
                     {statement.invoices.flatMap((inv) =>
                       (inv.payments ?? []).map((p) => (
                         <tr key={p.payment_id}>
@@ -160,6 +166,7 @@ export default function ParentFeesPage() {
                           <Cell className="font-semibold">{nairaAmount(p.amount)}</Cell>
                           <Cell className="capitalize">{(p.gateway ?? '—').replace('_', ' ')}</Cell>
                           <Cell className="font-mono text-xs">{p.reference ?? '—'}</Cell>
+                          <Cell><button type="button" className="text-sm text-brand underline" onClick={() => setReceipt({ school, student: { name: selected?.name ?? null, admission_number: selected?.admission_number }, invoiceNumber: inv.invoice_number, term: inv.term, receiptNumber: p.receipt_number, amount: p.amount, method: p.gateway, reference: p.reference, paidAt: p.paid_at, balance: inv.balance })}>Print</button></Cell>
                         </tr>
                       )),
                     )}
@@ -170,6 +177,8 @@ export default function ParentFeesPage() {
           )}
         </>
       )}
+      </div>
+      {receipt && <Receipt data={receipt} onClose={() => setReceipt(null)} />}
     </PageShell>
   );
 }

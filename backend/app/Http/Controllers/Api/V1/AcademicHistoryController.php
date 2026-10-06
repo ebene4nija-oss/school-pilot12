@@ -69,7 +69,12 @@ class AcademicHistoryController extends Controller
         $student = Student::with('user:id,name', 'currentClass:id,name')->findOrFail($studentId);
         abort_unless($student->isGuardedBy($request->user()), 404);
 
-        return response()->json($this->records->profile($student, publishedOnly: true));
+        // The documents a family may download: issued, not revoked.
+        $documents = AcademicDocument::where('student_id', $student->id)->whereNull('revoked_at')
+            ->whereIn('type', ['transcript', 'transfer_certificate', 'attendance_summary'])->orderByDesc('id')
+            ->get(['id', 'type', 'reference', 'issued_at']);
+
+        return response()->json($this->records->profile($student, publishedOnly: true) + ['documents' => $documents]);
     }
 
     public function snapshotVersions(Request $request, int $snapshotId): JsonResponse

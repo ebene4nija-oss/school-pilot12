@@ -293,6 +293,15 @@ class AcademicRecordService
         if ($publishedOnly) {
             $snapshots = $snapshots->filter(fn ($s) => $s->term_id === null
                 || \App\Models\ResultRelease::isReleasedFor($schoolId, (int) $s->term_id, $s->class_id ? (int) $s->class_id : null));
+
+            // Where the school sells result PINs, a family's view of a term is
+            // behind the same PIN as the result checker; the history must not
+            // be a way round it. Records carried in from a previous school
+            // (no term here) are not sold, so they stay visible.
+            if (\App\Models\School::whereKey($schoolId)->value('result_checker_enabled')) {
+                $pins = app(\App\Services\ResultPinService::class);
+                $snapshots = $snapshots->filter(fn ($s) => $s->term_id === null || $pins->accessFor($schoolId, $student->id, (int) $s->term_id));
+            }
         }
 
         $current = $snapshots->whereNull('superseded_at')->values();

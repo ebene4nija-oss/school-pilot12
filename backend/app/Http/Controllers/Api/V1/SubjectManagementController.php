@@ -443,6 +443,8 @@ class SubjectManagementController extends Controller
     {
         $schoolId = $this->getSchoolId($request);
         $student = Student::where('school_id', $schoolId)->findOrFail($studentId);
+        // Whose subjects: the student, their guardians, or staff who may see them.
+        $this->authorize('view', $student);
 
         $subjects = DB::table('student_subjects')
             ->join('subjects', 'student_subjects.subject_id', '=', 'subjects.id')

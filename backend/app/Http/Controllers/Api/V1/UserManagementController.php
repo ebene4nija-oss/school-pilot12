@@ -581,7 +581,9 @@ class UserManagementController extends Controller
     public function getParentProfile(Request $request, $userId)
     {
         $schoolId = $this->getSchoolId($request);
-        $profile = ParentProfile::where('school_id', $schoolId)->where('user_id', $userId)->with('user')->first();
+        // A parent reads their own; another family's details are not theirs.
+        $this->assertOwnOrAdmin($request, (int) $userId);
+        $profile = ParentProfile::where('school_id', $schoolId)->where('user_id', $userId)->with('user:id,name,email')->first();
 
         if (!$profile) {
             return response()->json(['message' => 'Parent profile not found.'], 404);
@@ -609,12 +611,26 @@ class UserManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        /*
+         * Any parent could rewrite any other parent's profile, custody type
+         * included. A parent now edits their own contact details; custody and
+         * emergency order are recorded by the school office, which holds the
+         * paperwork behind them.
+         */
+        $admin = $this->assertOwnOrAdmin($request, (int) $userId);
+        if (! \App\Models\UserProfile::where('school_id', $schoolId)->where('user_id', $userId)->where('role', 'parent')->exists()) {
+            return response()->json(['message' => 'No parent with that account at this school.'], 404);
+        }
+        $fields = ['occupation', 'workplace', 'relationship_to_student', 'alternate_phone', 'alternate_email', 'preferred_contact_method'];
+        if ($admin) {
+            $fields = array_merge($fields, ['custody_type', 'emergency_priority']);
+        } elseif ($request->hasAny(['custody_type', 'emergency_priority'])) {
+            return response()->json(['message' => 'Custody and emergency contact order are recorded by the school office.'], 403);
+        }
+
         $profile = ParentProfile::updateOrCreate(
             ['school_id' => $schoolId, 'user_id' => $userId],
-            $request->only([
-                'occupation', 'workplace', 'relationship_to_student', 'alternate_phone',
-                'alternate_email', 'custody_type', 'emergency_priority', 'preferred_contact_method',
-            ])
+            $request->only($fields)
         );
 
         $this->logActivity($request, $request->user()->id, 'parent_profile.updated', $profile);

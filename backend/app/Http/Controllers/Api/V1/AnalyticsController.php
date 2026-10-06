@@ -305,15 +305,13 @@ class AnalyticsController extends Controller
             ->get();
 
         $totalDays = $attendanceRecords->count();
-        $presentDays = $attendanceRecords->where('status', 'present')->count();
+        // Late is present, as everywhere else in the product.
+        $presentDays = $attendanceRecords->whereIn('status', ['present', 'late'])->count();
         $attendanceTrendPercentage = $totalDays > 0 ? round(($presentDays / $totalDays) * 100, 2) : 100.00;
 
         // Grades Over Time
-        $gradesOverTime = ScoreEntry::where('school_id', $schoolId)
-            ->where('student_id', $student->id)
-            ->with(['subject', 'term'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+        // Released (and, where the school sells PINs, unlocked) terms only.
+        $gradesOverTime = $this->releasedScores($student);
 
         // Fee Payment History & Outstanding Invoices
         $invoices = Invoice::where('school_id', $schoolId)
@@ -348,6 +346,39 @@ class AnalyticsController extends Controller
     /**
      * 4. Student Dashboard Analytics
      */
+    /**
+     * A student's marks as the student and their family may see them.
+     *
+     * Both dashboards returned every score row, raw: terms not yet released,
+     * marks behind a result-checker PIN, class positions, and AI comment
+     * drafts still waiting for a teacher. That bypassed result release, the
+     * PIN, and the rule that an AI comment never reaches anyone unreviewed
+     * (CLAUDE.md). Now: released terms, unlocked where the school sells
+     * PINs, a fixed field list, and a comment only once a teacher wrote or
+     * approved it — the same gate as My Results and the result checker.
+     */
+    private function releasedScores(Student $student): \Illuminate\Support\Collection
+    {
+        $school = \App\Models\School::find($student->school_id);
+        $pins = app(\App\Services\ResultPinService::class);
+        $open = \App\Models\Term::where('school_id', $student->school_id)->get()
+            ->filter(fn ($t) => \App\Models\ResultRelease::isReleasedFor($student->school_id, $t->id, $student->class_id)
+                && (! ($school?->result_checker_enabled ?? false) || $pins->accessFor($student->school_id, $student->id, $t->id)))
+            ->keyBy('id');
+
+        return ScoreEntry::where('school_id', $student->school_id)->where('student_id', $student->id)
+            ->whereIn('term_id', $open->keys())->with('subject:id,name')->orderBy('term_id')->get()
+            ->map(fn (ScoreEntry $s) => [
+                'term_id' => $s->term_id,
+                'term' => $open[$s->term_id]?->name,
+                'subject_id' => $s->subject_id,
+                'subject' => $s->subject?->name,
+                'total' => $s->total_score !== null ? (float) $s->total_score : null,
+                'grade' => $s->grade,
+                'comment' => in_array($s->ai_comment_status, ['pending_approval', 'rejected'], true) ? null : $s->teacher_comment,
+            ])->values();
+    }
+
     public function getStudentDashboard(Request $request)
     {
         $schoolId = $this->schoolId();
@@ -360,15 +391,13 @@ class AnalyticsController extends Controller
             return response()->json(['error' => 'Student record not found.'], 404);
         }
 
-        $scores = ScoreEntry::where('school_id', $schoolId)
-            ->where('student_id', $student->id)
-            ->with('subject')
-            ->get();
+        // Released terms only — see releasedScores().
+        $scores = $this->releasedScores($student);
 
-        $strengths = $scores->where('total_score', '>=', 70)->pluck('subject.name')->unique()->values();
-        $weaknesses = $scores->where('total_score', '<', 50)->pluck('subject.name')->unique()->values();
+        $strengths = $scores->where('total', '>=', 70)->pluck('subject')->unique()->values();
+        $weaknesses = $scores->whereNotNull('total')->where('total', '<', 50)->pluck('subject')->unique()->values();
 
-        $averageScore = $scores->avg('total_score') ?? 0;
+        $averageScore = $scores->whereNotNull('total')->avg('total') ?? 0;
         $readinessLevel = 'Needs Focus';
         if ($averageScore >= 75) $readinessLevel = 'Highly Prepared';
         elseif ($averageScore >= 60) $readinessLevel = 'On Track';
@@ -399,7 +428,7 @@ class AnalyticsController extends Controller
             ->where('date', '>=', now()->subDays(30)->toDateString())
             ->get(['date', 'status']);
 
-        $presentCount = $attendanceRecords->where('status', 'present')->count();
+        $presentCount = $attendanceRecords->whereIn('status', ['present', 'late'])->count();
 
         $upcomingTests = CbtExam::where('school_id', $schoolId)
             ->where('status', 'published')

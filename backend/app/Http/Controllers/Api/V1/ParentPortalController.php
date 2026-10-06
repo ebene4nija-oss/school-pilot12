@@ -328,6 +328,30 @@ class ParentPortalController extends Controller
     /**
      * Register Child Pickup Authorization (Parent)
      */
+    /** Who may collect a parent's children: their own list, to check and revoke. */
+    public function pickupAuthorizations(Request $request)
+    {
+        $schoolId = $this->schoolId();
+        $children = Student::where('school_id', $schoolId)->whereHas('guardians', fn ($q) => $q->where('guardians.user_id', $request->user()->id))->pluck('id');
+
+        return response()->json(['data' => PickupAuthorization::where('school_id', $schoolId)->whereIn('student_id', $children)
+            ->when($request->filled('student_id'), fn ($q) => $q->where('student_id', $request->integer('student_id')))
+            ->orderByDesc('is_active')->orderByDesc('id')->get(['id', 'student_id', 'authorized_person_name', 'authorized_person_phone', 'relationship', 'is_active', 'created_at'])]);
+    }
+
+    /** A guardian stops someone collecting their child, effective at once. */
+    public function revokePickupAuthorization(Request $request, $id)
+    {
+        $schoolId = $this->schoolId();
+        $pickup = PickupAuthorization::where('school_id', $schoolId)->findOrFail($id);
+        $student = Student::where('school_id', $schoolId)->findOrFail($pickup->student_id);
+        abort_unless($student->isGuardedBy($request->user()), 404);
+
+        $pickup->update(['is_active' => false]);
+
+        return response()->json(['message' => "{$pickup->authorized_person_name} can no longer collect your child."]);
+    }
+
     public function storePickupAuthorization(Request $request)
     {
         $schoolId = $this->schoolId();
@@ -342,6 +366,13 @@ class ParentPortalController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Child safety: only the child's own guardian names who may collect
+        // them. This took any student id from any parent.
+        $student = Student::where('school_id', $schoolId)->findOrFail($request->student_id);
+        if ($request->user()->userProfile?->role === 'parent' && ! $student->isGuardedBy($request->user())) {
+            return response()->json(['message' => 'You can name pickup people only for your own children.'], 403);
         }
 
         $pickup = PickupAuthorization::create([

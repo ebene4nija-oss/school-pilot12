@@ -342,6 +342,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/parent/children/{studentId}/contacts', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'contacts'])->middleware('role:parent')->whereNumber('studentId');
         Route::get('/parent/feed/{studentId}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'getStudentFeed'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/parent/pickup-authorization', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storePickupAuthorization'])->middleware('role:super_admin,school_admin,parent');
+        Route::get('/parent/pickup-authorizations', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'pickupAuthorizations'])->middleware('role:parent');
+        Route::post('/parent/pickup-authorizations/{id}/revoke', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'revokePickupAuthorization'])->whereNumber('id')->middleware('role:parent');
         // Full behaviour history, paginated. The feed carries only the ten most
         // recent so the parent home screen is not re-downloading nine years of
         // rows on every open.
@@ -491,6 +493,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         });
 
         // NDPA Parental Consent & Data Export Routes
+        Route::get('/parent/consents', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'myParentalConsents'])->middleware('role:parent');
         Route::post('/compliance/parental-consent', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'recordParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/compliance/parental-consent/{id}/withdraw', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'withdrawParentalConsent'])->middleware('role:super_admin,school_admin,parent');
         Route::post('/admin/export-data', [\App\Http\Controllers\Api\V1\AddedFeaturesController::class, 'exportSchoolData'])->middleware('role:super_admin,school_admin');

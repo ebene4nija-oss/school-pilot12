@@ -13,7 +13,7 @@ import LibraryBooks from '@/components/LibraryBooks';
  * Name and role are the school office's to change. Payslips are on Payroll.
  */
 
-interface Me { name: string; email: string; role: string | null; user_profile: { phone: string | null } | null; school: { name: string } | null }
+interface Me { id: number; name: string; email: string; role: string | null; user_profile: { phone: string | null } | null; school: { name: string } | null }
 interface DigitalCard { serial: string; status: string; valid: boolean; holder_name: string; role: string; school: string; photo: string | null; expires_on: string | null; qr: string | null }
 
 export default function AccountPage() {
@@ -109,9 +109,55 @@ export default function AccountPage() {
               {clock.text && <p className={`mt-2 text-sm ${clock.ok ? 'text-positive' : 'text-ink-muted'}`}>{clock.text}</p>}
             </Card>
           )}
-          <div className="lg:col-span-2"><LibraryBooks /></div>
+          {me.role === 'parent' && <ParentProfile userId={me.id} />}
+          {me.role !== 'parent' && <div className="lg:col-span-2"><LibraryBooks /></div>}
         </div>
       )}
     </PageShell>
+  );
+}
+
+/** A parent's own contact details for the school. Custody is recorded by the office. */
+function ParentProfile({ userId }: { userId: number }) {
+  const [f, setF] = useState({ occupation: '', workplace: '', relationship_to_student: '', alternate_phone: '', alternate_email: '', preferred_contact_method: '' });
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetchApi<{ data: Record<string, string | null> }>(`/parents/${userId}/profile`)
+      .then((r) => setF((prev) => Object.fromEntries(Object.keys(prev).map((k) => [k, r.data[k] ?? ''])) as typeof prev))
+      .catch(() => undefined);
+  }, [userId]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const body = Object.fromEntries(Object.entries(f).map(([k, v]) => [k, v.trim() || null]));
+      const r = await fetchApi<{ message: string }>(`/parents/${userId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
+      setMsg(r.message);
+    } catch (err) {
+      setMsg(errorText(err, 'Could not save.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="How the school reaches you" description="Custody arrangements and emergency order are recorded by the school office.">
+      <form className="grid gap-3 sm:grid-cols-2" onSubmit={save}>
+        <Field label="Occupation"><input className={inputClass} value={f.occupation} onChange={(e) => setF({ ...f, occupation: e.target.value })} /></Field>
+        <Field label="Workplace"><input className={inputClass} value={f.workplace} onChange={(e) => setF({ ...f, workplace: e.target.value })} /></Field>
+        <Field label="Relationship to the child"><input className={inputClass} value={f.relationship_to_student} onChange={(e) => setF({ ...f, relationship_to_student: e.target.value })} placeholder="Mother, uncle…" /></Field>
+        <Field label="Second phone"><input className={inputClass} inputMode="tel" value={f.alternate_phone} onChange={(e) => setF({ ...f, alternate_phone: e.target.value })} /></Field>
+        <Field label="Second email"><input className={inputClass} type="email" value={f.alternate_email} onChange={(e) => setF({ ...f, alternate_email: e.target.value })} /></Field>
+        <Field label="Best way to reach you">
+          <select className={inputClass} value={f.preferred_contact_method} onChange={(e) => setF({ ...f, preferred_contact_method: e.target.value })}>
+            <option value="">No preference</option><option value="phone">Phone call</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email">Email</option>
+          </select>
+        </Field>
+        <div className="flex items-center gap-3 sm:col-span-2"><Button type="submit" variant="secondary" disabled={busy}>Save</Button>{msg && <span className="text-sm text-ink-muted">{msg}</span>}</div>
+      </form>
+    </Card>
   );
 }

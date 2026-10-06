@@ -188,6 +188,12 @@ class AcademicHistoryTransferTest extends TestCase
         $terms = $this->actingAs($this->parent, 'sanctum')->getJson("{$this->host}/parent/children/{$this->ada->id}/academic-history")->assertOk()->json('terms');
         $this->assertCount(1, $terms);
         $this->assertArrayNotHasKey('class_average', $terms[0]['figures']);
+        $this->assertSame([], $this->actingAs($this->parent, 'sanctum')->getJson("{$this->host}/parent/children/{$this->ada->id}/academic-history")->json('documents'), 'The downloadable documents are listed (none yet).');
+
+        // Where the school sells result PINs, the history is behind the same PIN.
+        $this->school->forceFill(['result_checker_enabled' => true])->save();
+        $this->actingAs($this->parent, 'sanctum')->getJson("{$this->host}/parent/children/{$this->ada->id}/academic-history")
+            ->assertOk()->assertJsonCount(0, 'terms');
     }
 
     public function test_a_teacher_who_does_not_teach_the_student_cannot_open_their_history(): void

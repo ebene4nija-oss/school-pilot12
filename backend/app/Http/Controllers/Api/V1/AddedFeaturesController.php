@@ -44,17 +44,44 @@ class AddedFeaturesController extends Controller
     /**
      * Record NDPA Parental Consent
      */
+    /** What a parent has consented to, per child, so they can see it and change it. */
+    public function myParentalConsents(Request $request)
+    {
+        $schoolId = $this->getSchoolId($request);
+        $guardian = \App\Models\Guardian::where('school_id', $schoolId)->where('user_id', $request->user()->id)->first();
+
+        return response()->json(['data' => $guardian
+            ? ParentalConsent::where('school_id', $schoolId)->where('guardian_id', $guardian->id)->get(['id', 'student_id', 'consent_given', 'ai_cross_border_consent_given', 'consented_at', 'withdrawn_at'])
+            : []]);
+    }
+
     public function recordParentalConsent(Request $request)
     {
         $schoolId = $this->getSchoolId($request);
 
         $validated = $request->validate([
-            'guardian_id' => ['required', \Illuminate\Validation\Rule::exists('guardians', 'id')->where('school_id', $schoolId)],
+            // A parent's own guardian record is used; staff name the guardian.
+            'guardian_id' => [$request->user()->userProfile?->role === 'parent' ? 'nullable' : 'required', \Illuminate\Validation\Rule::exists('guardians', 'id')->where('school_id', $schoolId)],
             'student_id'  => ['required', \Illuminate\Validation\Rule::exists('students', 'id')->where('school_id', $schoolId)],
             'consent_given' => 'required|boolean',
             'ai_cross_border_consent_given' => 'nullable|boolean',
             'notes' => 'nullable|string',
         ]);
+
+        /*
+         * NDPA consent is a guardian's own act. A parent records it for
+         * themselves and their own child only — the guardian id was taken
+         * from the request, so anyone could consent (or withdraw) on another
+         * family's behalf. An admin may still transcribe a signed paper form.
+         */
+        if ($request->user()->userProfile?->role === 'parent') {
+            $guardian = \App\Models\Guardian::where('school_id', $schoolId)->where('user_id', $request->user()->id)->first();
+            $student = Student::where('school_id', $schoolId)->find($validated['student_id']);
+            if (! $guardian || ! $student || ! $student->isGuardedBy($request->user())) {
+                return response()->json(['message' => 'You can give consent only for your own children.'], 403);
+            }
+            $validated['guardian_id'] = $guardian->id;
+        }
 
         $consent = ParentalConsent::updateOrCreate(
             [
@@ -64,7 +91,8 @@ class AddedFeaturesController extends Controller
             ],
             [
                 'consent_given' => $validated['consent_given'],
-                'ai_cross_border_consent_given' => $validated['ai_cross_border_consent_given'] ?? true,
+                // Consent is never assumed: unticked means no (NDPA).
+                'ai_cross_border_consent_given' => (bool) ($validated['ai_cross_border_consent_given'] ?? false),
                 'ip_address' => $request->ip(),
                 'consented_at' => now(),
                 'withdrawn_at' => $validated['consent_given'] ? null : now(),
@@ -86,6 +114,10 @@ class AddedFeaturesController extends Controller
         $schoolId = $this->getSchoolId($request);
 
         $consent = ParentalConsent::where('school_id', $schoolId)->findOrFail($id);
+        if ($request->user()->userProfile?->role === 'parent') {
+            $mine = \App\Models\Guardian::where('school_id', $schoolId)->where('user_id', $request->user()->id)->value('id');
+            abort_unless($mine && (int) $consent->guardian_id === (int) $mine, 404);
+        }
         $consent->update([
             'consent_given' => false,
             'withdrawn_at' => now(),

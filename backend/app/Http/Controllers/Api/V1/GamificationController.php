@@ -57,12 +57,16 @@ class GamificationController extends Controller
             return response()->json(['error' => 'Student ID is required'], 400);
         }
 
+        // Only someone who may see this child (themselves, a guardian, their teachers).
+        $this->authorize('view', Student::where('school_id', $schoolId)->findOrFail($studentId));
+
         $gamification = StudentGamification::firstOrCreate(
             ['school_id' => $schoolId, 'student_id' => $studentId],
             ['points' => 0, 'current_streak' => 0, 'badges' => []]
         );
 
-        return response()->json(['data' => $gamification->load('student.user')]);
+        // Name only: this used to carry the child's whole record and account email.
+        return response()->json(['data' => $gamification->load('student.user:id,name')]);
     }
 
     /**
@@ -182,11 +186,30 @@ class GamificationController extends Controller
     {
         $schoolId = $this->getSchoolId($request);
 
+        /*
+         * Points and a short name — nothing else. Every row used to carry the
+         * child's whole student record and account email, sent to every
+         * signed-in user, parents included (NDPA data minimisation, §12).
+         */
         $leaderboard = StudentGamification::where('school_id', $schoolId)
-            ->with(['student.user'])
+            ->with(['student.user:id,name', 'student.currentClass:id,name'])
             ->orderBy('points', 'desc')
             ->limit(20)
-            ->get();
+            ->get()
+            ->values()
+            ->map(function ($row, $i) use ($request) {
+                $parts = preg_split('/\s+/', trim((string) $row->student?->user?->name)) ?: [];
+                $short = trim(($parts[0] ?? '').' '.(isset($parts[1]) ? mb_substr($parts[1], 0, 1).'.' : ''));
+
+                return [
+                    'rank' => $i + 1,
+                    'name' => $short ?: 'Student',
+                    'class' => $row->student?->currentClass?->name,
+                    'points' => (int) $row->points,
+                    'badges' => $row->badges ?? [],
+                    'is_me' => $row->student?->user_id === $request->user()->id,
+                ];
+            });
 
         return response()->json(['data' => $leaderboard]);
     }
