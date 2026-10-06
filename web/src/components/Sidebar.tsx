@@ -116,6 +116,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'People',
     items: [
       { href: '/students', icon: '🎓', label: 'Students', roles: ['school_admin', 'teacher'] },
+      { href: '/students/lifecycle', icon: '🔄', label: 'Rollover & leavers', roles: ['school_admin'] },
       { href: '/admissions', icon: '📝', label: 'Admissions', roles: ['school_admin', 'teacher'] },
       { href: '/progress', icon: '📈', label: 'Progress & analysis', roles: ['school_admin', 'teacher'] },
       { href: '/academic-history', icon: '📚', label: 'Academic history', roles: ['school_admin', 'teacher'] },
