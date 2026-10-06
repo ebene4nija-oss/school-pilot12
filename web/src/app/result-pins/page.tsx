@@ -17,6 +17,7 @@ import {
   inputClass,
   nairaAmount,
 } from '@/components/Page';
+import StudentPicker, { type PickedStudent } from '@/components/StudentPicker';
 
 /**
  * Result-checker PINs, from the school's side.
@@ -172,8 +173,18 @@ export default function ResultPinsPage() {
           </div>
 
           {tab === 'overview' && <Overview inventory={inventory} pricing={pricing} onSaved={load} />}
-          {tab === 'sell' && <Sell inventory={inventory} onSold={load} />}
-          {tab === 'ledger' && <LedgerView />}
+          {tab === 'sell' && (
+            <div className="space-y-6">
+              <Sell inventory={inventory} onSold={load} />
+              <WaivePin />
+            </div>
+          )}
+          {tab === 'ledger' && (
+            <div className="space-y-6">
+              <SalesReport />
+              <LedgerView />
+            </div>
+          )}
         </>
       )}
     </PageShell>
@@ -551,5 +562,111 @@ function LedgerView() {
         )}
       </Card>
     </div>
+  );
+}
+
+/**
+ * Waive the PIN for one student and one term — a scholarship child, a staff
+ * child, a family the school has agreed to help. Free, but never silent: a
+ * reason is required and the waiver is written to the audit log.
+ */
+function WaivePin() {
+  const [student, setStudent] = useState<PickedStudent | null>(null);
+  const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
+  const [termId, setTermId] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetchApi<{ data: { id: number; name: string; session_name?: string | null }[]; current_term_id: number | null }>('/terms')
+      .then((r) => {
+        setTerms(r.data ?? []);
+        if (r.current_term_id) setTermId(String(r.current_term_id));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  async function waive(e: React.FormEvent) {
+    e.preventDefault();
+    if (!student) return;
+    if (!window.confirm(`Unlock ${student.name}'s result for this term at no charge? This is recorded with your name and reason.`)) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetchApi<{ message: string; serial?: string }>('/result-pins/waive', {
+        method: 'POST',
+        body: JSON.stringify({ student_id: student.id, term_id: Number(termId), reason: reason.trim() }),
+      });
+      setMessage({ ok: true, text: `${res.message}${res.serial ? ` (${res.serial})` : ''}` });
+      setReason('');
+      setStudent(null);
+    } catch (err) {
+      setMessage({ ok: false, text: errorText(err, 'Could not waive it.') });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="Waive the PIN for a student" description="Open one student's result for one term without charge. A reason is required and kept in the audit log.">
+      <form onSubmit={waive} className="grid gap-3 sm:grid-cols-3">
+        <Field label="Student"><StudentPicker value={student} onChange={setStudent} /></Field>
+        <Field label="Term">
+          <select className={inputClass} required value={termId} onChange={(e) => setTermId(e.target.value)}>
+            <option value="">Choose…</option>
+            {terms.map((t) => <option key={t.id} value={t.id}>{t.name}{t.session_name ? ` — ${t.session_name}` : ''}</option>)}
+          </select>
+        </Field>
+        <Field label="Reason"><input className={inputClass} required maxLength={255} placeholder="e.g. Full scholarship" value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+        <div className="sm:col-span-3">
+          <Button type="submit" variant="secondary" disabled={busy || !student || !termId || !reason.trim()}>Waive</Button>
+          {message && <p className={`mt-2 text-sm ${message.ok ? 'text-positive' : 'text-negative'}`}>{message.text}</p>}
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+/** What PIN sales brought in, by channel, for a term or overall. */
+function SalesReport() {
+  const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
+  const [termId, setTermId] = useState('');
+  const [report, setReport] = useState<{ total_sold: number; gross_revenue: number; by_channel: Record<string, { count: number; revenue: number }> | [] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchApi<{ data: { id: number; name: string; session_name?: string | null }[] }>('/terms').then((r) => setTerms(r.data ?? [])).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    fetchApi<typeof report>(`/result-pins/sales-report${termId ? `?term_id=${termId}` : ''}`)
+      .then(setReport)
+      .catch((err) => setError(errorText(err, 'Could not load the sales report.')));
+  }, [termId]);
+
+  const channels = report && !Array.isArray(report.by_channel) ? Object.entries(report.by_channel) : [];
+
+  return (
+    <Card title="Sales report" description="PINs sold to parents and what they brought in.">
+      <ErrorNote message={error} />
+      <div className="mb-4 max-w-xs">
+        <Field label="Term">
+          <select className={inputClass} value={termId} onChange={(e) => setTermId(e.target.value)}>
+            <option value="">All terms</option>
+            {terms.map((t) => <option key={t.id} value={t.id}>{t.name}{t.session_name ? ` — ${t.session_name}` : ''}</option>)}
+          </select>
+        </Field>
+      </div>
+      {!report ? <Loading /> : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile label="PINs sold" value={report.total_sold} />
+          <StatTile label="Revenue" value={nairaAmount(report.gross_revenue)} tone="green" />
+          {channels.map(([channel, c]) => (
+            <StatTile key={channel} label={channel.replaceAll('_', ' ')} value={nairaAmount(c.revenue)} hint={`${c.count} PIN(s)`} tone="blue" />
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }

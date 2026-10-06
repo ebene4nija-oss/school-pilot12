@@ -181,17 +181,105 @@ class AccountingController extends Controller
     /**
      * Income, Expense & Profitability Financial Statement Report
      */
+    /*
+     * Lists for the accounts screen. Vendors, expenses, petty cash and budgets
+     * could be written but never read back: a bursar recorded an expense and
+     * had no way to see it again, and petty cash had no running balance.
+     */
+
+    public function listVendors(Request $request)
+    {
+        return response()->json(['data' => Vendor::where('school_id', $this->schoolId())->orderBy('name')->get()]);
+    }
+
+    public function listExpenses(Request $request)
+    {
+        $schoolId = $this->schoolId();
+        $validated = $request->validate(['from' => 'nullable|date', 'to' => 'nullable|date', 'category' => 'nullable|string|max:100']);
+
+        $query = Expense::where('school_id', $schoolId)
+            ->when($validated['from'] ?? null, fn ($q, $v) => $q->whereDate('expense_date', '>=', $v))
+            ->when($validated['to'] ?? null, fn ($q, $v) => $q->whereDate('expense_date', '<=', $v))
+            ->when($validated['category'] ?? null, fn ($q, $v) => $q->where('category', $v));
+
+        return response()->json([
+            'data' => (clone $query)->with('vendor:id,name')->orderByDesc('expense_date')->orderByDesc('id')->limit(500)->get(),
+            'total' => round((float) (clone $query)->where('status', 'paid')->sum('amount'), 2),
+            'categories' => Expense::where('school_id', $schoolId)->distinct()->orderBy('category')->pluck('category'),
+            'currency' => 'NGN',
+        ]);
+    }
+
+    public function listPettyCash(Request $request)
+    {
+        $schoolId = $this->schoolId();
+        $rows = PettyCash::where('school_id', $schoolId)->orderByDesc('entry_date')->orderByDesc('id')->limit(500)->get();
+        $in = (float) PettyCash::where('school_id', $schoolId)->where('type', 'replenishment')->sum('amount');
+        $out = (float) PettyCash::where('school_id', $schoolId)->where('type', 'disbursement')->sum('amount');
+        $names = \App\Models\User::whereIn('id', $rows->pluck('custodian_id')->filter()->unique())->pluck('name', 'id');
+
+        return response()->json([
+            'data' => $rows->map(fn ($r) => [
+                'id' => $r->id, 'type' => $r->type, 'amount' => (float) $r->amount, 'purpose' => $r->purpose,
+                'entry_date' => $r->entry_date?->toDateString(), 'custodian' => $names[$r->custodian_id] ?? null,
+            ]),
+            'balance' => round($in - $out, 2),
+            'currency' => 'NGN',
+        ]);
+    }
+
+    /** Budgets beside what has actually been spent in each category. */
+    public function listBudgets(Request $request)
+    {
+        $schoolId = $this->schoolId();
+        $budgets = Budget::where('school_id', $schoolId)->with('term:id,name,start_date,end_date')->orderByDesc('id')->get();
+
+        return response()->json([
+            'data' => $budgets->map(function (Budget $b) use ($schoolId) {
+                $spent = Expense::where('school_id', $schoolId)->where('status', 'paid')->where('category', $b->category);
+                if ($b->term) {
+                    $spent->whereBetween('expense_date', [$b->term->start_date, $b->term->end_date]);
+                } elseif (preg_match('/^\d{4}$/', (string) $b->fiscal_year)) {
+                    $spent->whereYear('expense_date', (int) $b->fiscal_year);
+                } elseif (preg_match('/^(\d{4})\/(\d{4})$/', (string) $b->fiscal_year, $m)) {
+                    // A Nigerian school year: September to August.
+                    $spent->whereBetween('expense_date', ["{$m[1]}-09-01", "{$m[2]}-08-31"]);
+                }
+                $spentTotal = round((float) $spent->sum('amount'), 2);
+
+                return [
+                    'id' => $b->id, 'category' => $b->category, 'fiscal_year' => $b->fiscal_year, 'term' => $b->term?->name,
+                    'allocated_amount' => (float) $b->allocated_amount, 'spent' => $spentTotal,
+                    'remaining' => round((float) $b->allocated_amount - $spentTotal, 2),
+                ];
+            })->values(),
+            'currency' => 'NGN',
+        ]);
+    }
+
     public function getIncomeReport(Request $request)
     {
         $schoolId = $this->schoolId();
+        // An optional period; without one, everything to date, as before.
+        $range = $request->validate(['from' => 'nullable|date', 'to' => 'nullable|date']);
+        $from = $range['from'] ?? null;
+        $to = $range['to'] ?? null;
 
-        $totalFeeIncome = Payment::where('school_id', $schoolId)->where('status', 'successful')->sum('amount');
-        $totalExpenses = Expense::where('school_id', $schoolId)->where('status', 'paid')->sum('amount');
+        $totalFeeIncome = Payment::where('school_id', $schoolId)->where('status', 'successful')
+            ->when($from, fn ($q) => $q->whereDate('paid_at', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('paid_at', '<=', $to))
+            ->sum('amount');
+        $totalExpenses = Expense::where('school_id', $schoolId)->where('status', 'paid')
+            ->when($from, fn ($q) => $q->whereDate('expense_date', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('expense_date', '<=', $to))
+            ->sum('amount');
         $totalPayroll = Payroll::where('school_id', $schoolId)->where('status', 'paid')->sum('net_salary');
         $netProfit = $totalFeeIncome - ($totalExpenses + $totalPayroll);
 
         $expensesByCategory = Expense::where('school_id', $schoolId)
             ->where('status', 'paid')
+            ->when($from, fn ($q) => $q->whereDate('expense_date', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('expense_date', '<=', $to))
             ->selectRaw('category, SUM(amount) as total')
             ->groupBy('category')
             ->get();
@@ -205,6 +293,7 @@ class AccountingController extends Controller
                 'currency' => 'NGN',
             ],
             'expense_breakdown' => $expensesByCategory,
+            'period' => ['from' => $from, 'to' => $to],
             'generated_at' => now()->toIso8601String(),
         ]);
     }

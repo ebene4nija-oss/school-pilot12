@@ -292,6 +292,15 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/accounting/petty-cash', [\App\Http\Controllers\Api\V1\AccountingController::class, 'logPettyCash'])->middleware('role:super_admin,school_admin,bursar');
         Route::post('/accounting/budget', [\App\Http\Controllers\Api\V1\AccountingController::class, 'storeBudget'])->middleware('role:super_admin,school_admin,bursar');
         Route::get('/accounting/income-report', [\App\Http\Controllers\Api\V1\AccountingController::class, 'getIncomeReport'])->middleware('role:super_admin,school_admin,bursar');
+        // Reading back what the accounts screen records (vendors, expenses, petty cash, budgets).
+        Route::middleware('role:super_admin,school_admin,bursar')->group(function () {
+            Route::get('/accounting/vendors', [\App\Http\Controllers\Api\V1\AccountingController::class, 'listVendors']);
+            Route::get('/accounting/expenses', [\App\Http\Controllers\Api\V1\AccountingController::class, 'listExpenses']);
+            Route::get('/accounting/petty-cash', [\App\Http\Controllers\Api\V1\AccountingController::class, 'listPettyCash']);
+            Route::get('/accounting/budget', [\App\Http\Controllers\Api\V1\AccountingController::class, 'listBudgets']);
+            // The payments ledger, including bank transfers waiting to be reconciled.
+            Route::get('/finance/payments', [\App\Http\Controllers\Api\V1\FinanceController::class, 'listPayments']);
+        });
 
         // Advanced Parent Engagement Portal Routes
         /*

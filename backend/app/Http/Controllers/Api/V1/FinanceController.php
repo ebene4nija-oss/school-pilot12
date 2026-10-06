@@ -370,6 +370,71 @@ class FinanceController extends Controller
         return response()->json(['message' => 'Webhook received, verified, and payment record updated.']);
     }
 
+    /**
+     * The payments ledger: every payment the school has, newest first.
+     *
+     * Read-only. Reconciliation needed it — `reconcile-bank-transfer` takes a
+     * payment id, but nothing listed the transfers waiting for a bursar to
+     * check against the bank statement, so there was nothing to reconcile.
+     */
+    public function listPayments(Request $request)
+    {
+        $schoolId = $this->schoolId();
+        $validated = $request->validate([
+            'status' => 'nullable|in:pending,successful,failed',
+            'gateway' => 'nullable|in:paystack,flutterwave,bank_transfer,cash',
+            'from' => 'nullable|date',
+            'to' => 'nullable|date',
+            'q' => 'nullable|string|max:100',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $query = Payment::where('payments.school_id', $schoolId)
+            ->join('invoices', 'invoices.id', '=', 'payments.invoice_id')
+            ->leftJoin('students', 'students.id', '=', 'invoices.student_id')
+            ->leftJoin('users', 'users.id', '=', 'students.user_id')
+            ->leftJoin('classes', 'classes.id', '=', 'students.class_id')
+            ->when($validated['status'] ?? null, fn ($q, $v) => $q->where('payments.status', $v))
+            ->when($validated['gateway'] ?? null, fn ($q, $v) => $q->where('payments.gateway', $v))
+            ->when($validated['from'] ?? null, fn ($q, $v) => $q->whereDate('payments.created_at', '>=', $v))
+            ->when($validated['to'] ?? null, fn ($q, $v) => $q->whereDate('payments.created_at', '<=', $v))
+            ->when($validated['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
+                ->where('users.name', 'like', "%{$v}%")
+                ->orWhere('students.admission_number', 'like', "%{$v}%")
+                ->orWhere('payments.reference', 'like', "%{$v}%")
+                ->orWhere('invoices.invoice_number', 'like', "%{$v}%")));
+
+        $total = (clone $query)->where('payments.status', 'successful')->sum('payments.amount');
+
+        $page = $query->orderByDesc('payments.id')->select([
+            'payments.id', 'payments.reference', 'payments.amount', 'payments.gateway', 'payments.status', 'payments.paid_at', 'payments.created_at',
+            'invoices.id as invoice_id', 'invoices.invoice_number', 'students.id as student_id', 'students.admission_number',
+            'users.name as student_name', 'classes.name as class_name',
+        ])->paginate((int) ($validated['per_page'] ?? 50));
+
+        return response()->json([
+            'data' => collect($page->items())->map(fn ($p) => [
+                'payment_id' => $p->id,
+                'receipt_number' => 'REC-'.str_pad((string) $p->id, 6, '0', STR_PAD_LEFT),
+                'reference' => $p->reference,
+                'amount' => (float) $p->amount,
+                'gateway' => $p->gateway,
+                'status' => $p->status,
+                'paid_at' => $p->paid_at?->toIso8601String(),
+                'created_at' => $p->created_at?->toIso8601String(),
+                'invoice_id' => $p->invoice_id,
+                'invoice_number' => $p->invoice_number,
+                'student_id' => $p->student_id,
+                'student' => $p->student_name,
+                'admission_number' => $p->admission_number,
+                'class' => $p->class_name,
+            ]),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'per_page' => $page->perPage(), 'total' => $page->total()],
+            'total_received' => round((float) $total, 2),
+            'currency' => 'NGN',
+        ]);
+    }
+
     public function downloadInvoicePdf(Request $request, $id)
     {
         $user = $request->user();

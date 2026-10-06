@@ -457,8 +457,13 @@ class HostelController extends Controller
 
     public function charges(Request $request): JsonResponse
     {
-        return response()->json(['data' => HostelCharge::where('school_id', $this->schoolId())->when($request->filled('term_id'), fn ($q) => $q->where('term_id', $request->integer('term_id')))
-            ->orderByDesc('id')->limit(500)->get()]);
+        $charges = HostelCharge::where('school_id', $this->schoolId())->when($request->filled('term_id'), fn ($q) => $q->where('term_id', $request->integer('term_id')))
+            ->orderByDesc('id')->limit(500)->get();
+        // Who each charge is for, so Finance can read the list without a lookup per row.
+        $names = \App\Models\Student::whereIn('students.id', $charges->pluck('student_id')->unique())
+            ->join('users', 'users.id', '=', 'students.user_id')->pluck('users.name', 'students.id');
+
+        return response()->json(['data' => $charges->map(fn ($c) => $c->toArray() + ['student_name' => $names[$c->student_id] ?? null])]);
     }
 
     // ==================================================================
