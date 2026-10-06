@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
-import { Badge, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
+import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
+import { roleFromCookie } from '@/components/Sidebar';
 
 /**
  * Hostel charges, as Finance sees them (TASK 17): the boarding fee rules and
@@ -22,6 +23,28 @@ export default function HostelChargesPage() {
   const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
   const [termId, setTermId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [admin] = useState(() => roleFromCookie() === 'school_admin');
+  const [rule, setRule] = useState({ boarding_category: 'full', charge_type: 'boarding', title: '', amount: '' });
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function post(path: string, body: unknown, done: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetchApi<{ message?: string }>(path, { method: 'POST', body: JSON.stringify(body) });
+      setNotice(r.message ?? done);
+      const rr = await fetchApi<{ data: Rule[] }>('/hostel/fee-rules');
+      setRules(rr.data);
+      await load();
+      return true;
+    } catch (err) {
+      setError(errorText(err, 'That did not go through.'));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     fetchApi<{ data: Rule[] }>('/hostel/fee-rules').then((r) => setRules(r.data)).catch((err) => setError(errorText(err, 'Could not load hostel fees.')));
@@ -49,6 +72,7 @@ export default function HostelChargesPage() {
   return (
     <PageShell title="Hostel charges" subtitle="Boarding fees raised by the hostel office. Once posted they are on the student's term invoice.">
       <ErrorNote message={error} />
+      {notice && <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}
       <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
         <Card>
           <div className="mb-4 max-w-xs">
@@ -81,7 +105,7 @@ export default function HostelChargesPage() {
           )}
         </Card>
         <Card title="Boarding fee rules">
-          {!rules ? <Loading /> : rules.length === 0 ? <p className="text-sm text-ink-muted">None set. The hostel office sets these.</p> : (
+          {!rules ? <Loading /> : rules.length === 0 ? <p className="text-sm text-ink-muted">None set yet.</p> : (
             <ul className="space-y-2 text-sm">
               {rules.map((r) => (
                 <li key={r.id} className={r.is_active ? '' : 'text-ink-faint line-through'}>
@@ -90,6 +114,24 @@ export default function HostelChargesPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {admin && (
+            <div className="mt-4 space-y-4 border-t border-line-soft pt-4">
+              <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); void post('/hostel/fee-rules', { ...rule, amount: Number(rule.amount) }, 'Fee rule added.').then((ok) => ok && setRule({ ...rule, title: '', amount: '' })); }}>
+                <p className="text-sm font-semibold">Add a fee rule</p>
+                <Field label="Boarders"><select className={inputClass} value={rule.boarding_category} onChange={(e) => setRule({ ...rule, boarding_category: e.target.value })}><option value="full">Full boarders</option><option value="weekly">Weekly boarders</option><option value="flexible">Flexible</option><option value="day_services">Day services</option></select></Field>
+                <Field label="Kind"><select className={inputClass} value={rule.charge_type} onChange={(e) => setRule({ ...rule, charge_type: e.target.value })}>{['boarding', 'meals', 'deposit', 'laundry', 'other'].map((t) => <option key={t}>{t}</option>)}</select></Field>
+                <Field label="Title"><input className={inputClass} required maxLength={120} value={rule.title} onChange={(e) => setRule({ ...rule, title: e.target.value })} placeholder="Boarding fee" /></Field>
+                <Field label="Amount per term (₦)"><input className={inputClass} type="number" min={0} required value={rule.amount} onChange={(e) => setRule({ ...rule, amount: e.target.value })} /></Field>
+                <Button type="submit" variant="secondary" disabled={busy}>Add rule</Button>
+              </form>
+              <div>
+                <p className="mb-1 text-sm font-semibold">Bill a term</p>
+                <p className="mb-2 text-xs text-ink-muted">Adds each boarder’s charges to their term invoice. Safe to run again: nothing is billed twice.</p>
+                <Button disabled={busy || !termId} onClick={() => { if (window.confirm('Add this term’s hostel charges to boarders’ invoices?')) void post('/hostel/bill', { term_id: Number(termId) }, 'Billed.'); }}>Bill {terms.find((t) => String(t.id) === termId)?.name ?? 'the chosen term'}</Button>
+                {!termId && <p className="mt-1 text-xs text-ink-muted">Choose the term on the left first.</p>}
+              </div>
+            </div>
           )}
         </Card>
       </div>
