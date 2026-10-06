@@ -257,6 +257,8 @@ class SessionRolloverController extends Controller
         $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
+        // A teacher sees only the students they teach (StudentPolicy).
+        $this->authorize('view', $student);
 
         $enrollments = StudentEnrollment::where('student_id', $student->id)
             ->with(['session:id,name,start_date', 'schoolClass:id,name', 'arm:id,name'])

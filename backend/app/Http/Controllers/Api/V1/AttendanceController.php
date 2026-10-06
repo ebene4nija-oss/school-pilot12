@@ -302,7 +302,7 @@ class AttendanceController extends Controller
     public function staffGpsClockIn(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'staff_id' => 'required|exists:staff,id',
+            'staff_id' => 'nullable|integer',
             'term_id' => 'required|exists:terms,id',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
@@ -320,15 +320,22 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'No school context for this user.'], 403);
         }
 
-        // `exists:staff,id` alone would let one school clock in another school's
-        // staff, since the rule is not tenant-aware.
-        $staffBelongsToSchool = DB::table('staff')
-            ->where('id', $request->staff_id)
-            ->where('school_id', $schoolId)
-            ->exists();
+        /*
+         * Whose clock-in this is. A phone at the gate proves where *that
+         * phone* is, so a teacher clocks in themselves only — otherwise one
+         * person on the premises could mark an absent colleague present,
+         * which is the thing GPS clock-in exists to stop. An administrator
+         * may still record one for a named member of staff.
+         */
+        $isAdmin = in_array($user->userProfile?->role, ['school_admin', 'super_admin'], true);
+        $own = DB::table('staff')->where('school_id', $schoolId)->where('user_id', $user->id)->value('id');
+        $staffId = $request->filled('staff_id') ? (int) $request->staff_id : $own;
 
-        if (! $staffBelongsToSchool) {
+        if (! $staffId || ! DB::table('staff')->where('id', $staffId)->where('school_id', $schoolId)->exists()) {
             return response()->json(['message' => 'Staff member not found in this school.'], 404);
+        }
+        if (! $isAdmin && (int) $staffId !== (int) $own) {
+            return response()->json(['message' => 'You can clock in only yourself.'], 403);
         }
 
         $result = $this->geofence->check($school, (float) $request->latitude, (float) $request->longitude);
@@ -352,7 +359,7 @@ class AttendanceController extends Controller
 
         $record = AttendanceRecord::create([
             'school_id' => $schoolId,
-            'staff_id' => $request->staff_id,
+            'staff_id' => $staffId,
             'term_id' => $request->term_id,
             'date' => now()->toDateString(),
             'status' => 'present',

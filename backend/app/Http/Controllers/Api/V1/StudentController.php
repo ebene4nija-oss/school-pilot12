@@ -591,6 +591,8 @@ class StudentController extends Controller
         $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
+        // A teacher sees only the students they teach (StudentPolicy).
+        $this->authorize('view', $student);
 
         $history = StudentClassHistory::where('student_id', $student->id)
             ->where('school_id', $schoolId)

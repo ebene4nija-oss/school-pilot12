@@ -8,8 +8,9 @@ import LibraryBooks from '@/components/LibraryBooks';
 /**
  * My account, for staff (bursar, nurse, teacher, admin): the contact number
  * the school reaches me on, my digital staff ID card where the school issues
- * them, and my library books. Name and role are the school office's to change.
- * Payslips are on the Payroll page.
+ * them, my library books, and clocking in at the school gate with my phone's
+ * location (teachers and admins; a phone, never a fingerprint reader — doc §3).
+ * Name and role are the school office's to change. Payslips are on Payroll.
  */
 
 interface Me { name: string; email: string; role: string | null; user_profile: { phone: string | null } | null; school: { name: string } | null }
@@ -28,6 +29,24 @@ export default function AccountPage() {
     // 404 when the school does not issue digital cards: the section is left out.
     fetchApi<{ card: DigitalCard | null }>('/me/id-card').then((r) => setCard(r.card)).catch(() => undefined);
   }, []);
+
+  const [clock, setClock] = useState<{ busy: boolean; text: string | null; ok: boolean }>({ busy: false, text: null, ok: false });
+
+  /** Clock in with this device's location; the server checks it is inside the school's radius. */
+  function clockIn() {
+    if (!navigator.geolocation) { setClock({ busy: false, ok: false, text: 'This browser cannot share your location.' }); return; }
+    setClock({ busy: true, ok: false, text: 'Finding your location…' });
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const terms = await fetchApi<{ current_term_id: number | null; data: { id: number }[] }>('/terms');
+        const termId = terms.current_term_id ?? terms.data?.[0]?.id;
+        const r = await fetchApi<{ message?: string }>('/attendance/staff-gps', { method: 'POST', body: JSON.stringify({ term_id: termId, latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });
+        setClock({ busy: false, ok: true, text: r.message ?? 'Clocked in.' });
+      } catch (err) {
+        setClock({ busy: false, ok: false, text: errorText(err, 'Could not clock you in.') });
+      }
+    }, (err) => setClock({ busy: false, ok: false, text: err.code === err.PERMISSION_DENIED ? 'Allow location access for this site, then try again.' : 'Your location could not be found. Step outside or turn on GPS and try again.' }), { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +101,12 @@ export default function AccountPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={card.qr} alt="Card verification code" className="mx-auto mt-4 h-32 w-32" />
               )}
+            </Card>
+          )}
+          {(me.role === 'teacher' || me.role === 'school_admin') && (
+            <Card title="Clock in at school" description="Uses your phone's location to confirm you are on the premises. Your position is checked once, not tracked.">
+              <Button variant="accent" disabled={clock.busy} onClick={clockIn}>{clock.busy ? 'Checking…' : 'Clock in now'}</Button>
+              {clock.text && <p className={`mt-2 text-sm ${clock.ok ? 'text-positive' : 'text-ink-muted'}`}>{clock.text}</p>}
             </Card>
           )}
           <div className="lg:col-span-2"><LibraryBooks /></div>

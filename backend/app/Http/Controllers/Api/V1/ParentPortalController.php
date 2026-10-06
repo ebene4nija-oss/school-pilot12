@@ -381,6 +381,10 @@ class ParentPortalController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Only a child this member of staff may see (StudentPolicy): a teacher
+        // records conduct for the classes they teach.
+        $this->authorize('view', Student::where('school_id', $schoolId)->findOrFail($request->student_id));
+
         $report = BehaviorReport::create([
             'school_id' => $schoolId,
             'student_id' => $request->student_id,
@@ -392,14 +396,19 @@ class ParentPortalController extends Controller
         ]);
 
         // Optional Automated WhatsApp Alert to Parent
-        if ($request->get('notify_parent', true)) {
-            $student = Student::where('school_id', $schoolId)->with('user')->find($request->student_id);
-            $parentPhone = ($student && $student->user && $student->user->userProfile) ? $student->user->userProfile->phone : '+2348000000000';
-            $whatsApp = app(WhatsAppService::class);
-            $whatsApp->sendMessage(
-                $parentPhone,
-                "Dear Parent,\nA new {$request->type} conduct entry has been logged for " . ($student->user ? $student->user->name : 'your child') . ": '{$request->title}'. Please log into parent portal for details."
-            );
+        /*
+         * Tell the child's guardians of record — not the child's own account,
+         * and never a placeholder number. This used to WhatsApp the student's
+         * phone, or "+2348000000000" when there was none: a note about a
+         * child's conduct sent to a stranger. The notice carries no detail,
+         * since it may show on a lock screen; the parent reads it in the app.
+         */
+        if ($request->boolean('notify_parent', true)) {
+            $student = Student::where('school_id', $schoolId)->with('user:id,name')->find($request->student_id);
+            $guardians = app(\App\Services\Lms\LmsService::class)->guardianUserIds([(int) $request->student_id]);
+            $first = $student?->user?->name ? explode(' ', $student->user->name)[0] : 'your child';
+            \App\Support\InAppNotifier::send($schoolId, $guardians, 'behaviour', 'New conduct note',
+                ($request->type === 'positive' ? "A commendation has been recorded for {$first}." : "A conduct note has been recorded for {$first}.").' Open SchoolPilot to read it.', true);
         }
 
         return response()->json([
