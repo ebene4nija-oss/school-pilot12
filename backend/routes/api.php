@@ -634,6 +634,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'listQuestions']);
             Route::post('/cbt/questions', [\App\Http\Controllers\Api\V1\CbtController::class, 'storeQuestion']);
             Route::post('/cbt/questions/import', [\App\Http\Controllers\Api\V1\CbtController::class, 'importQuestions']);
+            Route::get('/cbt/questions/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'showQuestion'])->whereNumber('id');
             Route::put('/cbt/questions/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'updateQuestion']);
             Route::delete('/cbt/questions/{id}', [\App\Http\Controllers\Api\V1\CbtController::class, 'destroyQuestion']);
 

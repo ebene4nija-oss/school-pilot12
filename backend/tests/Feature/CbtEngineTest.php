@@ -603,6 +603,41 @@ class CbtEngineTest extends TestCase
         $this->assertEquals('graded', CbtAttempt::find($attemptId)->status);
     }
 
+    public function test_manual_marking_cannot_award_more_than_a_question_is_worth()
+    {
+        $question = $this->makeQuestion(['question' => 'Explain osmosis.', 'question_type' => 'theory', 'options' => null, 'correct_answer' => null, 'answer_schema' => [], 'marks' => 5]);
+        $other = $this->makeQuestion(['question' => 'Not on this paper', 'question_type' => 'theory', 'options' => null, 'correct_answer' => null, 'answer_schema' => [], 'marks' => 5]);
+        $exam = $this->makeExam(['show_results_immediately' => true]);
+        $this->attach($exam, $question);
+
+        $attemptId = $this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->json('attempt.id');
+        $this->asStudent()->postJson("/api/v1/cbt/attempts/{$attemptId}/answers", ['answers' => [['question_id' => $question->id, 'response' => ['text' => 'Water moves.']]]]);
+        $this->asStudent()->postJson("/api/v1/cbt/attempts/{$attemptId}/submit");
+
+        $this->asTeacher()->postJson("/api/v1/cbt/attempts/{$attemptId}/grade", ['marks' => [['question_id' => $question->id, 'awarded_marks' => 50]]])
+            ->assertStatus(422)->assertJsonValidationErrors('marks.0.awarded_marks');
+        $this->asTeacher()->postJson("/api/v1/cbt/attempts/{$attemptId}/grade", ['marks' => [['question_id' => $other->id, 'awarded_marks' => 1]]])
+            ->assertStatus(422);
+        $this->assertEquals('submitted', CbtAttempt::find($attemptId)->status, 'Nothing was recorded.');
+
+        $graded = $this->asTeacher()->postJson("/api/v1/cbt/attempts/{$attemptId}/grade", ['marks' => [['question_id' => $question->id, 'awarded_marks' => 5]]])->assertOk();
+        $this->assertEquals(100, $graded->json('result.percentage'));
+        $this->assertEquals(5, $graded->json('result.questions.0.marks'), 'Each row says what it was worth, for the marking sheet.');
+    }
+
+    public function test_the_question_editor_loads_one_question_with_its_scheme_for_staff_only()
+    {
+        $question = $this->makeQuestion();
+        $exam = $this->makeExam();
+        $this->attach($exam, $question);
+
+        $res = $this->asTeacher()->getJson("/api/v1/cbt/questions/{$question->id}")->assertOk();
+        $this->assertSame('B', $res->json('question.correct_answer'));
+        $this->assertTrue($res->json('frozen'), 'On a published paper, so the editor says it cannot change.');
+
+        $this->asStudent()->getJson("/api/v1/cbt/questions/{$question->id}")->assertForbidden();
+    }
+
     // ==================================================================
     // Delivery integrity
     // ==================================================================

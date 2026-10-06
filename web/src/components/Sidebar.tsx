@@ -129,6 +129,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/report-card-design', icon: '🎨', label: 'Report cards & grading', roles: ['school_admin'] },
       { href: '/report-entries', icon: '⭐', label: 'Ratings & comments', roles: ['school_admin', 'teacher'] },
       { href: '/cbt-setup', icon: '💻', label: 'CBT exams', roles: ['school_admin', 'teacher'], module: 'cbt' },
+      { href: '/cbt-bank', icon: '🗃️', label: 'Question bank', roles: ['school_admin', 'teacher'], module: 'cbt' },
       { href: '/cbt-oversight', icon: '🛰️', label: 'CBT monitor & regrade', roles: ['school_admin', 'teacher'], module: 'cbt' },
       { href: '/learning', icon: '📖', label: 'Learning', roles: ['school_admin', 'teacher', 'student', 'parent'] },
       { href: '/live-class', icon: '🎥', label: 'Virtual classes', roles: ['school_admin', 'teacher', 'student', 'parent'], module: 'live_classes' },

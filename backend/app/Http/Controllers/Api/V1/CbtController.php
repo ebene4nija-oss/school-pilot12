@@ -250,6 +250,29 @@ class CbtController extends Controller
         return response()->json(['message' => 'Question added to bank', 'question' => $question], 201);
     }
 
+    /**
+     * One question in full, for the editor: the marking scheme included.
+     *
+     * Staff only (the route group), and the reason the list leaves the scheme
+     * out still holds — this is fetched on demand, one question at a time, by
+     * the person about to change it. Says whether a published paper uses it,
+     * because those questions are frozen.
+     */
+    public function showQuestion(Request $request, $id)
+    {
+        $question = QuestionBankItem::where('school_id', $this->schoolId())->with(['subject:id,name', 'group:id,title'])->findOrFail($id);
+
+        $exams = CbtExamQuestion::where('question_id', $question->id)
+            ->join('cbt_exams', 'cbt_exams.id', '=', 'cbt_exam_questions.exam_id')
+            ->get(['cbt_exams.id', 'cbt_exams.title', 'cbt_exams.status']);
+
+        return response()->json([
+            'question' => $question,
+            'used_in' => $exams,
+            'frozen' => $exams->contains('status', 'published'),
+        ]);
+    }
+
     public function updateQuestion(Request $request, $id, MathContentService $maths)
     {
         $schoolId = $this->schoolId();
@@ -1100,6 +1123,15 @@ class CbtController extends Controller
      * school has released results — otherwise the first candidate out of the
      * hall hands the marking scheme to the queue outside.
      */
+    /** @return array<int, float> question id => marks it carries on this exam */
+    private function questionWorth(CbtExam $exam, array $questionIds): array
+    {
+        $links = CbtExamQuestion::where('exam_id', $exam->id)->whereIn('question_id', $questionIds)->get()->keyBy('question_id');
+        $questions = QuestionBankItem::withoutGlobalScopes()->whereIn('id', $links->keys())->get()->keyBy('id');
+
+        return $links->mapWithKeys(fn (CbtExamQuestion $link, $id) => [(int) $id => $questions->has($id) ? $link->effectiveMarks($questions[$id]) : (float) ($link->marks ?? 1)])->all();
+    }
+
     private function resultPayload(CbtAttempt $attempt, CbtExam $exam, bool $forStaff): array
     {
         $released = $forStaff || $exam->show_results_immediately;
@@ -1144,11 +1176,15 @@ class CbtController extends Controller
                     : 0.0,
             ])->values();
 
-        $payload['questions'] = $answers->map(function (CbtAttemptAnswer $answer) use ($questions, $forStaff) {
+        $worth = $this->questionWorth($exam, $answers->pluck('question_id')->all());
+
+        $payload['questions'] = $answers->map(function (CbtAttemptAnswer $answer) use ($questions, $forStaff, $worth) {
             $question = $questions->get($answer->question_id);
 
             $row = [
                 'question_id' => $answer->question_id,
+                'question_type' => $question?->question_type,
+                'marks' => $worth[(int) $answer->question_id] ?? null,
                 'question' => $question?->question,
                 'your_response' => $answer->response,
                 'is_correct' => $answer->is_correct,
@@ -1182,6 +1218,19 @@ class CbtController extends Controller
         ]);
 
         $exam = CbtExam::withoutGlobalScopes()->findOrFail($attempt->exam_id);
+
+        // Never more than a question is worth on this paper: an extra digit
+        // typed on a 5-mark question would otherwise put a script over 100%.
+        $worth = $this->questionWorth($exam, collect($validated['marks'])->pluck('question_id')->all());
+        foreach ($validated['marks'] as $i => $row) {
+            $max = $worth[(int) $row['question_id']] ?? null;
+            if ($max === null) {
+                return response()->json(['errors' => ["marks.{$i}.question_id" => ['That question is not on this paper.']]], 422);
+            }
+            if ((float) $row['awarded_marks'] > $max) {
+                return response()->json(['errors' => ["marks.{$i}.awarded_marks" => ["Cannot award more than the {$max} mark(s) this question is worth."]]], 422);
+            }
+        }
 
         DB::transaction(function () use ($validated, $attempt, $request) {
             foreach ($validated['marks'] as $row) {
