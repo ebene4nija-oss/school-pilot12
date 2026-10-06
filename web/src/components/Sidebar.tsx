@@ -69,7 +69,9 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
   },
   {
     items: [
-      { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin', 'teacher'] },
+      { href: '/', icon: '📊', label: 'Dashboard', roles: ['school_admin'] },
+      { href: '/teacher', icon: '📊', label: 'My dashboard', roles: ['teacher'] },
+      { href: '/teacher/homework', icon: '📝', label: 'Homework', roles: ['school_admin', 'teacher'] },
       { href: '/parent', icon: '👨‍👩‍👧', label: 'My children', roles: ['parent'] },
       { href: '/student', icon: '🏠', label: 'My school day', roles: ['student'] },
       { href: '/parent/results', icon: '📄', label: 'Results', roles: ['parent'] },

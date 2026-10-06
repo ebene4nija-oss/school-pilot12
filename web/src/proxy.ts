@@ -89,6 +89,12 @@ export function proxy(request: NextRequest) {
     if (role === 'student') {
       return NextResponse.redirect(new URL('/student', request.url));
     }
+
+    // And a teacher: their own day. The school dashboard's endpoint is
+    // admin-only, so a teacher landing there saw an error.
+    if (role === 'teacher') {
+      return NextResponse.redirect(new URL('/teacher', request.url));
+    }
   }
 
   return NextResponse.next();

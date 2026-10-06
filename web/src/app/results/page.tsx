@@ -253,6 +253,26 @@ export default function ResultsPage() {
     });
   }
 
+  /**
+   * This term's scores for one subject, as a CSV the teacher keeps or opens
+   * in Excel. The API returns the rows; the file is built here.
+   */
+  async function exportScores() {
+    if (!importSubjectId || !termId) return;
+    try {
+      const res = await fetchApi<{ rows: (string | number | null)[][] }>(`/teacher/export-scores?term_id=${termId}&subject_id=${importSubjectId}`);
+      const csv = res.rows.map((r) => r.map((v) => `"${String(v ?? '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scores-${subjects.find((x) => String(x.id) === importSubjectId)?.name ?? 'subject'}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not export the scores.');
+    }
+  }
+
   async function importScores(e: React.FormEvent) {
     e.preventDefault();
 
@@ -543,6 +563,12 @@ export default function ResultsPage() {
                   >
                     ⬇ Download a score sheet for this class
                   </a>
+                )}
+
+                {importSubjectId && termId && (
+                  <button type="button" onClick={exportScores} className="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-surface-sunken">
+                    ⬇ Export this term&apos;s scores for the subject
+                  </button>
                 )}
 
                 <Field label="CSV file">
