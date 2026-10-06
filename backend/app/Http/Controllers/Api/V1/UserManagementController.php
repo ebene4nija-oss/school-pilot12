@@ -267,7 +267,7 @@ class UserManagementController extends Controller
             'name'        => 'required|string|max:100',
             'slug'        => ['required', 'string', 'max:50', Rule::unique('custom_roles')->where('school_id', $schoolId)],
             'description' => 'nullable|string|max:500',
-            'permissions' => 'required|array',
+            'permissions' => 'present|array',
             'permissions.*' => 'string',
         ]);
 
@@ -335,7 +335,8 @@ class UserManagementController extends Controller
     public function assignRole(Request $request, $userId)
     {
         $validator = Validator::make($request->all(), [
-            'custom_role_id' => 'required|exists:custom_roles,id',
+            // This school's own roles only; the bare rule accepted any school's.
+            'custom_role_id' => ['required', Rule::exists('custom_roles', 'id')->where('school_id', $this->getSchoolId($request))],
         ]);
 
         if ($validator->fails()) {
@@ -431,6 +432,20 @@ class UserManagementController extends Controller
             $role  = trim($row[2]);
             $phone = isset($row[3]) ? trim($row[3]) : null;
 
+            /*
+             * The same roles an invite allows, and nothing else. The role came
+             * straight from the CSV, so a row reading "super_admin" created a
+             * platform operator account — every school's data — from one
+             * school's admin screen.
+             */
+            if (! in_array($role, ['school_admin', 'teacher', 'nurse', 'bursar', 'student', 'parent'], true)) {
+                $errors[] = "Row {$rowNum}: '{$role}' is not a role that can be imported (school_admin, teacher, nurse, bursar, student or parent).";
+                continue;
+            }
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Row {$rowNum}: '{$email}' is not an email address.";
+                continue;
+            }
             if (User::where('email', $email)->exists()) {
                 $errors[] = "Row {$rowNum}: Email '{$email}' already exists.";
                 continue;
