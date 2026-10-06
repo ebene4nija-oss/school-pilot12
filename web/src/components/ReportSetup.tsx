@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Button, Card, ErrorNote, Field, Loading, inputClass } from '@/components/Page';
 
@@ -58,7 +58,35 @@ export default function ReportSetup() {
       </p>
       <MarksCard scheme={data.ca_scheme} />
       <RatingsCard initial={data.settings} configured={data.configured} />
+      <EarlierSchemes />
     </div>
+  );
+}
+
+/** Schemes saved before: go back to one without retyping it. */
+function EarlierSchemes() {
+  const [schemes, setSchemes] = useState<{ id: number; name: string; is_default: boolean; components: { name: string; max: number }[] | null }[]>([]);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = useCallback(() => fetchApi<{ data: typeof schemes }>('/assessment/ca-schemes').then((r) => setSchemes(r.data ?? [])).catch(() => undefined), []);
+  useEffect(() => { void load(); }, [load]);
+
+  if (schemes.length < 2) return null;
+
+  return (
+    <Card title="Earlier marking schemes" description="Switch back to a scheme you used before. Scores already entered keep the scheme they were entered under.">
+      <ul className="space-y-2 text-sm">
+        {schemes.map((sc) => (
+          <li key={sc.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span><span className="font-medium">{sc.name}</span> <span className="text-ink-muted">{(sc.components ?? []).map((c) => `${c.name} ${c.max}`).join(' · ')}</span></span>
+            {sc.is_default ? <span className="text-xs text-positive">in use</span> : (
+              <Button variant="secondary" onClick={async () => { try { const r = await fetchApi<{ message?: string }>(`/assessment/ca-schemes/${sc.id}/activate`, { method: 'POST', body: '{}' }); setMsg(r.message ?? 'Now in use.'); await load(); } catch (err) { setMsg(errorText(err, 'Could not switch.')); } }}>Use this one</Button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {msg && <p className="mt-2 text-sm text-ink-muted">{msg}</p>}
+    </Card>
   );
 }
 

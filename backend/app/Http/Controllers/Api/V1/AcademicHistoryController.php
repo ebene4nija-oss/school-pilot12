@@ -330,9 +330,14 @@ class AcademicHistoryController extends Controller
     public function correctionRequests(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => RecordCorrectionRequest::where('school_id', $this->schoolId())
-                ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
-                ->orderByDesc('id')->limit(200)->get(),
+            // Who it is about and who raised it, so the office can act on it.
+            'data' => RecordCorrectionRequest::where('record_correction_requests.school_id', $this->schoolId())
+                ->when($request->filled('status'), fn ($q) => $q->where('record_correction_requests.status', $request->input('status')))
+                ->leftJoin('students', 'students.id', '=', 'record_correction_requests.student_id')
+                ->leftJoin('users as su', 'su.id', '=', 'students.user_id')
+                ->leftJoin('users as ru', 'ru.id', '=', 'record_correction_requests.raised_by')
+                ->orderByDesc('record_correction_requests.id')->limit(200)
+                ->get(['record_correction_requests.*', 'su.name as student_name', 'students.admission_number', 'ru.name as raised_by_name']),
         ]);
     }
 

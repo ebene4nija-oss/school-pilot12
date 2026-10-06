@@ -380,6 +380,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         });
         Route::post('/students/behavior-report', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeBehaviorReport'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/calendar/events', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'storeCalendarEvent'])->middleware('role:super_admin,school_admin');
+        Route::get('/calendar/events', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'calendarEvents'])->middleware('role:super_admin,school_admin');
+        Route::delete('/calendar/events/{id}', [\App\Http\Controllers\Api\V1\ParentPortalController::class, 'deleteCalendarEvent'])->whereNumber('id')->middleware('role:super_admin,school_admin');
 
         // User Management & Administration Routes (bulk/static BEFORE parameterized)
         Route::post('/users/bulk-status', [\App\Http\Controllers\Api\V1\UserManagementController::class, 'bulkUpdateStatus'])->middleware('role:super_admin,school_admin');

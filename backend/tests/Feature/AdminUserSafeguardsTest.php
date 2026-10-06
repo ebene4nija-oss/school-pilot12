@@ -61,4 +61,14 @@ class AdminUserSafeguardsTest extends TestCase
         $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/roles", ['name' => 'Exams officer', 'slug' => 'exams-officer', 'permissions' => []])
             ->assertCreated()->assertJsonPath('data.name', 'Exams officer');
     }
+
+    public function test_the_admin_keeps_the_school_calendar(): void
+    {
+        $id = $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/calendar/events", ['title' => 'Mid-term break', 'category' => 'holiday', 'start_date' => '2026-10-26', 'end_date' => '2026-10-30', 'is_public' => true])
+            ->assertSuccessful()->json('event.id') ?? \App\Models\SchoolCalendarEvent::first()->id;
+
+        $this->assertSame('Mid-term break', $this->actingAs($this->admin, 'sanctum')->getJson("{$this->host}/calendar/events")->assertOk()->json('data.0.title'));
+        $this->actingAs($this->admin, 'sanctum')->deleteJson("{$this->host}/calendar/events/{$id}")->assertOk();
+        $this->assertSame(0, \App\Models\SchoolCalendarEvent::count());
+    }
 }

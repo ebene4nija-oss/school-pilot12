@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { errorText, fetchApi } from '@/lib/api';
+import { errorText, fetchApi, uploadApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, Table, inputClass } from '@/components/Page';
 
 /**
@@ -237,6 +237,12 @@ export default function TransfersPage() {
                       if (reason) act(`/transfers/${d.id}/reject`, { reason });
                     }}>Reject</Button>
                   )}
+                  {!['completed', 'rejected', 'cancelled'].includes(d.status) && (
+                    <Button variant="secondary" disabled={busy} onClick={() => {
+                      const reason = window.prompt('Why is this transfer being cancelled (the family changed their mind, entered in error…)?');
+                      if (reason && reason.trim().length >= 3) act(`/transfers/${d.id}/cancel`, { reason: reason.trim() });
+                    }}>Cancel transfer</Button>
+                  )}
                 </div>
 
                 {d.documents.length > 0 && (
@@ -250,6 +256,13 @@ export default function TransfersPage() {
             {d.direction === 'incoming' && (
               <>
                 {d.status === 'awaiting_acceptance' && <Button className="mb-4" variant="accent" disabled={busy} onClick={() => act(`/transfers/${d.id}/accept`)}>Accept records</Button>}
+                <IncomingTools id={d.id} closed={['completed', 'rejected', 'cancelled'].includes(d.status)} onChanged={() => { void open(d.id); }} />
+                {!['completed', 'rejected', 'cancelled'].includes(d.status) && (
+                  <Button variant="secondary" className="mb-4" disabled={busy} onClick={() => {
+                    const reason = window.prompt('Why is this incoming transfer being cancelled?');
+                    if (reason && reason.trim().length >= 3) act(`/transfers/${d.id}/cancel`, { reason: reason.trim() });
+                  }}>Cancel transfer</Button>
+                )}
                 <h3 className="mb-2 text-sm font-semibold">Received records</h3>
                 {d.received_records.length === 0 ? <Empty>Nothing received yet.</Empty> : (
                   <Table columns={['From', 'Source', 'Status', '']}>
@@ -309,5 +322,51 @@ export default function TransfersPage() {
         )}
       </div>
     </PageShell>
+  );
+}
+
+/**
+ * For an incoming student: is this child already on our roll, and the
+ * previous school's records when they arrive as a file rather than through
+ * SchoolPilot. Unverified uploads are marked so; nothing is merged.
+ */
+function IncomingTools({ id, closed, onChanged }: { id: number; closed: boolean; onChanged: () => void }) {
+  const [dups, setDups] = useState<{ student_id: number; name: string; admission_number: string | null; status: string; reasons: string[] }[] | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [note, setNote] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+
+  return (
+    <div className="mb-4 grid gap-3 rounded-lg p-3 ring-1 ring-line-soft md:grid-cols-2">
+      <div>
+        <h3 className="mb-1 text-sm font-semibold">Already on our roll?</h3>
+        <Button variant="secondary" onClick={() => fetchApi<{ data: NonNullable<typeof dups> }>(`/transfers/${id}/duplicates`).then((r) => setDups(r.data)).catch((err) => setMsg(errorText(err, 'Could not check.')))}>Check for duplicates</Button>
+        {dups && (dups.length === 0 ? <p className="mt-2 text-sm text-positive">No likely match.</p> : (
+          <ul className="mt-2 space-y-1 text-sm">{dups.map((m) => <li key={m.student_id}>{m.name} · {m.admission_number} · {m.status}<span className="block text-xs text-ink-muted">{m.reasons.join(', ')}</span></li>)}</ul>
+        ))}
+      </div>
+      {!closed && (
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!file) return;
+          const form = new FormData();
+          form.append('package', file);
+          if (note) form.append('note', note);
+          try {
+            const r = await uploadApi<{ message: string }>(`/transfers/${id}/records`, form);
+            setMsg(r.message);
+            setFile(null);
+            onChanged();
+          } catch (err) { setMsg(errorText(err, 'Could not add the records.')); }
+        }}>
+          <h3 className="mb-1 text-sm font-semibold">Records received as a file</h3>
+          <p className="mb-2 text-xs text-ink-muted">The transfer package the previous school sent (.json). A signed SchoolPilot package is verified automatically; anything else is marked unverified.</p>
+          <input type="file" accept=".json,.txt" required className="block text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input className={`${inputClass} mt-2`} placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <Button type="submit" variant="secondary" className="mt-2" disabled={!file}>Add records</Button>
+        </form>
+      )}
+      {msg && <p className="text-sm text-ink-muted md:col-span-2">{msg}</p>}
+    </div>
   );
 }

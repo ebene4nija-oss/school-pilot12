@@ -451,6 +451,21 @@ class ParentPortalController extends Controller
     /**
      * Create School Calendar Event (Exams, Holidays, PTM, Sports)
      */
+    /** The school calendar, for the admin who keeps it (parents see the public entries in their feed). */
+    public function calendarEvents(Request $request)
+    {
+        return response()->json(['data' => \App\Models\SchoolCalendarEvent::where('school_id', $this->schoolId())
+            ->when($request->filled('from'), fn ($q) => $q->whereDate('start_date', '>=', $request->input('from')))
+            ->orderBy('start_date')->limit(300)->get()]);
+    }
+
+    public function deleteCalendarEvent(Request $request, $id)
+    {
+        \App\Models\SchoolCalendarEvent::where('school_id', $this->schoolId())->findOrFail($id)->delete();
+
+        return response()->json(['message' => 'Removed from the calendar.']);
+    }
+
     public function storeCalendarEvent(Request $request)
     {
         $schoolId = $this->schoolId();

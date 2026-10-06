@@ -13,6 +13,19 @@ import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, StatTile, 
  */
 
 type HolderType = 'student' | 'staff';
+const REASONS = ['lost', 'stolen', 'damaged', 'left_school', 'data_error', 'other'];
+
+/** One of the reasons the API accepts, typed or chosen; null if cancelled. */
+function askReason(question: string): string | null {
+  const answer = window.prompt(`${question}
+
+Reason — one of: ${REASONS.join(', ')}`, 'lost');
+  if (answer === null) return null;
+  const reason = answer.trim().toLowerCase().replace(/\s+/g, '_');
+  if (!REASONS.includes(reason)) { window.alert(`Please type one of: ${REASONS.join(', ')}`); return null; }
+  return reason;
+}
+
 interface Row { id: number; serial: string; name: string | null; identifier: string | null; group: string | null; status: string; production_status: string; revoked_reason: string | null; expires_on: string | null; collected_by: string | null; handed_over_at: string | null; misprints: number }
 interface Summary { eligible: number; not_generated: number; generated: number; pending_print: number; printed: number; pending_collection: number; issued: number; expiring_soon: number; lost_replacement_pending: number; deactivated: number; expired: number }
 interface Settings { valid_only_when_issued: boolean; staff_validity_months: number | null; expiry_warning_days: number; digital_cards_enabled: boolean; parents_see_digital_card: boolean; log_verifications: boolean }
@@ -175,7 +188,14 @@ export default function IdCardRegister() {
                   <Badge tone={r.status === 'active' ? 'green' : r.status === 'expired' ? 'amber' : 'red'}>{r.status}{r.revoked_reason ? ` · ${r.revoked_reason.replaceAll('_', ' ')}` : ''}</Badge>
                   {r.expires_on && <span className="block text-xs text-ink-muted">to {r.expires_on}</span>}
                 </Cell>
-                <Cell className="text-right"><Button variant="secondary" onClick={() => showHistory(r)}>History</Button></Cell>
+                <Cell className="space-x-2 whitespace-nowrap text-right">
+                  <Button variant="secondary" onClick={() => showHistory(r)}>History</Button>
+                  {r.status === 'active' && <>
+                    {/* Lost or stolen: stop the card at once — the QR then verifies as invalid. */}
+                    <Button variant="danger" disabled={busy} onClick={() => { const reason = askReason(`Revoke ${r.serial}? It stops verifying at once.`); if (reason) post(`/id-cards/${r.id}/revoke`, { reason }); }}>Revoke</Button>
+                    <Button variant="secondary" disabled={busy} onClick={() => { const reason = askReason(`Replace ${r.serial}? The old card is revoked and a new one is queued for printing.`); if (reason) post(`/id-cards/${r.id}/replace`, { reason }); }}>Replace</Button>
+                  </>}
+                </Cell>
               </tr>
             ))}
           </Table>

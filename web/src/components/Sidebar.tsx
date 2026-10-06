@@ -175,6 +175,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/school-profile', icon: '🏫', label: 'School profile', roles: ['school_admin'] },
       { href: '/settings', icon: '🛠️', label: 'Module settings', roles: ['school_admin'] },
+      { href: '/admin-tools', icon: '🧰', label: 'Admin tools', roles: ['school_admin'] },
+      { href: '/records', icon: '🗃️', label: 'Record requests', roles: ['school_admin'] },
       { href: '/users', icon: '👥', label: 'Users & accounts', roles: ['school_admin'] },
       { href: '/admissions/settings', icon: '📨', label: 'Admissions settings', roles: ['school_admin'] },
       { href: '/ai-features', icon: '🤖', label: 'AI features', roles: ['school_admin'] },

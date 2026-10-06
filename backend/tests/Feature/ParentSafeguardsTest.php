@@ -140,4 +140,16 @@ class ParentSafeguardsTest extends TestCase
         $this->assertStringNotContainsString('@hilltop.test', $board->getContent());
         $this->assertStringNotContainsString('admission_number', $board->getContent());
     }
+
+    public function test_a_parents_report_of_a_mistake_reaches_the_office_with_names(): void
+    {
+        $admin = $this->user('Mrs Admin', 'school_admin');
+        $this->actingAs($this->mum, 'sanctum')->postJson("{$this->host}/students/{$this->ada->id}/record-errors", ['description' => 'Her date of birth is wrong on the record.'])->assertCreated();
+        $this->actingAs($this->otherDad, 'sanctum')->postJson("{$this->host}/students/{$this->ada->id}/record-errors", ['description' => 'Not my child at all, testing.'])->assertNotFound();
+
+        $row = $this->actingAs($admin, 'sanctum')->getJson("{$this->host}/academic-history/correction-requests")->assertOk()->json('data.0');
+        $this->assertSame('Ada Obi', $row['student_name']);
+        $this->assertSame('Mrs Obi', $row['raised_by_name']);
+        $this->actingAs($admin, 'sanctum')->postJson("{$this->host}/academic-history/correction-requests/{$row['id']}/resolve", ['status' => 'resolved', 'resolution' => 'Corrected from the birth certificate.'])->assertOk();
+    }
 }
