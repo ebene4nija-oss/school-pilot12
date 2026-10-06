@@ -106,9 +106,11 @@ class AiStudioController extends Controller
     public function generateExams(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'subject' => 'required|string',
-            'topic'   => 'required|string',
-            'count'   => 'nullable|integer|min:1|max:50',
+            'subject' => 'required|string|max:100',
+            'topic'   => 'required|string|max:255',
+            'count'   => 'nullable|integer|min:1|max:20',
+            'class_level' => 'nullable|string|max:50',
+            'difficulty' => 'nullable|in:easy,medium,hard',
         ]);
 
         if ($validator->fails()) {
@@ -119,7 +121,7 @@ class AiStudioController extends Controller
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
-            $exam = $aiManager->generateExamQuestions($schoolId, $request->subject, $request->topic, $request->get('count', 5));
+            $exam = $aiManager->generateExamQuestions($schoolId, $request->subject, $request->topic, (int) $request->get('count', 5), $request->input('class_level'), $request->input('difficulty', 'medium'));
             return response()->json(['message' => 'Exam questions generated', 'exam' => $exam]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 403);
@@ -129,8 +131,9 @@ class AiStudioController extends Controller
     public function generateHomework(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'subject' => 'required|string',
-            'topic'   => 'required|string',
+            'subject' => 'required|string|max:100',
+            'topic'   => 'required|string|max:255',
+            'class_level' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -141,7 +144,7 @@ class AiStudioController extends Controller
         $aiManager = app(\App\Services\AiManagerService::class);
 
         try {
-            $ideas = $aiManager->generateHomeworkIdeas($schoolId, $request->subject, $request->topic);
+            $ideas = $aiManager->generateHomeworkIdeas($schoolId, $request->subject, $request->topic, $request->input('class_level'));
             return response()->json(['message' => 'Homework ideas generated', 'homework_ideas' => $ideas]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 403);
@@ -151,8 +154,8 @@ class AiStudioController extends Controller
     public function translate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'text'            => 'required|string',
-            'target_language' => 'required|string',
+            'text'            => 'required|string|max:8000',
+            'target_language' => 'required|string|in:Yoruba,Igbo,Hausa,Pidgin,French,English',
         ]);
 
         if ($validator->fails()) {
@@ -175,8 +178,13 @@ class AiStudioController extends Controller
         $schoolId = $this->schoolId();
         $aiManager = app(\App\Services\AiManagerService::class);
 
+        // Only a student this teacher may see (StudentPolicy): a teacher sees
+        // the classes they teach, and this sends the child's marks to the AI.
+        $student = \App\Models\Student::where('school_id', $schoolId)->findOrFail((int) $studentId);
+        $this->authorize('view', $student);
+
         try {
-            $summary = $aiManager->generatePerformanceSummary($schoolId, $studentId);
+            $summary = $aiManager->generatePerformanceSummary($schoolId, (int) $studentId);
             return response()->json(['message' => 'Performance summary generated', 'summary' => $summary]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 403);

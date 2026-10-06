@@ -114,105 +114,132 @@ class AiManagerService
         return $response->json('content.0.text') ?? "{$studentName} performed well in {$subject}.";
     }
 
-    /**
-     * Optional AI: Generate Lesson Plan
+    /*
+     * AI Studio (doc §7.10). These used to return canned text — the same
+     * "lesson plan" for every topic and a "strong performance" summary for
+     * every child — labelled as AI output. They now ask Claude through
+     * ClaudeService (key check, spend cap, ledger), and each result is a
+     * draft for the teacher to edit before anything reaches a student.
      */
+
     public function generateLessonPlan(int $schoolId, string $subject, string $topic, string $classLevel): array
     {
-        if (!$this->isAiEnabled($schoolId, 'lesson_plans')) {
-            throw new Exception("AI lesson plan generation feature is currently disabled by school administration.");
-        }
+        $this->assertFeature($schoolId, 'lesson_plans', 'lesson plan generation');
 
-        $config = $this->getApiConfig($schoolId);
-
-        return [
-            'subject' => $subject,
-            'topic' => $topic,
-            'class_level' => $classLevel,
-            'objectives' => ["Understand principles of {$topic}", "Execute practical exercises in {$subject}"],
-            'activities' => ["10-min introduction", "20-min guided activity", "15-min assessment"],
-            'assessment' => "End of lesson comprehension check",
-            'ai_generated' => true,
-            'provider' => $config['custom_provider'] ? 'custom_school_api' : 'system_default',
-        ];
-    }
-
-    /**
-     * Optional AI: Exam & Question Generation
-     */
-    public function generateExamQuestions(int $schoolId, string $subject, string $topic, int $count = 5): array
-    {
-        if (!$this->isAiEnabled($schoolId, 'exam_generation')) {
-            throw new Exception("AI exam generation feature is currently disabled by school administration.");
-        }
-
-        return [
-            'subject' => $subject,
-            'topic' => $topic,
-            'question_count' => $count,
-            'questions' => [
-                [
-                    'question' => "What is the primary function of {$topic} in {$subject}?",
-                    'options' => ["Option A", "Option B", "Option C", "Option D"],
-                    'correct_answer' => "Option A",
-                ]
+        return ['subject' => $subject, 'topic' => $topic, 'class_level' => $classLevel] + app(ClaudeService::class)->teachingJson(
+            'Write one lesson plan. JSON keys: "duration_minutes" (number), "objectives" (array of strings, measurable, starting "Students will be able to"), '
+            . '"materials" (array of strings, things a Nigerian classroom has), "introduction" (string), "activities" (array of {"title","minutes","description"}), '
+            . '"assessment" (string), "homework" (string), "differentiation" (string: support for weaker learners and extension for stronger ones).',
+            "Subject: {$subject}\nTopic: {$topic}\nClass: {$classLevel}",
+            $schoolId,
+            [
+                'duration_minutes' => 40,
+                'objectives' => ["Students will be able to explain {$topic}."],
+                'materials' => ['Whiteboard', 'Exercise books'],
+                'introduction' => 'Placeholder introduction.',
+                'activities' => [['title' => 'Guided practice', 'minutes' => 20, 'description' => 'Placeholder activity.']],
+                'assessment' => 'Placeholder assessment.',
+                'homework' => 'Placeholder homework.',
+                'differentiation' => 'Placeholder differentiation.',
             ],
-            'ai_generated' => true,
-        ];
+        );
     }
 
-    /**
-     * Optional AI: Homework Ideas Generator
-     */
-    public function generateHomeworkIdeas(int $schoolId, string $subject, string $topic): array
+    public function generateExamQuestions(int $schoolId, string $subject, string $topic, int $count = 5, ?string $classLevel = null, string $difficulty = 'medium'): array
     {
-        if (!$this->isAiEnabled($schoolId, 'homework_ideas')) {
-            throw new Exception("AI homework idea generation feature is currently disabled by school administration.");
-        }
+        $this->assertFeature($schoolId, 'exam_generation', 'question generation');
 
-        return [
-            'subject' => $subject,
-            'topic' => $topic,
-            'ideas' => [
-                "Research exercise on {$topic} applications in real life.",
-                "Solve 5 practice problems on {$topic}.",
-                "Write a short essay reflecting on {$topic}.",
-            ]
-        ];
+        $result = app(ClaudeService::class)->teachingJson(
+            'Write multiple-choice questions for a CBT paper. Each has exactly four options A–D with one correct answer, plausible distractors, '
+            . 'and no "all of the above". Use $…$ for any maths. JSON: {"questions": [{"question","options":{"A","B","C","D"},"correct_answer":"A|B|C|D","topic","difficulty":"easy|medium|hard","explanation"}]}.',
+            "Subject: {$subject}\nTopic: {$topic}\nClass: " . ($classLevel ?: 'not given') . "\nDifficulty: {$difficulty}\nNumber of questions: {$count}",
+            $schoolId,
+            ['questions' => [[
+                'question' => "Placeholder question on {$topic}?",
+                'options' => ['A' => 'First', 'B' => 'Second', 'C' => 'Third', 'D' => 'Fourth'],
+                'correct_answer' => 'A', 'topic' => $topic, 'difficulty' => $difficulty, 'explanation' => 'Placeholder.',
+            ]]],
+            min(16000, 600 * $count + 1000),
+        );
+
+        // Only well-formed questions go back: an answer key that is not one of
+        // the options would be saved to the bank and mark every candidate wrong.
+        $questions = collect($result['questions'] ?? [])->filter(fn ($q) => is_array($q)
+            && ! empty($q['question']) && is_array($q['options'] ?? null) && count($q['options']) >= 2
+            && isset($q['options'][$q['correct_answer'] ?? '']))->values()->all();
+
+        return ['subject' => $subject, 'topic' => $topic, 'question_count' => count($questions), 'questions' => $questions, 'stub' => $result['stub'] ?? false];
     }
 
-    /**
-     * Optional AI: Multilingual Content Translation
-     */
+    public function generateHomeworkIdeas(int $schoolId, string $subject, string $topic, ?string $classLevel = null): array
+    {
+        $this->assertFeature($schoolId, 'homework_ideas', 'homework ideas');
+
+        return ['subject' => $subject, 'topic' => $topic] + app(ClaudeService::class)->teachingJson(
+            'Suggest five varied homework tasks a student can do at home without internet or special materials. '
+            . 'JSON: {"ideas": [{"title","instructions","type":"practice|research|project|reflection","minutes":number,"marks":number}]}.',
+            "Subject: {$subject}\nTopic: {$topic}\nClass: " . ($classLevel ?: 'not given'),
+            $schoolId,
+            ['ideas' => [['title' => "Practice on {$topic}", 'instructions' => 'Placeholder instructions.', 'type' => 'practice', 'minutes' => 30, 'marks' => 10]]],
+        );
+    }
+
     public function translateContent(int $schoolId, string $text, string $targetLanguage): array
     {
-        if (!$this->isAiEnabled($schoolId, 'translation')) {
-            throw new Exception("AI content translation feature is currently disabled by school administration.");
-        }
+        $this->assertFeature($schoolId, 'translation', 'translation');
 
-        return [
-            'original_text' => $text,
-            'target_language' => $targetLanguage,
-            'translated_text' => "[{$targetLanguage} Translation]: " . $text,
-            'ai_generated' => true,
-        ];
+        $result = app(ClaudeService::class)->teachingJson(
+            'Translate the teacher\'s text faithfully for pupils and parents, keeping numbers, names and any $…$ maths unchanged. '
+            . 'Where a term has no common equivalent, keep the English term in brackets. JSON: {"translated_text": "…", "notes": "anything the teacher should check, or empty"}.',
+            "Translate into {$targetLanguage}:\n\n{$text}",
+            $schoolId,
+            ['translated_text' => "[{$targetLanguage}] {$text}", 'notes' => ''],
+            min(16000, (int) (mb_strlen($text) * 1.5) + 500),
+        );
+
+        return ['original_text' => $text, 'target_language' => $targetLanguage] + $result;
     }
 
     /**
-     * Optional AI: Student Performance Summaries
+     * A plain-language summary of one student's released results and
+     * attendance, for a teacher preparing for a parent meeting.
+     *
+     * Data minimisation (NDPA, doc §12): the model is sent subject totals,
+     * term averages and an attendance rate — never the child's name,
+     * admission number, health record or guardians. Only released terms.
      */
     public function generatePerformanceSummary(int $schoolId, int $studentId): array
     {
-        if (!$this->isAiEnabled($schoolId, 'performance_summaries')) {
-            throw new Exception("AI performance summary feature is currently disabled by school administration.");
+        $this->assertFeature($schoolId, 'performance_summaries', 'performance summaries');
+
+        $student = \App\Models\Student::where('school_id', $schoolId)->with('currentClass:id,name')->findOrFail($studentId);
+        $terms = \App\Models\Term::where('school_id', $schoolId)->orderBy('start_date')->get()
+            ->filter(fn ($t) => \App\Models\ResultRelease::isReleasedFor($schoolId, $t->id, $student->class_id))->values();
+        $scores = \App\Models\ScoreEntry::where('student_id', $student->id)->whereIn('term_id', $terms->pluck('id'))->with('subject:id,name')->get()->groupBy('term_id');
+
+        if ($scores->isEmpty()) {
+            throw new Exception('This student has no released results to summarise yet.');
         }
 
-        return [
-            'student_id' => $studentId,
-            'summary' => "Student displays strong performance across core subjects with steady attendance.",
-            'strengths' => ["Consistency in assessments", "Punctuality"],
-            'recommendations' => ["Focus on higher-order problem-solving in Mathematics"],
-            'ai_generated' => true,
-        ];
+        $lines = $terms->filter(fn ($t) => $scores->has($t->id))->map(fn ($t) => $t->name . ': '
+            . $scores[$t->id]->map(fn ($s) => ($s->subject?->name ?? 'Subject') . ' ' . ($s->total_score ?? '—'))->implode(', '))->implode("\n");
+        $records = \App\Models\AttendanceRecord::where('student_id', $student->id)->get(['status']);
+        $attendance = $records->count() ? round($records->whereIn('status', ['present', 'late'])->count() / $records->count() * 100) . '% of ' . $records->count() . ' days' : 'not recorded';
+
+        return ['student_id' => $student->id] + app(ClaudeService::class)->teachingJson(
+            'Summarise a student\'s progress for their teacher, to discuss with the parent. Refer to them only as "the student". '
+            . 'Be specific to the numbers, honest about weaknesses, and encouraging. Do not speculate about home life, health or causes. '
+            . 'JSON: {"summary": "3–4 sentences", "strengths": [strings], "concerns": [strings], "recommendations": [strings, practical next steps]}.',
+            "Class: " . ($student->currentClass?->name ?? 'unknown') . "\nScores by term (out of 100):\n{$lines}\nAttendance: {$attendance}",
+            $schoolId,
+            ['summary' => 'Placeholder summary.', 'strengths' => [], 'concerns' => [], 'recommendations' => []],
+        );
+    }
+
+    private function assertFeature(int $schoolId, string $key, string $label): void
+    {
+        if (! $this->isAiEnabled($schoolId, $key)) {
+            throw new Exception("AI {$label} is switched off by your school administrator.");
+        }
     }
 }
