@@ -237,7 +237,10 @@ class StaffHrController extends Controller
     public function employmentRecord(Request $request, $staffId)
     {
         $schoolId = $this->schoolId();
-        $staff = Staff::where('school_id', $schoolId)->with('user:id,name')->findOrFail($staffId);
+        // `me`: a member of staff reading their own record without knowing its id.
+        $staff = $staffId === 'me'
+            ? ($this->currentStaff($request)?->load('user:id,name') ?? abort(404, 'No staff record found for this user.'))
+            : Staff::where('school_id', $schoolId)->with('user:id,name')->findOrFail($staffId);
 
         if (! $this->isAdmin($request) && (int) $staff->user_id !== (int) $request->user()->id) {
             return response()->json(['error' => 'You can only view your own employment record.'], 403);

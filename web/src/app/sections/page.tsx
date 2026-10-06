@@ -259,6 +259,10 @@ export default function SectionsPage() {
                 <Cell><Badge tone={s.status === 'active' ? 'green' : s.status === 'proposed' ? 'amber' : s.status === 'rejected' ? 'red' : 'slate'}>{s.status}</Badge></Cell>
                 <Cell>{[s.proposed_by, s.approved_by].filter(Boolean).join(' → ')}{s.decision_note && <span className="block text-xs text-ink-muted">{s.decision_note}</span>}</Cell>
                 <Cell>
+                  {/* A saved draft goes forward for approval when its author is ready. */}
+                  {s.status === 'draft' && (
+                    <Button variant="secondary" disabled={busy} onClick={() => call(`/assessment/scheme-versions/${s.id}/propose`, 'POST', {}, 'Proposed for approval.')}>Propose</Button>
+                  )}
                   {s.status === 'proposed' && schemes.can_approve && (
                     <div className="flex gap-2">
                       <Button disabled={busy} onClick={() => call(`/assessment/scheme-versions/${s.id}/approve`, 'POST', {}, 'Approved.')}>Approve</Button>

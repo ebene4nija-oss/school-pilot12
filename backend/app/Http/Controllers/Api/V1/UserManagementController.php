@@ -508,7 +508,9 @@ class UserManagementController extends Controller
     public function getTeacherProfile(Request $request, $userId)
     {
         $schoolId = $this->getSchoolId($request);
-        $profile = TeacherProfile::where('school_id', $schoolId)->where('user_id', $userId)->with('user')->first();
+        // A teacher reads their own; ratings and contracts are not colleagues' business.
+        $this->assertOwnOrAdmin($request, (int) $userId);
+        $profile = TeacherProfile::where('school_id', $schoolId)->where('user_id', $userId)->with('user:id,name,email')->first();
 
         if (!$profile) {
             return response()->json(['message' => 'Teacher profile not found.'], 404);
@@ -537,17 +539,41 @@ class UserManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        /*
+         * Any teacher could rewrite any colleague's profile, rating and
+         * contract type included. Now: a teacher edits their own professional
+         * details; the employment fields are the school admin's.
+         */
+        $admin = $this->assertOwnOrAdmin($request, (int) $userId);
+        $isTeacher = \App\Models\UserProfile::where('school_id', $schoolId)->where('user_id', $userId)->where('role', 'teacher')->exists();
+        if (! $isTeacher) {
+            return response()->json(['message' => 'No teacher with that account at this school.'], 404);
+        }
+
+        $fields = ['qualification', 'specialization', 'years_of_experience', 'certifications', 'subjects_taught'];
+        if ($admin) {
+            $fields = array_merge($fields, ['employee_id', 'performance_rating', 'date_joined', 'contract_type']);
+        } elseif ($request->hasAny(['employee_id', 'performance_rating', 'date_joined', 'contract_type'])) {
+            return response()->json(['message' => 'Employment details are changed by the school office.'], 403);
+        }
+
         $profile = TeacherProfile::updateOrCreate(
             ['school_id' => $schoolId, 'user_id' => $userId],
-            $request->only([
-                'employee_id', 'qualification', 'specialization', 'years_of_experience',
-                'certifications', 'subjects_taught', 'performance_rating', 'date_joined', 'contract_type',
-            ])
+            $request->only($fields)
         );
 
         $this->logActivity($request, $request->user()->id, 'teacher_profile.updated', $profile);
 
         return response()->json(['message' => 'Teacher profile updated.', 'data' => $profile]);
+    }
+
+    /** @return bool whether the caller is an administrator */
+    private function assertOwnOrAdmin(Request $request, int $userId): bool
+    {
+        $admin = in_array($request->user()->userProfile?->role, ['school_admin', 'super_admin'], true);
+        abort_unless($admin || $request->user()->id === $userId, 403, 'You can only see or change your own profile.');
+
+        return $admin;
     }
 
     // ─── Parent Profile ──────────────────────────────────────────────

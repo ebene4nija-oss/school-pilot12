@@ -86,6 +86,31 @@ class TeacherSafeguardsTest extends TestCase
         $this->actingAs($this->teacher, 'sanctum')->getJson("{$this->host}/students/{$this->ada->id}/enrollments")->assertOk();
     }
 
+    public function test_a_teacher_edits_only_their_own_professional_profile(): void
+    {
+        $url = "{$this->host}/teachers/{$this->teacher->id}/profile";
+
+        $this->actingAs($this->stranger, 'sanctum')->putJson($url, ['qualification' => 'Forged'])->assertForbidden();
+        $this->actingAs($this->stranger, 'sanctum')->getJson($url)->assertForbidden();
+
+        $this->actingAs($this->teacher, 'sanctum')->putJson($url, ['performance_rating' => 5])->assertForbidden();
+        $this->actingAs($this->teacher, 'sanctum')->putJson($url, ['qualification' => 'B.Sc. (Ed) Mathematics', 'years_of_experience' => 6])->assertOk()
+            ->assertJsonPath('data.qualification', 'B.Sc. (Ed) Mathematics');
+
+        $admin = $this->user('Mrs Admin', 'school_admin');
+        $this->actingAs($admin, 'sanctum')->putJson($url, ['performance_rating' => 4.5, 'contract_type' => 'full_time'])->assertOk();
+        $this->actingAs($admin, 'sanctum')->putJson("{$this->host}/teachers/{$this->mum->id}/profile", ['qualification' => 'x'])->assertNotFound();
+    }
+
+    public function test_a_teacher_reads_their_own_employment_record_as_me(): void
+    {
+        Staff::create(['school_id' => $this->school->id, 'user_id' => $this->teacher->id, 'staff_id' => 'T-001', 'designation' => 'Mathematics teacher']);
+
+        $this->actingAs($this->teacher, 'sanctum')->getJson("{$this->host}/hr/staff/me/employment-record")->assertOk()
+            ->assertJsonPath('designation', 'Mathematics teacher');
+        $this->actingAs($this->stranger, 'sanctum')->getJson("{$this->host}/hr/staff/me/employment-record")->assertNotFound();
+    }
+
     public function test_gps_clock_in_is_for_yourself_only(): void
     {
         $mine = Staff::create(['school_id' => $this->school->id, 'user_id' => $this->teacher->id, 'staff_id' => 'T-001']);

@@ -89,6 +89,21 @@ class HostelManagementTest extends TestCase
         return $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/hostel/allocations", ['student_id' => $s->id, 'bed_id' => $this->bed($label)->id])->assertCreated()->json('allocation.id');
     }
 
+    public function test_the_inventory_names_who_holds_each_issued_item_so_it_can_be_returned(): void
+    {
+        $asset = $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/hostel/assets", ['hostel_id' => $this->unity->id, 'name' => 'Mattress', 'quantity' => 5, 'issuable' => true])->assertCreated()->json('asset.id');
+        $issue = $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/hostel/assets/{$asset}/issue", ['student_id' => $this->ada->id])->assertCreated()->json('issue.id');
+
+        $row = collect($this->actingAs($this->admin, 'sanctum')->getJson("{$this->host}/hostel/assets")->assertOk()->json('data'))->firstWhere('id', $asset);
+        $this->assertSame(1, $row['issued']);
+        $this->assertSame('Ada Obi', $row['open_issues'][0]['student_name']);
+        $this->assertSame($issue, $row['open_issues'][0]['id']);
+
+        $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/hostel/asset-issues/{$issue}/return", ['status' => 'returned', 'condition_in' => 'good'])->assertOk();
+        $row = collect($this->actingAs($this->admin, 'sanctum')->getJson("{$this->host}/hostel/assets")->json('data'))->firstWhere('id', $asset);
+        $this->assertSame([], $row['open_issues']);
+    }
+
     public function test_a_bed_needs_an_approved_enrolment_and_a_waitlist_holds_no_bed(): void
     {
         $this->actingAs($this->admin, 'sanctum')->postJson("{$this->host}/hostel/allocations", ['student_id' => $this->ada->id, 'bed_id' => $this->bed()->id])->assertStatus(409);

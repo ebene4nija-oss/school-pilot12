@@ -619,8 +619,17 @@ class HostelOpsController extends Controller
     {
         $schoolId = $this->schoolId();
 
+        // Who holds each item now, so a return can be recorded against the right issue.
+        $open = HostelAssetIssue::where('hostel_asset_issues.school_id', $schoolId)->where('hostel_asset_issues.status', 'issued')
+            ->join('students', 'students.id', '=', 'hostel_asset_issues.student_id')->join('users', 'users.id', '=', 'students.user_id')
+            ->get(['hostel_asset_issues.id', 'hostel_asset_issues.asset_id', 'hostel_asset_issues.quantity', 'hostel_asset_issues.issued_at', 'users.name as student_name'])
+            ->groupBy('asset_id');
+
         return response()->json(['data' => HostelAsset::where('school_id', $schoolId)->orderBy('name')->get()
-            ->map(fn ($a) => $a->toArray() + ['issued' => (int) HostelAssetIssue::where('asset_id', $a->id)->where('status', 'issued')->sum('quantity')])]);
+            ->map(fn ($a) => $a->toArray() + [
+                'issued' => (int) HostelAssetIssue::where('asset_id', $a->id)->where('status', 'issued')->sum('quantity'),
+                'open_issues' => $open->get($a->id, collect())->values(),
+            ])]);
     }
 
     public function storeAsset(Request $request): JsonResponse
