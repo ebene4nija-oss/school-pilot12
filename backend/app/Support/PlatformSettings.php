@@ -73,31 +73,78 @@ class PlatformSettings
     {
         return [
             // ------------------------------------------------------------ AI
+            'services.ai.provider' => [
+                'group' => 'ai',
+                'label' => 'Default AI provider',
+                'type' => 'select',
+                'options' => ['anthropic', 'openai', 'gemini'],
+                'help' => 'anthropic = Claude, openai = ChatGPT, gemini = Google Gemini. Used by every school that has not chosen another provider with a key set below. Needs that provider\'s key, or AI reports itself unavailable.',
+            ],
             'services.anthropic.api_key' => [
                 'group' => 'ai',
-                'label' => 'Anthropic API key',
+                'label' => 'Anthropic (Claude) API key',
                 'type' => 'secret',
-                'help' => 'Used for report-card comments, lesson plans, worksheets and the student tutor. Without it every AI feature reports itself unavailable.',
+                'help' => 'Used for report-card comments, lesson plans, worksheets and the student tutor when Claude is the provider.',
             ],
             'services.anthropic.comment_model' => [
                 'group' => 'ai',
-                'label' => 'Model for short output',
+                'label' => 'Claude model for short output',
                 'type' => 'select',
                 'options' => ['claude-haiku-4-5', 'claude-sonnet-5'],
                 'help' => 'Report-card remarks and other high-volume, short responses.',
             ],
             'services.anthropic.document_model' => [
                 'group' => 'ai',
-                'label' => 'Model for documents',
+                'label' => 'Claude model for documents',
                 'type' => 'select',
                 'options' => ['claude-sonnet-5', 'claude-opus-5-5', 'claude-haiku-4-5'],
                 'help' => 'Lesson plans, worksheets and exam drafts, where structure matters more than volume.',
+            ],
+            'services.openai.api_key' => [
+                'group' => 'ai',
+                'label' => 'OpenAI (ChatGPT) API key',
+                'type' => 'secret',
+                'help' => 'From platform.openai.com. Set it to make ChatGPT available as the default or for schools to choose.',
+            ],
+            'services.openai.comment_model' => [
+                'group' => 'ai',
+                'label' => 'OpenAI model for short output',
+                'type' => 'string',
+                'max' => 80,
+                'help' => 'For example gpt-5-mini. A model without a price in the spend ledger is metered at the highest known rate.',
+            ],
+            'services.openai.document_model' => [
+                'group' => 'ai',
+                'label' => 'OpenAI model for documents',
+                'type' => 'string',
+                'max' => 80,
+                'help' => 'For example gpt-5.',
+            ],
+            'services.gemini.api_key' => [
+                'group' => 'ai',
+                'label' => 'Google Gemini API key',
+                'type' => 'secret',
+                'help' => 'From Google AI Studio. Set it to make Gemini available as the default or for schools to choose.',
+            ],
+            'services.gemini.comment_model' => [
+                'group' => 'ai',
+                'label' => 'Gemini model for short output',
+                'type' => 'string',
+                'max' => 80,
+                'help' => 'For example gemini-2.5-flash. A model without a price in the spend ledger is metered at the highest known rate.',
+            ],
+            'services.gemini.document_model' => [
+                'group' => 'ai',
+                'label' => 'Gemini model for documents',
+                'type' => 'string',
+                'max' => 80,
+                'help' => 'For example gemini-2.5-pro.',
             ],
             'services.anthropic.daily_cap_kobo' => [
                 'group' => 'ai',
                 'label' => 'Daily AI spend cap per school',
                 'type' => 'naira',
-                'help' => 'Once a school reaches this in a day, AI requests are refused until midnight. Empty or 0 means no cap.',
+                'help' => 'Once a school reaches this in a day, AI requests are refused until midnight, whichever provider it uses. Empty or 0 means no cap.',
             ],
             'services.anthropic.alert_threshold' => [
                 'group' => 'ai',
@@ -112,7 +159,7 @@ class PlatformSettings
                 'label' => 'US dollar to Naira rate',
                 'type' => 'number',
                 'min' => 1,
-                'help' => 'Anthropic bills in dollars; spend is recorded in Naira at this rate. Each record keeps the rate it was converted at, so changing it does not rewrite history.',
+                'help' => 'AI providers bill in dollars; spend is recorded in Naira at this rate. Each record keeps the rate it was converted at, so changing it does not rewrite history.',
             ],
 
             // ----------------------------------------------------------- SMS

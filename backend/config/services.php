@@ -164,7 +164,7 @@ return [
         'alert_threshold' => (float) env('AI_ALERT_THRESHOLD', 0.8),
 
         /*
-         * Anthropic bills in USD; every money column in this product is Naira
+         * AI providers bill in USD; every money column in this product is Naira
          * minor units, and a proprietor's budget conversation is in Naira. The
          * rate each row was converted at is stamped on the row, so a historical
          * figure stays explainable after this moves.
@@ -189,7 +189,44 @@ return [
                 'intro_ends' => '2026-08-31',
             ],
             'claude-opus-5' => ['input' => 5.00, 'output' => 25.00],
+
+            /*
+             * OpenAI and Google list prices, USD per million tokens, as
+             * published when these providers were added (2026-10). Check them
+             * against each provider's pricing page before relying on the cap;
+             * a model missing here is metered at the highest rate in the table.
+             */
+            'gpt-5' => ['input' => 1.25, 'output' => 10.00],
+            'gpt-5-mini' => ['input' => 0.25, 'output' => 2.00],
+            'gpt-5-nano' => ['input' => 0.05, 'output' => 0.40],
+            'gemini-2.5-pro' => ['input' => 1.25, 'output' => 10.00],
+            'gemini-2.5-flash' => ['input' => 0.30, 'output' => 2.50],
+            'gemini-2.5-flash-lite' => ['input' => 0.10, 'output' => 0.40],
         ],
+    ],
+
+    /*
+     * Which AI provider writes for a school (AiGateway).
+     *
+     * `provider` is SchoolPilot's default. A school may choose another one on
+     * its AI features page, but only among providers with a key set here or in
+     * the console. The daily cap, the spend ledger, stub mode and the
+     * pending-approval rule for report-card remarks apply whichever is used.
+     */
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'anthropic'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'comment_model' => env('OPENAI_COMMENT_MODEL', 'gpt-5-mini'),
+        'document_model' => env('OPENAI_DOCUMENT_MODEL', 'gpt-5'),
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'comment_model' => env('GEMINI_COMMENT_MODEL', 'gemini-2.5-flash'),
+        'document_model' => env('GEMINI_DOCUMENT_MODEL', 'gemini-2.5-pro'),
     ],
 
     /*

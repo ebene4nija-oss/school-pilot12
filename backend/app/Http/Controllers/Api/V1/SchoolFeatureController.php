@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\School;
+use App\Services\Ai\AiGateway;
 use App\Support\SchoolFeatures;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -68,6 +69,42 @@ class SchoolFeatureController extends Controller
         $this->audit($request, $school, 'school.ai_features.updated', $before, $after);
 
         return response()->json(['message' => 'AI features saved.'] + $this->describe($school->fresh()));
+    }
+
+    /**
+     * A school admin choosing which AI provider writes for the school, or
+     * null for SchoolPilot's default. Only providers SchoolPilot holds a key
+     * for can be chosen; the cap, the ledger and teacher approval of remarks
+     * are the same whichever is used.
+     */
+    public function updateAiProvider(Request $request)
+    {
+        $school = School::find($this->schoolId());
+
+        if (! $school) {
+            return response()->json(['message' => 'Choose a school first.'], 409);
+        }
+
+        $validated = $request->validate([
+            'provider' => ['present', 'nullable', Rule::in(array_keys(AiGateway::PROVIDERS))],
+        ]);
+
+        $provider = $validated['provider'];
+
+        if ($provider !== null && ! in_array($provider, AiGateway::configuredProviders(), true)) {
+            return response()->json([
+                'message' => AiGateway::label($provider).' is not available yet. Ask SchoolPilot to set it up.',
+                'errors' => ['provider' => ['Not available yet.']],
+            ], 422);
+        }
+
+        $before = ['ai_provider' => $school->ai_provider];
+        $school->ai_provider = $provider;
+        $school->save();
+
+        $this->audit($request, $school, 'school.ai_provider.updated', $before, ['ai_provider' => $provider]);
+
+        return response()->json(['message' => 'AI provider saved.'] + $this->describe($school->fresh()));
     }
 
     public function platformShow(int $schoolId)
@@ -135,7 +172,29 @@ class SchoolFeatureController extends Controller
                     'chosen' => $choices[$key],
                     'active' => $aiAvailable && $choices[$key],
                 ])->values(),
+                'provider' => $this->providerSummary($school),
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function providerSummary(School $school): array
+    {
+        $configured = AiGateway::configuredProviders();
+        $default = AiGateway::defaultProvider();
+        $own = ! empty(((array) ($school->ai_api_settings ?? []))['api_key']);
+
+        return [
+            'chosen' => $school->ai_provider,
+            'in_use' => app(AiGateway::class)->resolve($school->id)['provider'],
+            'default' => $default,
+            // A school's own key decides the provider; the choice below waits.
+            'own_key' => $own,
+            'options' => collect(AiGateway::PROVIDERS)->map(fn ($label, $key) => [
+                'key' => $key,
+                'label' => $label,
+                'available' => in_array($key, $configured, true),
+            ])->values(),
         ];
     }
 

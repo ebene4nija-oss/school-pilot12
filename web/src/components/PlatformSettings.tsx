@@ -63,16 +63,22 @@ interface AiUsage {
   date: string;
   cap_naira: number | null;
   schools_with_ai_enabled: number;
+  default_provider?: string;
+  configured_providers?: string[];
   data: {
     school_id: number;
     school: string | null;
     subdomain: string | null;
+    provider?: string;
+    own_key?: boolean;
     calls: number;
     spent_naira: number;
     cap_used_percentage: number | null;
     at_cap: boolean;
   }[];
 }
+
+const PROVIDER_LABEL: Record<string, string> = { anthropic: 'Claude', openai: 'ChatGPT', gemini: 'Gemini' };
 
 const SOURCE_BADGE: Record<Source, { tone: 'green' | 'blue' | 'slate' | 'red'; label: string }> = {
   console: { tone: 'green', label: 'Set here' },
@@ -481,6 +487,14 @@ function AiUsagePanel({ usage }: { usage: AiUsage }) {
           ? 'No daily cap is set, so no school is ever refused.'
           : `Cap: ${nairaAmount(usage.cap_naira)} per school per day.`}{' '}
         {usage.schools_with_ai_enabled} school(s) have AI switched on.
+        {usage.default_provider && (
+          <>
+            {' '}Default provider: {PROVIDER_LABEL[usage.default_provider] ?? usage.default_provider}.{' '}
+            {usage.configured_providers && usage.configured_providers.length > 0
+              ? `Keys set for ${usage.configured_providers.map((p) => PROVIDER_LABEL[p] ?? p).join(', ')} — schools can choose among these.`
+              : 'No provider key is set yet.'}
+          </>
+        )}
       </p>
 
       {usage.data.length === 0 ? (
@@ -489,12 +503,16 @@ function AiUsagePanel({ usage }: { usage: AiUsage }) {
         </div>
       ) : (
         <div className="mt-4">
-          <Table columns={['School', 'Calls', 'Spent', 'Of cap']}>
+          <Table columns={['School', 'Provider', 'Calls', 'Spent', 'Of cap']}>
             {usage.data.map((row) => (
               <tr key={row.school_id}>
                 <Cell className="font-medium text-brand">
                   {row.school ?? `School #${row.school_id}`}
                   {row.subdomain && <span className="block text-xs text-ink-faint">{row.subdomain}</span>}
+                </Cell>
+                <Cell>
+                  {row.provider ? PROVIDER_LABEL[row.provider] ?? row.provider : '—'}
+                  {row.own_key && <span className="block text-xs text-ink-faint">school&apos;s own key</span>}
                 </Cell>
                 <Cell>{row.calls.toLocaleString('en-NG')}</Cell>
                 <Cell>{nairaAmount(row.spent_naira)}</Cell>

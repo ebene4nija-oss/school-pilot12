@@ -436,6 +436,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // features the school chose. Read by every role (the menu uses it).
         Route::get('/school/features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'show']);
         Route::put('/school/ai-features', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'updateAi'])->middleware('role:super_admin,school_admin');
+        Route::put('/school/ai-provider', [\App\Http\Controllers\Api\V1\SchoolFeatureController::class, 'updateAiProvider'])->middleware('role:super_admin,school_admin');
 
         /*
          * Form teachers. The listing is open to staff — a teacher needs to know

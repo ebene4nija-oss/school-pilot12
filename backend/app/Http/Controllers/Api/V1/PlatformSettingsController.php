@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiUsageDaily;
+use App\Services\Ai\AiGateway;
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
 use App\Models\School;
@@ -172,14 +173,19 @@ class PlatformSettingsController extends Controller
                 'date' => $today,
                 'cap_naira' => $capKobo === null ? null : $capKobo / 100,
                 'schools_with_ai_enabled' => School::query()->tenants()->where('ai_enabled', true)->count(),
+                'default_provider' => AiGateway::defaultProvider(),
+                'configured_providers' => AiGateway::configuredProviders(),
                 'data' => $rows->map(function (AiUsageDaily $row) use ($schools, $capKobo) {
                     $school = $schools->get($row->school_id);
+                    $ai = app(AiGateway::class)->resolve($row->school_id);
 
                     return [
                         'school_id' => $row->school_id,
                         'school' => $school?->name,
                         'subdomain' => $school?->subdomain,
                         'ai_enabled' => (bool) $school?->ai_enabled,
+                        'provider' => $ai['provider'],
+                        'own_key' => $ai['own_key'],
                         'calls' => (int) $row->calls,
                         'spent_naira' => round($row->cost_kobo / 100, 2),
                         'cap_used_percentage' => $capKobo === null

@@ -11,7 +11,7 @@ export default function AiServicePage() {
     <PlatformSettings
       section="ai"
       title="AI service"
-      subtitle="The Anthropic key, models and daily spend cap every school shares, and today's spend by school."
+      subtitle="Claude, ChatGPT and Gemini keys and models, the default provider, the daily spend cap every school shares, and today's spend by school."
     />
   );
 }

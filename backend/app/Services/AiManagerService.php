@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\School;
+use App\Services\Ai\AiGateway;
+use App\Services\Ai\AiUnavailableException;
 use Exception;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 class AiManagerService
 {
@@ -40,26 +40,22 @@ class AiManagerService
     }
 
     /**
-     * Get API credentials and parameters (BYO-API Key or System Default)
+     * The provider, key and model a school's AI requests use (AiGateway):
+     * its own key if it has one, else its chosen provider, else SchoolPilot's
+     * default.
      */
     public function getApiConfig(?int $schoolId): array
     {
-        $defaultKey = config('services.anthropic.api_key');
-        $defaultModel = (string) config('services.anthropic.comment_model');
-
-        if (!$schoolId) {
-            return ['api_key' => $defaultKey, 'model' => $defaultModel, 'custom_provider' => false];
-        }
-
-        $school = School::find($schoolId);
-        $customSettings = $school ? ($school->ai_api_settings ?? []) : [];
+        $config = app(AiGateway::class)->resolve($schoolId);
+        $own = $schoolId ? (array) (School::find($schoolId)?->ai_api_settings ?? []) : [];
 
         return [
-            'api_key'         => $customSettings['api_key'] ?? $defaultKey,
-            'model'           => $customSettings['model'] ?? $defaultModel,
-            'temperature'     => $customSettings['temperature'] ?? 0.7,
-            'max_tokens'      => $customSettings['max_tokens'] ?? 300,
-            'custom_provider' => !empty($customSettings['api_key']),
+            'provider'        => $config['provider'],
+            'api_key'         => $config['api_key'],
+            'model'           => $config['model'],
+            'temperature'     => $own['temperature'] ?? 0.7,
+            'max_tokens'      => $own['max_tokens'] ?? 300,
+            'custom_provider' => $config['own_key'],
         ];
     }
 
@@ -72,46 +68,24 @@ class AiManagerService
             throw new Exception("AI report card comment feature is currently disabled by school administration.");
         }
 
-        $config = $this->getApiConfig($schoolId);
         $studentName = $scoreData['student_name'] ?? 'Student';
         $subject = $scoreData['subject'] ?? 'Subject';
         $score = $scoreData['total_score'] ?? 0;
+        $gateway = app(AiGateway::class);
 
-        // Stub only when no key is available at all (BYO-key schools still hit
-        // the real API). A missing key with stubbing off raises instead of
-        // inventing a remark — see config/services.php → anthropic.stub.
-        $hasKey = is_string($config['api_key']) && trim($config['api_key']) !== '';
-
-        if (! $hasKey) {
-            if (! config('services.anthropic.stub')) {
-                throw new Exception('AI is enabled for this school but no Anthropic API key is configured.');
-            }
-
+        // Stub only when no key is available at all. A missing key with
+        // stubbing off raises instead of inventing a remark.
+        if ($gateway->shouldStub($schoolId)) {
             return "[STUB] {$studentName} scored {$score}% in {$subject}. This placeholder text was generated without calling the AI provider.";
         }
 
-        // A school on its own BYO key still gets metered and capped: the cap
-        // exists to stop a runaway loop, which costs the school just as much
-        // when they are the one being billed.
-        $ledger = app(AiSpendLedger::class);
-        $ledger->assertWithinCap($schoolId);
-
-        $response = Http::withHeaders([
-            'x-api-key' => $config['api_key'],
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->post('https://api.anthropic.com/v1/messages', [
-            'model' => $config['model'],
-            'max_tokens' => $config['max_tokens'],
-            'temperature' => $config['temperature'],
-            'messages' => [
-                ['role' => 'user', 'content' => "Write a 2-sentence teacher remark for {$studentName} in {$subject} scoring {$score}%."]
-            ]
-        ]);
-
-        $ledger->record($schoolId, (string) $config['model'], (array) $response->json('usage', []));
-
-        return $response->json('content.0.text') ?? "{$studentName} performed well in {$subject}.";
+        try {
+            return $gateway->complete($schoolId, 'comment', null, [
+                ['role' => 'user', 'content' => "Write a 2-sentence teacher remark for {$studentName} in {$subject} scoring {$score}%."],
+            ], (int) ($this->getApiConfig($schoolId)['max_tokens'] ?? 300))->text;
+        } catch (AiUnavailableException $e) {
+            throw new Exception("AI is enabled for this school but no {$e->vendor()} API key is configured.");
+        }
     }
 
     /*
@@ -119,7 +93,8 @@ class AiManagerService
      * "lesson plan" for every topic and a "strong performance" summary for
      * every child — labelled as AI output. They now ask Claude through
      * ClaudeService (key check, spend cap, ledger), and each result is a
-     * draft for the teacher to edit before anything reaches a student.
+     * draft for the teacher to edit before anything reaches a student. The
+     * provider behind it may be Claude, ChatGPT or Gemini (AiGateway).
      */
 
     public function generateLessonPlan(int $schoolId, string $subject, string $topic, string $classLevel): array

@@ -16,7 +16,9 @@ import TutorControls from '@/components/TutorControls';
 
 type Feature = { key: string; label: string; hint: string; chosen: boolean; active: boolean };
 type Module = { key: string; label: string; enabled: boolean };
-type Features = { modules: Module[]; ai: { available: boolean; features: Feature[] } };
+type ProviderOption = { key: string; label: string; available: boolean };
+type Provider = { chosen: string | null; in_use: string; default: string; own_key: boolean; options: ProviderOption[] };
+type Features = { modules: Module[]; ai: { available: boolean; features: Feature[]; provider?: Provider } };
 
 export default function AiFeaturesPage() {
   const [data, setData] = useState<Features | null>(null);
@@ -100,6 +102,8 @@ export default function AiFeaturesPage() {
             </Card>
           </div>
 
+          <div className="space-y-6">
+          {data.ai.provider && <ProviderCard provider={data.ai.provider} onSaved={(res) => { setData(res); setNotice(res.message); }} onError={setError} />}
           <Card title="Modules on your plan" description="Set by SchoolPilot. Ask SchoolPilot to change these." className="h-fit">
             <ul className="space-y-2">
               {data.modules.map((m) => (
@@ -110,9 +114,63 @@ export default function AiFeaturesPage() {
               ))}
             </ul>
           </Card>
+          </div>
         </div>
       )}
       <TutorControls />
     </PageShell>
+  );
+}
+
+/**
+ * Which AI writes for the school: Claude, ChatGPT or Gemini, among those
+ * SchoolPilot has set up. The daily spend cap and teacher
+ * approval of report-card remarks are the same whichever is chosen.
+ */
+function ProviderCard({ provider, onSaved, onError }: { provider: Provider; onSaved: (res: Features & { message: string }) => void; onError: (m: string | null) => void }) {
+  const [choice, setChoice] = useState<string>(provider.chosen ?? '');
+  const [busy, setBusy] = useState(false);
+  const label = (key: string) => provider.options.find((o) => o.key === key)?.label ?? key;
+
+  const save = async () => {
+    setBusy(true);
+    onError(null);
+    try {
+      onSaved(await fetchApi<Features & { message: string }>('/school/ai-provider', { method: 'PUT', body: JSON.stringify({ provider: choice || null }) }));
+    } catch (err) {
+      onError(errorText(err, 'Could not save the provider.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card title="AI provider" description="Which AI writes drafts and answers the tutor for your school." className="h-fit">
+      {provider.own_key ? (
+        <p className="text-sm text-ink-muted">Your school uses its own {label(provider.in_use)} key, so that provider is used.</p>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm">In use now: <span className="font-semibold">{label(provider.in_use)}</span></p>
+          <fieldset className="space-y-2 text-sm">
+            <legend className="sr-only">Provider</legend>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="ai-provider" className="accent-brand" checked={choice === ''} onChange={() => setChoice('')} />
+              SchoolPilot&apos;s default ({label(provider.default)})
+            </label>
+            {provider.options.map((o) => (
+              <label key={o.key} className={`flex items-center gap-2 ${o.available ? '' : 'text-ink-faint'}`}>
+                <input type="radio" name="ai-provider" className="accent-brand" disabled={!o.available} checked={choice === o.key} onChange={() => setChoice(o.key)} />
+                {o.label}
+                {!o.available && <Badge tone="slate">not set up</Badge>}
+              </label>
+            ))}
+          </fieldset>
+          <p className="text-xs text-ink-muted">
+            The same daily spending limit applies whichever you choose, and AI remarks still wait for a teacher&apos;s approval.
+          </p>
+          <Button disabled={busy || choice === (provider.chosen ?? '')} onClick={save}>{busy ? 'Saving…' : 'Save provider'}</Button>
+        </div>
+      )}
+    </Card>
   );
 }

@@ -35,6 +35,7 @@ class AiStudioController extends Controller
             'ai_feature_flags.tutor'             => 'nullable|boolean',
             'ai_api_settings'  => 'nullable|array',
             'ai_api_settings.api_key'      => 'nullable|string',
+            'ai_api_settings.provider'     => 'nullable|in:anthropic,openai,gemini',
             'ai_api_settings.model'        => 'nullable|string',
             'ai_api_settings.temperature'  => 'nullable|numeric|min:0|max:1',
             'ai_api_settings.max_tokens'   => 'nullable|integer|min:50|max:4000',

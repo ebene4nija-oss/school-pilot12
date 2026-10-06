@@ -2,20 +2,19 @@
 
 namespace App\Services;
 
+use App\Services\Ai\AiGateway;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
+/**
+ * The product's AI writing tasks. The name predates other providers: requests
+ * now go through AiGateway, which sends them to Claude, ChatGPT or Gemini
+ * depending on what SchoolPilot and the school have chosen.
+ */
 class ClaudeService
 {
-    protected ?string $apiKey;
-    protected bool $stub;
-    protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
-
-    public function __construct()
+    public function __construct(private AiGateway $gateway)
     {
-        $this->apiKey = config('services.anthropic.api_key');
-        $this->stub = (bool) config('services.anthropic.stub');
     }
 
     /**
@@ -32,20 +31,18 @@ class ClaudeService
         $cacheKey = 'comment_' . $tenant . '_' . md5(json_encode($scoreData));
 
         return Cache::remember($cacheKey, 86400, function () use ($scoreData) {
-            if ($this->shouldStub()) {
+            if ($this->gateway->shouldStub(isset($scoreData['school_id']) ? (int) $scoreData['school_id'] : null)) {
                 return "[STUB] {$scoreData['student_name']} scored {$scoreData['total_score']}% in {$scoreData['subject']}. This placeholder text was generated without calling the AI provider.";
             }
 
             $prompt = "Write a short, encouraging, 2-sentence teacher report card remark for student {$scoreData['student_name']} in {$scoreData['subject']} who scored {$scoreData['total_score']}%.";
 
-            $response = $this->request(
-                (string) config('services.anthropic.comment_model'),
+            return $this->request(
+                'comment',
                 $prompt,
                 150,
                 isset($scoreData['school_id']) ? (int) $scoreData['school_id'] : null
-            );
-
-            return (string) $response->json('content.0.text');
+            )->text;
         });
     }
 
@@ -54,10 +51,10 @@ class ClaudeService
      */
     public function generateLessonPlan(string $subject, string $topic, string $classLevel, ?int $schoolId = null): array
     {
-        $cacheKey = 'lesson_plan_' . md5("{$subject}_{$topic}_{$classLevel}");
+        $cacheKey = 'lesson_plan_' . ($schoolId ?? 'shared') . '_' . md5("{$subject}_{$topic}_{$classLevel}");
 
         return Cache::remember($cacheKey, 172800, function () use ($subject, $topic, $classLevel, $schoolId) {
-            if ($this->shouldStub()) {
+            if ($this->gateway->shouldStub($schoolId)) {
                 return [
                     'subject' => $subject,
                     'topic' => $topic,
@@ -71,14 +68,7 @@ class ClaudeService
 
             $prompt = "Create a structured JSON lesson plan for subject: {$subject}, topic: {$topic}, class level: {$classLevel}. Return only valid JSON with keys: objectives, activities, assessment.";
 
-            $response = $this->request(
-                (string) config('services.anthropic.document_model'),
-                $prompt,
-                1500,
-                $schoolId
-            );
-
-            return json_decode((string) $response->json('content.0.text'), true) ?? [];
+            return json_decode($this->request('document', $prompt, 1500, $schoolId)->text, true) ?? [];
         });
     }
 
@@ -98,7 +88,7 @@ class ClaudeService
      */
     public function teachingJson(string $instructions, string $prompt, ?int $schoolId, array $stub, int $maxTokens = 4000): array
     {
-        if ($this->shouldStub()) {
+        if ($this->gateway->shouldStub($schoolId)) {
             return $stub + ['stub' => true];
         }
 
@@ -107,8 +97,13 @@ class ClaudeService
             . "Write for the class level given, plainly, with no filler. {$instructions} "
             . 'Reply with a single JSON object only — no prose before or after it, no Markdown fences.';
 
-        $response = $this->request((string) config('services.anthropic.document_model'), $prompt, $maxTokens, $schoolId, $system);
-        $text = trim((string) $response->json('content.0.text'));
+        $reply = $this->request('document', $prompt, $maxTokens, $schoolId, $system);
+
+        if ($reply->stop === 'max_tokens') {
+            throw new RuntimeException('The AI reply was cut short. Ask for less at once and try again.');
+        }
+
+        $text = trim($reply->text);
         // Tolerate a fenced reply rather than fail a teacher over formatting.
         $text = preg_replace('/^```(?:json)?\s*|\s*```$/', '', $text) ?? $text;
         $decoded = json_decode($text, true);
@@ -117,69 +112,11 @@ class ClaudeService
             throw new RuntimeException('The AI reply could not be read. Please try again.');
         }
 
-        if ($response->json('stop_reason') === 'max_tokens') {
-            throw new RuntimeException('The AI reply was cut short. Ask for less at once and try again.');
-        }
-
         return $decoded;
     }
 
-    private function shouldStub(): bool
+    private function request(string $purpose, string $prompt, int $maxTokens, ?int $schoolId = null, ?string $system = null): Ai\AiReply
     {
-        return $this->stub && ! $this->hasKey();
-    }
-
-    private function hasKey(): bool
-    {
-        return is_string($this->apiKey) && trim($this->apiKey) !== '';
-    }
-
-    private function request(string $model, string $prompt, int $maxTokens, ?int $schoolId = null, ?string $system = null)
-    {
-        if (! $this->hasKey()) {
-            // Loud failure. The caller queues or surfaces this; it must never
-            // degrade into invented content that looks like a real remark.
-            throw new RuntimeException('ANTHROPIC_API_KEY is not configured, so AI generation is unavailable.');
-        }
-
-        // Checked before the call, not enforced mid-flight: a school can end
-        // fractionally over its cap rather than have a half-written report-card
-        // comment truncated. See AiSpendLedger.
-        app(AiSpendLedger::class)->assertWithinCap($schoolId);
-
-        $response = Http::withHeaders([
-            'x-api-key' => $this->apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])
-            // Without a timeout a stalled call pins a PHP-FPM worker
-            // indefinitely, which matters on the connectivity these schools have.
-            ->timeout(30)
-            ->connectTimeout(10)
-            ->retry(2, 500, throw: false)
-            ->post($this->baseUrl, array_filter([
-                'model' => $model,
-                'max_tokens' => $maxTokens,
-                'system' => $system,
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-            ], fn ($v) => $v !== null));
-
-        if ($response->failed()) {
-            throw new RuntimeException('Claude API call failed: ' . $response->body());
-        }
-
-        // A declined request is a 200 with no usable text; say so rather than
-        // hand an empty string to a teacher as if it were the answer.
-        if ($response->json('stop_reason') === 'refusal') {
-            throw new RuntimeException('The AI declined this request. Rephrase it and try again.');
-        }
-
-        // Metered after the fact from the response's own usage object, rather
-        // than estimated from the prompt — an estimate drifts from the invoice.
-        app(AiSpendLedger::class)->record($schoolId, $model, (array) $response->json('usage', []));
-
-        return $response;
+        return $this->gateway->complete($schoolId, $purpose, $system, [['role' => 'user', 'content' => $prompt]], $maxTokens);
     }
 }

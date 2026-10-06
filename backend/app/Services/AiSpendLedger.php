@@ -30,7 +30,8 @@ use Illuminate\Support\Facades\Log;
 class AiSpendLedger
 {
     /**
-     * Anthropic's published USD price per million tokens, as of 2026-08-11.
+     * Published USD price per million tokens: Anthropic's as of 2026-08-11,
+     * OpenAI's and Google's as of 2026-10.
      *
      * Sonnet 5 is on introductory pricing ($2/$10) through 2026-08-31, after
      * which it returns to $3/$15 — hence `input_after_intro`, so the reversion
@@ -48,6 +49,13 @@ class AiSpendLedger
             'intro_ends' => '2026-08-31',
         ],
         'claude-opus-5' => ['input' => 5.00, 'output' => 25.00],
+        // OpenAI and Google list prices as of 2026-10 (see config/services.php).
+        'gpt-5' => ['input' => 1.25, 'output' => 10.00],
+        'gpt-5-mini' => ['input' => 0.25, 'output' => 2.00],
+        'gpt-5-nano' => ['input' => 0.05, 'output' => 0.40],
+        'gemini-2.5-pro' => ['input' => 1.25, 'output' => 10.00],
+        'gemini-2.5-flash' => ['input' => 0.30, 'output' => 2.50],
+        'gemini-2.5-flash-lite' => ['input' => 0.10, 'output' => 0.40],
     ];
 
     /** Cache reads bill at a tenth of the input rate; writes at 1.25x. */
@@ -242,7 +250,9 @@ class AiSpendLedger
      */
     private function pricingFor(string $model): array
     {
-        $table = config('services.anthropic.pricing') ?: self::DEFAULT_PRICING;
+        // Config overrides row by row rather than replacing the table, so an
+        // env that predates a provider still meters that provider's models.
+        $table = array_merge(self::DEFAULT_PRICING, (array) (config('services.anthropic.pricing') ?: []));
 
         if (! isset($table[$model])) {
             // Unknown model: bill at the most expensive row we know about. An

@@ -8,7 +8,9 @@ use App\Models\Student;
 use App\Models\StudentTopicMastery;
 use App\Models\TutorConversation;
 use App\Models\TutorMessage;
-use Illuminate\Support\Facades\Http;
+use App\Exceptions\AiBudgetExceededException;
+use App\Services\Ai\AiGateway;
+use App\Services\Ai\AiUnavailableException;
 use RuntimeException;
 
 /**
@@ -257,16 +259,9 @@ TXT;
         string $message,
         bool $redirected
     ): string {
-        $config = $this->ai->getApiConfig($student->school_id);
-        $hasKey = is_string($config['api_key']) && trim($config['api_key']) !== '';
+        $gateway = app(AiGateway::class);
 
-        if (! $hasKey) {
-            if (! config('services.anthropic.stub')) {
-                // Never degrade into invented tutoring — the failure mode the
-                // old hardcoded reply had, dressed up as a working feature.
-                throw new RuntimeException('The AI tutor is unavailable: no Anthropic API key is configured.');
-            }
-
+        if ($gateway->shouldStub($student->school_id)) {
             return $redirected
                 ? '[STUB] I can see you want the answer outright — let us work through the first step together instead. What do you think we should try first?'
                 : '[STUB] Tutor reply generated without calling the AI provider.';
@@ -281,37 +276,27 @@ TXT;
          * bounded by something real — one comment per subject per term, one
          * lesson plan per topic — but a chat loop is bounded only by how long a
          * student keeps typing, and the whole conversation is resent each turn,
-         * so cost grows quadratically over a session.
+         * so cost grows quadratically over a session. AiGateway checks the cap
+         * before the call and meters it after, whichever provider answers.
          */
-        $model = (string) ($config['model'] ?: config('services.anthropic.comment_model'));
-        $ledger = app(AiSpendLedger::class);
-        $ledger->assertWithinCap($student->school_id);
-
-        $response = Http::withHeaders([
-            'x-api-key' => $config['api_key'],
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])
-            ->timeout(30)
-            ->connectTimeout(10)
-            ->retry(2, 500, throw: false)
-            ->post('https://api.anthropic.com/v1/messages', [
-                'model' => $model,
-                'max_tokens' => 800,
-                'system' => $this->systemPrompt($student, $conversation, $redirected),
-                'messages' => $messages,
-            ]);
-
-        if ($response->failed()) {
-            throw new RuntimeException('The tutor could not be reached right now. Please try again shortly.');
-        }
-
-        $ledger->record($student->school_id, $model, (array) $response->json('usage', []));
-
-        $text = $response->json('content.0.text');
-
-        if (! is_string($text) || trim($text) === '') {
-            throw new RuntimeException('The tutor returned an empty response. Please try again.');
+        try {
+            $text = $gateway->complete(
+                $student->school_id,
+                'comment',
+                $this->systemPrompt($student, $conversation, $redirected),
+                $messages,
+                800,
+            )->text;
+        } catch (AiUnavailableException $e) {
+            // Never degrade into invented tutoring — the failure mode the
+            // old hardcoded reply had, dressed up as a working feature.
+            throw new RuntimeException("The AI tutor is unavailable: no {$e->vendor()} API key is configured.");
+        } catch (AiBudgetExceededException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            throw new RuntimeException(str_starts_with($e->getMessage(), 'The AI ')
+                ? $e->getMessage()
+                : 'The tutor could not be reached right now. Please try again shortly.');
         }
 
         return $text;
