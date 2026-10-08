@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Models\Staff;
+use App\Models\StaffLeaveSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -53,9 +54,31 @@ class StaffHrController extends Controller
             return response()->json(['error' => 'No staff record found for this user.'], 404);
         }
 
+        $policy = StaffLeaveSetting::for($schoolId);
+        $role = $staff->user?->userProfile?->role;
+
+        if (! $policy->allows($role)) {
+            return response()->json([
+                'error' => 'Your school does not take leave requests from '.(StaffLeaveSetting::ROLES[$role] ?? 'this role').' in SchoolPilot. Ask the school office.',
+            ], 403);
+        }
+
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
         $days = $start->diffInDays($end) + 1;
+
+        // Over the allowance: refused only where the school says so;
+        // otherwise the approver sees the figures and decides.
+        $allowance = $staff->allowanceFor($validated['leave_type']);
+
+        if ($policy->enforce_allowance && $allowance !== null
+            && $staff->daysTakenThisYear($validated['leave_type']) + $days > $allowance) {
+            $left = max(0, $allowance - $staff->daysTakenThisYear($validated['leave_type']));
+
+            return response()->json([
+                'error' => "That is more than your {$validated['leave_type']} leave allows: {$left} day(s) left this year.",
+            ], 422);
+        }
 
         // Overlapping requests are almost always a double submission, and an
         // approver seeing the same week twice cannot tell which is current.
@@ -82,8 +105,6 @@ class StaffHrController extends Controller
             'status' => 'pending',
         ]);
 
-        $allowance = $staff->allowanceFor($validated['leave_type']);
-
         return response()->json([
             'message' => 'Leave requested.',
             'leave_request' => $leave,
@@ -93,6 +114,76 @@ class StaffHrController extends Controller
                 'days_requested' => $days,
             ],
         ], 201);
+    }
+
+    /** The school's staff leave policy. Staff read it to know their allowance. */
+    public function leaveSettings()
+    {
+        $settings = StaffLeaveSetting::for($this->schoolId());
+
+        return response()->json([
+            'leave_roles' => $settings->leave_roles ?? array_keys(StaffLeaveSetting::ROLES),
+            'default_allowances' => (object) ($settings->default_allowances ?? []),
+            'enforce_allowance' => (bool) $settings->enforce_allowance,
+            'roles' => StaffLeaveSetting::ROLES,
+            'types' => LeaveRequest::TYPES,
+        ] + collect(LeaveRequest::TYPES)->mapWithKeys(fn ($t) => ["days_{$t}" => $settings->defaultFor($t)])->all());
+    }
+
+    public function updateLeaveSettings(Request $request)
+    {
+        $rules = [
+            'leave_roles' => 'sometimes|array',
+            'leave_roles.*' => ['string', Rule::in(array_keys(StaffLeaveSetting::ROLES))],
+            'enforce_allowance' => 'sometimes|boolean',
+        ];
+
+        // Days per type arrive as flat fields (days_annual, days_sick, ...)
+        // so the settings page can show one number box per type.
+        foreach (LeaveRequest::TYPES as $type) {
+            $rules["days_{$type}"] = 'sometimes|nullable|integer|min:0|max:365';
+        }
+
+        $data = $request->validate($rules);
+        $schoolId = $this->schoolId();
+
+        $settings = StaffLeaveSetting::withoutGlobalScopes()->firstOrNew(['school_id' => $schoolId]);
+        $old = $settings->exists ? $settings->toArray() : null;
+
+        if (array_key_exists('leave_roles', $data)) {
+            $settings->leave_roles = array_values(array_unique($data['leave_roles']));
+        } elseif (! $settings->exists) {
+            $settings->leave_roles = array_keys(StaffLeaveSetting::ROLES);
+        }
+
+        if (array_key_exists('enforce_allowance', $data)) {
+            $settings->enforce_allowance = $data['enforce_allowance'];
+        }
+
+        $allowances = $settings->default_allowances ?? [];
+        foreach (LeaveRequest::TYPES as $type) {
+            if (array_key_exists("days_{$type}", $data)) {
+                if ($data["days_{$type}"] === null) {
+                    unset($allowances[$type]);
+                } else {
+                    $allowances[$type] = (int) $data["days_{$type}"];
+                }
+            }
+        }
+        $settings->default_allowances = $allowances;
+        $settings->save();
+
+        \App\Models\AuditLog::create([
+            'school_id' => $schoolId,
+            'user_id' => $request->user()->id,
+            'action' => 'hr.leave_settings_updated',
+            'auditable_type' => StaffLeaveSetting::class,
+            'auditable_id' => $settings->id,
+            'old_values' => $old,
+            'new_values' => $settings->toArray(),
+        ]);
+
+        return $this->leaveSettings();
     }
 
     /** My own requests, or the whole school's for an admin. */

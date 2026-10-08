@@ -340,16 +340,23 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          * Staff / HR (§7.3) — the people-management half. Payroll already
          * existed; leave and employment history were JSON columns nothing read.
          */
-        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+        // Every staff role holds leave; the school decides in Settings > Staff
+        // leave which roles request it here (StaffLeaveSetting).
+        Route::middleware('role:super_admin,school_admin,teacher,bursar,nurse')->group(function () {
             Route::post('/hr/leave', [StaffHrController::class, 'requestLeave']);
             Route::get('/hr/leave', [StaffHrController::class, 'listLeave']);
             Route::post('/hr/leave/{id}/cancel', [StaffHrController::class, 'cancelLeave']);
+            Route::get('/hr/leave-settings', [StaffHrController::class, 'leaveSettings']);
+        });
+
+        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
             Route::get('/hr/leave-calendar', [StaffHrController::class, 'leaveCalendar']);
             Route::get('/hr/staff/{staffId}/employment-record', [StaffHrController::class, 'employmentRecord']);
         });
 
         Route::middleware('role:super_admin,school_admin')->group(function () {
             Route::post('/hr/leave/{id}/decision', [StaffHrController::class, 'decideLeave']);
+            Route::put('/hr/leave-settings', [StaffHrController::class, 'updateLeaveSettings']);
             Route::put('/hr/staff/{staffId}/leave-allocation', [StaffHrController::class, 'setLeaveAllocation']);
             Route::post('/hr/staff/{staffId}/employment-history', [StaffHrController::class, 'addEmploymentHistory']);
         });

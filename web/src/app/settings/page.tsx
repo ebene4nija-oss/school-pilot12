@@ -17,6 +17,19 @@ interface Section { id: string; title: string; description: string; path: string
 
 const SECTIONS: Section[] = [
   {
+    id: 'leave', title: 'Staff leave', path: '/hr/leave-settings',
+    description: 'Who requests leave in SchoolPilot, and how many days each type allows (leave a box empty for no set allowance). Staff with their own allowance keep it. Unless requests over the allowance are refused, the approver sees the figures and decides.',
+    fields: [
+      { key: 'leave_roles', label: 'Staff who request leave here', kind: 'checks', options: [['teacher', 'Teachers'], ['bursar', 'Bursars'], ['nurse', 'Nurses']] },
+      { key: 'days_annual', label: 'Annual leave (days a year)', kind: 'number', min: 0, max: 365 },
+      { key: 'days_sick', label: 'Sick leave (days a year)', kind: 'number', min: 0, max: 365 },
+      { key: 'days_maternity', label: 'Maternity leave (days)', kind: 'number', min: 0, max: 365 },
+      { key: 'days_compassionate', label: 'Compassionate leave (days a year)', kind: 'number', min: 0, max: 365 },
+      { key: 'days_study', label: 'Study leave (days a year)', kind: 'number', min: 0, max: 365 },
+      { key: 'enforce_allowance', label: 'Refuse requests that go over the allowance', kind: 'bool' },
+    ],
+  },
+  {
     id: 'cbt', title: 'CBT exams', path: '/cbt/settings', module: 'cbt',
     description: 'How papers are approved and how the exam room behaves.',
     fields: [

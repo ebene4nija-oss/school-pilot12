@@ -63,7 +63,8 @@ class Staff extends Model
     }
 
     /**
-     * Days allowed for a leave type this year, from the school's allocation.
+     * Days allowed for a leave type this year: this member's own allocation,
+     * else the school's default (Settings > Staff leave).
      *
      * Nigerian private schools vary widely here and many have no formal policy
      * at all, so an unconfigured type means "no allowance recorded" rather than
@@ -73,7 +74,12 @@ class Staff extends Model
     {
         $allocations = $this->leave_allocations ?? [];
 
-        return isset($allocations[$type]) ? (int) $allocations[$type] : null;
+        if (isset($allocations[$type])) {
+            return (int) $allocations[$type];
+        }
+
+        // Otherwise the school's default for that type, if it sets one.
+        return StaffLeaveSetting::for((int) $this->school_id)->defaultFor($type);
     }
 
     /** Days already approved for a type in the current calendar year. */
