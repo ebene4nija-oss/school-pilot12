@@ -18,7 +18,11 @@ final dashboardProvider =
     UserRole.teacher => Api.analyticsTeacher,
     UserRole.student => Api.analyticsStudent,
     UserRole.parent => null,
+    // These homes read their own endpoints (arrears, the sick-bay log) or none.
+    UserRole.bursar || UserRole.nurse || UserRole.other => '',
   };
+
+  if (path == '') return Cached(data: const {}, fetchedAt: DateTime.now());
 
   if (path == null) {
     final childId = ref.watch(selectedChildIdProvider);

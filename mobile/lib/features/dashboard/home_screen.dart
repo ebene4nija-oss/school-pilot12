@@ -10,10 +10,12 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import '../clinic/clinic_screen.dart';
 import '../learn/learning_widgets.dart';
 import 'dashboard_providers.dart';
+import 'role_homes.dart';
 
-/// One route, four dashboards. Which one you get is decided by the role the
+/// One route, a home per role. Which one you get is decided by the role the
 /// backend returned at login, not by anything the client chooses.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,9 @@ class HomeScreen extends ConsumerWidget {
       UserRole.teacher => const _TeacherDashboard(),
       UserRole.student => const _StudentDashboard(),
       UserRole.parent => const _ParentDashboard(),
+      UserRole.bursar => const BursarHome(),
+      UserRole.nurse => const ClinicScreen(),
+      UserRole.other => const WebOnlyHome(),
     };
   }
 }

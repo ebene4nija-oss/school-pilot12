@@ -8,7 +8,7 @@ import '../../core/providers.dart';
 import '../../core/sync/sync_service.dart';
 import '../../core/ui/widgets.dart';
 
-/// Everything that did not fit in four tabs.
+/// Everything that did not fit in the tabs.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
@@ -83,7 +83,7 @@ class MoreScreen extends ConsumerWidget {
               detail: 'Read from Zoom or Meet, match names, correct',
               onTap: () => context.push('/virtual-classes'),
             ),
-          if (role != UserRole.parent)
+          if (role != UserRole.parent && role != UserRole.other)
             _Tile(
               icon: Icons.menu_book_outlined,
               label: 'My library books',
@@ -103,13 +103,13 @@ class MoreScreen extends ConsumerWidget {
               detail: 'For boarders',
               onTap: () => context.push('/hostel'),
             ),
-          if (role != UserRole.parent)
+          if (role != UserRole.parent && role != UserRole.other)
             _Tile(
               icon: Icons.badge_outlined,
               label: 'My ID card',
               onTap: () => context.push('/id-card'),
             ),
-          if (role == UserRole.teacher || role.isAdmin)
+          if (role.isStaff)
             _Tile(
               icon: Icons.receipt_long_outlined,
               label: 'My payslips',

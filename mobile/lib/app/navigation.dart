@@ -159,11 +159,69 @@ class RoleNav {
     ),
   ];
 
+  /// The bursar's phone job is arrears: who owes, and one family's statement.
+  /// Recording payments and the rest of the bursary stay on the web portal.
+  static const bursar = [
+    NavDestination(
+      path: '/home',
+      label: 'Home',
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+    ),
+    NavDestination(
+      path: '/fees',
+      label: 'Fees',
+      icon: Icons.payments_outlined,
+      selectedIcon: Icons.payments,
+    ),
+    NavDestination(
+      path: '/more',
+      label: 'More',
+      icon: Icons.more_horiz,
+      selectedIcon: Icons.more_horiz,
+    ),
+  ];
+
+  /// The nurse's home is the sick-bay log; everything else is under More.
+  static const nurse = [
+    NavDestination(
+      path: '/home',
+      label: 'Sick bay',
+      icon: Icons.medical_services_outlined,
+      selectedIcon: Icons.medical_services,
+    ),
+    NavDestination(
+      path: '/more',
+      label: 'More',
+      icon: Icons.more_horiz,
+      selectedIcon: Icons.more_horiz,
+    ),
+  ];
+
+  /// A role this version of the app does not know.
+  static const other = [
+    NavDestination(
+      path: '/home',
+      label: 'Home',
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+    ),
+    NavDestination(
+      path: '/more',
+      label: 'More',
+      icon: Icons.more_horiz,
+      selectedIcon: Icons.more_horiz,
+    ),
+  ];
+
   static List<NavDestination> forRole(UserRole role) => switch (role) {
         UserRole.schoolAdmin || UserRole.superAdmin => admin,
         UserRole.teacher => teacher,
+        UserRole.bursar => bursar,
+        UserRole.nurse => nurse,
         UserRole.student => student,
         UserRole.parent => parent,
+        UserRole.other => other,
       };
 
   /// Whether this role can reach this tab at all. The server enforces

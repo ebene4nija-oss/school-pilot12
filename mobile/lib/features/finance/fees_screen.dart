@@ -23,7 +23,7 @@ class FeesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentRoleProvider);
-    return role.isAdmin ? const _DefaultersScreen() : const _StatementScreen();
+    return role.isFinance ? const _DefaultersScreen() : const _StatementScreen();
   }
 }
 

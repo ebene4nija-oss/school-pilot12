@@ -1,17 +1,25 @@
 import 'dart:convert';
 
-/// The four school-side roles the app ships for.
+/// The school-side roles the app ships for.
 ///
 /// `super_admin` is deliberately absent as a *destination*: the platform
 /// console stays on web (`docs/mobile-app.md` §A1). A super admin who signs in
 /// on a handset is treated as a school admin so the app is usable, but no
 /// platform-only screen is reachable.
+///
+/// A role the app does not know (a newer backend, a custom role) becomes
+/// [other], which shows a "use the web portal" home rather than any other
+/// role's screens. It used to become a student: a bursar or nurse signing in
+/// got the student app and a wall of refused requests.
 enum UserRole {
   schoolAdmin('school_admin'),
   teacher('teacher'),
+  bursar('bursar'),
+  nurse('nurse'),
   student('student'),
   parent('parent'),
-  superAdmin('super_admin');
+  superAdmin('super_admin'),
+  other('other');
 
   const UserRole(this.wire);
 
@@ -20,22 +28,28 @@ enum UserRole {
 
   static UserRole fromWire(String? value) {
     return UserRole.values.firstWhere(
-      (r) => r.wire == value,
-      orElse: () => UserRole.student,
+      (r) => r.wire == value && r != other,
+      orElse: () => other,
     );
   }
 
   bool get isStaff =>
-      this == schoolAdmin || this == superAdmin || this == teacher;
+      this == schoolAdmin || this == superAdmin || this == teacher || this == bursar || this == nurse;
 
   bool get isAdmin => this == schoolAdmin || this == superAdmin;
+
+  /// Sees the school's arrears rather than one family's statement.
+  bool get isFinance => isAdmin || this == bursar;
 
   String get label => switch (this) {
         schoolAdmin => 'Administrator',
         superAdmin => 'Administrator',
         teacher => 'Teacher',
+        bursar => 'Bursar',
+        nurse => 'Nurse',
         student => 'Student',
         parent => 'Parent',
+        other => 'Staff',
       };
 }
 

@@ -32,6 +32,14 @@ class Api {
       '$version/students/$id/behavior-reports';
   static const behaviorReport = '$version/students/behavior-report';
 
+  /// Search-as-you-type: name, admission number and class only. The one
+  /// student list a nurse or bursar may read.
+  static const studentLookup = '$version/students/lookup';
+
+  // Sick bay
+  static const clinicVisits = '$version/health/clinic-visits';
+  static const clinicVisit = '$version/health/clinic-visit';
+
   // Attendance
   static const attendanceRegister = '$version/attendance/register';
   static const attendanceBulk = '$version/attendance/bulk';
