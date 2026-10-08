@@ -11,8 +11,8 @@ Items parked for later. Each needs a decision before work starts.
 - [x] Only pending cash / bank transfers are approved or rejected by hand;
       card payments are confirmed by the gateway webhook. One locked,
       idempotent settlement path (PaymentSettlement) for all three.
-- [ ] The webhook does not yet check that the amount the gateway reports
-      matches the payment's amount before settling.
+- [x] The webhook settles only when the gateway's amount and currency match
+      the payment; a mismatch stays pending and is audited.
 
 ## AI providers (added 2026-10-06)
 

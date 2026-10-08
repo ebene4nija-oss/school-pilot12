@@ -258,6 +258,21 @@ class FinanceController extends Controller
     }
 
     /**
+     * Whether the amount a gateway reports is the amount this payment was
+     * for, in Naira. Within half a kobo, to allow for the kobo-to-Naira
+     * division; a missing currency is read as Naira, which is what both
+     * gateways send for an NGN checkout.
+     */
+    private function gatewayAmountMatches(Payment $payment, float $received, ?string $currency): bool
+    {
+        if ($currency !== null && strtoupper($currency) !== 'NGN') {
+            return false;
+        }
+
+        return abs($received - (float) $payment->amount) < 0.005;
+    }
+
+    /**
      * Where the gateway sends the payer's browser when checkout ends.
      *
      * Deliberately a dumb page. It is unauthenticated — the webview carries no
@@ -285,6 +300,7 @@ class FinanceController extends Controller
         $payload = $request->all();
         $reference = null;
         $amountPaid = 0;
+        $currency = null;
 
         /*
          * Which school's key must have signed this (gap G8).
@@ -332,6 +348,7 @@ class FinanceController extends Controller
             if (($payload['event'] ?? '') === 'charge.success') {
                 $reference = $payload['data']['reference'] ?? null;
                 $amountPaid = ($payload['data']['amount'] ?? 0) / 100; // Paystack is in kobo
+                $currency = $payload['data']['currency'] ?? null;
             }
         }
 
@@ -357,7 +374,8 @@ class FinanceController extends Controller
 
             if (($payload['status'] ?? '') === 'successful' || ($payload['data']['status'] ?? '') === 'successful') {
                 $reference = $payload['data']['tx_ref'] ?? $payload['txRef'] ?? null;
-                $amountPaid = $payload['data']['amount'] ?? $payload['amount'] ?? 0;
+                $amountPaid = $payload['data']['amount'] ?? $payload['amount'] ?? 0; // Flutterwave is in Naira
+                $currency = $payload['data']['currency'] ?? $payload['currency'] ?? null;
             }
         }
 
@@ -374,6 +392,41 @@ class FinanceController extends Controller
              * visible at the call site instead of implied by its absence.
              */
             $payment = Payment::allTenants()->where('reference', $reference)->first();
+
+            /*
+             * The gateway's own figure must match what this payment was for.
+             * The signature proves the gateway sent the callback, not that
+             * the payer paid the full amount: a partial charge, or a payment
+             * made in another currency, used to settle the whole invoice line
+             * anyway. A mismatch leaves the payment pending for the bursar to
+             * look into, and is recorded; the gateway still gets a 200 so it
+             * stops retrying a callback that will never pass.
+             */
+            if ($payment && $payment->status !== 'successful'
+                && ! $this->gatewayAmountMatches($payment, (float) $amountPaid, $currency)) {
+                Log::warning('Payment webhook amount did not match; payment left pending.', [
+                    'payment_id' => $payment->id,
+                    'expected' => (float) $payment->amount,
+                    'received' => (float) $amountPaid,
+                    'currency' => $currency,
+                ]);
+
+                \App\Models\AuditLog::create([
+                    'school_id' => $payment->school_id,
+                    'user_id' => null,
+                    'action' => 'finance.webhook_amount_mismatch',
+                    'auditable_type' => Payment::class,
+                    'auditable_id' => $payment->id,
+                    'new_values' => [
+                        'gateway' => $gateway,
+                        'expected' => (float) $payment->amount,
+                        'received' => (float) $amountPaid,
+                        'currency' => $currency,
+                    ],
+                ]);
+
+                return response()->json(['message' => 'Webhook received; the amount does not match this payment, so it was not applied.']);
+            }
 
             // Locked and idempotent: gateways retry deliveries, sometimes
             // concurrently, and a second delivery must not credit twice.

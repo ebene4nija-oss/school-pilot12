@@ -154,4 +154,63 @@ class PaymentSafeguardsTest extends TestCase
             ->assertStatus(409);
         $this->assertSame('successful', $transfer->fresh()->status);
     }
+
+    private function paystackWebhook(string $reference, int $amountKobo, ?string $currency = 'NGN')
+    {
+        config(['services.paystack.secret' => 'test_secret']);
+        $body = json_encode(['event' => 'charge.success', 'data' => array_filter([
+            'reference' => $reference, 'amount' => $amountKobo, 'currency' => $currency,
+        ], fn ($v) => $v !== null)]);
+
+        return $this->call('POST', '/api/v1/webhooks/paystack', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_X_PAYSTACK_SIGNATURE' => hash_hmac('sha512', $body, 'test_secret'),
+        ], $body);
+    }
+
+    private function onlinePayment(string $reference, float $amount): Payment
+    {
+        return Payment::create(['school_id' => $this->school->id, 'invoice_id' => $this->invoice->id, 'reference' => $reference, 'amount' => $amount, 'gateway' => 'paystack', 'status' => 'pending']);
+    }
+
+    public function test_a_gateway_confirmation_for_the_right_amount_settles(): void
+    {
+        $payment = $this->onlinePayment('PSK-OK', 30000);
+
+        $this->paystackWebhook('PSK-OK', 30000_00)->assertOk();
+
+        $this->assertSame('successful', $payment->fresh()->status);
+        $this->assertEquals(30000, $this->invoice->fresh()->amount_paid);
+    }
+
+    public function test_a_gateway_confirmation_for_less_than_the_payment_is_not_applied(): void
+    {
+        $payment = $this->onlinePayment('PSK-SHORT', 30000);
+
+        // Signed by the gateway, but for ₦100.
+        $this->paystackWebhook('PSK-SHORT', 100_00)->assertOk();
+
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertEquals(0, $this->invoice->fresh()->amount_paid);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'finance.webhook_amount_mismatch', 'auditable_id' => $payment->id]);
+    }
+
+    public function test_a_confirmation_in_another_currency_is_not_applied(): void
+    {
+        $payment = $this->onlinePayment('PSK-USD', 30000);
+
+        $this->paystackWebhook('PSK-USD', 30000_00, 'USD')->assertOk();
+
+        $this->assertSame('pending', $payment->fresh()->status);
+    }
+
+    public function test_a_confirmation_without_a_currency_is_read_as_naira(): void
+    {
+        $payment = $this->onlinePayment('PSK-NOCUR', 12500.50);
+
+        $this->paystackWebhook('PSK-NOCUR', 1250050, null)->assertOk();
+
+        $this->assertSame('successful', $payment->fresh()->status);
+    }
 }
