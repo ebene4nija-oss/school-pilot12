@@ -146,8 +146,9 @@ return [
         'stub' => (bool) env('ANTHROPIC_STUB_RESPONSES', env('APP_ENV') === 'testing'),
 
         // Haiku for high-volume short output; Sonnet for structured documents.
+        // Switch models from Super Admin > AI service rather than here.
         'comment_model' => env('ANTHROPIC_COMMENT_MODEL', 'claude-haiku-4-5'),
-        'document_model' => env('ANTHROPIC_DOCUMENT_MODEL', 'claude-sonnet-5'),
+        'document_model' => env('ANTHROPIC_DOCUMENT_MODEL', 'claude-sonnet-5-5'),
 
         /*
          * Daily AI spend cap per school, in kobo (LAUNCH.md §1).
@@ -172,36 +173,13 @@ return [
         'usd_to_ngn' => (float) env('AI_USD_TO_NGN', 1500),
 
         /*
-         * USD per million tokens, per Anthropic's published pricing as of
-         * 2026-08-11. Overridable so a price change is a deploy, not a release.
-         *
-         * Sonnet 5 is on introductory pricing through 2026-08-31; the ledger
-         * switches to `*_after_intro` past that date rather than quietly
-         * continuing to under-bill.
+         * Price overrides, USD per million tokens, keyed by model id — e.g.
+         * ['gpt-6-luna' => ['input' => 0.10, 'output' => 0.50, 'cached' => 0.01]].
+         * List prices for every offered model live in App\Support\AiModels;
+         * a row here replaces that model's row, so a price change can be a
+         * config deploy rather than a release.
          */
         'pricing' => [
-            'claude-haiku-4-5' => ['input' => 1.00, 'output' => 5.00],
-            'claude-sonnet-5' => [
-                'input' => 2.00,
-                'output' => 10.00,
-                'input_after_intro' => 3.00,
-                'output_after_intro' => 15.00,
-                'intro_ends' => '2026-08-31',
-            ],
-            'claude-opus-5' => ['input' => 5.00, 'output' => 25.00],
-
-            /*
-             * OpenAI and Google list prices, USD per million tokens, as
-             * published when these providers were added (2026-10). Check them
-             * against each provider's pricing page before relying on the cap;
-             * a model missing here is metered at the highest rate in the table.
-             */
-            'gpt-5' => ['input' => 1.25, 'output' => 10.00],
-            'gpt-5-mini' => ['input' => 0.25, 'output' => 2.00],
-            'gpt-5-nano' => ['input' => 0.05, 'output' => 0.40],
-            'gemini-2.5-pro' => ['input' => 1.25, 'output' => 10.00],
-            'gemini-2.5-flash' => ['input' => 0.30, 'output' => 2.50],
-            'gemini-2.5-flash-lite' => ['input' => 0.10, 'output' => 0.40],
         ],
     ],
 
@@ -220,13 +198,13 @@ return [
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'comment_model' => env('OPENAI_COMMENT_MODEL', 'gpt-5-mini'),
-        'document_model' => env('OPENAI_DOCUMENT_MODEL', 'gpt-5'),
+        'document_model' => env('OPENAI_DOCUMENT_MODEL', 'gpt-6.1-sol'),
     ],
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'comment_model' => env('GEMINI_COMMENT_MODEL', 'gemini-2.5-flash'),
-        'document_model' => env('GEMINI_DOCUMENT_MODEL', 'gemini-2.5-pro'),
+        'comment_model' => env('GEMINI_COMMENT_MODEL', 'gemini-3.1-flash-lite'),
+        'document_model' => env('GEMINI_DOCUMENT_MODEL', 'gemini-3.8-flash'),
     ],
 
     /*

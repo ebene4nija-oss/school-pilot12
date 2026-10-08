@@ -80,9 +80,10 @@ class AiManagerService
         }
 
         try {
-            return $gateway->complete($schoolId, 'comment', null, [
-                ['role' => 'user', 'content' => "Write a 2-sentence teacher remark for {$studentName} in {$subject} scoring {$score}%."],
-            ], (int) ($this->getApiConfig($schoolId)['max_tokens'] ?? 300))->text;
+            // The name stays here; the provider gets subject and score only.
+            return ClaudeService::withName($gateway->complete($schoolId, 'comment', null, [
+                ['role' => 'user', 'content' => ClaudeService::remarkPrompt($subject, $score)],
+            ], (int) ($this->getApiConfig($schoolId)['max_tokens'] ?? 300))->text, ClaudeService::firstName($studentName));
         } catch (AiUnavailableException $e) {
             throw new Exception("AI is enabled for this school but no {$e->vendor()} API key is configured.");
         }

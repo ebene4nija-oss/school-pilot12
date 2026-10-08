@@ -24,14 +24,10 @@ class OpenAiProvider implements AiProvider
             ->post('https://api.openai.com/v1/chat/completions', [
                 'model' => $model,
                 'messages' => $chat,
-                /*
-                 * GPT-5 models reason before answering, and that reasoning is
-                 * counted in this limit. A two-sentence remark given the 150
-                 * tokens Claude needs would come back empty, so the limit has
-                 * headroom; the daily cap still bounds what is spent. No
-                 * temperature: these models refuse any value but the default.
-                 */
-                'max_completion_tokens' => max($maxTokens * 4, 4000),
+                // Includes any reasoning; AiGateway sizes it for thinking
+                // models. No temperature: reasoning models refuse any value
+                // but the default.
+                'max_completion_tokens' => $maxTokens,
             ]);
 
         if ($response->failed()) {

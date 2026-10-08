@@ -26,9 +26,8 @@ class GeminiProvider implements AiProvider
                 'systemInstruction' => $system !== null ? ['parts' => [['text' => $system]]] : null,
                 'contents' => $contents,
                 'generationConfig' => array_filter([
-                    // Gemini 2.5 thinks before answering and counts it in this
-                    // limit; the headroom is for that, as with OpenAI.
-                    'maxOutputTokens' => max($maxTokens * 4, 4000),
+                    // Includes thinking; AiGateway sizes it for thinking models.
+                    'maxOutputTokens' => $maxTokens,
                     'temperature' => $temperature,
                 ], fn ($v) => $v !== null),
             ], fn ($v) => $v !== null));

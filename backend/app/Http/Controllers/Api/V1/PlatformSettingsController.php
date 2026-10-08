@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiUsageDaily;
-use App\Services\Ai\AiGateway;
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
 use App\Models\School;
+use App\Services\Ai\AiGateway;
+use App\Support\AiModels;
 use App\Support\PlatformSettings;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -140,6 +141,81 @@ class PlatformSettingsController extends Controller
         }
 
         return response()->json(['message' => 'Settings saved.'] + $this->payload());
+    }
+
+    /**
+     * Everything the model switcher needs in one read: each provider, whether
+     * SchoolPilot holds its key, the models in use, the offered models with
+     * their prices, and the one-click presets. Never a key.
+     */
+    public function aiModels()
+    {
+        $default = AiGateway::defaultProvider();
+        $configured = AiGateway::configuredProviders();
+
+        return response()->json([
+            'default_provider' => $default,
+            'tiers' => AiModels::TIERS,
+            'providers' => collect(AiGateway::PROVIDERS)->map(function (string $label, string $key) use ($default, $configured) {
+                $inUse = [
+                    'comment' => (string) config("services.{$key}.comment_model"),
+                    'document' => (string) config("services.{$key}.document_model"),
+                ];
+
+                return [
+                    'key' => $key,
+                    'label' => $label,
+                    'is_default' => $key === $default,
+                    'key_set' => in_array($key, $configured, true),
+                    'comment_model' => $inUse['comment'],
+                    'document_model' => $inUse['document'],
+                    // A typed-in id the ledger has no price for is charged at
+                    // the highest known rate; say so where it is chosen.
+                    'unpriced' => array_values(array_filter($inUse, fn (string $id) => AiModels::find($id) === null
+                        && ! isset(((array) config('services.anthropic.pricing'))[$id]))),
+                    'models' => array_map(fn (array $m) => [
+                        'id' => $m['id'],
+                        'label' => $m['label'],
+                        'tier' => $m['tier'],
+                        'input' => $m['input'],
+                        'output' => $m['output'],
+                        'note' => $m['note'] ?? null,
+                    ], AiModels::MODELS[$key]),
+                    'presets' => AiModels::PRESETS[$key],
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
+     * The console's Test button: one tiny live call with SchoolPilot's key.
+     * Audited, since it spends (a fraction of a kobo) and touches a provider.
+     */
+    public function aiTest(Request $request)
+    {
+        $validated = $request->validate([
+            'provider' => ['required', 'string', 'in:'.implode(',', array_keys(AiGateway::PROVIDERS))],
+            'model' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        if (! empty($validated['model']) && ! AiModels::validFor($validated['provider'], $validated['model'])) {
+            return response()->json(['message' => 'That is not a '.AiGateway::label($validated['provider']).' model id.'], 422);
+        }
+
+        $result = app(AiGateway::class)->test($validated['provider'], $validated['model'] ?? null);
+
+        AuditLog::create([
+            'school_id' => null,
+            'user_id' => $request->user()->id,
+            'action' => 'platform.ai.tested',
+            'auditable_type' => PlatformSetting::class,
+            'auditable_id' => 0,
+            'new_values' => ['provider' => $result['provider'], 'model' => $result['model'], 'ok' => $result['ok']],
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 255),
+        ]);
+
+        return response()->json($result);
     }
 
     /**
@@ -317,6 +393,13 @@ class PlatformSettingsController extends Controller
                     ? $url
                     : ['Enter a full https:// address.'];
 
+            case 'model':
+                $id = trim((string) $raw);
+
+                return AiModels::validFor($definition['provider'], $id)
+                    ? $id
+                    : ['Not a '.AiGateway::label($definition['provider']).' model id. Pick one from the list, or type the exact id from the provider\'s documentation.'];
+
             case 'select':
                 return in_array($raw, $definition['options'], true)
                     ? (string) $raw
@@ -402,6 +485,7 @@ class PlatformSettingsController extends Controller
                 'min' => $definition['min'] ?? null,
                 'max' => $definition['max'] ?? null,
                 'multiline' => $definition['multiline'] ?? false,
+                'provider' => $definition['provider'] ?? null,
                 'source' => $source,
                 'is_set' => $isSet,
                 'updated_at' => $row?->updated_at?->toIso8601String(),

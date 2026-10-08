@@ -18,7 +18,7 @@ class AnthropicProvider implements AiProvider
         ])
             // Without a timeout a stalled call pins a PHP-FPM worker
             // indefinitely, which matters on the connectivity these schools have.
-            ->timeout(30)
+            ->timeout(60)
             ->connectTimeout(10)
             ->retry(2, 500, throw: false)
             ->post('https://api.anthropic.com/v1/messages', array_filter([

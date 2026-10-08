@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Data policy", alternates: { canonica
 
 export default function DataPolicyPage() {
   return (
-    <LegalPage title="Data policy: your school's data" updated="5 October 2026">
+    <LegalPage title="Data policy: your school's data" updated="8 October 2026">
       <h2>Who is responsible</h2>
       <p>Your school controls its students&apos;, parents&apos; and staff&apos;s data. SchoolPilot processes it on the school&apos;s behalf, to run the services the school uses.</p>
 
@@ -22,6 +22,14 @@ export default function DataPolicyPage() {
         <li>Audit logs and login history.</li>
         <li>Sensitive health records encrypted field by field.</li>
       </ul>
+
+      <h2>AI features and who processes them</h2>
+      <p>
+        AI features are optional and your school chooses which to use. When they are on, limited data goes (for a draft remark, a subject and a
+        score; for the study tutor, the student&apos;s question with their class, recent marks and homework) to one AI provider outside Nigeria: Anthropic (Claude), OpenAI (ChatGPT) or
+        Google (Gemini), whichever the school uses. A student&apos;s name is not sent. No AI-drafted comment reaches a report card until a
+        teacher approves or edits it.
+      </p>
 
       <h2>Your school can leave with its data</h2>
       <p>A school can export all of its data in one click, at any time.</p>

@@ -8,6 +8,7 @@ use App\Services\Ai\Providers\AnthropicProvider;
 use App\Services\Ai\Providers\GeminiProvider;
 use App\Services\Ai\Providers\OpenAiProvider;
 use App\Services\AiSpendLedger;
+use App\Support\AiModels;
 use RuntimeException;
 
 /**
@@ -115,14 +116,7 @@ class AiGateway
         $ledger = app(AiSpendLedger::class);
         $ledger->assertWithinCap($schoolId);
 
-        $reply = $this->driver($config['provider'])->send(
-            (string) $config['api_key'],
-            $config['model'],
-            $system,
-            $messages,
-            $maxTokens,
-            $config['temperature'],
-        );
+        $reply = $this->send($config['provider'], (string) $config['api_key'], $config['model'], $system, $messages, $maxTokens, $config['temperature']);
 
         // Metered from the provider's own usage figures, before the reply is
         // judged: a refused or truncated call is still billed.
@@ -141,6 +135,68 @@ class AiGateway
         }
 
         return $reply;
+    }
+
+    /**
+     * A tiny live call with SchoolPilot's own key for a provider, from the
+     * console's Test button: proves the key, the model id and the network
+     * path before any school relies on them. Not charged to any school.
+     *
+     * @return array{ok: bool, provider: string, model: string, reply?: string, error?: string, ms: int}
+     */
+    public function test(string $provider, ?string $model = null): array
+    {
+        $model = $model ?: (string) config("services.{$provider}.comment_model");
+        $key = config("services.{$provider}.api_key");
+        $started = microtime(true);
+        $result = ['provider' => $provider, 'model' => $model];
+
+        if (! self::filled($key)) {
+            return $result + ['ok' => false, 'error' => 'No key is set for '.self::label($provider).'.', 'ms' => 0];
+        }
+
+        try {
+            $reply = $this->send($provider, (string) $key, $model, null, [
+                ['role' => 'user', 'content' => 'Reply with the single word: ready'],
+            ], 20, null);
+            $text = trim($reply->text);
+
+            return $result + [
+                'ok' => $text !== '' && $reply->stop !== 'refusal',
+                'reply' => mb_substr($text, 0, 80),
+                'error' => $text === '' ? 'The model answered with no text.' : null,
+                'ms' => (int) round((microtime(true) - $started) * 1000),
+            ];
+        } catch (\Throwable $e) {
+            return $result + [
+                'ok' => false,
+                // The provider's own message says what is wrong (bad key,
+                // unknown model, no credit); keys are never echoed in it.
+                'error' => mb_substr($e->getMessage(), 0, 400),
+                'ms' => (int) round((microtime(true) - $started) * 1000),
+            ];
+        }
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    private function send(string $provider, string $key, string $model, ?string $system, array $messages, int $maxTokens, ?float $temperature): AiReply
+    {
+        $thinks = AiModels::thinks($model);
+
+        return $this->driver($provider)->send(
+            $key,
+            $model,
+            $system,
+            $messages,
+            // A model that reasons first counts that reasoning in the limit,
+            // so a two-sentence remark given 150 tokens comes back empty. The
+            // daily cap, not this limit, is what bounds spend.
+            $thinks ? max($maxTokens * 4, 4000) : $maxTokens,
+            // Reasoning models refuse sampling parameters.
+            $thinks ? null : $temperature,
+        );
     }
 
     protected function driver(string $provider): AiProvider

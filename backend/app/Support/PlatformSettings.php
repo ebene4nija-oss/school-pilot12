@@ -74,7 +74,7 @@ class PlatformSettings
         return [
             // ------------------------------------------------------------ AI
             'services.ai.provider' => [
-                'group' => 'ai',
+                'group' => 'ai_models',
                 'label' => 'Default AI provider',
                 'type' => 'select',
                 'options' => ['anthropic', 'openai', 'gemini'],
@@ -87,17 +87,17 @@ class PlatformSettings
                 'help' => 'Used for report-card comments, lesson plans, worksheets and the student tutor when Claude is the provider.',
             ],
             'services.anthropic.comment_model' => [
-                'group' => 'ai',
+                'group' => 'ai_models',
                 'label' => 'Claude model for short output',
-                'type' => 'select',
-                'options' => ['claude-haiku-4-5', 'claude-sonnet-5'],
-                'help' => 'Report-card remarks and other high-volume, short responses.',
+                'type' => 'model',
+                'provider' => 'anthropic',
+                'help' => 'Report-card remarks and the student tutor: high volume, short replies.',
             ],
             'services.anthropic.document_model' => [
-                'group' => 'ai',
+                'group' => 'ai_models',
                 'label' => 'Claude model for documents',
-                'type' => 'select',
-                'options' => ['claude-sonnet-5', 'claude-opus-5-5', 'claude-haiku-4-5'],
+                'type' => 'model',
+                'provider' => 'anthropic',
                 'help' => 'Lesson plans, worksheets and exam drafts, where structure matters more than volume.',
             ],
             'services.openai.api_key' => [
@@ -107,18 +107,18 @@ class PlatformSettings
                 'help' => 'From platform.openai.com. Set it to make ChatGPT available as the default or for schools to choose.',
             ],
             'services.openai.comment_model' => [
-                'group' => 'ai',
-                'label' => 'OpenAI model for short output',
-                'type' => 'string',
-                'max' => 80,
-                'help' => 'For example gpt-5-mini. A model without a price in the spend ledger is metered at the highest known rate.',
+                'group' => 'ai_models',
+                'label' => 'ChatGPT model for short output',
+                'type' => 'model',
+                'provider' => 'openai',
+                'help' => 'Report-card remarks and the student tutor: high volume, short replies.',
             ],
             'services.openai.document_model' => [
-                'group' => 'ai',
-                'label' => 'OpenAI model for documents',
-                'type' => 'string',
-                'max' => 80,
-                'help' => 'For example gpt-5.',
+                'group' => 'ai_models',
+                'label' => 'ChatGPT model for documents',
+                'type' => 'model',
+                'provider' => 'openai',
+                'help' => 'Lesson plans, worksheets and exam drafts, where structure matters more than volume.',
             ],
             'services.gemini.api_key' => [
                 'group' => 'ai',
@@ -127,18 +127,18 @@ class PlatformSettings
                 'help' => 'From Google AI Studio. Set it to make Gemini available as the default or for schools to choose.',
             ],
             'services.gemini.comment_model' => [
-                'group' => 'ai',
+                'group' => 'ai_models',
                 'label' => 'Gemini model for short output',
-                'type' => 'string',
-                'max' => 80,
-                'help' => 'For example gemini-2.5-flash. A model without a price in the spend ledger is metered at the highest known rate.',
+                'type' => 'model',
+                'provider' => 'gemini',
+                'help' => 'Report-card remarks and the student tutor: high volume, short replies.',
             ],
             'services.gemini.document_model' => [
-                'group' => 'ai',
+                'group' => 'ai_models',
                 'label' => 'Gemini model for documents',
-                'type' => 'string',
-                'max' => 80,
-                'help' => 'For example gemini-2.5-pro.',
+                'type' => 'model',
+                'provider' => 'gemini',
+                'help' => 'Lesson plans, worksheets and exam drafts, where structure matters more than volume.',
             ],
             'services.anthropic.daily_cap_kobo' => [
                 'group' => 'ai',
@@ -346,6 +346,7 @@ class PlatformSettings
     {
         return [
             'ai' => 'AI service',
+            'ai_models' => 'AI provider and models',
             'sms' => 'SMS',
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',

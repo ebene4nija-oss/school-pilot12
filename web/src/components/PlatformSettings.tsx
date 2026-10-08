@@ -38,7 +38,7 @@ type Source = 'console' | 'server' | 'unset' | 'unreadable';
 interface Setting {
   key: string;
   label: string;
-  type: 'secret' | 'string' | 'select' | 'bool' | 'number' | 'integer' | 'email' | 'naira' | 'phone' | 'url';
+  type: 'secret' | 'string' | 'select' | 'model' | 'bool' | 'number' | 'integer' | 'email' | 'naira' | 'phone' | 'url';
   help: string | null;
   options: string[] | null;
   min: number | null;
@@ -92,6 +92,8 @@ export default function PlatformSettings({
   title,
   subtitle,
   children,
+  before,
+  onSaved,
 }: {
   /**
    * `ai` is the AI group alone, `website` the marketing site's group alone,
@@ -102,10 +104,15 @@ export default function PlatformSettings({
   subtitle: string;
   /** Extra cards under the settings, e.g. the website's screenshots. */
   children?: React.ReactNode;
+  /** A card above the settings, e.g. the AI model switcher. */
+  before?: React.ReactNode;
+  /** Called after a group saves, so a card beside it can refresh. */
+  onSaved?: () => void;
 }) {
   const [allGroups, setGroups] = useState<Group[]>([]);
   const groups = allGroups.filter((group) =>
-    section === 'integrations' ? group.key !== 'ai' && group.key !== 'website' : group.key === section,
+    // `ai_models` (provider and model choice) is shown by AiModelSwitcher.
+    section === 'integrations' ? !['ai', 'ai_models', 'website'].includes(group.key) : group.key === section,
   );
   const [usage, setUsage] = useState<AiUsage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -187,6 +194,7 @@ export default function PlatformSettings({
         for (const setting of group.settings) delete next[setting.key];
         return next;
       });
+      onSaved?.();
       setNotice(
         group.key === 'website'
           ? 'Website saved. It shows on the public site after the next site rebuild.'
@@ -231,6 +239,7 @@ export default function PlatformSettings({
         <Loading />
       ) : (
         <div className="space-y-6">
+          {before}
           {groups.map((group) => (
             <Card key={group.key} title={group.label}>
               <div className="divide-y divide-line-soft">

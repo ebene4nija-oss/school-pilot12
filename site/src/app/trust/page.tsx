@@ -48,8 +48,9 @@ export default function TrustPage() {
             <>
               <h2>AI and your data</h2>
               <p>
-                Some features use AI: report-comment drafts, lesson plans and worksheets, and the student tutor. These send limited data to an
-                AI provider outside Nigeria. <strong>No AI-drafted comment reaches a report card until a teacher approves or edits it.</strong>
+                Some features use AI: report-comment drafts, lesson plans and worksheets, and the student tutor. These send limited data, never a
+                pupil&apos;s name, to an AI provider outside Nigeria: Anthropic (Claude), OpenAI (ChatGPT) or Google (Gemini), whichever
+                the school uses. <strong>No AI-drafted comment reaches a report card until a teacher approves or edits it.</strong>
               </p>
             </>
           )}

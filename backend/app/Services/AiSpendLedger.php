@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\AiBudgetExceededException;
 use App\Models\AiUsageDaily;
+use App\Support\AiModels;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,35 +31,9 @@ use Illuminate\Support\Facades\Log;
 class AiSpendLedger
 {
     /**
-     * Published USD price per million tokens: Anthropic's as of 2026-08-11,
-     * OpenAI's and Google's as of 2026-10.
-     *
-     * Sonnet 5 is on introductory pricing ($2/$10) through 2026-08-31, after
-     * which it returns to $3/$15 — hence `input_after_intro`, so the reversion
-     * does not silently under-bill. An unknown model falls back to the most
-     * expensive row rather than to zero: under-metering an unrecognised model
-     * would let it run past the cap unnoticed.
+     * Where a provider lists no cached-token price, cache reads bill at a
+     * tenth of the input rate. Cache writes (Anthropic only) bill at 1.25x.
      */
-    private const DEFAULT_PRICING = [
-        'claude-haiku-4-5' => ['input' => 1.00, 'output' => 5.00],
-        'claude-sonnet-5' => [
-            'input' => 2.00,
-            'output' => 10.00,
-            'input_after_intro' => 3.00,
-            'output_after_intro' => 15.00,
-            'intro_ends' => '2026-08-31',
-        ],
-        'claude-opus-5' => ['input' => 5.00, 'output' => 25.00],
-        // OpenAI and Google list prices as of 2026-10 (see config/services.php).
-        'gpt-5' => ['input' => 1.25, 'output' => 10.00],
-        'gpt-5-mini' => ['input' => 0.25, 'output' => 2.00],
-        'gpt-5-nano' => ['input' => 0.05, 'output' => 0.40],
-        'gemini-2.5-pro' => ['input' => 1.25, 'output' => 10.00],
-        'gemini-2.5-flash' => ['input' => 0.30, 'output' => 2.50],
-        'gemini-2.5-flash-lite' => ['input' => 0.10, 'output' => 0.40],
-    ];
-
-    /** Cache reads bill at a tenth of the input rate; writes at 1.25x. */
     private const CACHE_READ_MULTIPLIER = 0.1;
     private const CACHE_WRITE_MULTIPLIER = 1.25;
 
@@ -239,20 +214,20 @@ class AiSpendLedger
 
         $usd = ($input / 1_000_000) * $pricing['input']
             + ($output / 1_000_000) * $pricing['output']
-            + ($cacheRead / 1_000_000) * $pricing['input'] * self::CACHE_READ_MULTIPLIER
+            + ($cacheRead / 1_000_000) * ($pricing['cached'] ?? $pricing['input'] * self::CACHE_READ_MULTIPLIER)
             + ($cacheWrite / 1_000_000) * $pricing['input'] * self::CACHE_WRITE_MULTIPLIER;
 
         return (int) ceil($usd * $this->usdToNgn() * 100);
     }
 
     /**
-     * @return array{input: float, output: float}
+     * @return array{input: float, output: float, cached: ?float}
      */
     private function pricingFor(string $model): array
     {
-        // Config overrides row by row rather than replacing the table, so an
-        // env that predates a provider still meters that provider's models.
-        $table = array_merge(self::DEFAULT_PRICING, (array) (config('services.anthropic.pricing') ?: []));
+        // List prices live in AiModels. Config overrides row by row, so a
+        // price change can be a deploy rather than a release.
+        $table = array_merge(AiModels::pricing(), (array) (config('services.anthropic.pricing') ?: []));
 
         if (! isset($table[$model])) {
             // Unknown model: bill at the most expensive row we know about. An
@@ -267,22 +242,29 @@ class AiSpendLedger
 
         // Introductory pricing that has lapsed reverts to the standard rate.
         if (isset($row['intro_ends']) && now()->gt($row['intro_ends'])) {
+            $cached = $row['cached_after_intro'] ?? null;
+
             return [
                 'input' => (float) ($row['input_after_intro'] ?? $row['input']),
                 'output' => (float) ($row['output_after_intro'] ?? $row['output']),
+                'cached' => $cached === null ? null : (float) $cached,
             ];
         }
 
-        return ['input' => (float) $row['input'], 'output' => (float) $row['output']];
+        return [
+            'input' => (float) $row['input'],
+            'output' => (float) $row['output'],
+            'cached' => isset($row['cached']) ? (float) $row['cached'] : null,
+        ];
     }
 
     /**
      * @param array<string,array<string,mixed>> $table
-     * @return array{input: float, output: float}
+     * @return array{input: float, output: float, cached: null}
      */
     private function mostExpensive(array $table): array
     {
-        $best = ['input' => 5.00, 'output' => 25.00];
+        $best = ['input' => 5.00, 'output' => 25.00, 'cached' => null];
 
         foreach ($table as $row) {
             $output = (float) ($row['output_after_intro'] ?? $row['output'] ?? 0);
@@ -291,6 +273,7 @@ class AiSpendLedger
                 $best = [
                     'input' => (float) ($row['input_after_intro'] ?? $row['input'] ?? 0),
                     'output' => $output,
+                    'cached' => null,
                 ];
             }
         }

@@ -29,21 +29,42 @@ class ClaudeService
         // score do not share a cached remark.
         $tenant = $scoreData['school_id'] ?? 'shared';
         $cacheKey = 'comment_' . $tenant . '_' . md5(json_encode($scoreData));
+        $name = self::firstName((string) ($scoreData['student_name'] ?? ''));
 
-        return Cache::remember($cacheKey, 86400, function () use ($scoreData) {
+        return Cache::remember($cacheKey, 86400, function () use ($scoreData, $name) {
             if ($this->gateway->shouldStub(isset($scoreData['school_id']) ? (int) $scoreData['school_id'] : null)) {
-                return "[STUB] {$scoreData['student_name']} scored {$scoreData['total_score']}% in {$scoreData['subject']}. This placeholder text was generated without calling the AI provider.";
+                return "[STUB] {$name} scored {$scoreData['total_score']}% in {$scoreData['subject']}. This placeholder text was generated without calling the AI provider.";
             }
 
-            $prompt = "Write a short, encouraging, 2-sentence teacher report card remark for student {$scoreData['student_name']} in {$scoreData['subject']} who scored {$scoreData['total_score']}%.";
-
-            return $this->request(
+            return self::withName($this->request(
                 'comment',
-                $prompt,
+                self::remarkPrompt((string) $scoreData['subject'], $scoreData['total_score']),
                 150,
                 isset($scoreData['school_id']) ? (int) $scoreData['school_id'] : null
-            )->text;
+            )->text, $name);
         });
+    }
+
+    /**
+     * The remark prompt. Data minimisation (NDPA, doc §12): the provider is
+     * outside Nigeria and gets the subject and score only — never the
+     * child's name. The model writes [NAME] and the name goes in here.
+     */
+    public static function remarkPrompt(string $subject, mixed $score): string
+    {
+        return "Write a short, encouraging, 2-sentence teacher report card remark for a student in {$subject} who scored {$score}%. "
+            . 'Refer to the student as [NAME] — do not invent a name, and use [NAME] at most once.';
+    }
+
+    /** Put the child's first name where the model wrote [NAME]. */
+    public static function withName(string $remark, string $firstName): string
+    {
+        return trim(str_ireplace(['[NAME]', '[name]'], $firstName !== '' ? $firstName : 'This student', $remark));
+    }
+
+    public static function firstName(string $fullName): string
+    {
+        return (string) (preg_split('/\s+/', trim($fullName))[0] ?? '');
     }
 
     /**

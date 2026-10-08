@@ -205,8 +205,9 @@ class AiSpendCapTest extends TestCase
             'output_tokens' => 1_000_000,
         ]);
 
-        // Falls back to the priciest known row ($25/MTok output) = ₦37,500.
-        $this->assertSame(3_750_000, $this->ledger()->spentTodayKobo($this->school->id));
+        // Falls back to the priciest known row (Claude Fable 5.1 and GPT-6
+        // Astra, $50/MTok output) = ₦75,000.
+        $this->assertSame(7_500_000, $this->ledger()->spentTodayKobo($this->school->id));
     }
 
     /** Yesterday's spend must not count against today's budget. */

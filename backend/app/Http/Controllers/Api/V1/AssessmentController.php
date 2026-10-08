@@ -200,9 +200,12 @@ class AssessmentController extends Controller
 
         $entry = ScoreEntry::where('school_id', $schoolId)->with(['student.user', 'subject'])->findOrFail($id);
 
-        // Wire ClaudeService LLM API generator
+        // The school's own provider, cap and ledger apply; without school_id
+        // the call was neither capped nor metered, and ignored the school's
+        // choice of provider.
         $claudeService = app(\App\Services\ClaudeService::class);
         $generatedComment = $claudeService->generateReportCardComment([
+            'school_id' => $schoolId,
             'student_name' => $entry->student && $entry->student->user ? $entry->student->user->name : 'Student',
             'subject' => $entry->subject ? $entry->subject->name : 'Subject',
             'total_score' => $entry->total_score,
@@ -218,7 +221,7 @@ class AssessmentController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'AI comment generated via Claude API and set to pending approval.',
+            'message' => 'AI comment drafted and set to pending approval.',
             'score_entry' => $entry,
         ]);
     }

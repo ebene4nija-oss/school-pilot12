@@ -883,6 +883,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'index']);
             Route::put('/platform/settings', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'update']);
             Route::get('/platform/ai-usage', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'aiUsage']);
+            Route::get('/platform/ai/models', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'aiModels']);
+            // Each test is a real (tiny) paid call.
+            Route::post('/platform/ai/test', [\App\Http\Controllers\Api\V1\PlatformSettingsController::class, 'aiTest'])->middleware('throttle:10,1');
             // Per-school email on/off and daily limits; what each school sent today.
             Route::get('/platform/messaging', [\App\Http\Controllers\Api\V1\PlatformMessagingController::class, 'index']);
             Route::post('/platform/schools/{schoolId}/messaging', [\App\Http\Controllers\Api\V1\PlatformMessagingController::class, 'update']);
