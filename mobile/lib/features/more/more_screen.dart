@@ -116,6 +116,19 @@ class MoreScreen extends ConsumerWidget {
               label: 'My ID card',
               onTap: () => context.push('/id-card'),
             ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.auto_awesome_outlined,
+              label: 'AI Studio',
+              detail: 'Draft lesson plans, questions and homework',
+              onTap: () => context.push('/ai-studio'),
+            ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.beach_access_outlined,
+              label: 'My leave',
+              onTap: () => context.push('/leave'),
+            ),
           if (role.isStaff)
             _Tile(
               icon: Icons.receipt_long_outlined,

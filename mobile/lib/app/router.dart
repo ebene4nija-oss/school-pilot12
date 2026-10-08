@@ -31,8 +31,10 @@ import '../features/more/profile_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/shell/app_shell.dart';
 import '../features/staff/payroll_screen.dart';
+import '../features/staff/leave_screen.dart';
 import '../features/staff/payslips_screen.dart';
 import '../features/students/students_screen.dart';
+import '../features/teaching/ai_studio_screen.dart';
 import '../features/timetable/timetable_screen.dart';
 import 'navigation.dart';
 
@@ -99,6 +101,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/payroll', builder: (_, __) => const PayrollScreen()),
       GoRoute(path: '/video-providers', builder: (_, __) => const VideoProvidersScreen()),
       GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
+      GoRoute(path: '/leave', builder: (_, __) => const LeaveScreen()),
+      GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
 
       ShellRoute(
         builder: (context, state, child) =>

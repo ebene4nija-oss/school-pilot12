@@ -193,10 +193,12 @@ class Api {
   static const tutorMastery = '$version/ai/tutor/mastery';
   static const aiLessonPlan = '$version/ai/lesson-plan';
   static const aiHomeworkIdeas = '$version/ai/homework-ideas';
+  static const aiExamQuestions = '$version/ai/exam-generation';
 
   // HR
   static const leave = '$version/hr/leave';
   static String leaveDecision(int id) => '$version/hr/leave/$id/decision';
+  static String leaveCancel(int id) => '$version/hr/leave/$id/cancel';
 
   // Jobs
   static String job(String batchId) => '$version/jobs/$batchId';

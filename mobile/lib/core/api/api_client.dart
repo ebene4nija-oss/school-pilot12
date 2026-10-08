@@ -65,17 +65,21 @@ class ApiClient {
     return res.data as T;
   }
 
+  /// [timeout] overrides the default wait for a reply, for the few calls
+  /// that are slow by nature (an AI draft can take most of a minute).
   Future<T> post<T>(
     String path, {
     Object? body,
     Map<String, dynamic>? query,
     CancelToken? cancelToken,
+    Duration? timeout,
   }) async {
     final res = await _dio.post<T>(
       path,
       data: body,
       queryParameters: query,
       cancelToken: cancelToken,
+      options: timeout == null ? null : Options(receiveTimeout: timeout),
     );
     return res.data as T;
   }
