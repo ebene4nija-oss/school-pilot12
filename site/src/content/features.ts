@@ -59,7 +59,8 @@ export const features: Feature[] = [
     faq: [
       { id: "scheme", q: "Can each section grade differently?", a: "Yes. Nursery, Primary, JSS and SS each get their own assessment scheme." },
       { id: "positions", q: "Does it compute positions?", a: "Yes: class positions and subject positions, from the scores entered." },
-      { id: "ai", q: "Do we have to use AI comments?", a: "No. Teachers can write every comment themselves. If AI drafts one, it waits for a teacher's approval." },
+      { id: "ai", q: "Do we have to use AI comments?", a: "No. Teachers can write every comment themselves. If AI drafts one, it waits for a teacher's approval, and the student's name is never sent to the AI." },
+      { id: "plan", q: "Which plan includes results?", a: "School Management with Result Management, at ₦500 per active student per term, includes result computation, broadsheets, report cards, printing and result PINs. The School Management Subscription is for schools that keep their own result process." },
       { id: "print", q: "Can we still print report cards?", a: "Yes. Report cards are generated as PDFs you can print or share." },
     ],
     related: ["cbt", "student-management", "fees-finance"],
@@ -138,7 +139,7 @@ export const features: Feature[] = [
     faq: [
       { id: "online", q: "Can parents pay online?", a: "Yes, online fee payment is supported. We confirm the payment options with your school during setup." },
       { id: "cash", q: "What about cash and bank transfers?", a: "The bursar records them against the invoice, and the parent's balance updates." },
-      { id: "cost", q: "Does fees management cost extra?", a: "No. Fees tracking is part of the free core." },
+      { id: "cost", q: "Does fees management cost extra?", a: "No. Fees, invoices, part-payments and receipts are included in every plan." },
     ],
     related: ["student-management", "results-report-cards", "lms"],
   },
@@ -196,7 +197,7 @@ export const features: Feature[] = [
       { title: "Set assignments", text: "Students submit online and get work back with feedback. Scores can count towards CA." },
       { title: "Plan lessons", text: "Teachers write lesson plans, with AI Studio drafting a starting point, and submit them for review." },
       { title: "Hold virtual classes", text: "Schedule lessons on Zoom or Google Meet; attendance is read from the meeting report." },
-      { title: "Revise with the AI tutor", text: "Students ask questions and get explanations, within limits your school sets." },
+      { title: "Revise with the AI tutor", text: "Students ask questions and get explanations, within limits your school sets, from the AI your school chooses: Claude, ChatGPT or Gemini." },
     ],
     benefits: [
       { title: "One system, not another app", text: "The LMS uses the same students, classes and subjects as your results." },
@@ -211,7 +212,8 @@ export const features: Feature[] = [
     },
     shot: { src: "/screens/student-app-phone.webp", alt: "Student app showing today's materials, pending assignments and the next virtual class", phone: true },
     faq: [
-      { id: "cost", q: "Is the LMS included free?", a: "Yes. Learning materials, assignments, lesson plans, AI Studio and the AI tutor are part of the free core." },
+      { id: "cost", q: "Does the LMS cost extra?", a: "No. Learning materials, assignments, lesson plans, AI Studio and the AI tutor are included in every plan." },
+      { id: "ai-provider", q: "Which AI does SchoolPilot use?", a: "Claude, ChatGPT or Gemini. Your school chooses, and can switch at any time from its AI settings. Students' names are not sent to the AI provider." },
       { id: "separate", q: "Is it a separate LMS we have to set up?", a: "No. It's part of SchoolPilot, using the classes, subjects and students you already have." },
       { id: "video", q: "Do we need our own Zoom or Meet account?", a: "Yes, virtual classes use your school's Zoom or Google Meet; SchoolPilot schedules them and reads attendance." },
       { id: "ai-safe", q: "Is the AI tutor safe for students?", a: "It's for study help only. Your school chooses which sections and subjects can use it, sets a daily message limit, and can lock it during exams." },
@@ -239,7 +241,8 @@ export const features: Feature[] = [
     ],
     benefits: [
       { title: "One set of records", text: "Admissions, attendance, staff and fees all point at the same student and staff records." },
-      { title: "Boarding and more", text: "Hostel and sick bay, library, bus tracking from the driver's phone, and ID cards, when you need them." },
+      { title: "Boarding and more", text: "Hostel rooms and beds, exeats and roll calls, sick bay, library, bus tracking from the driver's phone, and ID cards, when you need them." },
+      { title: "Safe pickup", text: "Parents name who may collect their child, and can withdraw that permission at any time." },
       { title: "Roles and permissions", text: "Each staff member sees what their role needs; custom roles for your school's structure." },
       { title: "Year to year", text: "Session rollover carries classes and students into the new session." },
     ],
@@ -252,7 +255,8 @@ export const features: Feature[] = [
     faq: [
       { id: "modules", q: "Do we have to use every module?", a: "No. Switch on what you need; everything shares the same records when you add more." },
       { id: "boarding", q: "We're a day school. Is the boarding side in the way?", a: "No. Hostel and sick bay only appear if your school uses them." },
-      { id: "staff", q: "Is payroll included?", a: "Yes. Staff records, salary structures, leave, loans and payslips are part of the free core." },
+      { id: "boarding-cost", q: "How is boarding priced?", a: "School Management with Boarding School Management is ₦1,000 per boarder per term, on either plan, in place of the plan rate. Day students stay at their plan rate." },
+      { id: "staff", q: "Is payroll included?", a: "Yes. Staff records, salary structures, leave, loans and payslips are included in every plan." },
     ],
     related: ["student-management", "fees-finance", "lms"],
   },
