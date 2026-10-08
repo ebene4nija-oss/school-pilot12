@@ -1,0 +1,5 @@
+# Binary documents: never convert line endings (a CRLF inside a PDF corrupts it).
+*.pdf binary
+*.png binary
+*.webp binary
+*.jpg binary
