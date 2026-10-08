@@ -91,7 +91,9 @@ class WhatsAppService
      */
     public function sendPaymentReceiptNotification(string $recipientPhone, string $parentName, string $amount, string $invoiceRef): array
     {
-        $msg = "Dear {$parentName}, payment of ₦{$amount} for Invoice #{$invoiceRef} has been received. Download receipt: " . url("/verify-result/{$invoiceRef}");
+        // No link: the old one pointed at the result-verification page, which
+        // knows nothing about payments. The receipt is in the parent app.
+        $msg = "Dear {$parentName}, we have received your payment of ₦{$amount} (ref {$invoiceRef}). Thank you. Your receipt is in the SchoolPilot app.";
         return $this->sendMessage($recipientPhone, $msg);
     }
 

@@ -8,11 +8,11 @@ Items parked for later. Each needs a decision before work starts.
       Paystack / Flutterwave keys from the web (write-only, encrypted, audited),
       so fees settle to the school's account. Explain the change and its risk
       before building.
-- [ ] **`recordPayment` has no balance cap.** A manual payment can exceed what
+- [x] **`recordPayment` has no balance cap.** A manual payment can exceed what
       the invoice owes.
-- [ ] **WhatsApp receipt goes to a placeholder number** (+2348000000000) instead
+- [x] **WhatsApp receipt goes to a placeholder number** (+2348000000000) instead
       of the guardian's.
-- [ ] **Reconcile can approve card payments.** Only offline payments (transfer,
+- [x] **Reconcile can approve card payments.** Only offline payments (transfer,
       cash) should be approvable by hand; card payments are confirmed by the
       gateway webhook.
 

@@ -572,7 +572,31 @@ class NotificationController extends Controller
         }
 
         if (!$recipientPhone) {
-            $recipientPhone = '+2348000000000'; // Default fallback phone
+            return response()->json([
+                'message' => 'No phone number is on file for this recipient. Enter the parent\'s number to send this.',
+            ], 422);
+        }
+
+        /*
+         * The message states real figures, so the caller must supply them.
+         * This used to fill any gap with invented demo values (a score of 85,
+         * a fee balance of ₦30,000, homework called "Algebra Exercise 4") and
+         * send those to a parent as fact.
+         */
+        $required = [
+            'result' => ['term', 'total_score', 'average', 'verification_token'],
+            'attendance' => ['date', 'status'],
+            'fee_balance' => ['total_amount', 'amount_paid', 'balance', 'due_date'],
+            'homework' => ['subject', 'title', 'due_date'],
+            'timetable' => ['class_name', 'summary'],
+        ][$request->type];
+
+        $missing = array_values(array_filter($required, fn ($k) => ! filled($request->input("details.{$k}"))));
+
+        if ($missing !== []) {
+            return response()->json([
+                'message' => 'Missing details for a '.$request->type.' message: '.implode(', ', $missing).'.',
+            ], 422);
         }
 
         $whatsAppService = app(WhatsAppService::class);
@@ -585,10 +609,10 @@ class NotificationController extends Controller
                     $recipientPhone,
                     $recipientName,
                     $studentName,
-                    $details['term'] ?? 'Current Term',
-                    (string)($details['total_score'] ?? '85'),
-                    (string)($details['average'] ?? '85'),
-                    $details['verification_token'] ?? 'SP_TOKEN_' . $student->id
+                    $details['term'],
+                    (string) $details['total_score'],
+                    (string) $details['average'],
+                    $details['verification_token']
                 );
                 break;
 
@@ -597,8 +621,8 @@ class NotificationController extends Controller
                     $recipientPhone,
                     $recipientName,
                     $studentName,
-                    $details['date'] ?? now()->toDateString(),
-                    $details['status'] ?? 'Present'
+                    $details['date'],
+                    $details['status']
                 );
                 break;
 
@@ -607,10 +631,10 @@ class NotificationController extends Controller
                     $recipientPhone,
                     $recipientName,
                     $studentName,
-                    (string)($details['total_amount'] ?? '50,000.00'),
-                    (string)($details['amount_paid'] ?? '20,000.00'),
-                    (string)($details['balance'] ?? '30,000.00'),
-                    $details['due_date'] ?? now()->addDays(7)->toDateString()
+                    (string) $details['total_amount'],
+                    (string) $details['amount_paid'],
+                    (string) $details['balance'],
+                    $details['due_date']
                 );
                 break;
 
@@ -619,9 +643,9 @@ class NotificationController extends Controller
                     $recipientPhone,
                     $recipientName,
                     $studentName,
-                    $details['subject'] ?? 'Mathematics',
-                    $details['title'] ?? 'Algebra Exercise 4',
-                    $details['due_date'] ?? now()->addDays(2)->toDateString()
+                    $details['subject'],
+                    $details['title'],
+                    $details['due_date']
                 );
                 break;
 
@@ -630,8 +654,8 @@ class NotificationController extends Controller
                     $recipientPhone,
                     $recipientName,
                     $studentName,
-                    $details['class_name'] ?? 'JSS 1',
-                    $details['summary'] ?? 'Mon-Fri: 8:00 AM - 2:00 PM. Check portal for full schedule.'
+                    $details['class_name'],
+                    $details['summary']
                 );
                 break;
         }

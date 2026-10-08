@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\PaymentGatewayService;
+use App\Services\PaymentSettlement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -154,6 +156,8 @@ class FinanceController extends Controller
              * teller's slip number — so that is the only case still honoured.
              */
             'reference' => 'nullable|string|max:100|unique:payments,reference',
+            // A bursar who really is taking the same amount twice says so.
+            'confirm_duplicate' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -162,8 +166,6 @@ class FinanceController extends Controller
 
         $user = $request->user();
         $schoolId = $this->schoolId();
-
-        $invoice = Invoice::where('school_id', $schoolId)->findOrFail($request->invoice_id);
 
         // Direct manual payment (cash/bank transfer by admin) vs gateway payment verification
         $isManual = in_array($request->gateway, ['cash', 'bank_transfer']);
@@ -177,43 +179,81 @@ class FinanceController extends Controller
             ? $request->reference
             : PaymentGatewayService::reference($isManual ? 'SPMP' : 'SPFP');
 
-        $payment = Payment::create([
-            'school_id' => $schoolId,
-            'invoice_id' => $invoice->id,
-            'reference' => $reference,
-            'amount' => $request->amount,
-            'gateway' => $request->gateway,
-            'status' => $status,
-            'paid_at' => $status === 'successful' ? now() : null,
-        ]);
+        /*
+         * The invoice row is locked for the length of the write. Two bursars
+         * recording a payment at once each used to read the same `amount_paid`
+         * and add to it, so one of the two payments vanished from the invoice.
+         * The cap is checked under the same lock for the same reason.
+         */
+        $outcome = DB::transaction(function () use ($request, $schoolId, $status, $reference) {
+            $invoice = Invoice::where('school_id', $schoolId)->lockForUpdate()->findOrFail($request->invoice_id);
 
-        if ($status === 'successful') {
-            $invoice->amount_paid += $request->amount;
-            if ($invoice->amount_paid >= $invoice->total_amount) {
-                $invoice->status = 'paid';
-            } else {
-                $invoice->status = 'partial';
+            $amount = round((float) $request->amount, 2);
+
+            if (PaymentSettlement::balance($invoice) <= 0) {
+                return response()->json(['message' => 'This invoice is already fully paid.'], 422);
             }
-            $invoice->save();
+
+            if (PaymentSettlement::exceedsBalance($invoice, $amount)) {
+                return response()->json([
+                    'message' => 'That is more than the ₦'.number_format(PaymentSettlement::balance($invoice), 2).' still owed on this invoice.',
+                    'balance' => PaymentSettlement::balance($invoice),
+                ], 422);
+            }
+
+            /*
+             * The same amount, by the same means, on the same invoice within
+             * minutes is almost always one payment sent twice — a bursar's
+             * double-tap, or the mobile app retrying over a dropped connection.
+             * Say so rather than credit it again; a real second payment of the
+             * same size can be confirmed.
+             */
+            if (! $request->boolean('confirm_duplicate')) {
+                $duplicate = Payment::where('school_id', $schoolId)
+                    ->where('invoice_id', $invoice->id)
+                    ->where('amount', $amount)
+                    ->where('gateway', $request->gateway)
+                    ->where('created_at', '>=', now()->subMinutes(10))
+                    ->exists();
+
+                if ($duplicate) {
+                    return response()->json([
+                        'message' => 'This looks like a payment you just recorded. Send it again with confirm_duplicate if it is a second one.',
+                        'code' => 'possible_duplicate',
+                    ], 409);
+                }
+            }
+
+            $payment = Payment::create([
+                'school_id' => $schoolId,
+                'invoice_id' => $invoice->id,
+                'reference' => $reference,
+                'amount' => $amount,
+                'gateway' => $request->gateway,
+                'status' => 'pending',
+                'paid_at' => null,
+            ]);
+
+            if ($status === 'successful') {
+                app(PaymentSettlement::class)->settle($payment);
+            }
+
+            return [$invoice->fresh(), $payment->fresh()];
+        });
+
+        if ($outcome instanceof \Illuminate\Http\JsonResponse) {
+            return $outcome;
         }
 
-        // Dispatch automated WhatsApp notification receipt to parent if successful
-        $notificationResult = null;
-        if ($status === 'successful') {
-            $whatsAppService = app(\App\Services\WhatsAppService::class);
-            $notificationResult = $whatsAppService->sendPaymentReceiptNotification(
-                $request->get('phone', '+2348000000000'),
-                $user->name,
-                number_format($request->amount, 2),
-                $payment->reference
-            );
-        }
+        [$invoice, $payment] = $outcome;
+
+        $receipts = $status === 'successful' ? app(PaymentSettlement::class)->sendReceipt($payment) : [];
 
         return response()->json([
             'message' => $status === 'successful' ? 'Payment recorded successfully' : 'Payment initiated. Awaiting gateway webhook confirmation.',
             'payment' => $payment,
             'invoice' => $invoice,
-            'whatsapp_notification' => $notificationResult,
+            'receipts_sent' => count($receipts),
         ]);
     }
 
@@ -335,22 +375,10 @@ class FinanceController extends Controller
              */
             $payment = Payment::allTenants()->where('reference', $reference)->first();
 
-            if ($payment && $payment->status !== 'successful') {
-                $payment->update([
-                    'status' => 'successful',
-                    'paid_at' => now(),
-                ]);
-
-                $invoice = $payment->invoice;
-                if ($invoice) {
-                    $invoice->amount_paid += $payment->amount;
-                    if ($invoice->amount_paid >= $invoice->total_amount) {
-                        $invoice->status = 'paid';
-                    } else {
-                        $invoice->status = 'partial';
-                    }
-                    $invoice->save();
-                }
+            // Locked and idempotent: gateways retry deliveries, sometimes
+            // concurrently, and a second delivery must not credit twice.
+            if ($payment) {
+                app(PaymentSettlement::class)->settle($payment);
             }
 
             /*
@@ -515,49 +543,66 @@ class FinanceController extends Controller
             return response()->json(['message' => 'Bank transfer payment record not found.'], 404);
         }
 
-        if ($request->action === 'approve') {
-            if ($payment->status !== 'successful') {
-                $payment->status = 'successful';
-                $payment->paid_at = now();
-                $payment->save();
+        /*
+         * Only money the school itself took offline can be settled by hand.
+         * A card payment is confirmed by the gateway's signed webhook; letting
+         * a person approve one means a payment the gateway never confirmed can
+         * be marked paid.
+         */
+        if (! in_array($payment->gateway, ['bank_transfer', 'cash'], true)) {
+            return response()->json([
+                'message' => 'Card payments are confirmed by the payment gateway and cannot be approved or rejected by hand.',
+            ], 422);
+        }
 
-                $invoice = $payment->invoice;
-                if ($invoice) {
-                    $invoice->amount_paid += $payment->amount;
-                    if ($invoice->amount_paid >= $invoice->total_amount) {
-                        $invoice->status = 'paid';
-                    } else {
-                        $invoice->status = 'partial';
-                    }
-                    $invoice->save();
+        if ($request->action === 'approve') {
+            $result = DB::transaction(function () use ($payment) {
+                $payment = Payment::where('school_id', $payment->school_id)->lockForUpdate()->find($payment->id);
+
+                if ($payment->status === 'successful') {
+                    return response()->json(['message' => 'This payment has already been approved.'], 409);
                 }
 
-                // Send WhatsApp notification receipt to parent upon reconciliation approval
-                $whatsAppService = app(\App\Services\WhatsAppService::class);
-                $parentUser = $invoice ? ($invoice->student ? $invoice->student->user : null) : null;
-                $phone = $parentUser ? ($parentUser->userProfile->phone ?? '+2348000000000') : '+2348000000000';
-                $parentName = $parentUser ? $parentUser->name : 'Parent';
+                $invoice = Invoice::where('school_id', $payment->school_id)->lockForUpdate()->find($payment->invoice_id);
 
-                $whatsAppService->sendPaymentReceiptNotification(
-                    $phone,
-                    $parentName,
-                    number_format($payment->amount, 2),
-                    $payment->reference
-                );
+                if ($invoice && PaymentSettlement::exceedsBalance($invoice, (float) $payment->amount)) {
+                    return response()->json([
+                        'message' => 'Approving this would put the invoice over what it owes (₦'.number_format(PaymentSettlement::balance($invoice), 2).' left).',
+                    ], 422);
+                }
+
+                app(PaymentSettlement::class)->settle($payment);
+
+                return $payment->fresh();
+            });
+
+            if ($result instanceof \Illuminate\Http\JsonResponse) {
+                return $result;
             }
+
+            app(PaymentSettlement::class)->sendReceipt($result);
 
             return response()->json([
                 'message' => 'Bank transfer reconciled and approved successfully.',
-                'payment' => $payment->fresh(['invoice']),
-            ]);
-        } else {
-            $payment->status = 'failed';
-            $payment->save();
-
-            return response()->json([
-                'message' => 'Bank transfer payment rejected.',
-                'payment' => $payment,
+                'payment' => $result->fresh(['invoice']),
             ]);
         }
+
+        // Rejecting only makes sense for money not yet counted. A settled
+        // payment is already on the invoice; flipping its status here would
+        // leave the invoice credited for a payment marked failed.
+        if ($payment->status === 'successful') {
+            return response()->json([
+                'message' => 'This payment has already been applied to the invoice and cannot be rejected here.',
+            ], 409);
+        }
+
+        $payment->status = 'failed';
+        $payment->save();
+
+        return response()->json([
+            'message' => 'Bank transfer payment rejected.',
+            'payment' => $payment,
+        ]);
     }
 }
