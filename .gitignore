@@ -40,3 +40,6 @@ docs/*.zip
 # and desktop/packaging/Build-Package.ps1 — and neither belongs in history.
 desktop/relay/target/
 desktop/packaging/dist/
+
+# Design-reference archives (the unzipped folders are tracked; keep the zips out of history from here on)
+*.zip
