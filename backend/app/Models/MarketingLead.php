@@ -37,6 +37,11 @@ class MarketingLead extends Model
         'lost_reason', 'consent_at', 'last_contact_at', 'partner_id',
     ];
 
+    public function partner()
+    {
+        return $this->belongsTo(Partner::class);
+    }
+
     protected $casts = [
         'full_name' => 'encrypted',
         'phone' => 'encrypted',

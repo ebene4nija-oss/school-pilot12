@@ -2,7 +2,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent';
+  role: 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent' | 'partner';
   school_id?: number | null;
 }
 

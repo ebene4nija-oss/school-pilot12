@@ -70,6 +70,11 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/super-admin', request.url));
     }
 
+    // A partner has no school; the dashboard would 403.
+    if (role === 'partner') {
+      return NextResponse.redirect(new URL('/partner', request.url));
+    }
+
     // A nurse has the clinic log and nothing else; the dashboard would 403.
     if (role === 'nurse') {
       return NextResponse.redirect(new URL('/health', request.url));

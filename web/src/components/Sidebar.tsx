@@ -22,7 +22,7 @@ import { fetchApi } from '@/lib/api';
  * link is a courtesy and not a control.
  */
 
-export type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent';
+export type Role = 'super_admin' | 'school_admin' | 'teacher' | 'nurse' | 'bursar' | 'student' | 'parent' | 'partner';
 
 type Item = {
   href: string;
@@ -38,6 +38,11 @@ type Item = {
 };
 
 const SECTIONS: { heading?: string; items: Item[] }[] = [
+  // A partner's whole menu: they belong to no school.
+  {
+    heading: 'Partner',
+    items: [{ href: '/partner', icon: '🤝', label: 'My referrals', roles: ['partner'] }],
+  },
   /*
    * The operator's own menu (docs/super-admin-menu.md). First, so it stays on
    * top while an operator has a school open and that school's menu appears
@@ -51,6 +56,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin/website', icon: '🌐', label: 'Website', roles: ['super_admin'] },
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/billing', icon: '💳', label: 'Billing', roles: ['super_admin'] },
+      { href: '/super-admin/partners', icon: '🤝', label: 'Partners', roles: ['super_admin'] },
       { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
       { href: '/super-admin/report-card-requests', icon: '🖨️', label: 'Report card requests', roles: ['super_admin'], badge: 'rc_requests' },
       { href: '/super-admin/announcements', icon: '📣', label: 'Announcements', roles: ['super_admin'] },

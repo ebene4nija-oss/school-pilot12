@@ -27,7 +27,7 @@ class PlatformLeadController extends Controller
             'hot' => 'nullable|boolean',
         ]);
 
-        $query = MarketingLead::query()->with('owner:id,name');
+        $query = MarketingLead::query()->with(['owner:id,name', 'partner:id,name']);
 
         if (! empty($validated['status'])) {
             $query->where('status', $validated['status']);
@@ -144,6 +144,7 @@ class PlatformLeadController extends Controller
             'migrate_what' => $lead->migrate_what,
             'ref_code' => $lead->ref_code,
             'partner_id' => $lead->partner_id,
+            'partner' => $lead->partner?->name,
             'landing_page' => $lead->landing_page,
             'utm_source' => $lead->utm_source,
             'utm_medium' => $lead->utm_medium,

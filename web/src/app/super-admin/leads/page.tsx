@@ -33,6 +33,7 @@ interface Lead {
   preferred_subdomain: string | null;
   migrate_what: string | null;
   ref_code: string | null;
+  partner: string | null;
   landing_page: string | null;
   utm_source: string | null;
   utm_campaign: string | null;
@@ -224,6 +225,7 @@ export default function LeadsPage() {
                       {lead.utm_source ? ` · via ${lead.utm_source}${lead.utm_campaign ? ` / ${lead.utm_campaign}` : ''}` : ''}
                       {` · ${lead.pages_viewed} page(s) viewed`}
                       {lead.ref_code ? ` · ref ${lead.ref_code}` : ''}
+                      {lead.partner ? ` · referred by partner ${lead.partner}` : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

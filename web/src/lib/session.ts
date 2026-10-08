@@ -35,7 +35,8 @@ export type SessionRole =
   | 'nurse'
   | 'bursar'
   | 'student'
-  | 'parent';
+  | 'parent'
+  | 'partner';
 
 export interface Session {
   token: string;
@@ -57,6 +58,8 @@ export interface Session {
 export function landingPathFor(role: SessionRole | null): string {
   if (role === 'super_admin') return '/super-admin';
   if (role === 'teacher') return '/results';
+  // A partner belongs to no school; their portal is their referrals and earnings.
+  if (role === 'partner') return '/partner';
   // A nurse's whole portal is the clinic log; the dashboard would refuse her.
   if (role === 'nurse') return '/health';
   // A bursar works the fee book; the dashboard is results and attendance.
