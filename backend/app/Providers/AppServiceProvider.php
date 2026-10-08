@@ -41,7 +41,37 @@ class AppServiceProvider extends ServiceProvider
         // backend.env values.
         \App\Support\PlatformSettings::apply();
 
+        $this->guardProductionConfig();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Refuse to boot a production deployment with development settings.
+     *
+     * `APP_DEBUG=true` prints stack traces and environment values to anyone who
+     * triggers an error, and `MAIL_MAILER=log` silently swallows every
+     * password-reset and account-setup link. Both are the defaults in
+     * .env.example, so both are easy to ship by accident.
+     */
+    private function guardProductionConfig(): void
+    {
+        if (! $this->app->environment('production') || $this->app->runningUnitTests()) {
+            return;
+        }
+
+        $problems = [];
+
+        if (config('app.debug')) {
+            $problems[] = 'APP_DEBUG must be false';
+        }
+
+        if (in_array(config('mail.default'), ['log', 'array'], true)) {
+            $problems[] = 'MAIL_MAILER must be a real transport (not log/array)';
+        }
+
+        if ($problems !== []) {
+            throw new \RuntimeException('Unsafe production configuration: '.implode('; ', $problems).'.');
+        }
     }
 
     private function configureRateLimiting(): void

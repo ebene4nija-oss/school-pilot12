@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { fetchApi, uploadApi } from '@/lib/api';
-import type { Student } from '@/types/api';
 import EnrolStudentForm, { type ClassOption } from '@/components/EnrolStudentForm';
 import StudentDirectory from '@/components/StudentDirectory';
 
@@ -38,9 +37,8 @@ type MigrationRequest = {
 };
 
 export default function StudentsPage() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [rosterError, setRosterError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Bumped after an enrolment or import so the directory reloads itself.
+  const [rosterVersion, setRosterVersion] = useState(0);
   const [activeTab, setActiveTab] = useState<'roster' | 'single' | 'bulk_students' | 'migration'>('roster');
   
   // Bulk CSV State — upload, look at what it found, then confirm.
@@ -62,40 +60,10 @@ export default function StudentsPage() {
   const [migrationBusy, setMigrationBusy] = useState(false);
   const [migration, setMigration] = useState<MigrationRequest | null>(null);
 
-  /**
-   * Fetches the roster and returns it; the caller owns the state.
-   *
-   * The endpoint paginates, so the rows are under `data`; older deployments
-   * returned a bare array.
-   */
-  const fetchStudents = useCallback(async () => {
-    const data = await fetchApi<{ data?: Student[] } | Student[]>('/students');
-
-    return Array.isArray(data) ? data : (data.data ?? []);
-  }, []);
-
-  const loadStudents = useCallback(async () => {
-    setStudents(await fetchStudents());
-  }, [fetchStudents]);
+  const loadStudents = useCallback(() => setRosterVersion((v) => v + 1), []);
 
   useEffect(() => {
     let cancelled = false;
-
-    (async () => {
-      try {
-        const roster = await fetchStudents();
-        if (!cancelled) setStudents(roster);
-      } catch (err) {
-        // Shown, not swallowed into console.error: an admin staring at an empty
-        // roster needs to know the request failed rather than assume the school
-        // has no students.
-        if (!cancelled) {
-          setRosterError(err instanceof Error ? err.message : 'Could not load the roster.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
 
     // Classes and their arms drive the "import this whole file into JSS 1 Gold"
     // picker, so a register with no class column can still be placed.
@@ -122,7 +90,7 @@ export default function StudentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [fetchStudents]);
+  }, []);
 
   /**
    * Step one: send the file up and get back what the server made of it.
@@ -275,15 +243,6 @@ export default function StudentsPage() {
             </button>
           </div>
         </div>
-
-        {rosterError && (
-          <p
-            role="alert"
-            className="mb-6 rounded-lg border border-negative/30 bg-negative-soft px-4 py-3 text-sm text-negative"
-          >
-            {rosterError}
-          </p>
-        )}
 
         {/* 1. Single Student Registration Form */}
         {activeTab === 'single' && (
@@ -568,7 +527,7 @@ export default function StudentsPage() {
         )}
 
         {/* The student list: server-side search, filters, scope and bulk actions. */}
-        {activeTab === 'roster' && <StudentDirectory />}
+        {activeTab === 'roster' && <StudentDirectory key={rosterVersion} />}
       </main>
     </div>
   );

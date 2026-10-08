@@ -31,6 +31,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <head>
+        {/* App Router root layout: the rule below targets pages/_document, so it is a false positive here. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
