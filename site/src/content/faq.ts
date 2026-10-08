@@ -45,7 +45,7 @@ export const faqGroups: { title: string; items: Faq[] }[] = [
   {
     title: "Cost",
     items: [
-      { id: "paid", q: "What exactly do we pay for?", a: "A per-student charge each term: ₦500 with result management, or ₦300 without it after a 30-day free trial; boarders ₦1,000. CBT is included, with no per-exam fees." },
+      { id: "paid", q: "What exactly do we pay for?", a: "A per-student charge each term: School Management with Result Management at ₦500, or the School Management Subscription at ₦300 after a 30-day free trial. School Management with Boarding School Management is ₦1,000 per term on either plan. CBT is included, with no per-exam fees." },
       { id: "stop", q: "What happens if we stop paying?", a: "Your data stays accessible and you can export all of it." },
       { id: "session", q: "Can we pay for a whole session?", a: "Yes, and paying for a full session costs less than three separate terms." },
     ],

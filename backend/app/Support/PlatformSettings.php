@@ -165,7 +165,7 @@ class PlatformSettings
             // ------------------------------------------------------- Billing
             'services.billing.results_rate_kobo' => [
                 'group' => 'billing',
-                'label' => 'Result Management: per active student per term',
+                'label' => 'School Management with Result Management: per active student per term',
                 'type' => 'naira',
                 'help' => 'The whole platform plus result computation, printing and PINs. Bills already issued keep the rate they were issued at.',
             ],
@@ -177,7 +177,7 @@ class PlatformSettings
             ],
             'services.billing.boarding_rate_kobo' => [
                 'group' => 'billing',
-                'label' => 'Boarding students: per boarder per term',
+                'label' => 'School Management with Boarding School Management: per boarder per term',
                 'type' => 'naira',
                 'help' => 'Charged for each boarder in place of the plan rate, on either plan. A boarder is a student with a full, weekly or flexible hostel enrolment during the term.',
             ],

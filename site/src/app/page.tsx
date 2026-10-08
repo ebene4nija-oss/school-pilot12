@@ -188,10 +188,10 @@ export default function Home() {
             <p className="mt-2 text-ink-muted">30-day free trial. Your own result process.</p>
           </div>
           <div className="rounded-2xl border-2 border-brand bg-surface p-6">
-            <p className="eyebrow">Result Management</p>
+            <p className="eyebrow">School Management with Result Management</p>
             <p className="mt-3 font-display text-3xl font-bold text-brand">₦500 <span className="text-base font-normal text-ink-muted">per student, per term</span></p>
             <p className="mt-2 text-ink">Everything in the subscription, plus result computation, report cards, printing and result PINs.</p>
-            <p className="mt-2 text-ink-muted">Boarders ₦1,000 per term on either plan.</p>
+            <p className="mt-2 text-ink-muted">School Management with Boarding School Management: ₦1,000 per term on either plan.</p>
           </div>
         </div>
         <Link href="/pricing/" className="mt-6 inline-block font-semibold text-brand underline underline-offset-4">

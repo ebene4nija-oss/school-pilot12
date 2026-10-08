@@ -5,7 +5,7 @@ import type { Faq } from "@/content/home";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Two plans, per active student per term: ₦500 with result management, or ₦300 without it after a 30-day free trial. Boarders ₦1,000. CBT included.",
+    "School Management with Result Management: ₦500 per active student per term. School Management Subscription: ₦300 after a 30-day free trial. School Management with Boarding School Management: ₦1,000 per term on either plan.",
   alternates: { canonical: "/pricing/" },
 };
 
@@ -35,7 +35,7 @@ const included = [
 const plans = [
   {
     id: "results",
-    name: "Result Management",
+    name: "School Management with Result Management",
     price: RESULTS,
     trial: null,
     featured: true,
@@ -72,7 +72,7 @@ const faq: Faq[] = [
   {
     id: "boarding",
     q: "How are boarders charged?",
-    a: `Each boarding student is ${naira(BOARDING)} per term on either plan, in place of the plan rate. Day students stay at ${naira(RESULTS)} or ${naira(SUBSCRIPTION)}.`,
+    a: `Under School Management with Boarding School Management, each boarding student is ${naira(BOARDING)} per term on either plan, in place of the plan rate. Day students stay at ${naira(RESULTS)} or ${naira(SUBSCRIPTION)}.`,
   },
   {
     id: "trial",
@@ -83,7 +83,7 @@ const faq: Faq[] = [
   {
     id: "switch",
     q: "Which plan should we choose?",
-    a: "If you want SchoolPilot to compute and print your results, choose Result Management. If you already handle results your own way, the Subscription gives you everything else for less.",
+    a: "If you want SchoolPilot to compute and print your results, choose School Management with Result Management. If you already handle results your own way, the Subscription gives you everything else for less.",
   },
   { id: "stop", q: "What happens if we don't pay?", a: "Your data stays accessible and you can export all of it." },
 ];
@@ -125,18 +125,18 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="mt-6 max-w-3xl text-lg text-ink-muted">
-          <strong className="text-brand">Boarding students: {naira(BOARDING)}</strong> per boarder per term on either plan, in place of the
+          <strong className="text-brand">School Management with Boarding School Management: {naira(BOARDING)}</strong> per boarder per term on either plan, in place of the
           plan rate.
         </p>
       </Section>
 
-      <Section id="examples" tone="surface" title="What a term costs" intro="Day students only. Add boarders at ₦1,000 each in place of the plan rate.">
+      <Section id="examples" tone="surface" title="What a term costs" intro="Day students only. Boarders are charged under School Management with Boarding School Management, ₦1,000 each in place of the plan rate.">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[32rem] text-left">
             <thead>
               <tr className="border-b border-line-soft text-sm text-ink-muted">
                 <th className="py-3 pr-4 font-semibold">Active students</th>
-                <th className="py-3 pr-4 font-semibold">Result Management</th>
+                <th className="py-3 pr-4 font-semibold">With Result Management</th>
                 <th className="py-3 font-semibold">Subscription</th>
               </tr>
             </thead>
@@ -152,7 +152,7 @@ export default function PricingPage() {
           </table>
         </div>
         <p className="mt-4 max-w-3xl text-ink-muted">
-          A school of 500 with 100 boarders on Result Management: 400 × {naira(RESULTS)} + 100 × {naira(BOARDING)} ={" "}
+          A school of 500 with 100 boarders on School Management with Result Management: 400 × {naira(RESULTS)} + 100 × {naira(BOARDING)} ={" "}
           {naira(400 * RESULTS + 100 * BOARDING)} per term.
         </p>
       </Section>
@@ -172,7 +172,7 @@ export default function PricingPage() {
 
       <Section id="pins" tone="surface" title="Result PINs">
         <p className="max-w-3xl text-lg text-ink-muted">
-          On Result Management, parents can check results online with a PIN on your school&apos;s result checker. Your school can issue PINs to
+          On School Management with Result Management, parents can check results online with a PIN on your school&apos;s result checker. Your school can issue PINs to
           parents or sell them, the way scratch cards already work.
         </p>
       </Section>

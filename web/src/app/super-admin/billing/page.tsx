@@ -105,7 +105,7 @@ function BillingTable() {
   return (
     <Card
       title="Schools and this term"
-      description={`Result Management ${nairaAmount(data.rates.results)}, Subscription ${nairaAmount(data.rates.subscription)} after a ${data.rates.trial_days}-day trial, boarders ${nairaAmount(data.rates.boarding)} — per student per term. Active means enrolled in a class during the term.`}
+      description={`School Management with Result Management ${nairaAmount(data.rates.results)}, School Management Subscription ${nairaAmount(data.rates.subscription)} after a ${data.rates.trial_days}-day trial, School Management with Boarding School Management ${nairaAmount(data.rates.boarding)} per boarder on either plan — per student per term. Active means enrolled in a class during the term.`}
     >
       <ErrorNote message={error} />
       {notice && <p role="status" className="mb-4 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}

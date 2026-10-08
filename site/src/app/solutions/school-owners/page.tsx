@@ -54,7 +54,7 @@ export default function SchoolLeadersPage() {
 
       <Section id="cost" title="What it costs">
         <p className="max-w-3xl text-lg text-ink-muted">
-          ₦500 per active student per term with result management, or ₦300 without it after a 30-day free trial; boarders ₦1,000. CBT is
+          School Management with Result Management: ₦500 per active student per term. School Management Subscription: ₦300 after a 30-day free trial. School Management with Boarding School Management: ₦1,000 per term. CBT is
           included. We move your
           records in free within 24 hours, and you can export everything in one click if you ever leave.
         </p>

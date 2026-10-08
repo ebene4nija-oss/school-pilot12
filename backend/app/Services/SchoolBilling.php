@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
 class SchoolBilling
 {
     public const PLANS = [
-        'results' => 'Result Management',
+        'results' => 'School Management with Result Management',
         'subscription' => 'School Management Subscription',
     ];
 
