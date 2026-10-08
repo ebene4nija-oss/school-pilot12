@@ -129,3 +129,34 @@ The webview closes on the return URL specifically, and never on "a host that
 isn't the gateway's" — a card that asks for 3-D Secure routes the payer through
 their own bank's domain mid-payment, and host sniffing would abandon checkout at
 exactly the wrong moment.
+
+## Release builds
+
+Android release builds are signed with the upload key named in
+`android/key.properties` (git-ignored). The keystore itself is kept outside
+the repository. Without `key.properties` a release build is signed with the
+debug key, which is fine for a test APK and is refused by Google Play.
+
+`key.properties` looks like:
+
+```
+storePassword=…
+keyPassword=…
+keyAlias=upload
+storeFile=C:/path/to/upload-keystore.jks
+```
+
+Build against the live server, from `mobile/`:
+
+```bash
+D="--dart-define=API_BASE_URL=https://schoolpilot.org.ng --dart-define=ENV=production"
+flutter build appbundle --release $D            # Google Play: build/app/outputs/bundle/release/app-release.aab
+flutter build apk --release $D                  # one APK for any phone
+flutter build apk --release --split-per-abi $D  # smaller APKs per phone type
+```
+
+Bump `version:` in `pubspec.yaml` before every Play upload; the number after
+`+` must go up each time. Enrol in Play App Signing when creating the app, so
+a lost upload key can be reset by Google instead of ending the listing.
+
+iOS builds need a Mac with Xcode (`flutter build ipa`).

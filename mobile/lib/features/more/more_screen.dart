@@ -179,7 +179,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
           Center(
             child: Text(
-              'SchoolPilot 1.0.0',
+              'SchoolPilot 1.1.0',
               style: AppText.labelSm.copyWith(color: AppColors.outline),
             ),
           ),
