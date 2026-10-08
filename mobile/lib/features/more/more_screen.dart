@@ -123,7 +123,14 @@ class MoreScreen extends ConsumerWidget {
               detail: 'Draft lesson plans, questions and homework',
               onTap: () => context.push('/ai-studio'),
             ),
-          if (role == UserRole.teacher || role.isAdmin)
+          if (role.isFinance)
+            _Tile(
+              icon: Icons.account_balance_outlined,
+              label: 'Transfers to confirm',
+              detail: 'Approve bank transfers once they reach the account',
+              onTap: () => context.push('/fees/transfers'),
+            ),
+          if (role.isStaff)
             _Tile(
               icon: Icons.beach_access_outlined,
               label: 'My leave',

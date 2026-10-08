@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -49,7 +50,16 @@ class _DefaultersScreen extends ConsumerWidget {
     final defaulters = ref.watch(defaultersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Defaulters')),
+      appBar: AppBar(
+        title: const Text('Defaulters'),
+        actions: [
+          IconButton(
+            tooltip: 'Transfers to confirm',
+            icon: const Icon(Icons.account_balance_outlined),
+            onPressed: () => context.push('/fees/transfers'),
+          ),
+        ],
+      ),
       body: CachedView<dynamic>(
         value: defaulters,
         onRetry: () => ref.invalidate(defaultersProvider),
@@ -112,6 +122,12 @@ class _DefaultersScreen extends ConsumerWidget {
                   ),
                   child: OutlinedCard(
                     statusColor: AppColors.overdue,
+                    onTap: intOf(row['student_id']) == 0
+                        ? null
+                        : () => context.push(
+                              '/fees/student/${intOf(row['student_id'])}',
+                              extra: stringOf(row['name'] ?? row['student_name']),
+                            ),
                     child: Row(
                       children: [
                         Expanded(

@@ -12,7 +12,7 @@ import '../../core/ui/widgets.dart';
 import '../finance/fees_screen.dart';
 
 /// The bursar's home: how much is outstanding this term and who owes most.
-/// Payments are recorded on the web portal, where the receipt is printed.
+/// Cash and bank transfers are recorded from the student's fees screen.
 class BursarHome extends ConsumerWidget {
   const BursarHome({super.key});
 
@@ -85,7 +85,9 @@ class BursarHome extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: OutlinedCard(
                       statusColor: AppColors.overdue,
-                      onTap: () => context.go('/fees'),
+                      onTap: intOf(r['student_id']) == 0
+                          ? () => context.go('/fees')
+                          : () => context.push('/fees/student/${intOf(r['student_id'])}', extra: stringOf(r['name'] ?? r['student_name'])),
                       child: Row(
                         children: [
                           Expanded(
@@ -101,8 +103,20 @@ class BursarHome extends ConsumerWidget {
                   ),
               ],
               const SizedBox(height: AppSpacing.md),
+              OutlinedCard(
+                onTap: () => context.push('/fees/transfers'),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_balance_outlined),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(child: Text('Bank transfers to confirm', style: AppText.bodyLg)),
+                    const Icon(Icons.chevron_right, color: AppColors.outline),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Text(
-                'Record payments, issue receipts and manage fee structures on the web portal.',
+                'Tap a student to record cash or a bank transfer. Fee structures and invoices are set up on the web portal.',
                 style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
               ),
             ],

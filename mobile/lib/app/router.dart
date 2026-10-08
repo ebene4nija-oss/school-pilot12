@@ -14,6 +14,7 @@ import '../features/classes/classes_tab.dart';
 import '../features/classes/video_providers_screen.dart';
 import '../features/classes/virtual_attendance_screen.dart';
 import '../features/dashboard/home_screen.dart';
+import '../features/finance/bursary_screens.dart';
 import '../features/finance/fees_screen.dart';
 import '../features/gradebook/comment_review_screen.dart';
 import '../features/gradebook/gradebook_tab.dart';
@@ -103,6 +104,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/video-providers', builder: (_, __) => const VideoProvidersScreen()),
       GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
       GoRoute(path: '/leave', builder: (_, __) => const LeaveScreen()),
+      GoRoute(path: '/fees/transfers', builder: (_, __) => const TransfersToConfirmScreen()),
+      GoRoute(
+        path: '/fees/student/:id',
+        builder: (_, state) => BursarStudentScreen(
+          studentId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+          name: state.extra is String ? state.extra as String : null,
+        ),
+      ),
       GoRoute(path: '/progress', builder: (_, __) => const ProgressScreen()),
       GoRoute(path: '/leaderboard', builder: (_, __) => const LeaderboardScreen()),
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
