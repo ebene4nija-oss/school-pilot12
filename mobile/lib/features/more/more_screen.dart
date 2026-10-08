@@ -96,6 +96,13 @@ class MoreScreen extends ConsumerWidget {
               detail: 'Lend and take back books by scanning',
               onTap: () => context.push('/library/desk'),
             ),
+          if (role == UserRole.parent)
+            _Tile(
+              icon: Icons.shield_outlined,
+              label: 'Pickup and consent',
+              detail: 'Who may collect your child; your data choices',
+              onTap: () => context.push('/safety'),
+            ),
           if (role == UserRole.student)
             _Tile(
               icon: Icons.bed_outlined,

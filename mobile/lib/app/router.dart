@@ -9,6 +9,7 @@ import '../features/attendance/register_tab.dart';
 import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/child/child_screen.dart';
+import '../features/child/safety_screen.dart';
 import '../features/classes/classes_tab.dart';
 import '../features/classes/video_providers_screen.dart';
 import '../features/classes/virtual_attendance_screen.dart';
@@ -93,6 +94,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/library/desk', builder: (_, __) => const LibraryDeskScreen()),
       GoRoute(path: '/id-card', builder: (_, __) => const IdCardScreen()),
       GoRoute(path: '/hostel', builder: (_, __) => const HostelScreen()),
+      GoRoute(path: '/safety', builder: (_, __) => const SafetyScreen()),
       GoRoute(path: '/virtual-classes', builder: (_, __) => const VirtualClassesScreen()),
       GoRoute(path: '/payroll', builder: (_, __) => const PayrollScreen()),
       GoRoute(path: '/video-providers', builder: (_, __) => const VideoProvidersScreen()),

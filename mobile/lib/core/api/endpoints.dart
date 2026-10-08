@@ -158,6 +158,11 @@ class Api {
   static const parentChildren = '$version/parent/children';
   static String parentFeed(int studentId) => '$version/parent/feed/$studentId';
   static const pickupAuthorization = '$version/parent/pickup-authorization';
+  static const pickupAuthorizations = '$version/parent/pickup-authorizations';
+  static String pickupRevoke(int id) => '$version/parent/pickup-authorizations/$id/revoke';
+  static const parentConsents = '$version/parent/consents';
+  static const parentalConsent = '$version/compliance/parental-consent';
+  static String parentalConsentWithdraw(int id) => '$version/compliance/parental-consent/$id/withdraw';
 
   // Absence alerts: offered only once the school switches them on, then
   // opted into per child.
