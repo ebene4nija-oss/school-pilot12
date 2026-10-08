@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\PlatformAccessController;
 use App\Http\Controllers\Api\V1\PlatformAiRemarksController;
 use App\Http\Controllers\Api\V1\PlatformAnnouncementController;
 use App\Http\Controllers\Api\V1\PlatformBillingController;
+use App\Http\Controllers\Api\V1\PlatformPartnerController;
 use App\Http\Controllers\Api\V1\PlatformComplianceController;
 use App\Http\Controllers\Api\V1\PlatformController;
 use App\Http\Controllers\Api\V1\PlatformLeadController;
@@ -945,6 +946,15 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/leads', [PlatformLeadController::class, 'index']);
             Route::put('/platform/leads/{id}', [PlatformLeadController::class, 'update'])->whereNumber('id');
             Route::post('/platform/leads/{id}/ref', [PlatformLeadController::class, 'attachRef'])->whereNumber('id');
+
+            // Partner programme: partners, their private rates, credited schools and leads, payouts.
+            Route::get('/platform/partners', [PlatformPartnerController::class, 'index']);
+            Route::post('/platform/partners', [PlatformPartnerController::class, 'store']);
+            Route::get('/platform/partners/{id}', [PlatformPartnerController::class, 'show'])->whereNumber('id');
+            Route::put('/platform/partners/{id}', [PlatformPartnerController::class, 'update'])->whereNumber('id');
+            Route::post('/platform/partners/{id}/payouts', [PlatformPartnerController::class, 'payout'])->whereNumber('id');
+            Route::put('/platform/schools/{schoolId}/partner', [PlatformPartnerController::class, 'attachSchool'])->whereNumber('schoolId');
+            Route::put('/platform/leads/{leadId}/partner', [PlatformPartnerController::class, 'attachLead'])->whereNumber('leadId');
 
             // The marketing site's screenshots, slot by slot.
             Route::get('/platform/website/screens', [PlatformWebsiteController::class, 'screens']);
