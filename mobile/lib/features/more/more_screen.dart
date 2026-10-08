@@ -151,6 +151,13 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role == UserRole.student)
             _Tile(
+              icon: Icons.insights_outlined,
+              label: 'My progress',
+              detail: 'Subjects, homework and topics to work on',
+              onTap: () => context.push('/progress'),
+            ),
+          if (role == UserRole.student)
+            _Tile(
               icon: Icons.emoji_events_outlined,
               label: 'Leaderboard',
               onTap: () => context.push('/leaderboard'),

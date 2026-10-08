@@ -218,6 +218,8 @@ class Api {
   static const myDashboard = '$version/me/dashboard';
   // The student's own class week, with each lesson's venue.
   static const myTimetable = '$version/me/timetable';
+  /// Released results only, with the school's choices about positions.
+  static const myProgress = '$version/me/progress';
 
   // Learning: materials, virtual classes, the student's learning record.
   static const myLearning = '$version/me/learning';

@@ -28,6 +28,7 @@ import '../features/more/more_screen.dart';
 import '../features/more/notifications_screen.dart';
 import '../features/more/pending_sync_screen.dart';
 import '../features/more/profile_screen.dart';
+import '../features/progress/progress_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/shell/app_shell.dart';
 import '../features/staff/payroll_screen.dart';
@@ -102,6 +103,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/video-providers', builder: (_, __) => const VideoProvidersScreen()),
       GoRoute(path: '/payslips', builder: (_, __) => const PayslipsScreen()),
       GoRoute(path: '/leave', builder: (_, __) => const LeaveScreen()),
+      GoRoute(path: '/progress', builder: (_, __) => const ProgressScreen()),
+      GoRoute(path: '/leaderboard', builder: (_, __) => const LeaderboardScreen()),
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
 
       ShellRoute(
