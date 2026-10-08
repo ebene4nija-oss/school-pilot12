@@ -246,22 +246,24 @@ class OperationsReadEndpointsTest extends TestCase
 
     public function test_room_list_counts_real_occupancy(): void
     {
-        // The hostel model behind the original endpoints (HostelService).
-        $roomId = $this->makeRoom(4);
-        $bed = \App\Models\HostelBed::where('room_id', $roomId)->where('label', 'B1')->firstOrFail();
-        \App\Models\HostelAllocation::create([
-            'school_id' => $this->school->id, 'student_id' => $this->student->id, 'bed_id' => $bed->id,
-            'starts_on' => now()->toDateString(), 'status' => 'active',
-        ]);
+        $this->inSchool($this->school->id, function () {
+            // The hostel model behind the original endpoints (HostelService).
+            $roomId = $this->makeRoom(4);
+            $bed = \App\Models\HostelBed::where('room_id', $roomId)->where('label', 'B1')->firstOrFail();
+            \App\Models\HostelAllocation::create([
+                'school_id' => $this->school->id, 'student_id' => $this->student->id, 'bed_id' => $bed->id,
+                'starts_on' => now()->toDateString(), 'status' => 'active',
+            ]);
 
-        $this->actingAs($this->admin, 'sanctum')
-            ->getJson('/api/v1/hostel/rooms')
-            ->assertOk()
-            ->assertJsonPath('data.0.hostel_name', 'Unity House')
-            ->assertJsonPath('data.0.capacity', 4)
-            ->assertJsonPath('data.0.occupied', 1)
-            ->assertJsonPath('data.0.beds_free', 3)
-            ->assertJsonPath('data.0.is_full', false);
+            $this->actingAs($this->admin, 'sanctum')
+                ->getJson('/api/v1/hostel/rooms')
+                ->assertOk()
+                ->assertJsonPath('data.0.hostel_name', 'Unity House')
+                ->assertJsonPath('data.0.capacity', 4)
+                ->assertJsonPath('data.0.occupied', 1)
+                ->assertJsonPath('data.0.beds_free', 3)
+                ->assertJsonPath('data.0.is_full', false);
+        });
     }
 
     public function test_a_bed_cannot_be_assigned_twice(): void
@@ -458,7 +460,7 @@ class OperationsReadEndpointsTest extends TestCase
 
     private function makeRoom(int $capacity): int
     {
-        $hostel = \App\Models\Hostel::firstOrCreate(['school_id' => $this->school->id, 'name' => 'Unity House'], ['status' => 'active']);
+        $hostel = \App\Models\Hostel::allTenants()->firstOrCreate(['school_id' => $this->school->id, 'name' => 'Unity House'], ['status' => 'active']);
 
         return app(\App\Services\Hostel\HostelService::class)
             ->createRoom($hostel, ['name' => 'RM-'.fake()->unique()->numberBetween(100, 999), 'capacity' => $capacity])->id;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\TenantNotEstablished;
 use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,18 +44,24 @@ trait BelongsToTenant
                  */
                 $profile = Auth::check() ? Auth::user()->userProfile : null;
 
-                if (! $profile || $profile->role === 'super_admin') {
-                    /*
-                     * Genuinely no tenant: the unauthenticated webhook, or a
-                     * platform operator.
-                     *
-                     * Left unscoped, matching prior behaviour. Failing closed
-                     * here is the correct end state but is a separate piece of
-                     * work — it changes the result of every query made outside
-                     * a request, and each of those paths has to be audited and
-                     * given an explicit tenant first.
-                     */
+                if ($profile && $profile->role === 'super_admin') {
+                    // A platform operator on an operator route; BindTenantFromUser
+                    // has already decided whether this request may span schools.
                     return;
+                }
+
+                if (! $profile) {
+                    /*
+                     * No tenant and nobody to derive one from. This used to
+                     * return unscoped, so a queued job, a console command or a
+                     * new public endpoint that forgot to say which school it
+                     * was working for silently read every school's records.
+                     * It now refuses. The legitimate cross-tenant paths say so
+                     * explicitly: `TenantContext::withoutScoping()`, the
+                     * allow-list of platform commands in AppServiceProvider,
+                     * and `forSchool()` in jobs.
+                     */
+                    throw new TenantNotEstablished($builder->getModel()::class);
                 }
 
                 $schoolId = $profile->school_id;

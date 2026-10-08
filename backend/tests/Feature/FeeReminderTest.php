@@ -87,7 +87,7 @@ class FeeReminderTest extends TestCase
         ]);
 
         if ($guardianUser) {
-            $guardian = Guardian::firstOrCreate(
+            $guardian = Guardian::allTenants()->firstOrCreate(
                 ['school_id' => $this->school->id, 'user_id' => $guardianUser->id],
                 ['relationship' => 'mother']
             );
@@ -179,7 +179,7 @@ class FeeReminderTest extends TestCase
         $father = $this->user('Mr Bello', 'bello.f@greenfield.test', 'parent', '+2348030000004');
 
         $student = $this->student('Amina Bello', $mother);
-        $guardian = Guardian::firstOrCreate(
+        $guardian = Guardian::allTenants()->firstOrCreate(
             ['school_id' => $this->school->id, 'user_id' => $father->id],
             ['relationship' => 'father']
         );

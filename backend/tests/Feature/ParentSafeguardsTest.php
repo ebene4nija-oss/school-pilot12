@@ -76,14 +76,14 @@ class ParentSafeguardsTest extends TestCase
 
     public function test_consent_is_a_guardians_own_act_and_never_assumed(): void
     {
-        $otherGuardian = Guardian::where('user_id', $this->otherDad->id)->value('id');
+        $otherGuardian = Guardian::allTenants()->where('user_id', $this->otherDad->id)->value('id');
 
         $this->actingAs($this->otherDad, 'sanctum')->postJson("{$this->host}/compliance/parental-consent", ['guardian_id' => $otherGuardian, 'student_id' => $this->ada->id, 'consent_given' => true])->assertForbidden();
 
         // A forged guardian id is replaced by the caller's own.
         $this->actingAs($this->mum, 'sanctum')->postJson("{$this->host}/compliance/parental-consent", ['guardian_id' => $otherGuardian, 'student_id' => $this->ada->id, 'consent_given' => true])->assertOk();
         $consent = ParentalConsent::firstOrFail();
-        $this->assertSame(Guardian::where('user_id', $this->mum->id)->value('id'), $consent->guardian_id);
+        $this->assertSame(Guardian::allTenants()->where('user_id', $this->mum->id)->value('id'), $consent->guardian_id);
         $this->assertFalse((bool) $consent->ai_cross_border_consent_given, 'Unticked means no.');
 
         // The web form sends no guardian id at all: the caller's own is used.

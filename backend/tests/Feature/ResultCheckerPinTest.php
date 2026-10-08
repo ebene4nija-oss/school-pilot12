@@ -364,7 +364,7 @@ class ResultCheckerPinTest extends TestCase
         $this->releaseResults();
         $this->grantStock(1);
 
-        $code = ResultPin::first()->revealCode();
+        $code = ResultPin::allTenants()->first()->revealCode();
 
         $this->as($this->parent)
             ->postJson('/api/v1/result-checker/redeem', [
@@ -388,9 +388,9 @@ class ResultCheckerPinTest extends TestCase
             'class_id' => $this->class->id,
             'admission_number' => 'GC/2026/011',
         ]);
-        Guardian::where('user_id', $this->parent->id)->first()->students()->attach($sibling->id);
+        Guardian::allTenants()->where('user_id', $this->parent->id)->first()->students()->attach($sibling->id);
 
-        $code = ResultPin::first()->revealCode();
+        $code = ResultPin::allTenants()->first()->revealCode();
 
         $this->as($this->parent)->postJson('/api/v1/result-checker/redeem', [
             'pin' => $code,
@@ -411,7 +411,7 @@ class ResultCheckerPinTest extends TestCase
         $this->releaseResults();
         $this->grantStock(1);
 
-        $code = ResultPin::first()->revealCode();
+        $code = ResultPin::allTenants()->first()->revealCode();
 
         foreach ([1, 2] as $_) {
             $this->as($this->parent)->postJson('/api/v1/result-checker/redeem', [
@@ -470,7 +470,7 @@ class ResultCheckerPinTest extends TestCase
         $this->releaseResults();
         $this->grantStock(1);
 
-        $code = ResultPin::first()->revealCode();
+        $code = ResultPin::allTenants()->first()->revealCode();
         $this->as($this->parent)->postJson('/api/v1/result-checker/redeem', [
             'pin' => $code,
             'student_id' => $this->student->id,
@@ -487,7 +487,7 @@ class ResultCheckerPinTest extends TestCase
             ->getJson("/api/v1/result-checker/{$this->student->id}/{$this->term->id}")
             ->assertStatus(402);
 
-        $this->assertSame(5, ResultPin::first()->views_used);
+        $this->assertSame(5, ResultPin::allTenants()->first()->views_used);
     }
 
     // ==================================================================

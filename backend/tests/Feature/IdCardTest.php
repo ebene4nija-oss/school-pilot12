@@ -610,27 +610,29 @@ class IdCardTest extends TestCase
 
     public function test_blood_group_stays_off_a_card_unless_the_school_asks_for_it(): void
     {
-        $student = $this->makeStudent('Adaeze Nwosu', $this->writePhoto('photos/adaeze.png'));
-        $student->update(['blood_group' => 'O+']);
+        $this->inSchool($this->school->id, function () {
+            $student = $this->makeStudent('Adaeze Nwosu', $this->writePhoto('photos/adaeze.png'));
+            $student->update(['blood_group' => 'O+']);
 
-        $card = app(IdCardIssuanceService::class)->issue($this->school->id, 'student', $student->id);
-        $printer = app(IdCardPrintService::class);
+            $card = app(IdCardIssuanceService::class)->issue($this->school->id, 'student', $student->id);
+            $printer = app(IdCardPrintService::class);
 
-        /*
-         * Asserted on the field label, not the value. The rendered card embeds
-         * the QR as base64, which is different on every run because the token
-         * is random — and a short value like "O+" turns up in that blob by
-         * chance often enough to make the value-based assertion flaky.
-         */
-        $without = $printer->renderCard($card, $student->fresh(), null, ['photo' => '']);
-        $this->assertStringNotContainsString('Blood group', $without['front'] . $without['back']);
+            /*
+             * Asserted on the field label, not the value. The rendered card embeds
+             * the QR as base64, which is different on every run because the token
+             * is random — and a short value like "O+" turns up in that blob by
+             * chance often enough to make the value-based assertion flaky.
+             */
+            $without = $this->inSchool($this->school->id, fn () => $printer->renderCard($card, $student->fresh(), null, ['photo' => '']));
+            $this->assertStringNotContainsString('Blood group', $without['front'] . $without['back']);
 
-        $with = $printer->renderCard($card, $student->fresh(), null, [
-            'photo' => '',
-            'include_blood_group' => true,
-        ]);
-        $this->assertStringContainsString('Blood group', $with['front'] . $with['back']);
-        $this->assertStringContainsString('<td>O+</td>', $with['back']);
+            $with = $printer->renderCard($card, $student->fresh(), null, [
+                'photo' => '',
+                'include_blood_group' => true,
+            ]);
+            $this->assertStringContainsString('Blood group', $with['front'] . $with['back']);
+            $this->assertStringContainsString('<td>O+</td>', $with['back']);
+        });
     }
 
     // ------------------------------------------------------------------

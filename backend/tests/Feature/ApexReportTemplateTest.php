@@ -74,7 +74,7 @@ class ApexReportTemplateTest extends TestCase
         $top = $make('Ada Top', [96, 88]);
         $make('Bola Next', [70, 60]);
 
-        $context = app(ReportCardTemplateService::class)->buildContext($top->fresh(), $first->fresh());
+        $context = $this->inSchool($school->id, fn () => app(ReportCardTemplateService::class)->buildContext($top->fresh(), $first->fresh()));
 
         $this->assertTrue($context['student']['is_top']);
         $this->assertSame(78.5, $context['summary']['class_average']); // (92 + 65) / 2

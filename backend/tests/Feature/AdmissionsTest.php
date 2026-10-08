@@ -147,7 +147,7 @@ class AdmissionsTest extends TestCase
         AdmissionSetting::create(['school_id' => $this->school->id, 'public_form_enabled' => true, 'open_sections' => ['primary']]);
 
         $ref = $this->postJson("{$this->host}/public/admissions/apply", $payload)->assertCreated()->json('reference');
-        $this->assertSame('online', AdmissionApplication::first()->source);
+        $this->assertSame('online', AdmissionApplication::allTenants()->first()->source);
 
         $this->postJson("{$this->host}/public/admissions/status", ['reference' => $ref, 'phone' => '0803 333 4444'])->assertOk()->assertJsonPath('status', 'Submitted');
         $this->postJson("{$this->host}/public/admissions/status", ['reference' => $ref, 'phone' => '08000000000'])->assertNotFound();

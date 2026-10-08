@@ -415,8 +415,10 @@ class LmsTest extends TestCase
         $this->liveClass(['scheduled_for' => now()->addMinutes(20)]);
         Homework::create(['school_id' => $this->school->id, 'class_id' => $this->jss1->id, 'subject_id' => $this->maths->id, 'teacher_id' => $this->teacher->id, 'title' => 'Tomorrow', 'description' => 'x', 'due_date' => now()->addDay()->toDateString(), 'status' => 'published']);
 
-        $this->artisan('lms:remind')->assertSuccessful();
-        $this->artisan('lms:remind')->assertSuccessful();
+        // The real CLI marks platform commands cross-tenant on start-up; an
+        // in-process artisan() call skips that, so say it here.
+        $this->assertSame(0, $this->acrossSchools(fn () => $this->artisan('lms:remind')->run()));
+        $this->assertSame(0, $this->acrossSchools(fn () => $this->artisan('lms:remind')->run()));
 
         $this->assertSame(1, NotificationLog::withoutGlobalScopes()->where('user_id', $this->ada->user_id)->where('body', 'like', 'Virtual class soon:%')->count());
         $this->assertSame(1, NotificationLog::withoutGlobalScopes()->where('user_id', $this->ada->user_id)->where('body', 'like', 'Homework due tomorrow:%')->count());

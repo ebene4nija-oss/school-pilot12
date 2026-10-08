@@ -169,7 +169,7 @@ class StudentDataExposureTest extends TestCase
             'phone' => '08031111111',
         ]);
 
-        $guardian = Guardian::where('user_id', $parent->id)->first();
+        $guardian = Guardian::allTenants()->where('user_id', $parent->id)->first();
         $this->student->guardians()->attach($guardian->id);
 
         $this->actingAs($parent, 'sanctum')

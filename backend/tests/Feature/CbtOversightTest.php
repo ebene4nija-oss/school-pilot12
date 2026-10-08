@@ -78,7 +78,7 @@ class CbtOversightTest extends TestCase
                 ['question_id' => $this->q1->id, 'response' => ['option' => $a1], 'client_sequence' => 1],
                 ['question_id' => $this->q2->id, 'response' => ['option' => $a2], 'client_sequence' => 2],
             ]);
-            $service->submitAttempt($attempt->fresh());
+            $this->inSchool($attempt->school_id, fn () => $service->submitAttempt($attempt->fresh()));
         }
     }
 
@@ -111,10 +111,12 @@ class CbtOversightTest extends TestCase
 
     public function test_every_submission_writes_revision_one_pinned_to_the_question_version(): void
     {
-        $this->assertSame([100.0, 50.0, 0.0], $this->percentages());
-        $this->assertSame(3, CbtResultRevision::count());
-        $this->assertSame([1], CbtResultRevision::pluck('revision')->unique()->values()->all());
-        $this->assertSame(1, (int) \App\Models\CbtAttemptAnswer::first()->question_version);
+        $this->inSchool($this->school->id, function () {
+            $this->assertSame([100.0, 50.0, 0.0], $this->percentages());
+            $this->assertSame(3, CbtResultRevision::count());
+            $this->assertSame([1], CbtResultRevision::pluck('revision')->unique()->values()->all());
+            $this->assertSame(1, (int) \App\Models\CbtAttemptAnswer::first()->question_version);
+        });
     }
 
     public function test_editing_an_answered_question_versions_it_and_changes_no_result(): void

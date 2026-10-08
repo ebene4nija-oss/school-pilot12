@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         \App\Support\PlatformSettings::apply();
 
         $this->guardProductionConfig();
+        $this->markPlatformCommandsUnscoped();
         $this->configureRateLimiting();
     }
 
@@ -72,6 +73,31 @@ class AppServiceProvider extends ServiceProvider
         if ($problems !== []) {
             throw new \RuntimeException('Unsafe production configuration: '.implode('; ', $problems).'.');
         }
+    }
+
+    /**
+     * Platform commands that work across every school by design: the
+     * scheduled sweeps and reminders, and the database tools. They say so
+     * here, once, instead of each relying on the tenant scope falling open.
+     * Queue workers and tinker are deliberately absent.
+     */
+    private const PLATFORM_COMMANDS = [
+        'cbt:expire-attempts', 'id-cards:sweep', 'exports:sweep', 'admissions:purge',
+        'lms:remind', 'lms:sync-attendance', 'library:daily', 'marketing:prune-leads',
+        'schoolpilot:generate-insights',
+        'migrate', 'migrate:fresh', 'migrate:refresh', 'migrate:rollback', 'db:seed',
+    ];
+
+    private function markPlatformCommandsUnscoped(): void
+    {
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Console\Events\CommandStarting::class,
+            function ($event) {
+                if (in_array($event->command, self::PLATFORM_COMMANDS, true)) {
+                    app(\App\Support\TenantContext::class)->markUnscoped();
+                }
+            }
+        );
     }
 
     private function configureRateLimiting(): void

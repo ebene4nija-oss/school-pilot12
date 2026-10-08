@@ -145,7 +145,7 @@ class ParentChildrenTest extends TestCase
          * school's student would otherwise sail straight through. Attached
          * deliberately to prove the tenant scope on `students` is what stops it.
          */
-        Guardian::where('user_id', $this->mother->id)->first()
+        Guardian::allTenants()->where('user_id', $this->mother->id)->first()
             ->students()->attach($theirChild->id, ['is_primary' => true]);
 
         $ids = collect(

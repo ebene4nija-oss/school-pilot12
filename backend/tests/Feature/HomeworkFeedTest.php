@@ -217,7 +217,7 @@ class HomeworkFeedTest extends TestCase
     public function test_a_guardian_with_two_children_can_choose_between_them()
     {
         $ada = $this->student('Ada Okeke', $this->ss1);
-        Guardian::where('user_id', $this->parent->id)->first()
+        Guardian::allTenants()->where('user_id', $this->parent->id)->first()
             ->students()->attach($ada->id, ['is_primary' => false]);
 
         $this->homework('Quadratics', $this->jss2, '2026-10-20');

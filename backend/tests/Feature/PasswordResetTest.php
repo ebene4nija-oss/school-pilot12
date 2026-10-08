@@ -415,7 +415,7 @@ class PasswordResetTest extends TestCase
             'email' => 'parent@hilltop.edu.ng',
         ])->assertStatus(200);
 
-        $logs = NotificationLog::all();
+        $logs = NotificationLog::allTenants()->get();
         $this->assertNotEmpty($logs, 'The send should still be recorded, just not verbatim.');
 
         // A school admin can read GET /notifications/history. A link stored

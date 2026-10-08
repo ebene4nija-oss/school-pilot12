@@ -422,14 +422,16 @@ TPL,
 
     public function test_the_shipped_default_design_is_used_when_a_school_has_imported_nothing()
     {
-        [$student, $term] = $this->seedResults();
+        $this->inSchool($this->school->id, function () {
+            [$student, $term] = $this->seedResults();
 
-        $html = app(ReportCardPdfService::class)->renderHtml($student->id, $term->id);
+            $html = app(ReportCardPdfService::class)->renderHtml($student->id, $term->id);
 
-        // The shipped design puts the school name through the `upper` filter.
-        $this->assertStringContainsString('GRACELAND COLLEGE', $html);
-        $this->assertStringContainsString('Report Sheet', $html);
-        $this->assertStringContainsString('Mathematics', $html);
+            // The shipped design puts the school name through the `upper` filter.
+            $this->assertStringContainsString('GRACELAND COLLEGE', $html);
+            $this->assertStringContainsString('Report Sheet', $html);
+            $this->assertStringContainsString('Mathematics', $html);
+        });
     }
 
     public function test_a_pending_ai_comment_still_blocks_the_report_card_through_a_custom_design()
@@ -450,18 +452,20 @@ TPL,
 
     public function test_an_unapproved_comment_is_never_exposed_to_a_template()
     {
-        [$student, $term] = $this->seedResults();
+        $this->inSchool($this->school->id, function () {
+            [$student, $term] = $this->seedResults();
 
-        ScoreEntry::withoutGlobalScopes()
-            ->where('student_id', $student->id)
-            ->update(['ai_comment_status' => 'rejected', 'teacher_comment' => 'A remark nobody approved']);
+            ScoreEntry::withoutGlobalScopes()
+                ->where('student_id', $student->id)
+                ->update(['ai_comment_status' => 'rejected', 'teacher_comment' => 'A remark nobody approved']);
 
-        $context = app(ReportCardTemplateService::class)->buildContext(
-            $student->fresh(),
-            $term
-        );
+            $context = app(ReportCardTemplateService::class)->buildContext(
+                $student->fresh(),
+                $term
+            );
 
-        $this->assertNull($context['scores'][0]['teacher_comment']);
+            $this->assertNull($context['scores'][0]['teacher_comment']);
+        });
     }
 
     /** @return array{0: Student, 1: Term} */
@@ -513,6 +517,6 @@ TPL,
             'ai_comment_status' => 'none',
         ]);
 
-        return [$student->fresh(['user', 'currentClass']), $term];
+        return [$this->inSchool($this->school->id, fn () => $student->fresh(['user', 'currentClass'])), $term];
     }
 }

@@ -167,7 +167,7 @@ class AcademicStructureTest extends TestCase
 
         $this->term('First Term', '2026-09-14', '2026-12-11');
 
-        $this->assertSame(0, Term::where('is_current', true)->count());
+        $this->assertSame(0, Term::allTenants()->where('is_current', true)->count());
 
         $this->as($this->admin)
             ->getJson('/api/v1/terms')
