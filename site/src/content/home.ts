@@ -8,7 +8,7 @@
 export const hero = {
   eyebrow: "All-in-one school management · Nursery to SS3",
   headline: "Run your whole school from one login.",
-  sub: "One all-in-one system for your school: results, CBT with a computer-lab client, an LMS, fees and school administration, connected for staff, students and parents. Built for Nigerian private schools. Free for almost everything.",
+  sub: "One all-in-one system for your school: results, CBT with a computer-lab client, an LMS, fees and school administration, connected for staff, students and parents. Built for Nigerian private schools. From ₦300 per student per term.",
   proof: ["One system, one login", "Free 24-hour data migration", "CBT works offline in your lab"],
 };
 
@@ -167,7 +167,7 @@ export const roles: Role[] = [
 
 export const pillars = [
   { id: "results", title: "Results without the all-nighters", text: "CA to broadsheet to positions to a signed report card, configured to how your school grades." },
-  { id: "free", title: "Free for almost everything", text: "Core modules cost nothing, CBT included. You pay one charge per term, by school size, when you generate results." },
+  { id: "price", title: "Simple per-student pricing", text: "₦500 per active student per term with result management, or ₦300 without it after a 30-day free trial. CBT included." },
   { id: "reality", title: "Built for Nigerian reality", text: "CBT that runs with no internet. No hardware to buy. Works on the phones your staff already own." },
   { id: "data", title: "Your data stays yours", text: "Free 24-hour migration in. One-click export out. Children's data treated as the most sensitive data we hold." },
   { id: "connected", title: "Everyone connected", text: "Admins see the whole school, teachers do less admin, and parents stop asking “has the result come out?”" },
@@ -180,7 +180,7 @@ export const objections: Faq[] = [
   { id: "power", q: "Our internet and light are unreliable.", a: "CBT runs in your computer lab with the SchoolPilot lab client, over the lab's own network, with no internet during the exam. Answers upload afterwards. Staff use the mobile apps." },
   { id: "staff", q: "My teachers are not computer people.", a: "Everything daily works on a phone. We move your records in for you and train your staff during setup." },
   { id: "mid-session", q: "We're mid-session. Switching now would be chaos.", a: "We migrate your current records free within 24 hours. Start with results and add the rest when you're ready." },
-  { id: "cost", q: "What does it really cost?", a: "The core is free, CBT included. You pay one charge per term, by student band, when you generate results." },
+  { id: "cost", q: "What does it really cost?", a: "₦500 per active student per term with result management, or ₦300 without it after a 30-day free trial. Boarders are ₦1,000. CBT is included, with no per-exam fees." },
   { id: "leaving", q: "What if we want to leave?", a: "Export all of your school's data in one click, any time. No lock-in." },
   { id: "ai", q: "Will the AI write nonsense on report cards?", a: "No AI-drafted comment reaches a report card until a teacher approves or edits it." },
 ];

@@ -97,9 +97,10 @@ export default function PlatformSettings({
 }: {
   /**
    * `ai` is the AI group alone, `website` the marketing site's group alone,
+   * `billing` the billing rates alone,
    * `integrations` every other group.
    */
-  section: 'ai' | 'integrations' | 'website';
+  section: 'ai' | 'integrations' | 'website' | 'billing';
   title: string;
   subtitle: string;
   /** Extra cards under the settings, e.g. the website's screenshots. */
@@ -112,7 +113,7 @@ export default function PlatformSettings({
   const [allGroups, setGroups] = useState<Group[]>([]);
   const groups = allGroups.filter((group) =>
     // `ai_models` (provider and model choice) is shown by AiModelSwitcher.
-    section === 'integrations' ? !['ai', 'ai_models', 'website'].includes(group.key) : group.key === section,
+    section === 'integrations' ? !['ai', 'ai_models', 'website', 'billing'].includes(group.key) : group.key === section,
   );
   const [usage, setUsage] = useState<AiUsage | null>(null);
   const [loading, setLoading] = useState(true);

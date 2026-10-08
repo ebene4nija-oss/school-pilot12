@@ -100,7 +100,7 @@ export const features: Feature[] = [
       { id: "hardware", q: "Do we need new computers or a server?", a: "No. One school laptop runs the lab client and your existing lab PCs sit the exam." },
       { id: "network", q: "Our lab has no network cabling. Can we still use it?", a: "Yes. Wi-Fi works, and where there is no network at all the laptop can create one for the lab." },
       { id: "types", q: "What question types are supported?", a: "Objective questions, theory answers, comprehension passages with several questions, and maths. Objective answers are marked automatically; theory answers go to the teacher to mark." },
-      { id: "cbt-cost", q: "Does CBT cost extra?", a: "No. CBT and the lab client are included. There are no per-exam or per-student CBT fees; your school pays one charge per term." },
+      { id: "cbt-cost", q: "Does CBT cost extra?", a: "No. CBT and the lab client are included. There are no per-exam or per-student CBT fees; it is part of your school's per-term plan." },
     ],
     related: ["results-report-cards", "lms", "school-administration"],
   },

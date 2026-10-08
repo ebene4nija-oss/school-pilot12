@@ -9,7 +9,7 @@ export function Footer() {
         <div>
           <Logo white />
           <p className="mt-4 max-w-xs text-sm leading-relaxed">
-            School management for Nigerian private schools, Nursery to SS3. Free for almost everything.
+            School management for Nigerian private schools, Nursery to SS3. Priced per student, per term.
           </p>
           <ul className="mt-4 space-y-1 text-sm">
             {hasWhatsApp && <li>WhatsApp: +{site.whatsappNumber}</li>}

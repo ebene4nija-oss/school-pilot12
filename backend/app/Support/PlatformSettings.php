@@ -162,6 +162,34 @@ class PlatformSettings
                 'help' => 'AI providers bill in dollars; spend is recorded in Naira at this rate. Each record keeps the rate it was converted at, so changing it does not rewrite history.',
             ],
 
+            // ------------------------------------------------------- Billing
+            'services.billing.results_rate_kobo' => [
+                'group' => 'billing',
+                'label' => 'Result Management: per active student per term',
+                'type' => 'naira',
+                'help' => 'The whole platform plus result computation, printing and PINs. Bills already issued keep the rate they were issued at.',
+            ],
+            'services.billing.subscription_rate_kobo' => [
+                'group' => 'billing',
+                'label' => 'School Management Subscription: per active student per term',
+                'type' => 'naira',
+                'help' => 'The platform without SchoolPilot result computation and printing.',
+            ],
+            'services.billing.boarding_rate_kobo' => [
+                'group' => 'billing',
+                'label' => 'Boarding students: per boarder per term',
+                'type' => 'naira',
+                'help' => 'Charged for each boarder in place of the plan rate, on either plan. A boarder is a student with a full, weekly or flexible hostel enrolment during the term.',
+            ],
+            'services.billing.trial_days' => [
+                'group' => 'billing',
+                'label' => 'Subscription free trial (days)',
+                'type' => 'integer',
+                'min' => 0,
+                'max' => 365,
+                'help' => 'Starts when a school is put on the subscription plan for the first time.',
+            ],
+
             // ----------------------------------------------------------- SMS
             'services.sms.api_key' => [
                 'group' => 'sms',
@@ -347,6 +375,7 @@ class PlatformSettings
         return [
             'ai' => 'AI service',
             'ai_models' => 'AI provider and models',
+            'billing' => 'Billing rates',
             'sms' => 'SMS',
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',

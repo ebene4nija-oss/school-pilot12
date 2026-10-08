@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 const workSans = Work_Sans({ subsets: ["latin"], variable: "--font-work-sans", display: "swap", weight: ["600", "700"] });
 
 const description =
-  "The all-in-one school management system for Nigerian private schools: results, CBT with a computer-lab client, LMS, fees and administration. Free for almost everything.";
+  "The all-in-one school management system for Nigerian private schools: results, CBT with a computer-lab client, LMS, fees and administration. From ₦300 per student per term.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),

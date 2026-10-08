@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const expect = [
   "A walk through your results process, from CA to report card, set up the way your school grades.",
   "Fees, CBT and the parent app, on your own phone.",
-  "What it would cost your school, and what is free.",
+  "What it would cost your school each term.",
   "How we move your records in, free, within 24 hours.",
 ];
 

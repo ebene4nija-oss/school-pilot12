@@ -175,20 +175,23 @@ export default function Home() {
       <Section
         id="pricing"
         eyebrow="Pricing"
-        title="Free for almost everything."
-        intro="You pay at the moment SchoolPilot saves you the most work, not for seats you don't use."
+        title="Per student, per term. In Naira."
+        intro="Pay for the students actually enrolled each term, with no per-exam, per-teacher or per-parent fees."
       >
         <div className="grid gap-5 md:grid-cols-2">
           <div className="rounded-2xl border border-line-soft bg-surface p-6">
-            <p className="eyebrow">Free, forever</p>
-            <p className="mt-3 text-ink">
+            <p className="eyebrow">School Management Subscription</p>
+            <p className="mt-3 font-display text-3xl font-bold text-brand">₦300 <span className="text-base font-normal text-ink-muted">per student, per term</span></p>
+            <p className="mt-2 text-ink">
               CBT and the computer-lab client · LMS · Student records · Staff, HR & payroll · Attendance · Timetable · Fees tracking · Admissions · Communication · AI Studio · AI Tutor · Parent and student apps
             </p>
+            <p className="mt-2 text-ink-muted">30-day free trial. Your own result process.</p>
           </div>
           <div className="rounded-2xl border-2 border-brand bg-surface p-6">
-            <p className="eyebrow">One charge, per term</p>
-            <p className="mt-3 text-ink">One charge per term, when you generate results (report cards). CBT is included, with no per-exam fees.</p>
-            <p className="mt-2 text-ink-muted">Priced by student band. Pay for a full session and save.</p>
+            <p className="eyebrow">Result Management</p>
+            <p className="mt-3 font-display text-3xl font-bold text-brand">₦500 <span className="text-base font-normal text-ink-muted">per student, per term</span></p>
+            <p className="mt-2 text-ink">Everything in the subscription, plus result computation, report cards, printing and result PINs.</p>
+            <p className="mt-2 text-ink-muted">Boarders ₦1,000 per term on either plan.</p>
           </div>
         </div>
         <Link href="/pricing/" className="mt-6 inline-block font-semibold text-brand underline underline-offset-4">

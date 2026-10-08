@@ -71,8 +71,8 @@ Platform settings
 | 2 | **Schools › All schools** | Schools | ✅ | Directory with search/status filter, plan band, fees, AI spend, status. Actions: New school, Open, Suspend/Reinstate, AI on/off. The mockup also filters by **city** and shows **last active date** and an **"Owes ₦…"** flag. | `/platform/schools`; mockup |
 | 3 | **Schools › School detail** | Schools | ✅ | Profile (name, admin contact, phone, address), students, staff by role, fee flow, AI spend; **internal support notes** (operator-only, never shown to the school); result-PIN purchase history; recent audited activity; Suspend/Reinstate, AI on/off, Open. *Term subscription history waits on item 6.* | `GET /platform/schools/{id}`; mockup `school_account_detail` |
 | 4 | **Schools › Onboarding & migrations** | Schools | ✅ | Queue of migration requests, overdue first, with status (submitted → in progress → completed/cancelled) and notes that are shown to the school. Honours the §14 promise of free migration within 24 hours. | `/platform/school-migrations` |
-| 5 | **Billing › Billing summary** | Subscriptions | ❌ | Revenue **per term** (not MRR, see §3), outstanding and overdue term invoices, upcoming renewals, export. | Mockup `subscription_billing_summary`; Stage 12 |
-| 6 | **Billing › Plans & bands** | Subscriptions | ❌ | The §13 student-count bands (Starter → Custom) with per-term prices, the full-session discount, and each school's assigned plan. Today the band is only derived from the roll; nothing is stored. **Pricing decisions are needed before this can be built.** | §13 |
+| 5 | **Billing › Billing summary** | Subscriptions | ✅ | Each school's current-term amount, issued / paid / waived totals, issue a term bill (freezes count and rate), mark paid or waived. Collection happens outside the product. | `/platform/billing`; `/super-admin/billing` |
+| 6 | **Billing › Plans & bands** | Subscriptions | ✅ | Priced 2026-10-08: Result Management ₦500 and School Management Subscription ₦300 (30-day trial) per active student per term; boarders ₦1,000 on either plan. Rates in the Billing page's settings; plan per school. Replaces the student bands. | `SchoolBilling`; `PUT /platform/schools/{id}/billing-plan` |
 | 7 | **Billing › Result PINs** | Subscriptions | ✅ | Wholesale rate card (quantity tiers), per-school negotiated rates, PIN batch history, offline grants for schools that paid by bank transfer or cash. This is the "charge at result generation" mechanism from §13. | `/platform/result-pins/*` |
 | 8 | **AI service** | AI configuration | ✅ | Anthropic key, models, daily ₦ cap per school, alert threshold, USD→NGN rate, **today's spend per school**. Its own menu item, because "our AI stopped working" is the most common operator question. The per-school switch is on School detail and the directory. | `/platform/settings`, `/platform/ai-usage` |
 | 9 | **Security › Admin 2FA & sessions** | Platform security | ✅ | 2FA enrolment status for every school admin and operator across schools, active session count, last login, lockout status, and one-click remote session revocation. | `/platform/security/admins`, `/platform/security/admins/{id}/revoke-sessions` |
@@ -118,7 +118,7 @@ The mockups are UI references. Where they conflict with the spec, the spec wins.
 1. ~~School detail + Onboarding & migrations + Result PINs screens.~~ Done.
 2. ~~Security: audit log, then admin 2FA & sessions.~~ Done.
 3. ~~AI service as its own menu item.~~ Done.
-4. **Plans & bands → Billing summary.** Blocked on pricing decisions (§13 uses placeholder ₦X).
+4. ~~**Plans & bands → Billing summary.**~~ Done (priced 2026-10-08).
 5. **Operator access (IP allowlist).** Auth change: needs a written risk note first.
 6. **Compliance, Reports, Support.**
 

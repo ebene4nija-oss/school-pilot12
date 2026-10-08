@@ -184,6 +184,21 @@ return [
     ],
 
     /*
+     * What schools pay SchoolPilot, per active student per term, in kobo
+     * (SchoolBilling). Editable from Super Admin > Platform settings; each
+     * issued term bill keeps the rate it was issued at.
+     */
+    'billing' => [
+        // Result Management: the whole platform plus result services.
+        'results_rate_kobo' => (int) env('BILLING_RESULTS_RATE_KOBO', 50000),
+        // School Management Subscription: the platform without result services.
+        'subscription_rate_kobo' => (int) env('BILLING_SUBSCRIPTION_RATE_KOBO', 30000),
+        // Boarders, on either plan, in place of the plan rate.
+        'boarding_rate_kobo' => (int) env('BILLING_BOARDING_RATE_KOBO', 100000),
+        'trial_days' => (int) env('BILLING_TRIAL_DAYS', 30),
+    ],
+
+    /*
      * Which AI provider writes for a school (AiGateway).
      *
      * `provider` is SchoolPilot's default. A school may choose another one on

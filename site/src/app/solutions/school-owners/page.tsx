@@ -6,7 +6,7 @@ import { objections, problems } from "@/content/home";
 
 export const metadata: Metadata = {
   title: "For proprietors and school leaders",
-  description: "See your whole school from your phone: attendance, fees, results and learning. Free for almost everything, one charge per term.",
+  description: "See your whole school from your phone: attendance, fees, results and learning. Priced per student, per term, in Naira.",
   alternates: { canonical: "/solutions/school-owners/" },
 };
 
@@ -54,7 +54,8 @@ export default function SchoolLeadersPage() {
 
       <Section id="cost" title="What it costs">
         <p className="max-w-3xl text-lg text-ink-muted">
-          The core is free, CBT included. You pay one charge per term, by number of students, when you generate results. We move your
+          ₦500 per active student per term with result management, or ₦300 without it after a 30-day free trial; boarders ₦1,000. CBT is
+          included. We move your
           records in free within 24 hours, and you can export everything in one click if you ever leave.
         </p>
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-semibold text-brand">

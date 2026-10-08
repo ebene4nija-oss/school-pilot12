@@ -49,6 +49,7 @@ class School extends Model
 
     protected $casts = [
         'is_platform' => 'boolean',
+        'trial_ends_on' => 'date',
         'absence_alerts_enabled' => 'boolean',
         'absence_alerts_sms' => 'boolean',
         'email_enabled' => 'boolean',
