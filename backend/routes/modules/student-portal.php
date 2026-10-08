@@ -8,6 +8,8 @@
 
 use App\Http\Controllers\Api\V1\StudentPortalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\CoverController;
+use App\Http\Controllers\Api\V1\TutorAdminController;
 
 Route::middleware('role:student')->group(function () {
     Route::get('/me/dashboard', [StudentPortalController::class, 'dashboard']);
@@ -24,17 +26,17 @@ Route::middleware('role:student')->group(function () {
  * a teacher sees the cover they have been asked to take.
  */
 Route::middleware('role:school_admin')->group(function () {
-    Route::get('/timetable/cover', [\App\Http\Controllers\Api\V1\CoverController::class, 'sheet']);
-    Route::post('/timetable/absences', [\App\Http\Controllers\Api\V1\CoverController::class, 'recordAbsence']);
-    Route::delete('/timetable/absences/{id}', [\App\Http\Controllers\Api\V1\CoverController::class, 'removeAbsence'])->whereNumber('id');
-    Route::post('/timetable/substitutions', [\App\Http\Controllers\Api\V1\CoverController::class, 'assign']);
-    Route::post('/timetable/substitutions/{id}/cancel', [\App\Http\Controllers\Api\V1\CoverController::class, 'cancel'])->whereNumber('id');
+    Route::get('/timetable/cover', [CoverController::class, 'sheet']);
+    Route::post('/timetable/absences', [CoverController::class, 'recordAbsence']);
+    Route::delete('/timetable/absences/{id}', [CoverController::class, 'removeAbsence'])->whereNumber('id');
+    Route::post('/timetable/substitutions', [CoverController::class, 'assign']);
+    Route::post('/timetable/substitutions/{id}/cancel', [CoverController::class, 'cancel'])->whereNumber('id');
 });
-Route::get('/timetable/my-cover', [\App\Http\Controllers\Api\V1\CoverController::class, 'mine'])->middleware('role:teacher,school_admin');
+Route::get('/timetable/my-cover', [CoverController::class, 'mine'])->middleware('role:teacher,school_admin');
 
 // The school's control over the student AI tutor (TASK 15).
 Route::middleware('role:school_admin')->group(function () {
-    Route::get('/ai/tutor/settings', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'settings']);
-    Route::put('/ai/tutor/settings', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'update']);
-    Route::get('/ai/tutor/usage', [\App\Http\Controllers\Api\V1\TutorAdminController::class, 'usage']);
+    Route::get('/ai/tutor/settings', [TutorAdminController::class, 'settings']);
+    Route::put('/ai/tutor/settings', [TutorAdminController::class, 'update']);
+    Route::get('/ai/tutor/usage', [TutorAdminController::class, 'usage']);
 });

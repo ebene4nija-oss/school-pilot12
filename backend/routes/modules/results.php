@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\DevelopmentalController;
 use App\Http\Controllers\Api\V1\SchemeVersionController;
 use App\Http\Controllers\Api\V1\SectionsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\CourseworkCaController;
 
 // Sections: heads, chains, workflow switch (decisions D2, D3). Owner-level.
 Route::middleware('role:school_admin')->group(function () {
@@ -66,7 +67,7 @@ Route::middleware('role:school_admin,teacher')->group(function () {
 
 // A CA filled from homework and quizzes; the subject teacher adjusts and applies (TASK 08, 21).
 Route::middleware('role:school_admin,teacher')->group(function () {
-    Route::get('/assessment/coursework-ca/sources', [\App\Http\Controllers\Api\V1\CourseworkCaController::class, 'sources']);
-    Route::post('/assessment/coursework-ca/suggest', [\App\Http\Controllers\Api\V1\CourseworkCaController::class, 'suggest']);
-    Route::post('/assessment/coursework-ca/apply', [\App\Http\Controllers\Api\V1\CourseworkCaController::class, 'apply']);
+    Route::get('/assessment/coursework-ca/sources', [CourseworkCaController::class, 'sources']);
+    Route::post('/assessment/coursework-ca/suggest', [CourseworkCaController::class, 'suggest']);
+    Route::post('/assessment/coursework-ca/apply', [CourseworkCaController::class, 'apply']);
 });

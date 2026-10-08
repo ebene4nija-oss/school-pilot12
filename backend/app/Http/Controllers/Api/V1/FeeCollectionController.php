@@ -154,6 +154,12 @@ class FeeCollectionController extends Controller
             ->whereIn('status', ['unpaid', 'partial'])
             ->when($request->filled('term_id'), fn ($q) => $q->where('term_id', $request->integer('term_id')))
             ->whereRaw('total_amount > amount_paid')
+            // Filtered in SQL: doing it after ->get() loaded (with guardians and
+            // profiles) every debtor in the school just to discard most of them.
+            ->when($request->filled('class_id'), fn ($q) => $q->whereHas(
+                'student',
+                fn ($s) => $s->where('class_id', $request->integer('class_id'))
+            ))
             ->with([
                 'student.user:id,name',
                 'student.currentClass:id,name',
@@ -162,11 +168,6 @@ class FeeCollectionController extends Controller
                 'term:id,name',
             ])
             ->get();
-
-        if ($request->filled('class_id')) {
-            $classId = $request->integer('class_id');
-            $invoices = $invoices->filter(fn (Invoice $i) => (int) $i->student?->class_id === $classId);
-        }
 
         return $invoices;
     }
