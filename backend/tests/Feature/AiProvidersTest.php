@@ -390,4 +390,30 @@ class AiProvidersTest extends TestCase
 
         $this->actingAs($this->admin, 'sanctum')->postJson('/api/v1/platform/ai/test', ['provider' => 'gemini'])->assertForbidden();
     }
+
+    public function test_a_school_can_choose_a_quality_tier_for_its_provider(): void
+    {
+        config()->set('services.anthropic.api_key', 'sk-ant-test');
+        $url = '/api/v1/school/ai-provider';
+
+        $res = $this->actingAs($this->admin, 'sanctum')->putJson($url, ['provider' => null, 'tier' => 'best'])->assertOk();
+        $this->assertSame('best', $res->json('ai.provider.tier'));
+        $this->assertSame('Claude Sonnet 5.5', $res->json('ai.provider.models.comment'));
+        $this->assertSame('Claude Opus 5.5', $res->json('ai.provider.models.document'));
+
+        $gateway = app(AiGateway::class);
+        $this->assertSame('claude-sonnet-5-5', $gateway->resolve($this->school->id)['model']);
+        $this->assertSame('claude-opus-5-5', $gateway->resolve($this->school->id, 'document')['model']);
+
+        // Saving the provider alone leaves the tier as it was.
+        $this->actingAs($this->admin, 'sanctum')->putJson($url, ['provider' => null])->assertOk();
+        $this->assertSame('best', $this->school->fresh()->ai_model_tier);
+
+        $this->actingAs($this->admin, 'sanctum')->putJson($url, ['provider' => null, 'tier' => 'premium'])->assertStatus(422);
+        $this->actingAs($this->teacher, 'sanctum')->putJson($url, ['provider' => null, 'tier' => 'fast'])->assertForbidden();
+
+        // Back to SchoolPilot's models.
+        $this->actingAs($this->admin, 'sanctum')->putJson($url, ['provider' => null, 'tier' => null])->assertOk();
+        $this->assertSame((string) config('services.anthropic.document_model'), $gateway->resolve($this->school->id, 'document')['model']);
+    }
 }

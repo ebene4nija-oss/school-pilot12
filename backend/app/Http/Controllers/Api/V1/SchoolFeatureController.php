@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\School;
 use App\Services\Ai\AiGateway;
+use App\Support\AiModels;
 use App\Support\SchoolFeatures;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -87,6 +88,8 @@ class SchoolFeatureController extends Controller
 
         $validated = $request->validate([
             'provider' => ['present', 'nullable', Rule::in(array_keys(AiGateway::PROVIDERS))],
+            // Fast / balanced / best; null for SchoolPilot's models.
+            'tier' => ['sometimes', 'nullable', Rule::in(array_keys(AiModels::TIERS))],
         ]);
 
         $provider = $validated['provider'];
@@ -98,11 +101,16 @@ class SchoolFeatureController extends Controller
             ], 422);
         }
 
-        $before = ['ai_provider' => $school->ai_provider];
+        $before = ['ai_provider' => $school->ai_provider, 'ai_model_tier' => $school->ai_model_tier];
         $school->ai_provider = $provider;
+
+        if (array_key_exists('tier', $validated)) {
+            $school->ai_model_tier = $validated['tier'];
+        }
+
         $school->save();
 
-        $this->audit($request, $school, 'school.ai_provider.updated', $before, ['ai_provider' => $provider]);
+        $this->audit($request, $school, 'school.ai_provider.updated', $before, ['ai_provider' => $provider, 'ai_model_tier' => $school->ai_model_tier]);
 
         return response()->json(['message' => 'AI provider saved.'] + $this->describe($school->fresh()));
     }
@@ -184,9 +192,26 @@ class SchoolFeatureController extends Controller
         $default = AiGateway::defaultProvider();
         $own = ! empty(((array) ($school->ai_api_settings ?? []))['api_key']);
 
+        $gateway = app(AiGateway::class);
+        $inUse = $gateway->resolve($school->id);
+        $label = fn (string $id) => AiModels::find($id)['label'] ?? $id;
+
         return [
             'chosen' => $school->ai_provider,
-            'in_use' => app(AiGateway::class)->resolve($school->id)['provider'],
+            'in_use' => $inUse['provider'],
+            'tier' => $school->ai_model_tier,
+            // What each choice means for the provider in use, so the page can
+            // say "Balanced: Claude Haiku 4.5 for remarks, Sonnet 5.5 for documents".
+            'models' => [
+                'comment' => $label($inUse['model']),
+                'document' => $label($gateway->resolve($school->id, 'document')['model']),
+            ],
+            'tiers' => collect(AiModels::TIERS)->map(fn ($tierLabel, $key) => [
+                'key' => $key,
+                'label' => $tierLabel,
+                'comment' => isset(AiModels::PRESETS[$inUse['provider']][$key]) ? $label(AiModels::PRESETS[$inUse['provider']][$key]['comment']) : null,
+                'document' => isset(AiModels::PRESETS[$inUse['provider']][$key]) ? $label(AiModels::PRESETS[$inUse['provider']][$key]['document']) : null,
+            ])->values(),
             'default' => $default,
             // A school's own key decides the provider; the choice below waits.
             'own_key' => $own,

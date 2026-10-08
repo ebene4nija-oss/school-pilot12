@@ -17,7 +17,17 @@ import TutorControls from '@/components/TutorControls';
 type Feature = { key: string; label: string; hint: string; chosen: boolean; active: boolean };
 type Module = { key: string; label: string; enabled: boolean };
 type ProviderOption = { key: string; label: string; available: boolean };
-type Provider = { chosen: string | null; in_use: string; default: string; own_key: boolean; options: ProviderOption[] };
+type Tier = { key: string; label: string; comment: string | null; document: string | null };
+type Provider = {
+  chosen: string | null;
+  in_use: string;
+  default: string;
+  own_key: boolean;
+  options: ProviderOption[];
+  tier?: string | null;
+  tiers?: Tier[];
+  models?: { comment: string; document: string };
+};
 type Features = { modules: Module[]; ai: { available: boolean; features: Feature[]; provider?: Provider } };
 
 export default function AiFeaturesPage() {
@@ -129,23 +139,25 @@ export default function AiFeaturesPage() {
  */
 function ProviderCard({ provider, onSaved, onError }: { provider: Provider; onSaved: (res: Features & { message: string }) => void; onError: (m: string | null) => void }) {
   const [choice, setChoice] = useState<string>(provider.chosen ?? '');
+  const [tier, setTier] = useState<string>(provider.tier ?? '');
   const [busy, setBusy] = useState(false);
+  const changed = choice !== (provider.chosen ?? '') || tier !== (provider.tier ?? '');
   const label = (key: string) => provider.options.find((o) => o.key === key)?.label ?? key;
 
   const save = async () => {
     setBusy(true);
     onError(null);
     try {
-      onSaved(await fetchApi<Features & { message: string }>('/school/ai-provider', { method: 'PUT', body: JSON.stringify({ provider: choice || null }) }));
+      onSaved(await fetchApi<Features & { message: string }>('/school/ai-provider', { method: 'PUT', body: JSON.stringify({ provider: choice || null, tier: tier || null }) }));
     } catch (err) {
-      onError(errorText(err, 'Could not save the provider.'));
+      onError(errorText(err, 'Could not save the AI choice.'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Card title="AI provider" description="Which AI writes drafts and answers the tutor for your school." className="h-fit">
+    <Card title="AI provider and quality" description="Which AI writes drafts and answers the tutor for your school, and how capable a model it uses." className="h-fit">
       {provider.own_key ? (
         <p className="text-sm text-ink-muted">Your school uses its own {label(provider.in_use)} key, so that provider is used.</p>
       ) : (
@@ -165,10 +177,39 @@ function ProviderCard({ provider, onSaved, onError }: { provider: Provider; onSa
               </label>
             ))}
           </fieldset>
+          {provider.tiers && (
+            <fieldset className="space-y-2 border-t border-line-soft pt-3 text-sm">
+              <legend className="mb-1 font-semibold text-ink">Quality</legend>
+              <label className="flex items-start gap-2">
+                <input type="radio" name="ai-tier" className="mt-1 accent-brand" checked={tier === ''} onChange={() => setTier('')} />
+                <span>
+                  SchoolPilot&apos;s choice
+                  {provider.models && !provider.tier && (
+                    <span className="block text-xs text-ink-muted">{provider.models.comment} for remarks and the tutor, {provider.models.document} for documents</span>
+                  )}
+                </span>
+              </label>
+              {provider.tiers.filter((t) => t.comment).map((t) => (
+                <label key={t.key} className="flex items-start gap-2">
+                  <input type="radio" name="ai-tier" className="mt-1 accent-brand" checked={tier === t.key} onChange={() => setTier(t.key)} />
+                  <span>
+                    {t.label}
+                    <span className="block text-xs text-ink-muted">
+                      {t.comment === t.document ? `${t.comment} for everything` : `${t.comment} for remarks and the tutor, ${t.document} for documents`}
+                    </span>
+                  </span>
+                </label>
+              ))}
+              {choice !== '' && choice !== provider.in_use && (
+                <p className="text-xs text-ink-muted">Models shown are for {label(provider.in_use)}; they update once you save the new provider.</p>
+              )}
+            </fieldset>
+          )}
           <p className="text-xs text-ink-muted">
-            The same daily spending limit applies whichever you choose, and AI remarks still wait for a teacher&apos;s approval.
+            Better quality uses more of your school&apos;s daily AI allowance. The same limit applies whichever you choose, and AI remarks
+            still wait for a teacher&apos;s approval.
           </p>
-          <Button disabled={busy || choice === (provider.chosen ?? '')} onClick={save}>{busy ? 'Saving…' : 'Save provider'}</Button>
+          <Button disabled={busy || !changed} onClick={save}>{busy ? 'Saving…' : 'Save AI choice'}</Button>
         </div>
       )}
     </Card>

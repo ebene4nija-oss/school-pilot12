@@ -18,7 +18,7 @@ use RuntimeException;
  * Which provider, in order:
  *  1. a school's own key (BYO, `ai_api_settings`), with its provider;
  *  2. the provider the school chose on its AI features page, if SchoolPilot
- *     has a key for it;
+ *     has a key for it, at the quality tier the school chose (if any);
  *  3. SchoolPilot's default (`services.ai.provider`).
  *
  * Whatever is chosen, the same rules hold: no key means a loud failure (or,
@@ -81,10 +81,15 @@ class AiGateway
         $chosen = $school?->ai_provider;
         $provider = $chosen && in_array($chosen, self::configuredProviders(), true) ? $chosen : self::defaultProvider();
 
+        // A school may pick a quality tier; otherwise SchoolPilot's models
+        // for that provider apply. The daily cap holds either way.
+        $tier = $school?->ai_model_tier;
+        $preset = $tier ? (AiModels::PRESETS[$provider][$tier] ?? null) : null;
+
         return [
             'provider' => $provider,
             'api_key' => config("services.{$provider}.api_key"),
-            'model' => (string) config("services.{$provider}.{$purpose}_model"),
+            'model' => (string) ($preset[$purpose] ?? config("services.{$provider}.{$purpose}_model")),
             'own_key' => false,
             'temperature' => null,
         ];
