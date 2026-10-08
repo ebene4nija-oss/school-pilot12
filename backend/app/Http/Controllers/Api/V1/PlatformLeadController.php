@@ -143,6 +143,7 @@ class PlatformLeadController extends Controller
             'preferred_subdomain' => $lead->preferred_subdomain,
             'migrate_what' => $lead->migrate_what,
             'ref_code' => $lead->ref_code,
+            'partner_id' => $lead->partner_id,
             'landing_page' => $lead->landing_page,
             'utm_source' => $lead->utm_source,
             'utm_medium' => $lead->utm_medium,

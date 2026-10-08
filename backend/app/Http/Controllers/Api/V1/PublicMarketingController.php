@@ -65,6 +65,8 @@ class PublicMarketingController extends Controller
             'migrate_what' => 'nullable|string|max:1000',
             'consent' => 'accepted',
             'ref_code' => ['nullable', 'string', 'regex:/^SP-[A-Z0-9]{4,8}$/'],
+            // A partner's referral code, carried from `?p=CODE` on the link they shared.
+            'partner_code' => ['nullable', 'string', 'regex:/^P[A-Z0-9]{6}$/'],
             'pages' => 'nullable|array|max:50',
             'pages.*' => 'string|max:255',
             ...$this->trackingRules(),
@@ -87,6 +89,10 @@ class PublicMarketingController extends Controller
                 'migrate_what', 'ref_code', ...self::TRACKING,
             ])->all(),
             'phone' => $phone,
+            // An unknown or inactive code is ignored, never an error: the visitor did nothing wrong.
+            'partner_id' => filled($validated['partner_code'] ?? null)
+                ? \App\Models\Partner::where('code', $validated['partner_code'])->where('status', 'active')->value('id')
+                : null,
             'preferred_contact' => $validated['preferred_contact'] ?? 'whatsapp',
             'pages' => $pages,
             'status' => 'new',
@@ -110,6 +116,62 @@ class PublicMarketingController extends Controller
             'received' => true,
             'first_name' => strtok($lead->full_name, ' '),
         ], 201);
+    }
+
+    /**
+     * What the partner page may say about the programme. Only the published
+     * rate: a rate agreed with one partner never passes through here.
+     */
+    public function partnerTerms()
+    {
+        return response()->json([
+            'commission_percent' => (int) config('services.partners.default_rate_bps') / 100,
+            'lifetime' => true,
+        ]);
+    }
+
+    /** Someone asking to join the partner programme. Starts as `pending` until an operator approves. */
+    public function applyPartner(Request $request)
+    {
+        if (filled($request->input('website'))) {
+            return response()->json(['received' => true], 201);
+        }
+
+        if (! $this->turnstilePasses($request)) {
+            return response()->json(['errors' => ['turnstile' => ['Please confirm you are not a robot and try again.']]], 422);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|min:2|max:120',
+            'email' => 'required|email:rfc|max:150',
+            'phone' => 'required|string|max:24',
+            'pitch' => 'nullable|string|max:1000',
+            'consent' => 'accepted',
+        ], ['consent.accepted' => 'Please tick the box so we can contact you about this application.']);
+
+        $phone = SmsService::normaliseNumber($validated['phone']);
+
+        if (! preg_match('/^\+234[789][01]\d{8}$/', $phone)) {
+            return response()->json(['errors' => ['phone' => ['Enter a Nigerian phone number, e.g. 0803 123 4567.']]], 422);
+        }
+
+        // Same answer whether or not the address is already known, so the form
+        // cannot be used to find out who is a partner or a user.
+        $taken = \App\Models\Partner::where('email', $validated['email'])->exists()
+            || \App\Models\User::where('email', $validated['email'])->exists();
+
+        if (! $taken) {
+            \App\Models\Partner::create([
+                'code' => \App\Models\Partner::newCode(),
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $phone,
+                'pitch' => $validated['pitch'] ?? null,
+                'status' => 'pending',
+            ]);
+        }
+
+        return response()->json(['received' => true, 'first_name' => strtok($validated['name'], ' ')], 201);
     }
 
     /** The anonymous attribution behind a WhatsApp click. */

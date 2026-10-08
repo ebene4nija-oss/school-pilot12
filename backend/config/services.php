@@ -252,6 +252,7 @@ return [
      */
     'marketing' => [
         'tenant_domain' => env('TENANT_DOMAIN', 'schoolpilot.org.ng'),
+        'site_url' => env('MARKETING_SITE_URL', 'https://schoolpilot.org.ng'),
         'turnstile_secret' => env('TURNSTILE_SECRET_KEY'),
         'stats_thresholds' => [
             'schools' => (int) env('MARKETING_STATS_MIN_SCHOOLS', 10),

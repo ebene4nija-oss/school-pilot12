@@ -69,7 +69,7 @@ class AuthController extends Controller
             }
         }
 
-        if ($tenant && $profile && $profile->role !== 'super_admin' && $profile->school_id !== $tenant->id) {
+        if ($tenant && $profile && ! $this->mayUseHost($profile, $tenant)) {
             AuditLog::create([
                 'school_id' => $tenant->id,
                 'user_id' => $user->id,
@@ -149,6 +149,20 @@ class AuthController extends Controller
     }
 
     /**
+     * Whether this profile belongs on the host that resolved. Operators may use
+     * any; a partner only the platform's own host (or none), never a school's;
+     * everyone else only their own school's.
+     */
+    private function mayUseHost(\App\Models\UserProfile $profile, School $tenant): bool
+    {
+        return match ($profile->role) {
+            'super_admin' => true,
+            'partner' => (bool) $tenant->is_platform,
+            default => $profile->school_id === $tenant->id,
+        };
+    }
+
+    /**
      * End this session (gap G1).
      *
      * Only the token that made the request is deleted, not every token the user
@@ -213,7 +227,7 @@ class AuthController extends Controller
         // Wrong tenant: same silence as an unknown address. A reset link sent
         // from one school's host to another school's user would also be a
         // cross-tenant leak of which school a person belongs to.
-        if ($tenant && $profile && $profile->role !== 'super_admin' && $profile->school_id !== $tenant->id) {
+        if ($tenant && $profile && ! $this->mayUseHost($profile, $tenant)) {
             return $generic;
         }
 

@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\Phase1And2Controller;
 use App\Http\Controllers\Api\V1\PlatformAccessController;
 use App\Http\Controllers\Api\V1\PlatformAiRemarksController;
 use App\Http\Controllers\Api\V1\PlatformAnnouncementController;
+use App\Http\Controllers\Api\V1\PartnerPortalController;
 use App\Http\Controllers\Api\V1\PlatformBillingController;
 use App\Http\Controllers\Api\V1\PlatformPartnerController;
 use App\Http\Controllers\Api\V1\PlatformComplianceController;
@@ -90,6 +91,10 @@ use App\Http\Controllers\Api\V1\UserManagementController;
 Route::prefix('public')->group(function () {
     Route::post('/leads', [PublicMarketingController::class, 'storeLead'])
         ->middleware('throttle:marketing-leads');
+    Route::post('/partners/apply', [PublicMarketingController::class, 'applyPartner'])
+        ->middleware('throttle:marketing-leads');
+    Route::get('/partners/terms', [PublicMarketingController::class, 'partnerTerms'])
+        ->middleware('throttle:60,1');
     Route::post('/leads/touch', [PublicMarketingController::class, 'touch'])
         ->middleware('throttle:30,1');
     Route::get('/schools/resolve', [PublicMarketingController::class, 'resolveSchool'])
@@ -927,6 +932,16 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         // What SchoolPilot is currently telling this school's administrators.
         Route::get('/announcements', [PlatformAnnouncementController::class, 'forSchool'])->middleware('role:school_admin,super_admin');
+
+        // The partner portal: a partner's own referrals and earnings, nothing else.
+        Route::middleware('role:partner')->prefix('partner')->group(function () {
+            Route::get('/summary', [PartnerPortalController::class, 'summary']);
+            Route::get('/schools', [PartnerPortalController::class, 'schools']);
+            Route::get('/commissions', [PartnerPortalController::class, 'commissions']);
+            Route::get('/payouts', [PartnerPortalController::class, 'payouts']);
+            Route::get('/bank', [PartnerPortalController::class, 'bank']);
+            Route::put('/bank', [PartnerPortalController::class, 'updateBank']);
+        });
 
         // SchoolPilot platform operators only.
         Route::middleware('role:super_admin')->group(function () {

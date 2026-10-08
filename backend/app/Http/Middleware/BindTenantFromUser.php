@@ -88,6 +88,19 @@ class BindTenantFromUser
                         ], 403);
                     }
                 }
+            } elseif ($profile->role === 'partner') {
+                /*
+                 * A partner belongs to no school. The host may still have
+                 * resolved one, so it is cleared, and the partner is held to
+                 * their own portal: a route that is not the partner's, or the
+                 * account routes, is refused rather than answered for whichever
+                 * school the host happened to name.
+                 */
+                $this->tenant->setSchoolId(null);
+
+                if (! $request->is('api/v1/partner', 'api/v1/partner/*', 'api/v1/user', 'api/v1/auth/*')) {
+                    return response()->json(['message' => 'Forbidden: You do not have permission to access this resource.'], 403);
+                }
             } elseif ($profile->school_id) {
                 $this->tenant->setSchoolId((int) $profile->school_id);
             }

@@ -9,9 +9,11 @@ use App\Models\Partner;
 use App\Models\PartnerCommission;
 use App\Models\PartnerPayout;
 use App\Models\School;
+use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 /**
@@ -62,7 +64,7 @@ class PlatformPartnerController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:120',
-            'email' => 'required|email:rfc|max:150|unique:partners,email',
+            'email' => 'required|email:rfc|max:150|unique:partners,email|unique:users,email',
             'phone' => 'nullable|string|max:24',
             'commission_rate_percent' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -79,7 +81,10 @@ class PlatformPartnerController extends Controller
 
         $this->audit($request, 'partner.created', $partner->id, [], $this->auditValues($partner));
 
-        return response()->json(['data' => $this->present($partner, (int) config('services.partners.default_rate_bps'))], 201);
+        return response()->json([
+            'data' => $this->present($partner, (int) config('services.partners.default_rate_bps')),
+            'login' => $this->provisionLogin($partner),
+        ], 201);
     }
 
     /**
@@ -117,7 +122,44 @@ class PlatformPartnerController extends Controller
         $partner->save();
         $this->audit($request, 'partner.updated', $partner->id, $before, $this->auditValues($partner));
 
-        return response()->json(['data' => $this->present($partner, (int) config('services.partners.default_rate_bps'))]);
+        return response()->json([
+            'data' => $this->present($partner, (int) config('services.partners.default_rate_bps')),
+            // Present only on the call that approves a partner for the first time.
+            'login' => $this->provisionLogin($partner),
+        ]);
+    }
+
+    /**
+     * Give an approved partner a portal sign-in. Returns the credentials once,
+     * for the operator to pass on (the password is never stored in the clear),
+     * or null when the partner is not approved or already has a login. The
+     * partner must change the password on first sign-in.
+     *
+     * @return array{email: string, temporary_password: string}|null
+     */
+    private function provisionLogin(Partner $partner): ?array
+    {
+        if ($partner->status !== 'active' || $partner->user_id !== null) {
+            return null;
+        }
+
+        if (User::where('email', $partner->email)->exists()) {
+            return null;
+        }
+
+        $password = bin2hex(random_bytes(8));
+
+        $user = User::create([
+            'name' => $partner->name,
+            'email' => $partner->email,
+            'password' => Hash::make($password),
+            'must_change_password' => true,
+        ]);
+        $user->userProfile()->create(['school_id' => null, 'role' => 'partner']);
+
+        $partner->update(['user_id' => $user->id]);
+
+        return ['email' => $user->email, 'temporary_password' => $password];
     }
 
     /** A partner's schools, commissions and payouts. */

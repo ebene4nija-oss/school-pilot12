@@ -249,6 +249,9 @@ class PlatformController extends Controller
             'status' => 'nullable|in:active,trial',
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|max:255|unique:users,email',
+            // The partner who brought this school: given directly, or taken from the lead it came from.
+            'partner_id' => 'nullable|integer|exists:partners,id',
+            'lead_id' => 'nullable|integer|exists:marketing_leads,id',
         ], [
             'subdomain.regex' => 'A subdomain may use lowercase letters, numbers and hyphens, and cannot start or end with a hyphen.',
             'subdomain.not_in' => 'That subdomain is reserved by the platform.',
@@ -265,6 +268,8 @@ class PlatformController extends Controller
                     'address' => $validated['address'] ?? null,
                     'status' => $validated['status'] ?? 'trial',
                     'is_platform' => false,
+                    'partner_id' => $validated['partner_id']
+                        ?? (isset($validated['lead_id']) ? \App\Models\MarketingLead::whereKey($validated['lead_id'])->value('partner_id') : null),
                 ]);
 
                 /*
