@@ -1,7 +1,7 @@
 import os
 import sys
 import shutil
-import fitz # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
@@ -197,7 +197,7 @@ def create_feature_guide_pdf(filename):
     meta_text = Paragraph(
         "<font color='#002447'><b>PRODUCT FEATURE & ARCHITECTURE SPECIFICATION</b></font><br/>"
         "<font color='#835500' size=8>Cloud-Based K-12 School Management System</font><br/>"
-        "<font color='#666666' size=7.5>Version 1.0 • Software-Only Infrastructure • Zero Hardware Required</font>",
+        "<font color='#666666' size=7.5>Version 2.0 • October 2026 • Software-Only • Zero Hardware Required</font>",
         ParagraphStyle('MetaText', parent=styles['Normal'], alignment=TA_RIGHT)
     )
     
@@ -214,7 +214,7 @@ def create_feature_guide_pdf(filename):
     # Executive Overview Box
     exec_text = (
         "<b>Executive Overview:</b> SchoolPilot is a next-generation, cloud-based school management platform engineered specifically for private K-12 "
-        "day schools in Nigeria. Operating strictly under a <b>Software-Only</b> architectural core, SchoolPilot eliminates "
+        "day and boarding schools in Nigeria. Operating strictly under a <b>Software-Only</b> architectural core, SchoolPilot eliminates "
         "expensive biometric scanners, RFID readers, and specialized hardware. It turns standard smartphones, browsers, "
         "and existing office PCs into an integrated hub for administration, AI-assisted teaching, parent engagement, "
         "computer-based testing (CBT), and automated fee processing."
@@ -250,7 +250,7 @@ def create_feature_guide_pdf(filename):
         ("Real-Time Bus Location Broadcasting", "Bus drivers run the mobile app during active routes, allowing parents to track bus arrival live without vehicle GPS tracker hardware."),
         ("Phone Camera Library Barcoding", "Library check-in and checkout uses the phone camera to scan standard book barcodes, removing the need for handheld barcode guns."),
         ("Printable Student & Staff ID Cards", "Generates high-resolution, print-ready PDF ID cards complete with QR codes and school branding, printable on standard office printers."),
-        ("Resilient Offline Desktop CBT", "Lightweight desktop app for CBT exams that runs without internet during outages and syncs scores automatically when reconnected.")
+        ("Offline CBT Lab Client (pilot)", "One school laptop serves the sealed paper to existing lab PCs over the lab's own network, with no internet during the exam; answers upload afterwards.")
     ]
 
     for title, desc in features_s1:
@@ -275,7 +275,8 @@ def create_feature_guide_pdf(filename):
         ("Nigerian Academic Structure Native", "Full support for 3-Term sessions, Continuous Assessment (CA) weightings, Termly Broadsheets, JSS/SS divisions, and national curriculum standards (WAEC, NECO, JAMB)."),
         ("Student Information System (SIS)", "Centralized digital student dossiers tracking profiles, guardian linkages, medical notes, academic history, and NDPA 2023 compliant data protection."),
         ("Automated Conflict-Free Timetabling", "Intelligent schedule generator balancing subject periods, teacher availability, and classroom allocations without scheduling overlaps."),
-        ("Unified Multi-Tenant Web & Mobile App", "Modern Next.js web dashboard and Flutter cross-platform mobile app providing role-optimized access for Admins, Teachers, Students, and Parents.")
+        ("Unified Multi-Tenant Web & Mobile App", "Next.js web portal and one Flutter mobile app with role-based access for Admins, Bursars, Teachers, Students and Parents, each school on its own subdomain."),
+        ("Boarding & Campus Operations", "Hostel rooms and beds, exeats with parent consent, roll calls, incident reports, hostel fees on the term invoice, sick bay, library, transport and ID cards.")
     ]
 
     for title, desc in features_s2:
@@ -291,18 +292,18 @@ def create_feature_guide_pdf(filename):
     story.append(HRFlowable(width="100%", thickness=0.5, color=PRIMARY, spaceBefore=1, spaceAfter=5))
 
     features_s3 = [
-        ("AI Teacher Copilot", "Generates comprehensive lesson plans, practice worksheets, and assignment quizzes tailored to specific term topics and curriculum goals in seconds."),
-        ("AI Report Card Remarks with Human Oversight", "Generates personalized, constructive report card remarks for every student. AI comments stay in <i>pending_approval</i> status until reviewed and approved by the teacher."),
-        ("24/7 AI Student Curriculum Tutor", "Interactive personal AI assistant calibrated strictly to the school's actual syllabus and teacher-assigned coursework for safe round-the-clock learning support."),
-        ("Admin AI Risk & Revenue Insights", "Automated predictive alerts for school heads identifying students showing sudden score drops, attendance anomalies, or tuition delinquency risks.")
+        ("AI Teacher Copilot", "Drafts lesson plans, exam questions, homework ideas, translations and performance summaries on the Nigerian curriculum, for the teacher to edit."),
+        ("Choice of AI Provider", "Claude, ChatGPT or Gemini, chosen by the school with a quality level; a daily spending cap per school, and a child's name is never sent to the provider."),
+        ("AI Report Card Remarks with Human Oversight", "Drafts constructive report card remarks from subject and score. AI comments stay in <i>pending_approval</i> until a teacher approves or edits them."),
+        ("AI Study Tutor", "Guides students through problems rather than handing over answers, within the sections, subjects and daily limits the school sets, and locked during CBT exams."),
+        ("Dashboards & Alerts", "Principal, teacher, student and parent dashboards: attendance, fees collected, results awaiting approval and students whose scores are slipping.")
     ]
 
     for title, desc in features_s3:
         item_text = f"<b>• {title}:</b> {desc}"
         story.append(Paragraph(item_text, bullet_style))
 
-    # CLEAN PAGE BREAK BEFORE SECTION 4 TO PERFECTLY BALANCE PAGES
-    story.append(PageBreak())
+    story.append(Spacer(1, 6))
 
     # ---------------------------------------------------------
     # SECTION 4: COMPUTER-BASED TESTING (CBT) & ASSESSMENTS
@@ -311,9 +312,9 @@ def create_feature_guide_pdf(filename):
     story.append(HRFlowable(width="100%", thickness=0.5, color=PRIMARY, spaceBefore=1, spaceAfter=5))
 
     features_s4 = [
-        ("Rich Media & LaTeX Math Questions", "Supports multiple choice, true/false, and theory questions enriched with images and inline LaTeX math formulas rendered offline via bundled KaTeX."),
-        ("Anti-Cheat & Exam Hall Controls", "Question randomization, option shuffling, strict timed countdowns, browser focus loss monitoring, and instant automated grading."),
-        ("WAEC/JAMB Standardized Practice", "Pre-loaded question banks allowing students to simulate national standardized examinations under authentic timed exam hall conditions.")
+        ("Rich Media & Maths Questions", "Objective, theory and comprehension-passage questions with images and maths rendered offline; theory answers go to the teacher to mark."),
+        ("Exam Hall Controls", "Per-candidate question and option shuffling, timed sittings with autosave, session events logged for review, and automatic objective marking."),
+        ("WAEC, NECO & BECE Practice", "Schools set exam-style practice papers from their own question bank, tagged by subject, topic, difficulty and exam body, for SS3 and JSS3 candidates.")
     ]
 
     for title, desc in features_s4:
@@ -355,12 +356,17 @@ def create_feature_guide_pdf(filename):
         [
             Paragraph("Super Admin", table_cell_bold),
             Paragraph("Platform operators & system maintenance", table_cell_style),
-            Paragraph("Multi-school onboarding, platform security, subscription billing, cross-school analytics", table_cell_style)
+            Paragraph("Multi-school onboarding, per-term billing, AI provider and spend, result PINs, audit and compliance", table_cell_style)
         ],
         [
             Paragraph("School Admin", table_cell_bold),
             Paragraph("Principal, Proprietor, & Front Office", table_cell_style),
             Paragraph("Staff/Student records, fee structures, timetables, broadsheet approval, AI insight dashboard", table_cell_style)
+        ],
+        [
+            Paragraph("Bursar", table_cell_bold),
+            Paragraph("Finance office", table_cell_style),
+            Paragraph("Term invoices, collecting payments with receipts, scholarships, hostel charges, accounting", table_cell_style)
         ],
         [
             Paragraph("Teacher", table_cell_bold),
@@ -369,13 +375,13 @@ def create_feature_guide_pdf(filename):
         ],
         [
             Paragraph("Student", table_cell_bold),
-            Paragraph("Enrolled learners (JSS1 - SS3)", table_cell_style),
-            Paragraph("CBT exam portal, assignment submission, term results view, 24/7 AI curriculum tutor", table_cell_style)
+            Paragraph("Enrolled learners (Primary - SS3)", table_cell_style),
+            Paragraph("Printable timetable, homework, CBT, released results, progress, AI study tutor, profile", table_cell_style)
         ],
         [
             Paragraph("Parent", table_cell_bold),
             Paragraph("Guardians & Sponsors", table_cell_style),
-            Paragraph("Online fee payments, real-time bus tracking, child attendance, report cards, teacher chat", table_cell_style)
+            Paragraph("Fees and payments, attendance, homework, report cards, hostel, pickup authorisation and consent", table_cell_style)
         ]
     ]
 
@@ -404,7 +410,7 @@ def create_feature_guide_pdf(filename):
     cta_content = [
         Paragraph("READY TO TRANSFORM YOUR SCHOOL MANAGEMENT?", cta_title_style),
         Spacer(1, 2),
-        Paragraph("Zero hardware cost • Free core modules • Onboard in 30 minutes via WhatsApp", cta_body_style)
+        Paragraph("Zero hardware • From NGN 300 per student per term (30-day free trial) • NGN 500 with Result Management • Boarders NGN 1,000", cta_body_style)
     ]
     
     cta_table = Table([[cta_content]], colWidths=[540])
@@ -429,6 +435,8 @@ if __name__ == "__main__":
 
     # Copy to artifact directory and render page images
     artifact_dir = r"C:\Users\Administrator\.gemini\antigravity\brain\d74b51c2-4a18-4552-81e7-c72db97b99f4"
+    if not os.path.isdir(artifact_dir):
+        sys.exit(0)
     pdf_dest = os.path.join(artifact_dir, "SchoolPilot_Platform_Features.pdf")
     shutil.copy(out_pdf, pdf_dest)
 

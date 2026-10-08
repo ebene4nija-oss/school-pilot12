@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en-NG">
+<head>
+<meta charset="utf-8">
+<title>SchoolPilot — Feature Guide for Schools</title>
+<!--
+  Source of SchoolPilot-Feature-Guide.pdf. Rebuild with:
+    python docs/feature-guide/build.py
+  Every card carries a status badge, and LIVE means working software in the
+  product today. Check a claim against the code before marking it LIVE.
+-->
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --navy: #002447; --navy-2: #1B3A5F; --gold: #FEAE2C; --bronze: #835500;
+    --ink: #1B1C1C; --muted: #5b6270; --line: #EAE7E7; --surface: #FCF9F8; --tint: #F4F6F9;
+    --green: #1f7a4a; --green-bg: #e3f3ea; --amber: #8a5a00; --amber-bg: #fff1d6; --slate: #4a5568; --slate-bg: #edf0f4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body { font-family: "Inter", "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 9.2pt; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 15mm 15mm 14mm; position: relative; page-break-after: always; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+
+  /* Cover */
+  .cover { background: radial-gradient(120% 80% at 90% 10%, #24476f 0%, var(--navy) 45%, #001a35 100%); color: #fff; padding: 20mm 18mm; }
+  .cover .logo { height: 15mm; }
+  .cover .mark { position: absolute; right: -10mm; top: 38mm; width: 120mm; opacity: .07; }
+  .cover .bottom { position: absolute; left: 18mm; right: 18mm; bottom: 20mm; }
+  .eyebrow { font-size: 7.5pt; letter-spacing: .28em; text-transform: uppercase; font-weight: 700; color: var(--gold); }
+  .cover h1 { font-size: 30pt; line-height: 1.12; margin: 5mm 0 6mm; font-weight: 800; letter-spacing: -.01em; }
+  .cover h1 span { color: var(--gold); }
+  .cover .rule { width: 26mm; height: 1.2mm; background: var(--gold); margin-bottom: 7mm; }
+  .cover .lede { font-size: 11pt; color: #c9d4e2; max-width: 150mm; line-height: 1.55; }
+  .cover .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6mm; border-top: 1px solid rgba(255,255,255,.18); margin-top: 10mm; padding-top: 6mm; }
+  .cover .meta b { display: block; font-size: 6.5pt; letter-spacing: .24em; text-transform: uppercase; color: #8fa3bb; margin-bottom: 1.5mm; }
+  .cover .meta span { font-size: 9pt; font-weight: 600; }
+
+  /* Running pages */
+  .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 3mm; margin-bottom: 5mm; }
+  .head h2 { font-size: 17pt; color: var(--navy); font-weight: 800; }
+  .head h2 em { font-style: normal; color: var(--gold); margin-right: 3mm; }
+  .head small { color: var(--muted); font-size: 8pt; font-weight: 600; letter-spacing: .02em; }
+  .foot { position: absolute; left: 15mm; right: 15mm; bottom: 8mm; display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--muted); }
+  .foot b { color: var(--navy); }
+  .intro { font-size: 9.5pt; color: #333; margin-bottom: 4mm; max-width: 175mm; }
+  .label { display: flex; align-items: center; gap: 3mm; font-size: 7pt; letter-spacing: .26em; font-weight: 800; color: var(--bronze); text-transform: uppercase; margin: 4mm 0 2.5mm; }
+  .label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .grid { display: grid; gap: 3.2mm; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card { background: #fff; border: 1px solid var(--line); border-left: 1mm solid var(--gold); border-radius: 2mm; padding: 3.2mm 3.6mm; box-shadow: 0 .4mm 1.2mm rgba(0,36,71,.06); }
+  .card h3 { font-size: 9.6pt; color: var(--navy); display: flex; justify-content: space-between; align-items: center; gap: 2mm; margin-bottom: 1.4mm; }
+  .card p { color: #333; font-size: 8.4pt; }
+  .card ul { margin-top: 1.4mm; padding-left: 4mm; font-size: 8.1pt; color: #333; }
+  .card li { margin-bottom: .6mm; }
+  .badge { font-size: 6.2pt; letter-spacing: .12em; font-weight: 800; padding: .6mm 1.6mm; border-radius: 1mm; white-space: nowrap; }
+  .live { color: var(--green); background: var(--green-bg); }
+  .pilot { color: var(--amber); background: var(--amber-bg); }
+  .planned { color: var(--slate); background: var(--slate-bg); }
+  .new { color: #fff; background: var(--navy); }
+
+  .band { background: var(--navy); color: #fff; border-radius: 2mm; padding: 4mm 5mm; margin-top: 4mm; }
+  .band h4 { color: var(--gold); font-size: 10pt; margin-bottom: 1.2mm; }
+  .band p { color: #d5deea; font-size: 8.4pt; }
+  .band b { color: #fff; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 3mm 0 2mm; }
+  .stat { background: var(--tint); border-radius: 2mm; padding: 3mm; }
+  .stat b { display: block; font-size: 19pt; color: var(--navy); font-weight: 800; line-height: 1.1; }
+  .stat span { font-size: 7.6pt; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8.2pt; margin-top: 2mm; }
+  th { background: var(--navy); color: #fff; text-align: left; font-size: 6.8pt; letter-spacing: .14em; text-transform: uppercase; padding: 2mm 2.6mm; }
+  td { border-bottom: 1px solid var(--line); padding: 1.8mm 2.6mm; vertical-align: top; }
+  tr:nth-child(even) td { background: var(--surface); }
+  td b { color: var(--navy); }
+
+  .plans { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3.2mm; margin-top: 2mm; }
+  .plan { border: 1px solid var(--line); border-radius: 2.4mm; padding: 4mm; background: #fff; }
+  .plan.featured { border: .7mm solid var(--navy); }
+  .plan .price { font-size: 22pt; font-weight: 800; color: var(--navy); margin: 1.5mm 0 .5mm; }
+  .plan .per { font-size: 7.6pt; color: var(--muted); }
+  .plan h3 { font-size: 9.6pt; color: var(--navy); margin-top: 1.5mm; }
+  .plan ul { margin-top: 2mm; padding-left: 4mm; font-size: 8.2pt; }
+
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; }
+  .col h4 { font-size: 10pt; color: var(--navy); margin: 1mm 0 2mm; }
+  .col ul { list-style: none; font-size: 8.1pt; }
+  .col li { padding: 1.1mm 0 1.1mm 3.5mm; border-bottom: 1px solid var(--line); position: relative; }
+  .col li::before { content: ""; position: absolute; left: 0; top: 2.6mm; width: 1.4mm; height: 1.4mm; border-radius: 50%; background: var(--gold); }
+  .col.next li::before { background: #c9a35a; }
+  .col.later li::before { background: #b8c0cc; }
+  .out { margin-top: 5mm; border: 1px dashed #c8ccd3; border-radius: 2mm; padding: 3.5mm 4mm; font-size: 8.2pt; color: #444; }
+  .out b { color: var(--navy); }
+  .closing { margin-top: 6mm; text-align: center; }
+  .closing h3 { font-size: 13pt; color: var(--navy); }
+  .closing p { color: var(--muted); font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<section class="page cover">
+  <img class="logo" src="../../logos/school pilot light logo.png" alt="SchoolPilot">
+  <img class="mark" src="../../logos/school pilot app icon.png" alt="">
+  <div class="bottom">
+    <p class="eyebrow">Feature guide for schools</p>
+    <h1>Everything a school runs on,<br><span>in one login.</span></h1>
+    <div class="rule"></div>
+    <p class="lede">A cloud-based school management platform for private K-12 schools in Nigeria, day and boarding: student records, results, fees, computer-based testing, boarding and AI-assisted teaching, built to run on the phones, laptops and lab computers your school already owns.</p>
+    <div class="meta">
+      <div><b>Document</b><span>Feature Guide v2</span></div>
+      <div><b>Updated</b><span>October 2026</span></div>
+      <div><b>Built for</b><span>Private K-12, Nigeria</span></div>
+      <div><b>Hardware required</b><span>None</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 01 -->
+<section class="page">
+  <div class="head"><h2><em>01</em>The platform at a glance</h2><small>What it is, and how it thinks</small></div>
+  <p class="intro">SchoolPilot runs teaching, learning, administration, boarding, communication and examinations for private K-12 schools of 50 to 3,000 students, schools currently running on paper, Excel or another portal. It is software-only: no biometric readers, no RFID, no scanners, no sensors. Attendance uses the phone camera already in a teacher's pocket, staff check in with their own phone's GPS, and the bus is tracked from the driver's phone.</p>
+
+  <div class="stats">
+    <div class="stat"><b>5</b><span>School roles out of the box (admin, bursar, teacher, student, parent) plus custom roles</span></div>
+    <div class="stat"><b>1</b><span>App to install, whichever role you are, not separate downloads</span></div>
+    <div class="stat"><b>3</b><span>AI providers to choose from: Claude, ChatGPT or Gemini</span></div>
+    <div class="stat"><b>0</b><span>Devices to purchase, install, wire in or maintain</span></div>
+  </div>
+
+  <p class="label">Who uses it</p>
+  <div class="grid g3">
+    <div class="card"><h3>School admin</h3><p>Users and accounts, students from admission to graduation, staff, timetables, results release, module and AI settings: the whole office in one place.</p></div>
+    <div class="card"><h3>Bursar</h3><p>Fee structures, term invoices, collecting payments with receipts, scholarships, hostel charges and the school's accounts.</p></div>
+    <div class="card"><h3>Teacher</h3><p>Attendance, scores, homework, CBT question banks, lesson plans, AI Studio drafts, leave requests and the staff inbox.</p></div>
+    <div class="card"><h3>Student</h3><p>A printable timetable, homework, CBT, released results, progress by topic, the AI tutor, fees and hostel, and their own profile.</p></div>
+    <div class="card"><h3>Parent</h3><p>Each child's attendance, homework, results, fees, hostel and ID card, with consent choices and who may collect them from school.</p></div>
+    <div class="card"><h3>SchoolPilot</h3><p>Onboarding, billing, AI provider and spend, result PINs, compliance and audit, from a separate operator console.</p></div>
+  </div>
+
+  <p class="label">Six commitments behind every feature</p>
+  <div class="grid g3">
+    <div class="card"><h3>1 · Software-only, always</h3><p>If it can't run on a phone camera, phone GPS or a browser, it doesn't ship. Hardware is a permanent boundary, not a later phase.</p></div>
+    <div class="card"><h3>2 · Nigerian K-12, not translated</h3><p>Sessions, terms, classes and arms from nursery to SS3. CA schemes, broadsheets, WAEC. No faculties, no semesters, no GPA.</p></div>
+    <div class="card"><h3>3 · Works when the network doesn't</h3><p>Registers and scores queue on the phone with no signal and sync safely; CBT runs in the lab with no internet.</p></div>
+    <div class="card"><h3>4 · AI drafts, teachers decide</h3><p>Every AI-drafted remark waits for a teacher to approve or edit it. A report card cannot carry an unapproved comment.</p></div>
+    <div class="card"><h3>5 · NDPA-first, because the records are children's</h3><p>Data minimisation by default: a child's name is never sent to an AI provider, and medical fields are encrypted.</p></div>
+    <div class="card"><h3>6 · Your records stay yours</h3><p>Free migration in, a full export out, whenever you ask. Nothing about leaving is designed to be difficult.</p></div>
+  </div>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>02</span></div>
+</section>
+
+<!-- ============================================================ 02 -->
+<section class="page">
+  <div class="head"><h2><em>02</em>Running the school</h2><small>Records, structure &amp; the daily loop</small></div>
+
+  <p class="label">Foundation</p>
+  <div class="grid g2">
+    <div class="card"><h3>Your own school portal <span class="badge live">LIVE</span></h3><p>Every school gets its own web address, its own branded sign-in page and fully isolated data: no other school can see a record of yours. We migrate your existing records in, free, within 24 hours.</p></div>
+    <div class="card"><h3>Users, roles &amp; permissions <span class="badge live">LIVE</span></h3><p>Create accounts, reset passwords and lock accounts from one screen. Custom roles for schools that split responsibilities differently: a bursar who sees finance but not medical notes.</p></div>
+    <div class="card"><h3>Student records &amp; lifecycle <span class="badge live">LIVE</span></h3><p>The Nigerian registration form, digitised, with several guardians per child for split families. Promotion, repeat, withdrawal, graduation and transfer are kept as records, never overwritten, and duplicate applicants are flagged.</p></div>
+    <div class="card"><h3>Admissions <span class="badge live">LIVE</span></h3><p>Parents apply online with documents; review, entrance assessment, offer and enrolment create the student record with no retyping.</p></div>
+    <div class="card"><h3>Academic history &amp; transfers <span class="badge live">LIVE</span></h3><p>Each term is closed into a permanent record. Transcripts and transfer certificates carry a QR code to verify them; records received from another school keep their original names beside yours. Families can report a mistake for the school to correct.</p></div>
+    <div class="card"><h3>Staff, HR &amp; payroll <span class="badge live">LIVE</span></h3><p>Staff records, contracts, class and subject assignment, leave requests, loans and monthly payroll with payslips, approved before it is paid.</p></div>
+  </div>
+
+  <p class="label">The daily loop</p>
+  <div class="grid g3">
+    <div class="card"><h3>Attendance <span class="badge live">LIVE</span></h3><p>By QR scan through the app's own camera or by register, with corrections approved and an alert to parents of absent children. Staff clock in with their own phone's GPS, checked against the school's gate.</p></div>
+    <div class="card"><h3>Timetable <span class="badge live">LIVE</span></h3><p>A conflict-free master timetable generated around teacher availability, saved as versions. Students see theirs as a calendar they can print.</p></div>
+    <div class="card"><h3>Cover &amp; leave <span class="badge live">LIVE</span></h3><p>Teacher leave requests, approval, and cover for the lessons they miss, so a class is never left without a teacher.</p></div>
+  </div>
+
+  <div class="band"><h4>What replaces the hardware</h4><p>Every capability a competitor solves with a purchased device, SchoolPilot solves in software on equipment your school already owns.</p></div>
+  <table>
+    <tr><th>Assumed to need hardware</th><th>What SchoolPilot uses instead</th><th>Status</th></tr>
+    <tr><td>Attendance tracking</td><td><b>QR code</b> scanned by the app's own camera, or a teacher's register</td><td><span class="badge live">LIVE</span></td></tr>
+    <tr><td>Staff clock-in</td><td>The staff member's own <b>phone GPS</b>, checked against your gate</td><td><span class="badge live">LIVE</span></td></tr>
+    <tr><td>Offline exam days</td><td>The <b>lab client</b> on one school laptop serves the paper to existing lab PCs</td><td><span class="badge pilot">PILOT</span></td></tr>
+    <tr><td>Bus tracking</td><td>The <b>driver's phone</b>, sharing location only while a route is active</td><td><span class="badge live">LIVE</span></td></tr>
+    <tr><td>Library check-in / out</td><td><b>Phone camera</b> scanning a printed barcode, or manual entry</td><td><span class="badge live">LIVE</span></td></tr>
+    <tr><td>ID cards</td><td>A generated, <b>printable PDF</b> with a QR code, from your own card design</td><td><span class="badge live">LIVE</span></td></tr>
+    <tr><td>"Smart" classrooms</td><td><b>Virtual classes</b> on your Zoom or Google Meet, attendance read from the meeting</td><td><span class="badge live">LIVE</span></td></tr>
+  </table>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>03</span></div>
+</section>
+
+<!-- ============================================================ 03 -->
+<section class="page">
+  <div class="head"><h2><em>03</em>Assessment, results &amp; CBT</h2><small>The module a school feels first</small></div>
+  <p class="intro">Result processing is where the manual alternative hurts most. Days of a form teacher's time become a background job, and the report card that comes out can be verified as genuine by anyone holding it.</p>
+
+  <p class="label">Results</p>
+  <div class="grid g2">
+    <div class="card"><h3>CA schemes per section <span class="badge live">LIVE</span></h3><p>Number of CAs, their weights and grade boundaries are set per section: nursery, primary, JSS and SS can each grade differently. Homework and coursework can fill a CA, adjusted by the teacher.</p></div>
+    <div class="card"><h3>Broadsheets &amp; positions <span class="badge live">LIVE</span></h3><p>Totals, averages, class and subject positions computed as scores arrive; termly and annual broadsheets; changes after submission go through approval with the history kept.</p></div>
+    <div class="card"><h3>Your report card design <span class="badge live">LIVE</span></h3><p>Choose a template carrying your crest and sections. Nursery classes can use developmental ratings instead of scores.</p></div>
+    <div class="card"><h3>QR authenticity <span class="badge live">LIVE</span></h3><p>Every report card carries a QR code. A parent, a receiving school or an employer can scan it and confirm it is genuine and unaltered.</p></div>
+    <div class="card"><h3>Result PINs <span class="badge live">LIVE</span></h3><p>Issue result-checker PINs in batches and track their use: the scratch-card model parents already know, issued digitally.</p></div>
+    <div class="card"><h3>You decide when results go out <span class="badge live">LIVE</span></h3><p>Results reach families only when the school releases them for a term, so a half-entered broadsheet never leaks out as a result.</p></div>
+  </div>
+
+  <p class="label">Computer-based testing</p>
+  <div class="grid g3">
+    <div class="card"><h3>CBT engine <span class="badge live">LIVE</span></h3><p>WAEC, NECO and BECE-style papers: question and option shuffling per candidate, timed sittings with autosave, automatic objective marking, pass marks.</p>
+      <ul><li>Comprehension passages with several questions</li><li>Maths rendered without internet</li><li>Theory answers marked by the teacher</li></ul></div>
+    <div class="card"><h3>Question bank <span class="badge live">LIVE</span></h3><p>Tagged by subject, topic and difficulty, with bulk import and versions kept when a question is edited, reusable across exams and terms.</p>
+      <ul><li>Images in questions and options</li><li>Per-topic score breakdown</li></ul></div>
+    <div class="card"><h3>Lab client, no internet <span class="badge pilot">PILOT</span></h3><p>One school laptop downloads the sealed paper the day before and serves it to the lab PCs over the lab's own network, wired, Wi-Fi or its own hotspot. Answers upload afterwards; a PC that dies resumes where it stopped. In pilot with schools now.</p></div>
+  </div>
+
+  <div class="band"><h4>An AI comment never reaches a report card unreviewed</h4><p>SchoolPilot can draft a remark from a student's subject and score, but every draft lands in <b>pending approval</b> and stays there until a teacher approves or edits it. The report card generator refuses to print an unapproved comment. The child's name is added on our side; it is <b>never sent to the AI provider</b>.</p></div>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>04</span></div>
+</section>
+
+<!-- ============================================================ 04 -->
+<section class="page">
+  <div class="head"><h2><em>04</em>Teaching, AI &amp; money</h2><small>The classroom and the bursary</small></div>
+
+  <p class="label">Learning</p>
+  <div class="grid g3">
+    <div class="card"><h3>Materials &amp; homework <span class="badge live">LIVE</span></h3><p>Notes, slides and worksheets per subject, reviewed before students see them. Homework submitted online, marked with feedback, and counted towards CA.</p></div>
+    <div class="card"><h3>Virtual classes <span class="badge live">LIVE</span></h3><p>Lessons scheduled on the school's Zoom or Google Meet, with attendance read from the meeting report.</p></div>
+    <div class="card"><h3>Progress &amp; points <span class="badge live">LIVE</span></h3><p>Per-topic mastery from tests and tutor sessions, points and badges, and a progress view for each student and their parents.</p></div>
+  </div>
+
+  <p class="label">AI, where it earns its keep</p>
+  <div class="grid g2">
+    <div class="card"><h3>AI Studio for teachers <span class="badge live">LIVE</span></h3><p>Lesson plans with objectives, activities and assessment; exam questions and homework ideas; translation; and performance summaries drafted from a student's released results. Every draft is for the teacher to edit, on the Nigerian curriculum.</p></div>
+    <div class="card"><h3>AI tutor for students <span class="badge live">LIVE</span></h3><p>A study tutor that guides rather than hands over answers. The school sets which sections and subjects may use it, a daily message limit, and a lock during CBT exams. Conversations are kept so a student picks up where they left off.</p></div>
+    <div class="card"><h3>Your choice of AI <span class="badge new">NEW</span></h3><p>Claude, ChatGPT or Gemini: the school chooses the provider and a quality level (fast, balanced or best), and can switch at any time from its AI settings.</p></div>
+    <div class="card"><h3>Every AI feature has an off switch <span class="badge live">LIVE</span></h3><p>Report comments, lesson plans, exam questions, homework ideas, translation, summaries and the tutor are each their own switch. A daily spending limit applies to every school.</p></div>
+  </div>
+
+  <p class="label">Fees, finance &amp; accounting</p>
+  <div class="grid g2">
+    <div class="card"><h3>Fee structures &amp; invoicing <span class="badge live">LIVE</span></h3><p>Fees per class and term drive the term's invoices automatically, with instalments that must add up to the balance, scholarships and discounts, and a list of who owes.</p></div>
+    <div class="card"><h3>Collecting payments <span class="badge live">LIVE</span></h3><p>Paystack and Flutterwave for online payment, configured per school; cash and transfers recorded at the bursary on the same ledger, each with a printable receipt.</p></div>
+    <div class="card"><h3>School accounting <span class="badge live">LIVE</span></h3><p>Expenses, vendors, petty cash, budgets and payroll, so the bursary runs in the same system as the classroom instead of beside it in Excel.</p></div>
+    <div class="card"><h3>Fee reminders that don't harass <span class="badge live">LIVE</span></h3><p>Reminders to parents with a balance, deliberately throttled. Push is free and SMS is billed, so the channel is always the bursar's choice.</p></div>
+  </div>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>05</span></div>
+</section>
+
+<!-- ============================================================ 05 -->
+<section class="page">
+  <div class="head"><h2><em>05</em>Boarding, campus &amp; families</h2><small>Hostel, transport, library, health &amp; parents</small></div>
+
+  <p class="label">Boarding</p>
+  <div class="grid g2">
+    <div class="card"><h3>Hostel management <span class="badge live">LIVE</span></h3><p>Houses, rooms and beds; boarding applications and allocation for full, weekly and flexible boarders; hostel assets and maintenance requests.</p></div>
+    <div class="card"><h3>Exeats, roll calls &amp; movements <span class="badge live">LIVE</span></h3><p>Leave requests approved with the parent's consent, roll calls, sign-out and return logged with late returns flagged, and incident reports.</p></div>
+    <div class="card"><h3>Hostel fees on the invoice <span class="badge live">LIVE</span></h3><p>Boarding fee rules per category, billed onto each boarder's term invoice, so they are paid through the same ledger as school fees.</p></div>
+    <div class="card"><h3>Sick bay <span class="badge live">LIVE</span></h3><p>A clinic log of visits and treatment, with medical fields encrypted and visible only to the roles that need them.</p></div>
+  </div>
+
+  <p class="label">Around the campus</p>
+  <div class="grid g3">
+    <div class="card"><h3>Transport <span class="badge live">LIVE</span></h3><p>Buses and routes, with the bus's position shared from the driver's phone while a route runs.</p></div>
+    <div class="card"><h3>Library <span class="badge live">LIVE</span></h3><p>Catalogue, borrowing and returns by phone-camera barcode, and each student's books on loan.</p></div>
+    <div class="card"><h3>ID cards <span class="badge live">LIVE</span></h3><p>Card designs per school, print-ready PDFs with a QR code, reissue and revocation of lost cards.</p></div>
+  </div>
+
+  <p class="label">Families &amp; communication</p>
+  <div class="grid g2">
+    <div class="card"><h3>Parent portal &amp; app <span class="badge live">LIVE</span></h3><p>Each child's attendance, homework, results, fees, hostel and ID card. In split families each guardian gets their own access to the same child.</p></div>
+    <div class="card"><h3>Safe pickup &amp; consent <span class="badge live">LIVE</span></h3><p>Parents name who may collect their child and can withdraw it at any time. Consent, including for AI features that use a provider outside Nigeria, is the parent's choice, never assumed.</p></div>
+    <div class="card"><h3>Messaging &amp; notifications <span class="badge live">LIVE</span></h3><p>A staff inbox, announcements, push notifications to the app, and SMS and WhatsApp for messages that must reach a feature phone.</p></div>
+    <div class="card"><h3>Behaviour &amp; portfolio <span class="badge live">LIVE</span></h3><p>Behaviour notes that reach the real guardians, and a portfolio of work and achievements beside the marks.</p></div>
+  </div>
+
+  <div class="band"><h4>No biometrics is a compliance decision, not only a cost one</h4><p>Biometric data is a stricter category of sensitive data under the NDPA. By never collecting it, your school avoids a whole tier of consent and security obligations, on top of the hardware saving.</p></div>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>06</span></div>
+</section>
+
+<!-- ============================================================ 06 -->
+<section class="page">
+  <div class="head"><h2><em>06</em>Trust, insight &amp; pricing</h2><small>Security, analytics and what it costs</small></div>
+
+  <div class="grid g3">
+    <div class="card"><h3>Security <span class="badge live">LIVE</span></h3><p>Encryption in transit and at rest, field-level encryption of medical details, two-factor sign-in for administrators, audit logs, login history and rate limiting.</p></div>
+    <div class="card"><h3>NDPA compliance <span class="badge live">LIVE</span></h3><p>Consent recorded with time and source and withdrawable; data minimisation, including to AI providers; a full export of your school's data on demand.</p></div>
+    <div class="card"><h3>Dashboards &amp; alerts <span class="badge live">LIVE</span></h3><p>Principal, teacher, student and parent dashboards: attendance, fees collected, results waiting for approval, and students whose scores are slipping.</p></div>
+    <div class="card"><h3>Web portal <span class="badge live">LIVE</span></h3><p>For the staff-heavy work: bulk score entry, finance, CBT authoring, setup and reports.</p></div>
+    <div class="card"><h3>One mobile app <span class="badge live">LIVE</span></h3><p>A single app with role-based navigation for every role, not separate apps to install and explain.</p></div>
+    <div class="card"><h3>Works without signal <span class="badge live">LIVE</span></h3><p>Registers and scores queue on the phone and sync when signal returns, without double-posting.</p></div>
+  </div>
+
+  <p class="label">Plans &amp; pricing</p>
+  <p class="intro">Per active student, per term, in Naira. A student counts if they were enrolled in a class at any point in the term. No per-exam, per-teacher or per-parent fees; CBT, the LMS, AI and the apps are included in every plan.</p>
+  <div class="plans">
+    <div class="plan featured"><span class="badge new">FULL SERVICE</span><h3>School Management with Result Management</h3><div class="price">₦500</div><div class="per">per active student, per term</div>
+      <ul><li>Everything in the platform</li><li>Result computation, broadsheets and positions</li><li>Report cards, printing and result PINs</li></ul></div>
+    <div class="plan"><span class="badge live">30-DAY FREE TRIAL</span><h3>School Management Subscription</h3><div class="price">₦300</div><div class="per">per active student, per term</div>
+      <ul><li>Everything in the platform</li><li>For schools with their own result process</li><li>No result computation or printing</li></ul></div>
+    <div class="plan"><span class="badge pilot">ON EITHER PLAN</span><h3>School Management with Boarding School Management</h3><div class="price">₦1,000</div><div class="per">per boarding student, per term</div>
+      <ul><li>Charged for boarders in place of the plan rate</li><li>Hostel, exeats, roll calls, hostel fees</li><li>Day students stay at their plan rate</li></ul></div>
+  </div>
+  <table>
+    <tr><th>Active students</th><th>With Result Management</th><th>Subscription</th></tr>
+    <tr><td><b>300</b></td><td>₦150,000 per term</td><td>₦90,000 per term</td></tr>
+    <tr><td><b>500</b></td><td>₦250,000 per term</td><td>₦150,000 per term</td></tr>
+    <tr><td><b>1,000</b></td><td>₦500,000 per term</td><td>₦300,000 per term</td></tr>
+    <tr><td><b>500, of whom 100 board</b></td><td>400 × ₦500 + 100 × ₦1,000 = ₦300,000</td><td>400 × ₦300 + 100 × ₦1,000 = ₦220,000</td></tr>
+  </table>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>07</span></div>
+</section>
+
+<!-- ============================================================ 07 -->
+<section class="page">
+  <div class="head"><h2><em>07</em>What's live, and what's next</h2><small>Stated plainly, so nothing is oversold</small></div>
+  <p class="intro">The first column is working software today; every card in this guide carries the same badge. The second is in pilot or next on the roadmap. The third is planned and not started, marked that way so you never have to guess.</p>
+
+  <div class="cols3">
+    <div class="col"><p class="eyebrow" style="color:var(--green)">Available now</p><h4>Working today</h4><ul>
+      <li>Your own portal, branded sign-in, free migration</li>
+      <li>Users, roles, student lifecycle, admissions</li>
+      <li>Academic history, transcripts, transfers</li>
+      <li>Staff, HR, leave, cover and payroll</li>
+      <li>QR and register attendance, GPS clock-in</li>
+      <li>Timetables, printable student calendar</li>
+      <li>CA schemes, broadsheets, positions</li>
+      <li>QR-verified report cards, result PINs</li>
+      <li>Online CBT, question bank, theory marking</li>
+      <li>Materials, homework, virtual classes</li>
+      <li>AI Studio and tutor: Claude, ChatGPT or Gemini</li>
+      <li>Fees, Paystack and Flutterwave, accounting</li>
+      <li>Hostel, exeats, roll calls, sick bay</li>
+      <li>Transport, library, ID cards</li>
+      <li>Parent app, pickup and consent, messaging</li>
+      <li>Dashboards, 2FA, audit logs, data export</li>
+    </ul></div>
+    <div class="col next"><p class="eyebrow" style="color:var(--amber)">Pilot &amp; roadmap</p><h4>In pilot, or next</h4><ul>
+      <li>CBT lab client with no internet: in pilot with schools</li>
+      <li>Rubric-based marking</li>
+      <li>Peer review on assignments</li>
+      <li>More CBT question types: drag-and-drop, diagram labelling</li>
+      <li>NABTEB, Cambridge and Montessori tagging</li>
+      <li>The tutor in Yoruba, Hausa, Igbo and French</li>
+      <li>Class discussion forums</li>
+      <li>Staff appraisals and certificate tracking</li>
+    </ul></div>
+    <div class="col later"><p class="eyebrow" style="color:var(--slate)">Planned</p><h4>Not built yet</h4><ul>
+      <li>Full international-curriculum support for dual-curriculum schools</li>
+      <li>Vaccination tracking in the sick bay</li>
+      <li>Hostel visitor logs</li>
+    </ul></div>
+  </div>
+
+  <div class="out"><b>Permanently out of scope.</b> Facial recognition. Fingerprint and biometric scanners. RFID readers and RFID cards. Barcode-scanner guns. Dedicated vehicle GPS units. IoT classroom sensors, smart boards, digital bells, smart lockers. VR and AR headsets. These are not deferred; they are excluded. Each would turn going live this week into a multi-week hardware rollout, in a market whose schools run on fee income and inconsistent power.</div>
+
+  <div class="closing"><h3>Everything your front office, classroom, bursary and boarding house need, in one login.</h3><p>Running on the phones, laptops and lab computers you already own.</p></div>
+  <div class="foot"><span><b>SchoolPilot</b> — Feature Guide for Schools</span><span>08</span></div>
+</section>
+
+</body>
+</html>
