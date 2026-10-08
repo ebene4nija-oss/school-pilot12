@@ -180,6 +180,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/records', icon: '🗃️', label: 'Record requests', roles: ['school_admin'] },
       { href: '/users', icon: '👥', label: 'Users & accounts', roles: ['school_admin'] },
       { href: '/admissions/settings', icon: '📨', label: 'Admissions settings', roles: ['school_admin'] },
+      { href: '/payment-gateways', icon: '🏦', label: 'Online payments', roles: ['school_admin'] },
       { href: '/ai-features', icon: '🤖', label: 'AI features', roles: ['school_admin'] },
       { href: '/security', icon: '🔐', label: 'Security', roles: ['school_admin'] },
       { href: '/director', icon: '👑', label: 'Director console', roles: ['school_admin'], className: 'font-semibold' },
