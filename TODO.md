@@ -2,19 +2,17 @@
 
 Items parked for later. Each needs a decision before work starts.
 
-## Payments (needs approval — payment config, see CLAUDE.md)
+## Payments (done 2026-10-09)
 
-- [ ] **School payment gateway keys screen.** Let a school admin enter its own
-      Paystack / Flutterwave keys from the web (write-only, encrypted, audited),
-      so fees settle to the school's account. Explain the change and its risk
-      before building.
-- [x] **`recordPayment` has no balance cap.** A manual payment can exceed what
-      the invoice owes.
-- [x] **WhatsApp receipt goes to a placeholder number** (+2348000000000) instead
-      of the guardian's.
-- [x] **Reconcile can approve card payments.** Only offline payments (transfer,
-      cash) should be approvable by hand; card payments are confirmed by the
-      gateway webhook.
+- [x] School payment gateway keys screen: Administration > Online payments.
+- [x] `recordPayment` capped at the invoice balance, locked, duplicate cash
+      within 10 minutes asks for confirmation.
+- [x] Receipts go to the guardians of record, never a placeholder number.
+- [x] Only pending cash / bank transfers are approved or rejected by hand;
+      card payments are confirmed by the gateway webhook. One locked,
+      idempotent settlement path (PaymentSettlement) for all three.
+- [ ] The webhook does not yet check that the amount the gateway reports
+      matches the payment's amount before settling.
 
 ## AI providers (added 2026-10-06)
 
