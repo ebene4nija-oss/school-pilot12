@@ -34,7 +34,7 @@ class MarketingLead extends Model
         'ref_code', 'landing_page', 'referrer',
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
         'pages', 'status', 'score', 'owner_id', 'next_action_at', 'notes',
-        'lost_reason', 'consent_at', 'last_contact_at',
+        'lost_reason', 'consent_at', 'last_contact_at', 'partner_id',
     ];
 
     protected $casts = [

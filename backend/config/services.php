@@ -188,6 +188,15 @@ return [
      * (SchoolBilling). Editable from Super Admin > Platform settings; each
      * issued term bill keeps the rate it was issued at.
      */
+    /*
+     * Partner programme: the commission rate published to the public, in basis
+     * points (3000 = 30%). A rate negotiated with one partner lives on that
+     * partner's row and is never published.
+     */
+    'partners' => [
+        'default_rate_bps' => (int) env('PARTNER_DEFAULT_RATE_BPS', 3000),
+    ],
+
     'billing' => [
         // Result Management: the whole platform plus result services.
         'results_rate_kobo' => (int) env('BILLING_RESULTS_RATE_KOBO', 50000),

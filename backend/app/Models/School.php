@@ -42,6 +42,7 @@ class School extends Model
         'social_links',
         'school_type',
         'brand_color',
+        'partner_id',
     ];
 
     /** Never serialised: it carries the school's AI key. */

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\School;
 use App\Models\Term;
 use App\Models\TermBill;
+use App\Services\PartnerCommissions;
 use App\Services\SchoolBilling;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -169,6 +170,9 @@ class PlatformBillingController extends Controller
             $bill->paid_at = $validated['status'] === 'paid' ? now() : null;
             $bill->note = $validated['note'] ?? $bill->note;
             $bill->save();
+
+            // Partner commission follows the bill: earned when paid, undone if reopened or waived.
+            app(PartnerCommissions::class)->sync($bill);
 
             $this->audit($request, $bill->school_id, 'platform.billing.'.$validated['status'], TermBill::class, $bill->id, $before, ['status' => $bill->status, 'note' => $bill->note]);
 
