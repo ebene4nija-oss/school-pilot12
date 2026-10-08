@@ -15,6 +15,8 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ut
 export type Attribution = {
   landing_page?: string;
   referrer?: string;
+  /** A partner's referral code from `?p=CODE`; sent with a lead form only. */
+  partner_code?: string;
   pages: string[];
 } & Partial<Record<(typeof UTM_KEYS)[number], string>>;
 
@@ -53,6 +55,11 @@ export function recordPageView(path: string) {
     }
   }
 
+  // A partner's link can be opened on any page, and a later visit through a
+  // different link replaces the code: the most recent referrer is credited.
+  const code = new URLSearchParams(window.location.search).get("p")?.toUpperCase();
+  if (code && /^P[A-Z0-9]{6}$/.test(code)) current.partner_code = code;
+
   if (!current.pages.includes(path) && current.pages.length < 50) {
     current.pages.push(path);
   }
@@ -83,7 +90,10 @@ export function newRefCode(): string {
 
 /** Fire-and-forget: a lost touch must never block opening WhatsApp. */
 export function sendTouch(refCode: string, cta: string) {
+  // The touch endpoint is anonymous attribution only and refuses unknown
+  // fields, so the partner code is left out; the lead form carries it.
   const { pages, ...rest } = read();
+  delete rest.partner_code;
   const body = JSON.stringify({ ref_code: refCode, cta, pages, ...rest });
   const url = `${site.apiBase}/public/leads/touch`;
 

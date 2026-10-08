@@ -100,6 +100,7 @@ export const footer = [
       { href: "/about/", label: "About" },
       { href: "/contact/", label: "Contact" },
       { href: "/faq/", label: "FAQ" },
+      { href: "/partners/", label: "Partners" },
       { href: "/schools/", label: "School login" },
     ],
   },
