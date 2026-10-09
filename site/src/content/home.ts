@@ -14,6 +14,7 @@ export const hero = {
 
 export const proofStrip = [
   "All-in-one",
+  "Day & boarding",
   "Nothing to buy",
   "Free 24-hour migration",
   "CBT lab client",
@@ -184,3 +185,22 @@ export const objections: Faq[] = [
   { id: "leaving", q: "What if we want to leave?", a: "Export all of your school's data in one click, any time. No lock-in." },
   { id: "ai", q: "Will the AI write nonsense on report cards?", a: "No AI-drafted comment reaches a report card until a teacher approves or edits it." },
 ];
+
+/**
+ * Boarding, its own homepage block. The Landing PRD kept boarding to one line
+ * as a secondary audience; it is raised here so boarding schools see it at a
+ * glance. Every item maps to a built route in backend/routes/modules/hostel.php
+ * (and the sick-bay clinic visit). No inventory claims (PRD §2.3).
+ */
+export const boarding = {
+  title: "Boarding school? The hostel runs in SchoolPilot too.",
+  intro: "Houses, beds, roll calls, exeats and welfare on the same records as results and fees. Day schools never see any of it.",
+  items: [
+    { id: "beds", icon: "admin", title: "Hostels, rooms and beds", text: "Set up your houses, allocate and move boarders, and see every free bed at a glance." },
+    { id: "rollcall", icon: "clock", title: "Roll calls on a phone", text: "House staff mark night and morning roll calls on their phone. Missing boarders show up straight away." },
+    { id: "exeat", icon: "transfer", title: "Exeats with parent consent", text: "Parents request or approve leave in the app. Every departure and return is logged." },
+    { id: "welfare", icon: "shield", title: "Welfare, incidents and sick bay", text: "Welfare notes, incident records and sick-bay visits, seen only by the staff who should." },
+    { id: "roster", icon: "calendar", title: "Duty roster and room checks", text: "Publish the house staff rota, inspect rooms, and track repairs boarders report." },
+    { id: "fees", icon: "fees", title: "Boarding fees billed for you", text: "Hostel charges go straight onto each boarder's fee account, alongside tuition." },
+  ],
+} as const;

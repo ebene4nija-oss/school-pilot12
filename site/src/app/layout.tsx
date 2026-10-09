@@ -3,6 +3,8 @@ import { Inter, Work_Sans } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { StickyBar } from "@/components/StickyBar";
+import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { PageView } from "@/components/PageView";
 import { site } from "@/lib/site";
 import { RESULTS, SUBSCRIPTION } from "@/lib/pricing";
@@ -85,8 +87,10 @@ const website = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-NG" className={`${inter.variable} ${workSans.variable}`}>
+    <html lang="en-NG" className={`${inter.variable} ${workSans.variable}`} suppressHydrationWarning>
       <head>
+        {/* Before first paint: lets scroll-reveal hide content only when JS will show it again. */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([organization, software, website]) }} />
         {site.analyticsDomain && site.analyticsScript && (
           // Cookieless, self-hosted; no consent banner needed (§15).
@@ -98,6 +102,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main id="main">{children}</main>
         <Footer />
         <StickyBar />
+        <FloatingWhatsApp />
+        <ScrollReveal />
         <PageView />
       </body>
     </html>
