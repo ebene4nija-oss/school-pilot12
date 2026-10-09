@@ -48,6 +48,11 @@ type Sitting = {
   start_time: string;
   end_time: string;
   venue: string | null;
+  // hall: one place for every candidate; own_classrooms: each arm stays put.
+  venue_mode?: 'hall' | 'own_classrooms';
+  venue_id?: number | null;
+  venue_capacity?: number | null;
+  candidates?: number;
   invigilator_id: number | null;
   invigilator: string | null;
 };
@@ -188,7 +193,8 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const blank = { class_id: '', arm_id: '', subject_id: '', paper: '', exam_date: '', start_time: '09:00', end_time: '11:00', venue: '', invigilator_id: '' };
+  const blank = { class_id: '', arm_id: '', subject_id: '', paper: '', exam_date: '', start_time: '09:00', end_time: '11:00', venue_mode: 'hall', venue_id: '', venue: '', invigilator_id: '' };
+  const [halls, setHalls] = useState<{ id: number; name: string; kind: string; capacity: number | null }[]>([]);
   const [form, setForm] = useState(blank);
   const subjects = useClassSubjects(form.class_id, form.arm_id);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -208,6 +214,7 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
       await load();
     })();
     fetchApi<{ data: ClassOption[] }>('/classes').then((r) => setClasses(r.data ?? [])).catch(() => undefined);
+    fetchApi<{ data: { id: number; name: string; kind: string; capacity: number | null }[] }>('/venues').then((r) => setHalls(r.data ?? [])).catch(() => undefined);
     fetchApi<{ data: StaffMember[] }>('/staff/directory')
       .then((r) => setStaff((r.data ?? []).filter((m) => m.role === 'teacher' || m.role === 'school_admin')))
       .catch(() => undefined);
@@ -229,18 +236,18 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
       exam_date: form.exam_date,
       start_time: form.start_time,
       end_time: form.end_time,
-      venue: form.venue.trim() || null,
+      venue_mode: form.venue_mode,
+      venue_id: form.venue_mode === 'hall' && form.venue_id ? Number(form.venue_id) : null,
+      venue: form.venue_mode === 'hall' && !form.venue_id ? form.venue.trim() || null : null,
       invigilator_id: form.invigilator_id ? Number(form.invigilator_id) : null,
     });
 
     try {
-      if (editingId) {
-        await fetchApi(`/exam-sittings/${editingId}`, { method: 'PUT', body });
-        setNotice('Paper updated.');
-      } else {
-        await fetchApi(`/exam-timetables/${id}/sittings`, { method: 'POST', body });
-        setNotice('Paper added.');
-      }
+      // The server's message carries any warning (a hall over capacity).
+      const r = editingId
+        ? await fetchApi<{ message?: string }>(`/exam-sittings/${editingId}`, { method: 'PUT', body })
+        : await fetchApi<{ message?: string }>(`/exam-timetables/${id}/sittings`, { method: 'POST', body });
+      setNotice(r.message ?? (editingId ? 'Paper updated.' : 'Paper added.'));
       // Keep class, date and venue: papers are usually entered a class at a time.
       setForm({ ...form, subject_id: '', paper: '', invigilator_id: '' });
       setEditingId(null);
@@ -263,7 +270,9 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
       exam_date: s.exam_date,
       start_time: s.start_time,
       end_time: s.end_time,
-      venue: s.venue ?? '',
+      venue_mode: s.venue_mode ?? 'hall',
+      venue_id: s.venue_id ? String(s.venue_id) : '',
+      venue: s.venue_id || s.venue_mode === 'own_classrooms' ? '' : s.venue ?? '',
       invigilator_id: s.invigilator_id ? String(s.invigilator_id) : '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -380,9 +389,21 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
                 <input required type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} className={inputClass} />
               </Field>
             </div>
-            <Field label="Venue (optional)">
-              <input value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} className={inputClass} placeholder="Main hall" />
+            <Field label="Where candidates write">
+              <select value={form.venue_mode} onChange={(e) => setForm({ ...form, venue_mode: e.target.value })} className={inputClass}>
+                <option value="hall">In a hall (everyone taking it together)</option>
+                <option value="own_classrooms">Each arm in its own classroom</option>
+              </select>
             </Field>
+            {form.venue_mode === 'hall' && (
+              <Field label="Hall">
+                <select value={form.venue_id} onChange={(e) => setForm({ ...form, venue_id: e.target.value })} className={inputClass}>
+                  <option value="">Type a name instead…</option>
+                  {halls.map((h) => <option key={h.id} value={h.id}>{h.name}{h.capacity ? ` (seats ${h.capacity})` : ''}</option>)}
+                </select>
+                {!form.venue_id && <input value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} className={`${inputClass} mt-2`} placeholder="Main hall" aria-label="Hall name" />}
+              </Field>
+            )}
             <Field label="Invigilator (optional)">
               <select value={form.invigilator_id} onChange={(e) => setForm({ ...form, invigilator_id: e.target.value })} className={inputClass}>
                 <option value="">—</option>
@@ -418,7 +439,7 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
             {byDate.map(([date, rows]) => (
               <div key={date}>
                 <h3 className="mb-2 text-sm font-bold text-ink">{longDate(date)}</h3>
-                <Table columns={['Time', 'Class', 'Subject', 'Venue', 'Invigilator', '']}>
+                <Table columns={['Time', 'Class', 'Subject', 'Candidates', 'Venue', 'Invigilator', '']}>
                   {rows.map((s) => (
                     <tr key={s.id}>
                       <Cell className="whitespace-nowrap font-mono text-xs">{s.start_time}–{s.end_time}</Cell>
@@ -427,7 +448,11 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
                         {s.subject}
                         {s.paper && <span className="block text-xs font-normal text-ink-muted">{s.paper}</span>}
                       </Cell>
-                      <Cell>{s.venue ?? '—'}</Cell>
+                      <Cell>{s.candidates ?? '—'}</Cell>
+                      <Cell>
+                        {s.venue ?? '—'}
+                        {s.venue_capacity != null && s.candidates != null && s.candidates > s.venue_capacity && <span className="block text-xs text-negative">Seats {s.venue_capacity}</span>}
+                      </Cell>
                       <Cell>{s.invigilator ?? '—'}</Cell>
                       <Cell>
                         <div className="flex gap-2 print:hidden">

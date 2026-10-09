@@ -10,7 +10,7 @@ class ExamSitting extends Model
 
     protected $fillable = [
         'school_id', 'exam_timetable_id', 'class_id', 'arm_id', 'subject_id',
-        'paper', 'exam_date', 'start_time', 'end_time', 'venue', 'invigilator_id',
+        'paper', 'exam_date', 'start_time', 'end_time', 'venue', 'venue_mode', 'venue_id', 'invigilator_id',
     ];
 
     protected $casts = ['exam_date' => 'date:Y-m-d'];
@@ -28,6 +28,12 @@ class ExamSitting extends Model
     public function arm()
     {
         return $this->belongsTo(Arm::class);
+    }
+
+    /** The hall from the school's venues, when one was picked. */
+    public function hall()
+    {
+        return $this->belongsTo(Venue::class, 'venue_id');
     }
 
     public function subject()

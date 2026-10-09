@@ -260,6 +260,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::post('/exam-timetables/{id}/sittings', [ExamTimetableController::class, 'storeSitting'])->whereNumber('id');
             Route::put('/exam-sittings/{id}', [ExamTimetableController::class, 'updateSitting'])->whereNumber('id');
             Route::delete('/exam-sittings/{id}', [ExamTimetableController::class, 'destroySitting'])->whereNumber('id');
+            // Who writes a paper: the students who take the subject, arm by arm.
+            Route::get('/exam-sittings/{id}/candidates', [ExamTimetableController::class, 'candidates'])->whereNumber('id');
         });
 
         // Assessment & Broadsheet Routes

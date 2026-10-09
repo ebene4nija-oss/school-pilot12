@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Arm;
 use App\Models\ExamSitting;
 use App\Models\ExamTimetable;
+use App\Services\Academics\SubjectOffering;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -86,10 +89,16 @@ class ExamTimetableController extends Controller
         $sittings = ExamSitting::where('exam_timetable_id', $timetable->id)
             ->when($request->filled('class_id'), fn ($q) => $q->where('class_id', $request->class_id))
             ->when($request->boolean('mine'), fn ($q) => $q->where('invigilator_id', $request->user()->id))
-            ->with(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name'])
+            ->with(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name', 'hall:id,name,capacity'])
             ->orderBy('exam_date')
             ->orderBy('start_time')
             ->get();
+
+        // A student, or a parent asking for one child: only the papers that
+        // child writes — their class and arm, subjects they take.
+        if ($student = $this->candidateFor($request)) {
+            $sittings = $sittings->filter(fn (ExamSitting $s) => $this->writes($student, $s))->values();
+        }
 
         return response()->json([
             'data' => [
@@ -99,7 +108,34 @@ class ExamTimetableController extends Controller
                 'status' => $timetable->status,
                 'published_at' => $timetable->published_at?->toIso8601String(),
             ],
-            'sittings' => $sittings->map(fn (ExamSitting $s) => $this->sittingRow($s)),
+            'sittings' => $sittings->map(fn (ExamSitting $s) => $this->sittingRow($s, $this->isAdmin($request))),
+        ]);
+    }
+
+    /**
+     * Who writes a paper, arm by arm: the students of the class (or arm) who
+     * take the subject, so SS 2 Physics is the science students only.
+     */
+    public function candidates(Request $request, $id)
+    {
+        $sitting = ExamSitting::where('school_id', $this->schoolId())->with(['schoolClass:id,name', 'subject:id,name', 'hall:id,name,capacity'])->find($id);
+
+        if (! $sitting) {
+            return response()->json(['message' => 'Paper not found.'], 404);
+        }
+
+        $students = $this->candidateRows($sitting);
+        $arms = DB::table('arms')->whereIn('id', $students->pluck('arm_id')->filter()->all() ?: [0])->pluck('name', 'id');
+
+        return response()->json([
+            'sitting' => $this->sittingRow($sitting, true),
+            'total' => $students->count(),
+            'by_arm' => $students->groupBy(fn ($s) => $s->arm_id ?? 0)->map(fn ($g, $armId) => [
+                'arm_id' => $armId ?: null,
+                'arm' => $armId ? ($arms[$armId] ?? null) : null,
+                'count' => $g->count(),
+                'students' => $g->map(fn ($s) => ['id' => (int) $s->id, 'name' => $s->name, 'admission_number' => $s->admission_number])->sortBy('name')->values(),
+            ])->values(),
         ]);
     }
 
@@ -168,8 +204,8 @@ class ExamTimetableController extends Controller
         $sitting = ExamSitting::create($data + ['school_id' => $timetable->school_id, 'exam_timetable_id' => $timetable->id]);
 
         return response()->json([
-            'message' => 'Paper added.',
-            'data' => $this->sittingRow($sitting->load(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name'])),
+            'message' => trim('Paper added. '.$this->capacityNote($sitting)),
+            'data' => $this->sittingRow($sitting->load(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name', 'hall:id,name,capacity']), true),
         ], 201);
     }
 
@@ -190,8 +226,8 @@ class ExamTimetableController extends Controller
         $sitting->update($data);
 
         return response()->json([
-            'message' => 'Paper updated.',
-            'data' => $this->sittingRow($sitting->fresh()->load(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name'])),
+            'message' => trim('Paper updated. '.$this->capacityNote($sitting)),
+            'data' => $this->sittingRow($sitting->fresh()->load(['schoolClass:id,name', 'arm:id,name', 'subject:id,name,code', 'invigilator:id,name', 'hall:id,name,capacity']), true),
         ]);
     }
 
@@ -219,6 +255,9 @@ class ExamTimetableController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'venue' => 'nullable|string|max:80',
+            // One hall for every candidate, or each arm in its own classroom.
+            'venue_mode' => 'sometimes|in:hall,own_classrooms',
+            'venue_id' => ['nullable', Rule::exists('venues', 'id')->where('school_id', $schoolId)],
             'invigilator_id' => ['nullable', Rule::exists('user_profiles', 'user_id')
                 ->where('school_id', $schoolId)
                 ->whereIn('role', ['teacher', 'school_admin'])],
@@ -234,6 +273,15 @@ class ExamTimetableController extends Controller
         $validated['end_time'] .= ':00';
         $validated['arm_id'] = $validated['arm_id'] ?? null;
         $validated['invigilator_id'] = $validated['invigilator_id'] ?? null;
+        $validated['venue_mode'] = $validated['venue_mode'] ?? 'hall';
+
+        // In their own classrooms there is no one hall to name.
+        if ($validated['venue_mode'] === 'own_classrooms') {
+            $validated['venue_id'] = null;
+            $validated['venue'] = null;
+        } elseif (! empty($validated['venue_id'])) {
+            $validated['venue'] = DB::table('venues')->where('id', $validated['venue_id'])->value('name');
+        }
 
         return $validated;
     }
@@ -292,8 +340,10 @@ class ExamTimetableController extends Controller
         return in_array($request->user()?->userProfile?->role, ['school_admin', 'super_admin'], true);
     }
 
-    private function sittingRow(ExamSitting $s): array
+    private function sittingRow(ExamSitting $s, bool $withCandidates = false): array
     {
+        $ownRooms = $s->venue_mode === 'own_classrooms';
+
         return [
             'id' => $s->id,
             'class_id' => $s->class_id,
@@ -307,9 +357,89 @@ class ExamTimetableController extends Controller
             'exam_date' => $s->exam_date?->format('Y-m-d'),
             'start_time' => substr((string) $s->start_time, 0, 5),
             'end_time' => substr((string) $s->end_time, 0, 5),
-            'venue' => $s->venue,
+            'venue_mode' => $s->venue_mode ?? 'hall',
+            'venue_id' => $s->venue_id,
+            // What a candidate reads: the hall, or "Own classroom".
+            'venue' => $ownRooms ? 'Own classroom' : ($s->hall?->name ?? $s->venue),
+            'venue_capacity' => $ownRooms ? null : $s->hall?->capacity,
             'invigilator_id' => $s->invigilator_id,
             'invigilator' => $s->invigilator?->name,
-        ];
+        ] + ($withCandidates ? ['candidates' => $this->candidateRows($s)->count()] : []);
+    }
+
+    /** Students of the sitting's class (or arm) who take its subject. */
+    private function candidateRows(ExamSitting $s): Collection
+    {
+        $offering = app(SubjectOffering::class);
+        $rows = $offering->classRows($s->school_id, $s->class_id);
+        $streams = $offering->armStreams($s->school_id);
+        $chosen = DB::table('student_subjects')->where('school_id', $s->school_id)->where('subject_id', $s->subject_id)->where('status', 'active')->pluck('student_id')->flip();
+
+        return DB::table('students')->leftJoin('users', 'users.id', '=', 'students.user_id')
+            ->where('students.school_id', $s->school_id)->where('students.class_id', $s->class_id)
+            ->where('students.status', 'active')->whereNull('students.deleted_at')
+            ->when($s->arm_id, fn ($q) => $q->where('students.arm_id', $s->arm_id))
+            ->get(['students.id', 'students.arm_id', 'students.admission_number', 'users.name'])
+            ->filter(function ($student) use ($rows, $streams, $chosen, $s) {
+                // A class with no subject list: everyone sits it.
+                if ($rows->isEmpty()) {
+                    return true;
+                }
+
+                $row = $rows->get($s->subject_id);
+                $kind = $row ? SubjectOffering::kindFor($row, $student->arm_id ? ($streams[$student->arm_id] ?? null) : null) : null;
+
+                return $kind === 'compulsory' || $chosen->has($student->id);
+            })
+            ->values();
+    }
+
+    /** Whether this student writes this paper. */
+    private function writes(object $student, ExamSitting $s): bool
+    {
+        if ((int) $student->class_id !== (int) $s->class_id || ($s->arm_id && (int) $s->arm_id !== (int) $student->arm_id)) {
+            return false;
+        }
+
+        return $this->candidateRows($s)->contains('id', $student->id);
+    }
+
+    /** The student a student or parent is asking about, or null for staff. */
+    private function candidateFor(Request $request): ?object
+    {
+        $user = $request->user();
+        $role = $user?->userProfile?->role;
+
+        if ($role === 'student') {
+            return DB::table('students')->where('user_id', $user->id)->where('school_id', $this->schoolId())->first(['id', 'class_id', 'arm_id']);
+        }
+
+        if ($role === 'parent' && $request->filled('student_id')) {
+            $student = \App\Models\Student::where('school_id', $this->schoolId())->find($request->integer('student_id'));
+            abort_unless($student && $user->can('view', $student), 404, 'Student not found.');
+
+            return (object) ['id' => $student->id, 'class_id' => $student->class_id, 'arm_id' => $student->arm_id];
+        }
+
+        return null;
+    }
+
+    /** A warning when a hall has more candidates than seats at that time. */
+    private function capacityNote(ExamSitting $s): string
+    {
+        $hall = $s->venue_id ? DB::table('venues')->where('id', $s->venue_id)->first(['name', 'capacity']) : null;
+
+        if (! $hall?->capacity) {
+            return '';
+        }
+
+        $together = ExamSitting::where('school_id', $s->school_id)->where('venue_id', $s->venue_id)
+            ->whereDate('exam_date', $s->exam_date)
+            ->where('start_time', '<', $s->end_time)->where('end_time', '>', $s->start_time)
+            ->get()->sum(fn ($x) => $this->candidateRows($x)->count());
+
+        return $together > $hall->capacity
+            ? "{$hall->name} seats {$hall->capacity} but {$together} candidates write there at that time."
+            : '';
     }
 }
