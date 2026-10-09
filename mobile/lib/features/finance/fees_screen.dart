@@ -92,7 +92,9 @@ class _StatementScreenState extends ConsumerState<_StatementScreen> {
           final map = mapOf(data, ['statement', 'data']);
           final outstanding =
               numOf(map['outstanding'] ?? map['balance'] ?? map['total_due']);
-          final billed = numOf(map['total_billed'] ?? map['total']);
+          // The statement calls it `total_invoiced`; reading only the other
+          // names hid "paid of" and left a paid-up family looking at ₦0.
+          final billed = numOf(map['total_invoiced'] ?? map['total_billed'] ?? map['total']);
           final paid = numOf(map['total_paid'] ?? (billed - outstanding));
           final invoices = listOf(map['invoices'] ?? data, ['invoices']);
           final payments = listOf(map['payments'], ['payments']);
@@ -119,8 +121,10 @@ class _StatementScreenState extends ConsumerState<_StatementScreen> {
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
+                            // Owing: what is left. Paid up: what was paid,
+                            // not a bare ₦0 that reads like nothing was billed.
                             MoneyText(
-                              outstanding,
+                              outstanding > 0 ? outstanding : paid,
                               size: 28,
                               color: outstanding > 0
                                   ? AppColors.overdue
