@@ -19,6 +19,7 @@ import '../features/finance/bursary_screens.dart';
 import '../features/finance/fees_screen.dart';
 import '../features/gradebook/comment_review_screen.dart';
 import '../features/gradebook/gradebook_tab.dart';
+import '../features/homework/teacher_homework_screen.dart';
 import '../features/hostel/hostel_screen.dart';
 import '../features/idcard/id_card_screen.dart';
 import '../features/learn/learn_tab.dart';
@@ -121,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
       GoRoute(path: '/cbt-exams', builder: (_, __) => const CbtExamsScreen()),
       GoRoute(path: '/my-tests', builder: (_, __) => const MyTestsScreen()),
+      GoRoute(path: '/set-homework', builder: (_, __) => const TeacherHomeworkScreen()),
       GoRoute(path: '/send-notification', builder: (_, __) => const SendNotificationScreen()),
       GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
       GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),

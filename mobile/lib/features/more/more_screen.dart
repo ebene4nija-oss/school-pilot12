@@ -139,6 +139,13 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role == UserRole.teacher || role.isAdmin)
             _Tile(
+              icon: Icons.assignment_outlined,
+              label: 'Homework',
+              detail: 'Set it, see who handed in, mark it',
+              onTap: () => context.push('/set-homework'),
+            ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
               icon: Icons.description_outlined,
               label: 'Lesson notes',
               detail: 'Share notes and files with a class',

@@ -25,6 +25,7 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
           QuickAction(Icons.forum_outlined, 'Messages', '/messages'),
         ],
       UserRole.teacher => const [
+          QuickAction(Icons.assignment_outlined, 'Homework', '/set-homework'),
           QuickAction(Icons.quiz_outlined, 'CBT exams', '/cbt-exams'),
           QuickAction(Icons.description_outlined, 'Lesson notes', '/lesson-notes'),
           QuickAction(Icons.auto_awesome_outlined, 'AI Studio', '/ai-studio'),

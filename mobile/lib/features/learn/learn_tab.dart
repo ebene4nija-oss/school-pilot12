@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
+import '../../core/auth/session.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/cbt_attempt_screen.dart';
+import '../homework/hand_in_screen.dart';
 import 'learning_widgets.dart';
 
 final availableExamsProvider =
@@ -271,13 +273,13 @@ class _ExamStartCardState extends ConsumerState<ExamStartCard> {
 ///
 /// Three states, and they are visually different because they mean different
 /// things to the person holding the phone: handed in, still open, and late.
-class _HomeworkCard extends StatelessWidget {
+class _HomeworkCard extends ConsumerWidget {
   const _HomeworkCard({required this.work});
 
   final Map<String, dynamic> work;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final submitted = work['submitted'] == true;
     final overdue = work['overdue'] == true;
 
@@ -289,6 +291,22 @@ class _HomeworkCard extends StatelessWidget {
 
     return OutlinedCard(
       statusColor: colour,
+      // Students hand in from here; a parent's view of this card is read-only.
+      onTap: ref.read(currentRoleProvider) != UserRole.student
+          ? null
+          : () async {
+              final handedIn = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => HandInScreen(work: work)),
+              );
+              if (handedIn == true) {
+                ref.invalidate(homeworkProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Handed in.')),
+                  );
+                }
+              }
+            },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
