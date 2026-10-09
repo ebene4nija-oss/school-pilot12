@@ -234,6 +234,7 @@ class Api {
   static const myDashboard = '$version/me/dashboard';
   // The student's own class week, with each lesson's venue.
   static const myTimetable = '$version/me/timetable';
+  static const myTests = '$version/me/tests';
   /// Released results only, with the school's choices about positions.
   static const myProgress = '$version/me/progress';
 

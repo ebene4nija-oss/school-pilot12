@@ -79,7 +79,11 @@ class ApiClient {
       data: body,
       queryParameters: query,
       cancelToken: cancelToken,
-      options: timeout == null ? null : Options(receiveTimeout: timeout),
+      // Applies to sending too: a file upload on a slow line needs longer
+      // than the 30-second default to leave the phone.
+      options: timeout == null
+          ? null
+          : Options(receiveTimeout: timeout, sendTimeout: timeout),
     );
     return res.data as T;
   }

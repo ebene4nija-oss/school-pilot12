@@ -9,6 +9,7 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'quick_actions.dart';
 import '../finance/fees_screen.dart';
 
 /// The bursar's home: how much is outstanding this term and who owes most.
@@ -50,6 +51,7 @@ class BursarHome extends ConsumerWidget {
             onRefresh: () async => ref.refresh(defaultersProvider.future),
             padding: const EdgeInsets.all(AppSpacing.screenMargin),
             children: [
+              const QuickActionsRow(inset: 0),
               Row(
                 children: [
                   Expanded(

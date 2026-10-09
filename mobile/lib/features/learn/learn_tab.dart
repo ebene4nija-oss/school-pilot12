@@ -118,7 +118,11 @@ class LearnTab extends ConsumerWidget {
                   ),
               ],
               MaterialsSection(materials: listOf(learning['materials'])),
-              const SectionHeader('Exams and tests'),
+              SectionHeader(
+                'Exams and tests',
+                action: 'All my tests',
+                onAction: () => context.push('/my-tests'),
+              ),
               if (list.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(AppSpacing.screenMargin),
@@ -135,7 +139,7 @@ class LearnTab extends ConsumerWidget {
                     right: AppSpacing.screenMargin,
                     bottom: AppSpacing.sm,
                   ),
-                  child: _ExamCard(exam: exam),
+                  child: ExamStartCard(exam: exam),
                 ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -146,16 +150,19 @@ class LearnTab extends ConsumerWidget {
   }
 }
 
-class _ExamCard extends ConsumerStatefulWidget {
-  const _ExamCard({required this.exam});
+class ExamStartCard extends ConsumerStatefulWidget {
+  const ExamStartCard({super.key, required this.exam, this.onSubmitted});
 
   final Map<String, dynamic> exam;
 
+  /// Called after the paper is submitted, for screens that list past attempts.
+  final VoidCallback? onSubmitted;
+
   @override
-  ConsumerState<_ExamCard> createState() => _ExamCardState();
+  ConsumerState<ExamStartCard> createState() => _ExamStartCardState();
 }
 
-class _ExamCardState extends ConsumerState<_ExamCard> {
+class _ExamStartCardState extends ConsumerState<ExamStartCard> {
   bool _starting = false;
 
   Future<void> _start() async {
@@ -183,6 +190,7 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
 
       if ((submitted ?? false) && mounted) {
         ref.invalidate(availableExamsProvider);
+        widget.onSubmitted?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Paper submitted')),
         );

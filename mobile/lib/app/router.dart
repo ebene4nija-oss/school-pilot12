@@ -22,6 +22,7 @@ import '../features/gradebook/gradebook_tab.dart';
 import '../features/hostel/hostel_screen.dart';
 import '../features/idcard/id_card_screen.dart';
 import '../features/learn/learn_tab.dart';
+import '../features/learn/my_tests_screen.dart';
 import '../features/learn/tutor_chat_screen.dart';
 import '../features/library/library_desk_screen.dart';
 import '../features/library/library_screen.dart';
@@ -38,6 +39,7 @@ import '../features/staff/leave_screen.dart';
 import '../features/staff/payslips_screen.dart';
 import '../features/students/students_screen.dart';
 import '../features/teaching/ai_studio_screen.dart';
+import '../features/teaching/lesson_notes_screen.dart';
 import '../features/timetable/timetable_screen.dart';
 import 'navigation.dart';
 
@@ -117,6 +119,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/leaderboard', builder: (_, __) => const LeaderboardScreen()),
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
       GoRoute(path: '/cbt-exams', builder: (_, __) => const CbtExamsScreen()),
+      GoRoute(path: '/my-tests', builder: (_, __) => const MyTestsScreen()),
+      GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
+      GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),
 
       ShellRoute(
         builder: (context, state, child) =>

@@ -130,6 +130,20 @@ class MoreScreen extends ConsumerWidget {
               detail: 'Set papers, publish, close and mark',
               onTap: () => context.push('/cbt-exams'),
             ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.description_outlined,
+              label: 'Lesson notes',
+              detail: 'Share notes and files with a class',
+              onTap: () => context.push('/lesson-notes'),
+            ),
+          if (role == UserRole.student)
+            _Tile(
+              icon: Icons.quiz_outlined,
+              label: 'My tests',
+              detail: 'Sit CBT tests and see how you did',
+              onTap: () => context.push('/my-tests'),
+            ),
           if (role.isFinance)
             _Tile(
               icon: Icons.account_balance_outlined,

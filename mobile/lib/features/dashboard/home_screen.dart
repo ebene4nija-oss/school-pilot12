@@ -13,6 +13,7 @@ import '../../core/ui/widgets.dart';
 import '../clinic/clinic_screen.dart';
 import '../learn/learning_widgets.dart';
 import 'dashboard_providers.dart';
+import 'quick_actions.dart';
 import 'role_homes.dart';
 
 /// One route, a home per role. Which one you get is decided by the role the
@@ -90,6 +91,7 @@ class _DashboardScaffold extends ConsumerWidget {
               fetchedAt: meta.fetchedAt,
               onRefresh: () => ref.invalidate(dashboardProvider),
             ),
+            const QuickActionsRow(),
             ...builder(data),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -436,7 +438,7 @@ class _StudentDashboard extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: OutlinedCard(
                     statusColor: AppColors.secondary,
-                    onTap: () => context.go('/learn'),
+                    onTap: () => context.push('/my-tests'),
                     child: Row(
                       children: [
                         const Icon(Icons.quiz_outlined, color: AppColors.secondary),
@@ -602,6 +604,7 @@ class _ParentFeed extends ConsumerWidget {
               fetchedAt: meta.fetchedAt,
               onRefresh: () => ref.invalidate(parentFeedProvider),
             ),
+            const QuickActionsRow(),
             if (outstanding > 0)
               _pad(
                 OutlinedCard(

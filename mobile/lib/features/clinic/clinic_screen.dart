@@ -13,6 +13,7 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import '../dashboard/quick_actions.dart';
 
 final clinicVisitsProvider = FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
   return cachedGet<dynamic>(
@@ -61,10 +62,17 @@ class ClinicScreen extends ConsumerWidget {
         builder: (context, data, meta) {
           final visits = listOf(data);
           if (visits.isEmpty) {
-            return const EmptyState(
-              icon: Icons.medical_services_outlined,
-              title: 'No visits recorded',
-              message: 'Visits to the sick bay appear here once they are recorded.',
+            return const Column(
+              children: [
+                QuickActionsRow(),
+                Expanded(
+                  child: EmptyState(
+                    icon: Icons.medical_services_outlined,
+                    title: 'No visits recorded',
+                    message: 'Visits to the sick bay appear here once they are recorded.',
+                  ),
+                ),
+              ],
             );
           }
 
@@ -80,6 +88,7 @@ class ClinicScreen extends ConsumerWidget {
               96,
             ),
             children: [
+              const QuickActionsRow(inset: 0),
               for (final v in visits)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),

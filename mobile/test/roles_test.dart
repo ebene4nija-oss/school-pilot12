@@ -45,6 +45,7 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserProvider.overrideWith((ref) => null),
+          currentRoleProvider.overrideWith((ref) => UserRole.bursar),
           defaultersProvider.overrideWith((ref) async => Cached<dynamic>(
                 data: {
                   'defaulters': [
@@ -72,6 +73,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currentRoleProvider.overrideWith((ref) => UserRole.nurse),
           clinicVisitsProvider.overrideWith((ref) async => Cached<dynamic>(
                 data: {
                   'data': [
