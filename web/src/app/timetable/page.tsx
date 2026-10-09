@@ -29,6 +29,8 @@ type Version = {
 
 type Entry = {
   school_class_id: number;
+  // The arm's own week; null for a class taught as one group.
+  arm_id?: number | null;
   class_name?: string | null;
   day_of_week: string;
   slot_name: string;
@@ -48,7 +50,7 @@ export default function TimetablePage() {
   const [versions, setVersions] = useState<Version[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [classId, setClassId] = useState<number | null>(null);
+  const [classId, setClassId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -101,11 +103,13 @@ export default function TimetablePage() {
     };
   }, [selectedId]);
 
-  // Classes in this version, in the order the generator produced them.
+  // Each class (or arm of a class) in this version, in the generator's order.
+  const groupOf = (e: Entry) => `${e.school_class_id}:${e.arm_id ?? ''}`;
   const classes = useMemo(() => {
-    const seen = new Map<number, string>();
+    const seen = new Map<string, string>();
     entries.forEach((e) => {
-      if (!seen.has(e.school_class_id)) seen.set(e.school_class_id, e.class_name ?? `Class ${e.school_class_id}`);
+      const key = `${e.school_class_id}:${e.arm_id ?? ''}`;
+      if (!seen.has(key)) seen.set(key, e.class_name ?? `Class ${e.school_class_id}`);
     });
     return [...seen.entries()].map(([id, name]) => ({ id, name }));
   }, [entries]);
@@ -114,7 +118,7 @@ export default function TimetablePage() {
 
   // Rows of the grid: one per period, in time order; each cell by day.
   const grid = useMemo(() => {
-    const forClass = entries.filter((e) => e.school_class_id === shownClassId);
+    const forClass = entries.filter((e) => groupOf(e) === shownClassId);
     const slots: { name: string; start: string; end: string; isBreak: boolean }[] = [];
     const cells = new Map<string, Entry>();
 
@@ -240,7 +244,7 @@ export default function TimetablePage() {
                     <span className="mb-1 block text-ink-muted">Class</span>
                     <select
                       value={shownClassId ?? ''}
-                      onChange={(e) => setClassId(Number(e.target.value))}
+                      onChange={(e) => setClassId(e.target.value)}
                       className={inputClass}
                     >
                       {classes.map((c) => (

@@ -20,7 +20,7 @@ import { Badge, Button, Card, Empty, ErrorNote, Loading, PageShell, StatTile, in
 interface Dashboard {
   my_subjects: string[];
   my_class_count: number;
-  todays_classes: { school_class_id: number; subject_name: string | null; slot_name: string | null; start_time: string | null; end_time: string | null }[];
+  todays_classes: { school_class_id: number; arm_id?: number | null; subject_name: string | null; slot_name: string | null; start_time: string | null; end_time: string | null }[];
   homework_due: { id: number; title: string; class_id: number; due_date: string; subject: { name: string } | null }[];
   upcoming_exams: { id: number; title: string; class_id: number | null; opens_at: string | null; closes_at: string | null }[];
   unread_messages: number;
@@ -38,6 +38,7 @@ export default function TeacherHome() {
   const [me, setMe] = useState<string>('');
   const [d, setD] = useState<Dashboard | null>(null);
   const [classes, setClasses] = useState<Record<number, string>>({});
+  const [armNames, setArmNames] = useState<Record<number, string>>({});
   const [mine, setMine] = useState<MyClass[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [pendingTotal, setPendingTotal] = useState(0);
@@ -56,7 +57,10 @@ export default function TeacherHome() {
   useEffect(() => {
     fetchApi<{ name: string }>('/user').then((u) => setMe(u.name.split(' ')[0])).catch(() => undefined);
     fetchApi<Dashboard>('/analytics/teacher').then(setD).catch((err) => setError(errorText(err, 'Could not load your dashboard.')));
-    fetchApi<{ data: { id: number; name: string }[] }>('/classes').then((r) => setClasses(Object.fromEntries(r.data.map((c) => [c.id, c.name])))).catch(() => undefined);
+    fetchApi<{ data: { id: number; name: string; arms?: { id: number; name: string }[] }[] }>('/classes').then((r) => {
+      setClasses(Object.fromEntries(r.data.map((c) => [c.id, c.name])));
+      setArmNames(Object.fromEntries(r.data.flatMap((c) => (c.arms ?? []).map((a) => [a.id, a.name]))));
+    }).catch(() => undefined);
     fetchApi<{ data: MyClass[] }>('/teacher/my-classes').then((r) => setMine(r.data)).catch(() => undefined);
     fetchApi<{ comment_bank: string[] }>('/teacher/comment-bank').then((r) => setBank(r.comment_bank)).catch(() => undefined);
     void (async () => {
@@ -96,7 +100,7 @@ export default function TeacherHome() {
               {d.todays_classes.length === 0 ? <Empty>No lessons on your timetable today.</Empty> : (
                 <ul className="space-y-1 text-sm">
                   {d.todays_classes.map((c, i) => (
-                    <li key={i}><span className="inline-block w-24 font-mono text-xs">{hm(c.start_time)}–{hm(c.end_time)}</span><span className="font-medium">{c.subject_name}</span> · {classes[c.school_class_id] ?? 'Class'}</li>
+                    <li key={i}><span className="inline-block w-24 font-mono text-xs">{hm(c.start_time)}–{hm(c.end_time)}</span><span className="font-medium">{c.subject_name}</span> · {classes[c.school_class_id] ?? 'Class'}{c.arm_id ? ` ${armNames[c.arm_id] ?? ''}` : ''}</li>
                   ))}
                 </ul>
               )}

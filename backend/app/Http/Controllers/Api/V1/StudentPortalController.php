@@ -323,6 +323,8 @@ class StudentPortalController extends Controller
         return DB::table('timetable_entries as e')->join('timetable_versions as v', 'v.id', '=', 'e.timetable_version_id')
             ->leftJoin('users as u', 'u.id', '=', 'e.teacher_id')
             ->where('v.school_id', $student->school_id)->where('v.status', 'published')->where('e.school_class_id', $student->class_id)
+            // Their own arm's week (lessons with no arm are the whole class's).
+            ->where(fn ($q) => $q->whereNull('e.arm_id')->when($student->arm_id, fn ($w) => $w->orWhere('e.arm_id', $student->arm_id)))
             ->orderBy('e.start_time')->get(['e.id as entry_id', 'e.day_of_week as day', 'e.slot_name', 'e.start_time', 'e.end_time', 'e.subject_id', 'e.subject_name', 'e.is_break', 'u.name as teacher']);
     }
 

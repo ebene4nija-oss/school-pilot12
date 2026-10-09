@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SchoolClass;
 use App\Models\TimetableEntry;
 use App\Models\TimetableVersion;
+use App\Services\Academics\SubjectOffering;
 use App\Services\Academics\TeachingAssignments;
 use App\Services\TimetableSolverService;
 use Illuminate\Http\Request;
@@ -209,6 +210,11 @@ class TimetableController extends Controller
             $query->where('school_class_id', $classId);
         }
 
+        // One arm's week: its own lessons, and any the whole class shares.
+        if ($armId = $request->query('arm_id')) {
+            $query->where(fn ($q) => $q->where('arm_id', $armId)->orWhereNull('arm_id'));
+        }
+
         if ($teacherId) {
             $query->where('teacher_id', $teacherId);
         }
@@ -227,11 +233,17 @@ class TimetableController extends Controller
             ->whereIn('id', $entries->pluck('teacher_id')->filter()->unique())
             ->pluck('name', 'id');
 
+        $armNames = DB::table('arms')->where('school_id', $schoolId)
+            ->whereIn('id', $entries->pluck('arm_id')->filter()->unique())
+            ->pluck('name', 'id');
+
         $venueNames = app(\App\Services\Timetable\VenueService::class)->namesFor($entries, $schoolId);
 
-        $entries->each(function (TimetableEntry $entry) use ($classNames, $teacherNames, $venueNames) {
+        $entries->each(function (TimetableEntry $entry) use ($classNames, $teacherNames, $venueNames, $armNames) {
             $entry->setAttribute('venue_name', $venueNames[$entry->id] ?? null);
-            $entry->setAttribute('class_name', $classNames[$entry->school_class_id] ?? null);
+            $entry->setAttribute('arm_name', $entry->arm_id ? ($armNames[$entry->arm_id] ?? null) : null);
+            // "SS 2 A" for an arm's lesson, so a printout says whose week it is.
+            $entry->setAttribute('class_name', trim(($classNames[$entry->school_class_id] ?? '').' '.($entry->arm_id ? ($armNames[$entry->arm_id] ?? '') : '')) ?: null);
             $entry->setAttribute('teacher_name', $entry->teacher_id ? ($teacherNames[$entry->teacher_id] ?? null) : null);
         });
 
@@ -245,11 +257,14 @@ class TimetableController extends Controller
      * teachers, and in a section taught by class teachers the class teacher
      * for every subject a specialist does not take (TeachingAssignments).
      *
-     * One teacher per class and subject. The solver balances periods per
-     * entry, so two teachers for one subject (one per arm, say) would double
-     * its periods; a whole-class assignment wins, then any assignment, then
-     * the class teacher. The timetable is per class, so a subject taught by
-     * different teachers in different arms shows the first of them.
+     * Built arm by arm: each arm of a class gets its own timetable (a class
+     * with no arms gets one), with that arm's own teacher for each subject it
+     * takes — SS 2A's Physics teacher, not SS 2B's — and none of the subjects
+     * only other streams take.
+     *
+     * One teacher per arm and subject: the solver balances periods per entry,
+     * so a second teacher would double the subject. An assignment to this arm
+     * wins, then one to the whole class, then the class teacher.
      *
      * A class teacher's periods are exempt from the daily cap: in primary
      * the class teacher is meant to teach the whole day.
@@ -257,28 +272,50 @@ class TimetableController extends Controller
     private function assignmentsFromRecords(int $schoolId, array $classIds): array
     {
         $rows = app(TeachingAssignments::class)->rows($schoolId)
-            ->filter(fn ($r) => $r->class_id !== null && in_array($r->class_id, $classIds, true))
-            ->sortBy(fn ($r) => [$r->source === 'assigned' ? 0 : 1, $r->arm_id === null ? 0 : 1, $r->arm_id ?? 0, $r->teacher_id])
-            ->unique(fn ($r) => $r->class_id.':'.$r->subject_id);
+            ->filter(fn ($r) => $r->class_id !== null && in_array($r->class_id, $classIds, true));
 
         $names = DB::table('subjects')->where('school_id', $schoolId)->whereIn('id', $rows->pluck('subject_id')->all() ?: [0])->pluck('name', 'id');
+        $arms = DB::table('arms')->where('school_id', $schoolId)->whereIn('class_id', $classIds)->orderBy('name')->get(['id', 'class_id'])->groupBy('class_id');
+        $offering = app(SubjectOffering::class);
+        $out = [];
 
-        return $rows
-            ->map(fn ($r) => [
-                'class_id' => $r->class_id,
-                'teacher_id' => $r->teacher_id,
-                'subject_id' => $r->subject_id,
-                'subject_name' => $names[$r->subject_id] ?? 'Subject',
-                'exempt_daily_cap' => $r->source === 'class_teacher',
-            ])
-            ->sortBy('subject_name')
-            ->values()
-            ->all();
+        foreach ($classIds as $classId) {
+            $targets = ($arms->get($classId)?->pluck('id')->map(fn ($id) => (int) $id)->all()) ?: [null];
+
+            foreach ($targets as $armId) {
+                // Where the class lists its subjects, only what this arm takes.
+                $takes = $offering->forArm($schoolId, $classId, $armId);
+
+                $rows->filter(fn ($r) => $r->class_id === $classId && ($r->arm_id === null || $r->arm_id === $armId)
+                        && ($takes === [] || isset($takes[$r->subject_id])))
+                    ->sortBy(fn ($r) => [$r->source === 'assigned' ? 0 : 1, $r->arm_id === $armId && $armId !== null ? 0 : 1, $r->teacher_id])
+                    ->unique('subject_id')
+                    ->each(function ($r) use (&$out, $classId, $armId, $names) {
+                        $out[] = [
+                            'class_id' => $classId,
+                            'arm_id' => $armId,
+                            'teacher_id' => $r->teacher_id,
+                            'subject_id' => $r->subject_id,
+                            'subject_name' => $names[$r->subject_id] ?? 'Subject',
+                            'exempt_daily_cap' => $r->source === 'class_teacher',
+                        ];
+                    });
+            }
+        }
+
+        return collect($out)->sortBy('subject_name')->values()->all();
     }
 
     /** "Class 12" in a solver message becomes "JSS 2". */
     private function nameClasses(int $schoolId, string $message): string
     {
+        $message = preg_replace_callback('/Class (\d+) Arm (\d+)/', function ($m) use ($schoolId) {
+            $class = SchoolClass::where('school_id', $schoolId)->where('id', (int) $m[1])->value('name');
+            $arm = DB::table('arms')->where('school_id', $schoolId)->where('id', (int) $m[2])->value('name');
+
+            return $class && $arm ? "{$class} {$arm}" : $m[0];
+        }, $message);
+
         return preg_replace_callback('/Class (\d+)/', function ($m) use ($schoolId) {
             $name = SchoolClass::where('school_id', $schoolId)->where('id', (int) $m[1])->value('name');
 

@@ -39,10 +39,20 @@ class TimetableSolverService
         $days = $options['days'] ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         $maxDailyTeacherWorkload = $options['max_daily_teacher_workload'] ?? 6;
 
-        // Each class's options, by index into the assignment list.
+        /*
+         * What gets a timetable: each arm of a class, or the class itself when
+         * it is taught as one group. An assignment naming an arm belongs to
+         * that arm's timetable; one with no arm, to the class's. Keys are
+         * "class:arm" ("12:" for an unstreamed class). A teacher can be in only
+         * one arm at a time, which is what keeps SS 2A and SS 2B apart.
+         */
         $byClass = [];
+        $groups = [];
         foreach (array_values($teacherSubjectAssignments) as $i => $assignment) {
-            $byClass[(int) $assignment['class_id']][$i] = $assignment;
+            $armId = isset($assignment['arm_id']) ? (int) $assignment['arm_id'] : null;
+            $key = (int) $assignment['class_id'].':'.($armId ?? '');
+            $byClass[$key][$i] = $assignment;
+            $groups[(int) $assignment['class_id']][$key] = $armId;
         }
 
         foreach ($days as $day) {
@@ -54,12 +64,11 @@ class TimetableSolverService
                     'end_time' => $slot['end_time'] ?? null,
                 ];
 
-                foreach ($classIds as $classId) {
-                    $classId = (int) $classId;
-
+                foreach ($this->groupsInOrder($classIds, $groups) as [$classId, $armId, $groupKey]) {
                     if (! empty($slot['is_break'])) {
                         $timetable[] = [
                             'class_id' => $classId,
+                            'arm_id' => $armId,
                             'day' => $day,
                             'slot' => $slotName,
                             'subject' => 'BREAK',
@@ -73,7 +82,7 @@ class TimetableSolverService
                     $best = null;
                     $bestKey = null;
 
-                    foreach ($byClass[$classId] ?? [] as $i => $assignment) {
+                    foreach ($byClass[$groupKey] ?? [] as $i => $assignment) {
                         $teacherId = $assignment['teacher_id'];
 
                         // Constraint 1: the teacher is not in another class.
@@ -87,7 +96,9 @@ class TimetableSolverService
                             continue;
                         }
 
-                        $key = [$daily[$classId][$day][$i] ?? 0, $weekly[$classId][$i] ?? 0];
+                        // Spread subjects across the day and week first; among
+                        // equals, the teacher with most of the day left.
+                        $key = [$daily[$groupKey][$day][$i] ?? 0, $weekly[$groupKey][$i] ?? 0, $teacherDailyWorkload[$teacherId][$day] ?? 0];
                         if ($bestKey === null || $key < $bestKey) {
                             $best = $i;
                             $bestKey = $key;
@@ -95,16 +106,17 @@ class TimetableSolverService
                     }
 
                     if ($best === null) {
-                        $conflicts[] = "Conflict: Could not schedule an available teacher for Class {$classId} on {$day} during {$slotName}.";
+                        $conflicts[] = "Conflict: Could not schedule an available teacher for Class {$classId}".($armId ? " Arm {$armId}" : '')." on {$day} during {$slotName}.";
 
                         continue;
                     }
 
-                    $assignment = $byClass[$classId][$best];
+                    $assignment = $byClass[$groupKey][$best];
                     $teacherId = $assignment['teacher_id'];
 
                     $timetable[] = [
                         'class_id' => $classId,
+                        'arm_id' => $armId,
                         'subject_id' => $assignment['subject_id'] ?? null,
                         'day' => $day,
                         'slot' => $slotName,
@@ -115,8 +127,8 @@ class TimetableSolverService
 
                     $teacherOccupied[$teacherId][$day][$slotId] = true;
                     $teacherDailyWorkload[$teacherId][$day] = ($teacherDailyWorkload[$teacherId][$day] ?? 0) + 1;
-                    $daily[$classId][$day][$best] = ($daily[$classId][$day][$best] ?? 0) + 1;
-                    $weekly[$classId][$best] = ($weekly[$classId][$best] ?? 0) + 1;
+                    $daily[$groupKey][$day][$best] = ($daily[$groupKey][$day][$best] ?? 0) + 1;
+                    $weekly[$groupKey][$best] = ($weekly[$groupKey][$best] ?? 0) + 1;
                 }
             }
         }
@@ -140,6 +152,7 @@ class TimetableSolverService
                 $rows = array_map(fn ($entry) => [
                     'timetable_version_id' => $tv->id,
                     'school_class_id' => $entry['class_id'],
+                    'arm_id' => $entry['arm_id'] ?? null,
                     'subject_id' => $entry['subject_id'] ?? null,
                     'subject_name' => $entry['subject'],
                     'teacher_id' => $entry['teacher_id'],
@@ -168,5 +181,30 @@ class TimetableSolverService
             'conflicts' => $conflicts,
             'version' => $version,
         ];
+    }
+
+    /**
+     * [class id, arm id or null, group key] for every timetable to build, in
+     * the order the classes were given and arm by arm within each. A class
+     * with no assignments still yields its own key, so it is reported as a
+     * conflict rather than silently skipped.
+     *
+     * @return array<int, array{0:int, 1:int|null, 2:string}>
+     */
+    private function groupsInOrder(array $classIds, array $groups): array
+    {
+        $out = [];
+
+        foreach ($classIds as $classId) {
+            $classId = (int) $classId;
+            $armGroups = $groups[$classId] ?? [$classId.':' => null];
+            ksort($armGroups, SORT_NATURAL);
+
+            foreach ($armGroups as $key => $armId) {
+                $out[] = [$classId, $armId, (string) $key];
+            }
+        }
+
+        return $out;
     }
 }

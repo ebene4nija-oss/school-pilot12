@@ -12,6 +12,7 @@ class TimetableEntry extends Model
     protected $fillable = [
         'timetable_version_id',
         'school_class_id',
+        'arm_id',
         'subject_id',
         'subject_name',
         'teacher_id',

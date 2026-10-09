@@ -228,7 +228,7 @@ class AnalyticsController extends Controller
             ->where('is_break', false)
             ->whereHas('version', fn ($q) => $q->where('school_id', $schoolId)->where('status', 'published'))
             ->orderBy('start_time')
-            ->get(['school_class_id', 'subject_name', 'slot_name', 'start_time', 'end_time']);
+            ->get(['school_class_id', 'arm_id', 'subject_name', 'slot_name', 'start_time', 'end_time']);
 
         // Assignments due (§6).
         $homeworkDue = Homework::where('school_id', $schoolId)
@@ -410,6 +410,7 @@ class AnalyticsController extends Controller
          * surfaced to the student whose data it is.
          */
         $todaysTimetable = TimetableEntry::where('school_class_id', $student->class_id)
+            ->where(fn ($q) => $q->whereNull('arm_id')->when($student->arm_id, fn ($w) => $w->orWhere('arm_id', $student->arm_id)))
             ->where('day_of_week', now()->format('l'))
             ->whereHas('version', fn ($q) => $q->where('school_id', $schoolId)->where('status', 'published'))
             ->orderBy('start_time')

@@ -284,8 +284,11 @@ class DemoSchoolSeeder extends Seeder
     }
 
     /**
-     * Twelve teachers, one per arm as form teacher, each teaching one or two
-     * subjects across the classes of their level.
+     * Twenty-four teachers: twelve take the Gold arms and twelve the Blue
+     * arms, each teaching one or two subjects across the arms of their level.
+     * Each arm is taught on its own, so a school with twelve arms needs two
+     * teachers per subject to keep within a teacher's day. The first twelve
+     * are also the form teachers, one per arm.
      *
      * @return array{by_subject: array<string, array<int, int>>, form: array<int, int>}
      */
@@ -307,10 +310,26 @@ class DemoSchoolSeeder extends Seeder
             ['Mr David Obi', 'male', 'senior', ['Computer Studies']],
         ];
 
-        $bySubject = ['junior' => [], 'senior' => []];
+        // The Blue arms' subject teachers.
+        $blue = [
+            ['Mrs Halima Bello', 'female', 'junior', ['Mathematics']],
+            ['Mr Tunde Bakare', 'male', 'junior', ['English Language']],
+            ['Mrs Amaka Obi', 'female', 'junior', ['Basic Science', 'Basic Technology']],
+            ['Mr Musa Danjuma', 'male', 'junior', ['Social Studies', 'Civic Education']],
+            ['Mrs Bisi Adeyemi', 'female', 'junior', ['Business Studies', 'Computer Studies']],
+            ['Mrs Grace Udoh', 'female', 'junior', ['Christian Religious Studies', 'Yoruba']],
+            ['Mrs Ifeoma Nnaji', 'female', 'senior', ['Mathematics', 'Physics']],
+            ['Mr Segun Afolabi', 'male', 'senior', ['English Language', 'Literature in English']],
+            ['Mr Emeka Okafor', 'male', 'senior', ['Chemistry', 'Biology']],
+            ['Mrs Zainab Lawal', 'female', 'senior', ['Economics', 'Government']],
+            ['Mr Peter Akpan', 'male', 'senior', ['Civic Education']],
+            ['Miss Kemi Ogunleye', 'female', 'senior', ['Computer Studies']],
+        ];
+
+        $bySubject = ['Gold' => ['junior' => [], 'senior' => []], 'Blue' => ['junior' => [], 'senior' => []]];
         $teacherIds = [];
 
-        foreach ($roster as $i => [$name, $gender, $level, $taught]) {
+        foreach (array_merge(array_map(fn ($t) => [...$t, 'Gold'], $roster), array_map(fn ($t) => [...$t, 'Blue'], $blue)) as $i => [$name, $gender, $level, $taught, $team]) {
             // The first teacher is the one a demo signs in as.
             $handle = $i === 0 ? 'teacher' : Str::slug(Str::after($name, ' '), '.');
             $id = $this->user($name, $handle, 'teacher', sprintf('0803100%04d', $i + 1), $gender);
@@ -331,7 +350,7 @@ class DemoSchoolSeeder extends Seeder
             ]));
 
             foreach ($taught as $subject) {
-                $bySubject[$level][$subjects[$level][$subject]] = $id;
+                $bySubject[$team][$level][$subjects[$level][$subject]] = $id;
             }
         }
 
@@ -349,13 +368,17 @@ class DemoSchoolSeeder extends Seeder
                     'is_compulsory' => ! in_array($name, ['Christian Religious Studies', 'Yoruba', 'Physics', 'Chemistry', 'Economics', 'Government', 'Literature in English'], true),
                 ]));
 
-                DB::table('teacher_subjects')->insert($this->stamp([
-                    'school_id' => $this->schoolId,
-                    'teacher_id' => $bySubject[$level][$subjectId],
-                    'subject_id' => $subjectId,
-                    'class_id' => $class['id'],
-                    'is_primary' => true,
-                ]));
+                // Each arm has its own teacher for the subject.
+                foreach ($class['arms'] as $armName => $armId) {
+                    DB::table('teacher_subjects')->insert($this->stamp([
+                        'school_id' => $this->schoolId,
+                        'teacher_id' => $bySubject[$armName][$level][$subjectId],
+                        'subject_id' => $subjectId,
+                        'class_id' => $class['id'],
+                        'arm_id' => $armId,
+                        'is_primary' => true,
+                    ]));
+                }
             }
 
             foreach ($class['arms'] as $armId) {
