@@ -31,6 +31,7 @@ interface Post extends PostRow {
   body: string;
   cover_alt: string | null;
   video_url: string | null;
+  video_placement: string | null;
   meta_title: string | null;
   meta_description: string | null;
   author_name: string;
@@ -45,6 +46,8 @@ interface Draft {
   body: string;
   cover_alt: string;
   video_url: string;
+  /** Where else on the site the video shows; empty = only in this post. */
+  video_placement: string;
   meta_title: string;
   meta_description: string;
   author_name: string;
@@ -56,7 +59,7 @@ interface Draft {
 }
 
 const blank: Draft = {
-  title: '', slug: '', excerpt: '', body: '', cover_alt: '', video_url: '', meta_title: '', meta_description: '',
+  title: '', slug: '', excerpt: '', body: '', cover_alt: '', video_url: '', video_placement: '', meta_title: '', meta_description: '',
   author_name: 'SchoolPilot team', status: 'draft', category: '', tags: [], publish_at: '',
 };
 
@@ -69,7 +72,7 @@ function toLocalInput(iso: string | null): string {
 }
 
 const toDraft = (p: Post): Draft => ({
-  title: p.title, slug: p.slug, excerpt: p.excerpt, body: p.body, cover_alt: p.cover_alt ?? '', video_url: p.video_url ?? '',
+  title: p.title, slug: p.slug, excerpt: p.excerpt, body: p.body, cover_alt: p.cover_alt ?? '', video_url: p.video_url ?? '', video_placement: p.video_placement ?? '',
   meta_title: p.meta_title ?? '', meta_description: p.meta_description ?? '', author_name: p.author_name, status: p.status,
   category: p.category ?? '', tags: p.tags ?? [], publish_at: toLocalInput(p.published_at),
 });
@@ -86,6 +89,7 @@ function rowState(r: PostRow): { label: string; tone: 'green' | 'slate' | 'blue'
 
 export default function BlogAdminPage() {
   const [rows, setRows] = useState<PostRow[]>([]);
+  const [placements, setPlacements] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -101,8 +105,9 @@ export default function BlogAdminPage() {
   const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
-    const res = await fetchApi<{ data: PostRow[] }>('/platform/blog');
+    const res = await fetchApi<{ data: PostRow[]; video_placements?: Record<string, string> }>('/platform/blog');
     setRows(res.data);
+    setPlacements(res.video_placements ?? {});
   }, []);
 
   useEffect(() => {
@@ -184,6 +189,7 @@ export default function BlogAdminPage() {
           status,
           publish_at: draft.publish_at ? new Date(draft.publish_at).toISOString() : null,
           category: draft.category || null,
+          video_placement: draft.video_url.trim() ? draft.video_placement || null : null,
         };
         const body = JSON.stringify(payload);
         const res =
@@ -489,6 +495,20 @@ export default function BlogAdminPage() {
 
           <Panel title="Video">
             <input className={inputClass} inputMode="url" placeholder="YouTube or Vimeo link" value={draft.video_url} onChange={(e) => set({ video_url: e.target.value })} />
+            {draft.video_url.trim() && (
+              <label className="mt-3 block text-sm">
+                <span className="font-medium">Also show this video on</span>
+                <select className={`${inputClass} mt-1`} value={draft.video_placement} onChange={(e) => set({ video_placement: e.target.value })}>
+                  <option value="">Only in this post</option>
+                  {Object.entries(placements).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-ink-muted">
+                  A walkthrough shown where a school is deciding, under “Watch it work”. Appears after the next site rebuild, once the post is published.
+                </span>
+              </label>
+            )}
           </Panel>
 
           <Panel title="Search engines (SEO)">
