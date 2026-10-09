@@ -72,6 +72,13 @@ class MoreScreen extends ConsumerWidget {
           ),
           if (role.isAdmin)
             _Tile(
+              icon: Icons.task_alt,
+              label: 'Approvals',
+              detail: 'Leave, lesson notes, CBT, admissions, broadsheets',
+              onTap: () => context.push('/approvals'),
+            ),
+          if (role.isAdmin)
+            _Tile(
               icon: Icons.campaign_outlined,
               label: 'Send notification',
               detail: 'To parents, students, teachers or all staff',

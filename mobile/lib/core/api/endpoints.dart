@@ -17,6 +17,14 @@ class Api {
 
   // Analytics dashboards
   static const analyticsPrincipal = '$version/analytics/principal';
+  static const approvals = '$version/approvals';
+  // Decisions the approvals inbox makes, each through its own endpoint.
+  static String learningMaterialReview(int id) =>
+      '$version/learning-materials/$id/review';
+  static String cbtApproval(int id) => '$version/cbt/exams/$id/approval';
+  static String admissionDecision(int id) => '$version/admissions/$id/decision';
+  static String broadsheetApprove(int id) => '$version/broadsheets/$id/approve';
+  static String broadsheetReject(int id) => '$version/broadsheets/$id/reject';
   static const analyticsTeacher = '$version/analytics/teacher';
   static const analyticsStudent = '$version/analytics/student';
   static String analyticsParent(int studentId) =>

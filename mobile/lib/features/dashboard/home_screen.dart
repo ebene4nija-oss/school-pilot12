@@ -13,6 +13,7 @@ import '../../core/ui/widgets.dart';
 import '../clinic/clinic_screen.dart';
 import '../learn/learning_widgets.dart';
 import 'dashboard_providers.dart';
+import '../more/approvals_screen.dart';
 import 'quick_actions.dart';
 import 'role_homes.dart';
 
@@ -84,6 +85,7 @@ class _DashboardScaffold extends ConsumerWidget {
           onRefresh: () async {
             // The student home also reads /me/dashboard; refresh it together.
             ref.invalidate(myDayProvider);
+            ref.invalidate(approvalsProvider);
             return ref.refresh(dashboardProvider.future);
           },
           children: [
@@ -198,6 +200,7 @@ class _AdminDashboard extends ConsumerWidget {
             ),
           ),
           const SectionHeader('Needs attention'),
+          const _ApprovalsCard(),
           // The principal payload carries no defaulter count, so the card
           // keys off the outstanding balance and names a count only if sent.
           if (defaulters > 0 || outstanding > 0)
@@ -230,6 +233,31 @@ class _AdminDashboard extends ConsumerWidget {
           ),
         ];
       },
+    );
+  }
+}
+
+/// How many decisions are waiting, from the approvals inbox. Hidden at zero.
+class _ApprovalsCard extends ConsumerWidget {
+  const _ApprovalsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final total = intOf(ref.watch(approvalsProvider).valueOrNull?['total']);
+    if (total == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin, 0, AppSpacing.screenMargin, AppSpacing.sm),
+      child: OutlinedCard(
+        statusColor: AppColors.pending,
+        onTap: () => context.push('/approvals'),
+        child: _AttentionRow(
+          icon: Icons.task_alt,
+          title: '$total ${total == 1 ? 'item needs' : 'items need'} your approval',
+          detail: 'Leave, lesson notes, CBT papers, admissions, broadsheets',
+          color: AppColors.pending,
+        ),
+      ),
     );
   }
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\AddedFeaturesController;
 use App\Http\Controllers\Api\V1\AdmissionController;
 use App\Http\Controllers\Api\V1\AiStudioController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
+use App\Http\Controllers\Api\V1\ApprovalsController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\CbtController;
@@ -569,6 +570,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         // Advanced Role-Based Analytics Dashboard Routes
         Route::get('/analytics/principal', [AnalyticsController::class, 'getPrincipalDashboard'])->middleware('role:super_admin,school_admin');
+        // Everything waiting on an administrator, one read (the app's inbox).
+        Route::get('/approvals', [ApprovalsController::class, 'index'])->middleware('role:super_admin,school_admin');
         Route::get('/analytics/teacher', [AnalyticsController::class, 'getTeacherDashboard'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/analytics/parent/{studentId}', [AnalyticsController::class, 'getParentDashboard'])->middleware('role:super_admin,school_admin,parent');
         Route::get('/analytics/student', [AnalyticsController::class, 'getStudentDashboard'])->middleware('role:super_admin,school_admin,student');

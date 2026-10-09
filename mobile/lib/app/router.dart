@@ -28,6 +28,7 @@ import '../features/learn/tutor_chat_screen.dart';
 import '../features/library/library_desk_screen.dart';
 import '../features/library/library_screen.dart';
 import '../features/messages/messages_screen.dart';
+import '../features/more/approvals_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/more/notifications_screen.dart';
 import '../features/more/pending_sync_screen.dart';
@@ -124,6 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/my-tests', builder: (_, __) => const MyTestsScreen()),
       GoRoute(path: '/set-homework', builder: (_, __) => const TeacherHomeworkScreen()),
       GoRoute(path: '/send-notification', builder: (_, __) => const SendNotificationScreen()),
+      GoRoute(path: '/approvals', builder: (_, __) => const ApprovalsScreen()),
       GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
       GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),
 
