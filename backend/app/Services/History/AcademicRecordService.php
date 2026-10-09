@@ -221,7 +221,8 @@ class AcademicRecordService
             'average' => $row['average'],
             'grade' => $row['grade'],
             'position' => $row['position'],
-            'class_size' => count($calc['students']),
+            // Ranked against: the arm or stream when the school ranks within one.
+            'class_size' => $row['ranked_among'] ?? count($calc['students']),
             'class_average' => $calc['class_stats']['class_average'],
             'attendance' => $row['attendance'] ?? null,
             'ratings' => $report?->ratings,
@@ -230,7 +231,7 @@ class AcademicRecordService
             'grading_scale' => $calc['grading_bands'],
             'scheme' => $calc['scheme'],
             'pass_mark' => $calc['config']['pass_mark'],
-            'ranking' => ['basis' => $calc['config']['ranking_basis'], 'method' => $calc['config']['ranking_method']],
+            'ranking' => ['basis' => $calc['config']['ranking_basis'], 'method' => $calc['config']['ranking_method'], 'within' => $calc['config']['ranking_group'] ?? 'class'],
             'partial_term' => $row['partial_term'],
             'broadsheet_reference' => $meta['broadsheet_reference'] ?? null,
             'locked_at' => now()->toIso8601String(),

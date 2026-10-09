@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\Sections;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * How a school's broadsheet is calculated and laid out, per level group with
@@ -19,6 +20,8 @@ class BroadsheetConfiguration extends Model
         'ranking_basis' => 'average',
         'ranking_method' => 'competition',
         'ranking_scope' => 'all',
+        // class | arm | stream; null = the school's default_ranking_group
+        'ranking_group' => null,
         'absence_policy' => 'exclude',
         'pass_mark' => 40,
         'show_gender' => false,
@@ -36,6 +39,7 @@ class BroadsheetConfiguration extends Model
         'ranking_basis',
         'ranking_method',
         'ranking_scope',
+        'ranking_group',
         'absence_policy',
         'pass_mark',
         'show_gender',
@@ -79,11 +83,13 @@ class BroadsheetConfiguration extends Model
             $defaults['ranking_basis'] = 'none';
         }
 
-        if (! $row) {
-            return $defaults + ['level_group' => $levelGroup];
-        }
+        $resolved = $row ? array_merge($defaults, array_intersect_key($row->toArray(), $defaults)) : $defaults;
 
-        return array_merge($defaults, array_intersect_key($row->toArray(), $defaults)) + ['level_group' => $levelGroup];
+        // Schools created before ranking groups existed keep whole-class
+        // positions; new ones rank within the arm.
+        $resolved['ranking_group'] ??= DB::table('schools')->where('id', $schoolId)->value('default_ranking_group') ?? 'class';
+
+        return $resolved + ['level_group' => $levelGroup];
     }
 
     public static function levelGroupValid(?string $levelGroup): bool

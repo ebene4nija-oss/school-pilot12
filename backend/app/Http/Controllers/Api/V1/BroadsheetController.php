@@ -638,6 +638,7 @@ class BroadsheetController extends Controller
             'ranking_basis' => 'sometimes|in:average,total,none',
             'ranking_method' => 'sometimes|in:competition,dense',
             'ranking_scope' => 'sometimes|in:all,complete_only',
+            'ranking_group' => 'sometimes|nullable|in:class,arm,stream',
             'absence_policy' => 'sometimes|in:exclude,zero',
             'pass_mark' => 'sometimes|integer|min:0|max:100',
             'show_gender' => 'sometimes|boolean',

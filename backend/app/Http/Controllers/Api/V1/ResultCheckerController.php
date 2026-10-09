@@ -16,6 +16,7 @@ use App\Services\PaymentGatewayService;
 use App\Services\ReportCard\TemplateException;
 use App\Services\ReportCardPdfService;
 use App\Services\ResultPinService;
+use App\Services\Results\ResultCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use RuntimeException;
@@ -103,11 +104,7 @@ class ResultCheckerController extends Controller
             'preview' => [
                 'subjects_count' => $scores->count(),
                 'average' => $average,
-                'position' => $this->overallPosition($student, $term),
-                'class_size' => Student::withoutGlobalScopes()
-                    ->where('school_id', $student->school_id)
-                    ->where('class_id', $student->class_id)
-                    ->count(),
+                ...$this->overallPosition($student, $term),
             ],
             'access' => $access ? [
                 'serial' => $access->serial,
@@ -464,25 +461,25 @@ class ResultCheckerController extends Controller
         ];
     }
 
-    private function overallPosition(Student $student, Term $term): ?int
+    /**
+     * Position and the number ranked against, from the same calculator as the
+     * broadsheet, so the preview follows the school's ranking rule (and its
+     * class, arm or stream grouping) rather than a rule of its own.
+     *
+     * @return array{position: int|null, class_size: int}
+     */
+    private function overallPosition(Student $student, Term $term): array
     {
-        $classmateIds = Student::withoutGlobalScopes()
-            ->where('school_id', $student->school_id)
-            ->where('class_id', $student->class_id)
-            ->pluck('id');
+        if (! $student->class_id) {
+            return ['position' => null, 'class_size' => 0];
+        }
 
-        $ranked = ScoreEntry::withoutGlobalScopes()
-            ->where('term_id', $term->id)
-            ->whereIn('student_id', $classmateIds)
-            ->get()
-            ->groupBy('student_id')
-            ->map(fn ($group) => $group->avg('total_score'))
-            ->sortDesc()
-            ->keys()
-            ->values();
+        $calc = app(ResultCalculator::class)->forClass($student->school_id, $term->id, (int) $student->class_id, ['attendance' => false]);
+        $row = collect($calc['students'])->firstWhere('id', $student->id);
 
-        $index = $ranked->search($student->id);
-
-        return $index === false ? null : $index + 1;
+        return [
+            'position' => $row['position'] ?? null,
+            'class_size' => $row['ranked_among'] ?? count($calc['students']),
+        ];
     }
 }

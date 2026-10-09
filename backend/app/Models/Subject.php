@@ -9,12 +9,14 @@ class Subject extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'school_id', 'name', 'code', 'category', 'department',
+        'school_id', 'name', 'code', 'category', 'department', 'level_groups',
         'description', 'credit_units', 'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        // Levels the subject is taught at; null = every level.
+        'level_groups' => 'array',
     ];
 
     /**

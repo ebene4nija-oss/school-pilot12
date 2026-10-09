@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Services\Academics\SubjectOffering;
+use App\Support\Sections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -12,6 +14,10 @@ use Illuminate\Validation\Rule;
 
 class SubjectManagementController extends Controller
 {
+    public function __construct(private SubjectOffering $offering)
+    {
+    }
+
     private function getSchoolId(Request $request)
     {
         /*
@@ -45,6 +51,27 @@ class SubjectManagementController extends Controller
     {
         $schoolId = $this->getSchoolId($request);
 
+        /*
+         * One class's subjects (and one arm's, when its stream narrows them):
+         * what every class-scoped picker should offer, so a Nursery 1
+         * broadsheet never lists Physics. A class with no subjects set up
+         * falls back to the subjects tagged for its level.
+         */
+        if ($request->filled('class_id')) {
+            $classId = (int) $request->query('class_id');
+            abort_unless(DB::table('classes')->where('school_id', $schoolId)->where('id', $classId)->exists(), 404, 'Class not found.');
+            $armId = $request->filled('arm_id') ? (int) $request->query('arm_id') : null;
+            abort_if($armId && ! DB::table('arms')->where('class_id', $classId)->where('id', $armId)->exists(), 404, 'Arm not found in that class.');
+
+            return response()->json(['data' => $this->offering->subjectsFor($schoolId, $classId, $armId)->values()]);
+        }
+
+        if ($request->filled('level_group')) {
+            $request->validate(['level_group' => [Rule::in(array_keys(Sections::LEVEL_GROUPS))]]);
+
+            return response()->json(['data' => $this->offering->subjectsAtLevel($schoolId, $request->query('level_group'))]);
+        }
+
         $query = Subject::where('school_id', $schoolId);
 
         // A deactivated subject is no longer offered: it drops out of every
@@ -73,6 +100,8 @@ class SubjectManagementController extends Controller
             'code'         => ['nullable', 'string', 'max:10', Rule::unique('subjects')->where('school_id', $schoolId)],
             'category'     => 'required|in:core,elective',
             'department'   => 'nullable|in:science,arts,commercial,general',
+            'level_groups'   => 'nullable|array',
+            'level_groups.*' => [Rule::in(array_keys(Sections::LEVEL_GROUPS))],
             'description'  => 'nullable|string|max:1000',
             'credit_units' => 'nullable|integer|min:1|max:10',
         ]);
@@ -87,6 +116,7 @@ class SubjectManagementController extends Controller
             'code'         => $request->code,
             'category'     => $request->category,
             'department'   => $request->department,
+            'level_groups' => $request->level_groups ? array_values(array_unique($request->level_groups)) : null,
             'description'  => $request->description,
             'credit_units' => $request->credit_units ?? 1,
         ]);
@@ -115,6 +145,8 @@ class SubjectManagementController extends Controller
             'code'        => ['sometimes', 'nullable', 'string', 'max:10', Rule::unique('subjects')->where('school_id', $schoolId)->ignore($subject->id)],
             'category'    => 'sometimes|required|in:core,elective',
             'department'  => 'sometimes|nullable|in:science,arts,commercial,general',
+            'level_groups'   => 'sometimes|nullable|array',
+            'level_groups.*' => [Rule::in(array_keys(Sections::LEVEL_GROUPS))],
             'description' => 'sometimes|nullable|string|max:1000',
             'is_active'   => 'sometimes|boolean',
         ]);
@@ -123,7 +155,14 @@ class SubjectManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $subject->update($validator->validated());
+        $data = $validator->validated();
+
+        if (array_key_exists('level_groups', $data)) {
+            // An empty list means "every level", stored as null.
+            $data['level_groups'] = $data['level_groups'] ? array_values(array_unique($data['level_groups'])) : null;
+        }
+
+        $subject->update($data);
 
         return response()->json(['message' => 'Subject updated.', 'data' => $subject->fresh()]);
     }
@@ -280,6 +319,9 @@ class SubjectManagementController extends Controller
             'subjects.*.subject_id'    => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'subjects.*.is_compulsory' => 'required|boolean',
             'subjects.*.max_students'  => 'nullable|integer|min:1',
+            // Which streams take it (science, arts…); empty = every arm.
+            'subjects.*.streams'       => 'nullable|array',
+            'subjects.*.streams.*'     => [Rule::in(array_keys(SubjectOffering::STREAMS))],
         ]);
 
         if ($validator->fails()) {
@@ -296,6 +338,7 @@ class SubjectManagementController extends Controller
                 ],
                 [
                     'is_compulsory' => $item['is_compulsory'],
+                    'streams'       => empty($item['streams']) ? null : json_encode(array_values(array_unique($item['streams']))),
                     'max_students'  => $item['max_students'] ?? null,
                     'created_at'    => now(),
                     'updated_at'    => now(),
@@ -320,11 +363,23 @@ class SubjectManagementController extends Controller
             ->select(
                 'subjects.id', 'subjects.name', 'subjects.code',
                 'subjects.category', 'subjects.department',
-                'class_subjects.is_compulsory', 'class_subjects.max_students'
+                'class_subjects.is_compulsory', 'class_subjects.max_students', 'class_subjects.streams'
             )
             ->orderByDesc('class_subjects.is_compulsory')
             ->orderBy('subjects.name')
-            ->get();
+            ->get()
+            ->each(function ($s) {
+                $s->streams = SubjectOffering::streamsOf($s);
+                $s->is_compulsory = (bool) $s->is_compulsory;
+            });
+
+        // One arm's view: its stream decides what is compulsory, open or absent.
+        if ($request->filled('arm_id')) {
+            $offered = $this->offering->forArm($schoolId, (int) $classId, (int) $request->query('arm_id'));
+            $subjects = $subjects->filter(fn ($s) => isset($offered[$s->id]))
+                ->each(fn ($s) => $s->is_compulsory = $offered[$s->id] === 'compulsory')
+                ->values();
+        }
 
         $compulsory = $subjects->where('is_compulsory', true)->values();
         $elective   = $subjects->where('is_compulsory', false)->values();
@@ -354,24 +409,15 @@ class SubjectManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Auto-enroll compulsory subjects for the student's class
-        $compulsorySubjectIds = DB::table('class_subjects')
-            ->where('school_id', $schoolId)
-            ->where('class_id', $student->class_id)
-            ->where('is_compulsory', true)
-            ->pluck('subject_id')
-            ->toArray();
+        // What the student's arm takes: compulsory for its stream, or open to choose.
+        $offered = $this->offering->forArm($schoolId, (int) $student->class_id, $student->arm_id ? (int) $student->arm_id : null);
+        $compulsorySubjectIds = array_keys(array_filter($offered, fn ($k) => $k === 'compulsory'));
 
         // Merge compulsory + selected electives (deduplicate)
         $allSubjectIds = array_unique(array_merge($compulsorySubjectIds, $request->subject_ids));
 
-        // Validate that chosen electives are actually offered for this class
-        $validElectives = DB::table('class_subjects')
-            ->where('school_id', $schoolId)
-            ->where('class_id', $student->class_id)
-            ->where('is_compulsory', false)
-            ->pluck('subject_id')
-            ->toArray();
+        // Validate that chosen electives are actually offered to this arm
+        $validElectives = array_keys(array_filter($offered, fn ($k) => $k === 'elective'));
 
         $invalidElectives = array_diff($request->subject_ids, $compulsorySubjectIds, $validElectives);
         if (!empty($invalidElectives)) {
@@ -518,19 +564,17 @@ class SubjectManagementController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $compulsorySubjectIds = DB::table('class_subjects')
-            ->where('school_id', $schoolId)
-            ->where('class_id', $request->class_id)
-            ->where('is_compulsory', true)
-            ->pluck('subject_id');
-
+        // Each arm's stream decides its compulsory subjects.
         $students = Student::where('school_id', $schoolId)
             ->where('class_id', $request->class_id)
-            ->pluck('id');
+            ->pluck('arm_id', 'id');
 
+        $byArm = [];
         $enrolled = 0;
-        foreach ($students as $studentId) {
-            foreach ($compulsorySubjectIds as $subjectId) {
+        foreach ($students as $studentId => $armId) {
+            $byArm[(int) $armId] ??= $this->offering->compulsoryFor($schoolId, (int) $request->class_id, $armId ? (int) $armId : null);
+
+            foreach ($byArm[(int) $armId] as $subjectId) {
                 DB::table('student_subjects')->updateOrInsert(
                     [
                         'student_id' => $studentId,
@@ -550,10 +594,12 @@ class SubjectManagementController extends Controller
             }
         }
 
+        $subjectCount = count(array_unique(array_merge([], ...array_values($byArm))));
+
         return response()->json([
-            'message'        => "Auto-enrolled {$students->count()} students in {$compulsorySubjectIds->count()} compulsory subjects.",
+            'message'        => "Auto-enrolled {$students->count()} students in their compulsory subjects.",
             'students_count' => $students->count(),
-            'subjects_count' => $compulsorySubjectIds->count(),
+            'subjects_count' => $subjectCount,
             'total_enrollments' => $enrolled,
         ]);
     }

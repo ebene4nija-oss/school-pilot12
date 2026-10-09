@@ -17,6 +17,7 @@ use App\Models\Student;
 use App\Models\StudentClassHistory;
 use App\Models\Subject;
 use App\Models\Term;
+use App\Services\Academics\SubjectOffering;
 use App\Services\Lms\LmsService;
 use App\Services\ResultPinService;
 use App\Support\CurrentTerm;
@@ -291,7 +292,8 @@ class StudentPortalController extends Controller
             return Subject::whereIn('id', $enrolled->pluck('subject_id'))->orderBy('name')->get()->each(fn ($s) => $s->elective = ($types[$s->id] ?? '') === 'elective');
         }
 
-        $ids = DB::table('class_subjects')->where('class_id', $student->class_id)->where('is_compulsory', true)->pluck('subject_id');
+        // The class's compulsory subjects for the student's arm (its stream).
+        $ids = collect(app(SubjectOffering::class)->compulsoryFor($student->school_id, (int) $student->class_id, $student->arm_id ? (int) $student->arm_id : null));
         if ($ids->isEmpty()) {
             $ids = DB::table('teacher_subjects')->where('school_id', $student->school_id)->where('class_id', $student->class_id)->pluck('subject_id');
         }

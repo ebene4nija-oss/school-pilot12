@@ -8,7 +8,10 @@ class Arm extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['school_id', 'class_id', 'name'];
+    protected $fillable = ['school_id', 'class_id', 'name', 'stream', 'is_merit'];
+
+    /** `is_merit` marks the school's "best students" arm; staff-only. */
+    protected $casts = ['is_merit' => 'boolean'];
 
     public function schoolClass()
     {

@@ -8,6 +8,7 @@ use App\Models\Arm;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\Academics\SubjectOffering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -37,6 +38,7 @@ class AcademicStructureController extends Controller
     public function classes(Request $request)
     {
         $schoolId = $this->schoolId();
+        $isStaff = ! in_array($request->user()?->userProfile?->role, ['student', 'parent'], true);
 
         $armsByClass = Arm::where('school_id', $schoolId)
             ->orderBy('name')
@@ -60,12 +62,15 @@ class AcademicStructureController extends Controller
                 'level_category' => $class->level_category,
                 'order_index' => $class->order_index,
                 'student_count' => (int) ($rollByClass[$class->id] ?? 0),
+                // An arm's stream is no secret; which arm holds the school's
+                // strongest students is, so only staff see the merit flag.
                 'arms' => $armsByClass->get($class->id, collect())
-                    ->map(fn (Arm $arm) => ['id' => $arm->id, 'name' => $arm->name])
+                    ->map(fn (Arm $arm) => ['id' => $arm->id, 'name' => $arm->name, 'stream' => $arm->stream]
+                        + ($isStaff ? ['is_merit' => (bool) $arm->is_merit] : []))
                     ->values(),
             ]);
 
-        return response()->json(['data' => $classes]);
+        return response()->json(['data' => $classes, 'streams' => SubjectOffering::STREAMS]);
     }
 
     /**

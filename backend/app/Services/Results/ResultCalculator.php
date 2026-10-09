@@ -7,6 +7,7 @@ use App\Models\CaScheme;
 use App\Models\GradingScale;
 use App\Models\SchoolClass;
 use App\Models\Term;
+use App\Services\Academics\SubjectOffering;
 use App\Support\Sections;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,10 +23,12 @@ use Illuminate\Support\Facades\DB;
  * Rules it holds, each from the spec:
  *  - Only students enrolled in the class for the term's session appear.
  *  - Only subjects that apply to a student count for them: compulsory class
- *    subjects for everyone, electives only for students taking them.
+ *    subjects for everyone in a stream that takes them, electives only for
+ *    students taking them.
  *  - A missing score is never zero. It is "not entered" and marks the student
  *    incomplete. An absence counts as zero only if the school's policy says so.
- *  - Ranking follows the school's basis, method and scope.
+ *  - Ranking follows the school's basis, method and scope, within the whole
+ *    class, each arm or each stream as the school chooses.
  *  - Grades come from the school's scale for the class level, at the time of
  *    calculation; an approved snapshot freezes them from then on.
  */
@@ -59,7 +62,7 @@ class ResultCalculator
 
         $entriesByStudent = $entries->groupBy('student_id');
 
-        [$subjects, $applicable] = $this->subjects($schoolId, $termId, $classId, $studentIds, $entries);
+        [$subjects, $applicable] = $this->subjects($schoolId, $termId, $classId, $roster, $entries);
 
         $subjects = $this->ordered($subjects, $config['subject_order'] ?? null);
 
@@ -100,6 +103,7 @@ class ResultCalculator
                 'gender' => $student->gender,
                 'arm_id' => $student->arm_id ? (int) $student->arm_id : null,
                 'arm' => $student->arm_name,
+                'stream' => $student->stream,
                 'partial_term' => (bool) $student->partial_term,
                 'results' => $results,
                 'subjects_counted' => $counted,
@@ -111,6 +115,7 @@ class ResultCalculator
                 'remark' => $average !== null ? GradingScale::bandOf($bands, $average)['remark'] : null,
                 'passed' => $average !== null ? $average >= (float) $config['pass_mark'] : null,
                 'position' => null,
+                'ranked_among' => null,
             ];
         }
 
@@ -201,19 +206,20 @@ class ResultCalculator
             })
             ->get(['students.id', 'students.admission_number', 'students.gender', 'students.arm_id', 'users.name']);
 
-        $armNames = DB::table('arms')->where('school_id', $schoolId)->pluck('name', 'id');
+        $arms = DB::table('arms')->where('school_id', $schoolId)->get(['id', 'name', 'stream'])->keyBy('id');
 
         $termStart = (string) $term->start_date?->toDateString();
         $termEnd = (string) $term->end_date?->toDateString();
 
-        return $students->map(function ($s) use ($enrolled, $armNames, $termStart, $termEnd) {
+        return $students->map(function ($s) use ($enrolled, $arms, $termStart, $termEnd) {
             $enrolment = $enrolled->get($s->id);
 
             if ($enrolment && $enrolment->arm_id) {
                 $s->arm_id = $enrolment->arm_id;
             }
 
-            $s->arm_name = $s->arm_id ? ($armNames[$s->arm_id] ?? null) : null;
+            $s->arm_name = $s->arm_id ? $arms->get($s->arm_id)?->name : null;
+            $s->stream = $s->arm_id ? $arms->get($s->arm_id)?->stream : null;
             // Dates may be stored with a time part; compare the day only.
             $s->partial_term = $enrolment !== null && (
                 ($enrolment->enrolled_on && substr((string) $enrolment->enrolled_on, 0, 10) > $termStart)
@@ -229,13 +235,12 @@ class ResultCalculator
      *
      * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<int, int>>}
      */
-    private function subjects(int $schoolId, int $termId, int $classId, array $studentIds, Collection $entries): array
+    private function subjects(int $schoolId, int $termId, int $classId, Collection $roster, Collection $entries): array
     {
-        $classSubjects = DB::table('class_subjects')
-            ->where('school_id', $schoolId)
-            ->where('class_id', $classId)
-            ->get(['subject_id', 'is_compulsory'])
-            ->keyBy('subject_id');
+        $studentIds = $roster->pluck('id')->all();
+        $streamOf = $roster->pluck('stream', 'id');
+
+        $classSubjects = (new SubjectOffering)->classRows($schoolId, $classId);
 
         $choices = DB::table('student_subjects')
             ->where('school_id', $schoolId)
@@ -257,7 +262,10 @@ class ResultCalculator
 
             if ($configured) {
                 foreach ($classSubjects as $subjectId => $row) {
-                    if ($row->is_compulsory || in_array((int) $subjectId, $choices->get($studentId, []), true)) {
+                    // A science-only subject is not missing for an arts student.
+                    $kind = SubjectOffering::kindFor($row, $streamOf->get($studentId));
+
+                    if ($kind === 'compulsory' || ($kind !== null && in_array((int) $subjectId, $choices->get($studentId, []), true))) {
                         $mine[] = (int) $subjectId;
                     }
                 }
@@ -289,6 +297,7 @@ class ResultCalculator
                 'is_compulsory' => $configured
                     ? (bool) ($classSubjects->get($s->id)?->is_compulsory ?? false)
                     : ($s->category !== 'elective'),
+                'streams' => $classSubjects->has($s->id) ? SubjectOffering::streamsOf($classSubjects->get($s->id)) : [],
             ])
             ->sortBy('name')
             ->values()
@@ -368,7 +377,9 @@ class ResultCalculator
      * Class positions by the school's rule.
      *
      * Compared on the figure as printed (two decimals), so two students whose
-     * averages print the same share a place.
+     * averages print the same share a place. Each ranking group (the class,
+     * an arm or a stream) is ranked on its own, and `ranked_among` says how
+     * many it was ranked against, so "3rd of 28" names the right 28.
      */
     private function rank(array $students, array $config): array
     {
@@ -381,13 +392,16 @@ class ResultCalculator
         $eligible = array_filter($students, fn ($s) => $s[$key] !== null
             && ($config['ranking_scope'] !== 'complete_only' || $s['complete']));
 
-        $positions = $this->positions(
-            array_map(fn ($s) => round((float) $s[$key], 2), $eligible),
-            $config['ranking_method']
-        );
+        foreach ($this->grouped($eligible, $config) as $group) {
+            $positions = $this->positions(
+                array_map(fn ($s) => round((float) $s[$key], 2), $group),
+                $config['ranking_method']
+            );
 
-        foreach ($positions as $index => $position) {
-            $students[$index]['position'] = $position;
+            foreach ($positions as $index => $position) {
+                $students[$index]['position'] = $position;
+                $students[$index]['ranked_among'] = count($group);
+            }
         }
 
         return $students;
@@ -400,21 +414,42 @@ class ResultCalculator
         }
 
         foreach ($subjects as $subject) {
-            $values = [];
+            $scored = array_filter($students, fn ($s) => ($s['results'][$subject['id']]['state'] ?? null) === 'scored');
 
-            foreach ($students as $i => $s) {
-                $r = $s['results'][$subject['id']] ?? null;
-                if ($r && $r['state'] === 'scored') {
-                    $values[$i] = round((float) $r['total'], 2);
+            foreach ($this->grouped($scored, $config) as $group) {
+                $values = array_map(fn ($s) => round((float) $s['results'][$subject['id']]['total'], 2), $group);
+
+                foreach ($this->positions($values, $config['ranking_method']) as $i => $position) {
+                    $students[$i]['results'][$subject['id']]['position'] = $position;
                 }
-            }
-
-            foreach ($this->positions($values, $config['ranking_method']) as $i => $position) {
-                $students[$i]['results'][$subject['id']]['position'] = $position;
             }
         }
 
         return $students;
+    }
+
+    /**
+     * Students split into the groups positions are taken within, keys kept.
+     * A student with no arm (or an arm with no stream) is ranked with the
+     * others like them rather than dropped.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function grouped(array $students, array $config): array
+    {
+        $groups = [];
+
+        foreach ($students as $index => $s) {
+            $key = match ($config['ranking_group'] ?? 'class') {
+                'arm' => 'arm:'.($s['arm_id'] ?? 0),
+                'stream' => 'stream:'.($s['stream'] ?? ''),
+                default => 'class',
+            };
+
+            $groups[$key][$index] = $s;
+        }
+
+        return $groups;
     }
 
     /**

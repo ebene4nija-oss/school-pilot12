@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AbsenceAlertController;
 use App\Http\Controllers\Api\V1\AcademicHistoryController;
 use App\Http\Controllers\Api\V1\AcademicStructureController;
+use App\Http\Controllers\Api\V1\ClassStructureController;
 use App\Http\Controllers\Api\V1\AccountingController;
 use App\Http\Controllers\Api\V1\AddedFeaturesController;
 use App\Http\Controllers\Api\V1\AdmissionController;
@@ -529,6 +530,14 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::get('/classes', [AcademicStructureController::class, 'classes']);
         Route::get('/terms', [AcademicStructureController::class, 'terms']);
+
+        // Setting up classes and arms (stream, merit arm). Admin only.
+        Route::post('/classes', [ClassStructureController::class, 'storeClass'])->middleware('role:super_admin,school_admin');
+        Route::put('/classes/{id}', [ClassStructureController::class, 'updateClass'])->middleware('role:super_admin,school_admin')->whereNumber('id');
+        Route::delete('/classes/{id}', [ClassStructureController::class, 'destroyClass'])->middleware('role:super_admin,school_admin')->whereNumber('id');
+        Route::post('/classes/{id}/arms', [ClassStructureController::class, 'storeArm'])->middleware('role:super_admin,school_admin')->whereNumber('id');
+        Route::put('/arms/{id}', [ClassStructureController::class, 'updateArm'])->middleware('role:super_admin,school_admin')->whereNumber('id');
+        Route::delete('/arms/{id}', [ClassStructureController::class, 'destroyArm'])->middleware('role:super_admin,school_admin')->whereNumber('id');
 
         // What this school has: modules SchoolPilot switched on, and the AI
         // features the school chose. Read by every role (the menu uses it).

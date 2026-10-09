@@ -87,6 +87,28 @@ class Sections
     }
 
     /**
+     * Whether a subject tagged with these level groups is taught at a level.
+     *
+     * No tags means every level. The loose `secondary` matches either side of
+     * it: a subject tagged Secondary is taught in JSS and SS, and a class
+     * still marked plain Secondary takes subjects tagged JSS or SS.
+     *
+     * @param  array<int, string>|null  $subjectLevels
+     */
+    public static function taughtAt(?array $subjectLevels, string $levelGroup): bool
+    {
+        if (empty($subjectLevels) || in_array($levelGroup, $subjectLevels, true)) {
+            return true;
+        }
+
+        if ($levelGroup === 'secondary') {
+            return (bool) array_intersect($subjectLevels, ['junior_secondary', 'senior_secondary']);
+        }
+
+        return in_array('secondary', $subjectLevels, true) && self::isSecondaryLevel($levelGroup);
+    }
+
+    /**
      * Problems with a submitted chain, as sentences; empty when valid.
      *
      * The first step is always the subject teacher, since every other step
