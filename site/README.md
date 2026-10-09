@@ -76,4 +76,4 @@ Uploaded in the console (Super Admin > Website > Product screenshots), one per s
 
 ## Performance budget
 
-`check-budget` enforces 800 KB total on the homepage. The JavaScript budget in the spec is 90 KB gzipped, but React and the Next.js App Router alone ship about 125 KB, so the check currently fails on JS (about 138 KB). Override with `BUDGET_JS_KB` once a budget is agreed.
+`check-budget` enforces 145 KB of gzipped JavaScript and 800 KB in total on the homepage, and the release script (`deploy/cpanel/build-site-release.sh`) stops if either is broken. The spec first set 90 KB, but React and the Next.js App Router alone ship about 125 KB (React DOM 70 KB, router runtime 44 KB, bootstrap ~10 KB); 145 KB is that floor plus the site's own components (~11 KB) with some headroom. The homepage measured 139 KB when this was set (October 2026). To raise it deliberately, set `BUDGET_JS_KB` for the build.

@@ -24,7 +24,7 @@ v1.0 was a solid generic SaaS marketing PRD. v2.0 checks it against three things
 | 10 | Generic compliance mentions | A dedicated **/trust** page: NDPA, children's data, AI data transfer, 2FA, backups, export | Parents and proprietors are increasingly asked about data. Also a spec §12 obligation. |
 | 11 | Leads: abstract "lead system" | Concrete: `/api/v1/public/leads`, built into the **Super Admin console**, with **WhatsApp attribution codes** | WhatsApp conversations are invisible to web analytics unless we tag them. |
 | 12 | Analytics: unspecified tooling | **Cookieless analytics**, no third-party ad pixels at launch | NDPA, no consent banner friction, lighter pages. |
-| 13 | Performance: "fast" | **Hard budgets** (JS ≤ 90 KB gz, LCP ≤ 2.5 s on Slow 4G) | Mobile data is expensive and connections are uneven. Speed is part of the pitch. |
+| 13 | Performance: "fast" | **Hard budgets** (JS ≤ 145 KB gz, revised from 90 KB, which is below the React + Next.js floor; LCP ≤ 2.5 s on Slow 4G) | Mobile data is expensive and connections are uneven. Speed is part of the pitch. |
 | 14 | Personas: 5 | Adds **Bursar** and **Exams Officer / ICT teacher** as key influencers. Parents become a **demand channel**. | These two run the money and the result process and usually get the vendor shortlist. Parents pressure schools into adopting portals. |
 | 15 | No calendar | **Seasonal campaign calendar** tied to the Nigerian academic year | Buying decisions cluster around session start and end-of-term results. |
 
@@ -523,7 +523,7 @@ Each ships with feature tests (validation, throttling, honeypot rejection, phone
 | LCP (Slow 4G, mid-range Android) | ≤ 2.5 s |
 | INP | ≤ 200 ms |
 | CLS | ≤ 0.05 |
-| JS shipped on home (gzip) | ≤ 90 KB |
+| JS shipped on home (gzip) | ≤ 145 KB (revised Oct 2026 from 90 KB: React + the Next.js App Router alone are ~125 KB; enforced by `site/scripts/check-budget.mjs` in the release build) |
 | Total home weight, first load | ≤ 800 KB |
 | Fonts | ≤ 2 families, subset, `font-display: swap`, self-hosted |
 | Images | AVIF/WebP, explicit `width/height`, lazy below the fold |

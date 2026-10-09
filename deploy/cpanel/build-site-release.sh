@@ -35,8 +35,9 @@ echo "==> site: npm ci && next build (config from $API_BASE)"
     NEXT_PUBLIC_API_BASE="$API_BASE" \
     SITE_CONFIG_REQUIRED=1 \
         npm run build
-    # The weight check; reports the JS figure against the budget in the README.
-    npm run check-budget || echo "warning: performance budget exceeded (see site/README.md)" >&2
+    # The weight check. A release that breaks the budget stops here: trim the
+    # page, or raise BUDGET_JS_KB on purpose (see site/README.md).
+    npm run check-budget
 )
 
 echo "==> packing"
