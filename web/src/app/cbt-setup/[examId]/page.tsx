@@ -24,7 +24,7 @@ interface Exam {
   id: number; title: string; status: string; subject_id: number; subject: { name: string } | null; class_id: number | null; instructions: string | null;
   duration_minutes: number; opens_at: string | null; closes_at: string | null; shuffle_questions: boolean; shuffle_options: boolean; shuffle_within_group: boolean;
   questions_per_attempt: number | null; max_attempts: number; negative_marking: boolean; pass_mark: number | string | null; show_results_immediately: boolean; allow_offline: boolean;
-  review_answers?: boolean; review_correct_answers?: boolean;
+  review_answers?: boolean; review_correct_answers?: boolean; results_released_at?: string | null;
   exam_questions: ExamQ[];
 }
 interface Bank { id: number; question: string; question_type: string; topic: string | null; marks: number; content_format: 'plain' | 'latex' }
@@ -98,6 +98,29 @@ export default function ExamEditor() {
     void run(() => fetchApi(`/cbt/exams/${examId}/publish`, { method: 'POST', body: JSON.stringify(reason ? { override_reason: reason } : {}) }), 'Could not publish.');
   }
 
+  /** Release this paper's scores to students and parents. Report cards are not affected. */
+  async function releaseResults() {
+    if (!window.confirm('Release the results? Students who sat this paper, and their parents, will see their scores. Term report cards are not affected.')) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetchApi<{ message: string }>(`/cbt/exams/${examId}/release-results`, { method: 'POST', body: '{}' });
+      setNotice(r.message);
+      await load();
+    } catch (err) {
+      const unmarked = err instanceof ApiError && (err.payload as { code?: string })?.code === 'unmarked_scripts';
+      if (unmarked && window.confirm(`${err.message}
+
+Release anyway?`)) {
+        await run(() => fetchApi(`/cbt/exams/${examId}/release-results`, { method: 'POST', body: JSON.stringify({ include_unmarked: true }) }), 'Could not release.');
+        return;
+      }
+      if (!unmarked) setError(errorText(err, 'Could not release.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!exam) return <PageShell title="Exam"><ErrorNote message={error} />{!error && <Loading />}</PageShell>;
   const draft = exam.status === 'draft';
 
@@ -110,6 +133,14 @@ export default function ExamEditor() {
           <Badge tone={exam.status === 'published' ? 'green' : draft ? 'amber' : 'slate'}>{exam.status.replaceAll('_', ' ')}</Badge>
           {draft && <Button variant="accent" disabled={busy || exam.exam_questions.length === 0} onClick={publish}>Publish</Button>}
           {exam.status === 'published' && <Button variant="secondary" disabled={busy} onClick={() => { if (window.confirm('Close the exam? No new attempts can start.')) void run(() => fetchApi(`/cbt/exams/${examId}/close`, { method: 'POST', body: '{}' }), 'Could not close.'); }}>Close</Button>}
+          {!draft && !exam.show_results_immediately && (exam.results_released_at ? (
+            <>
+              <Badge tone="blue">Results released</Badge>
+              <Button variant="secondary" disabled={busy} onClick={() => { if (window.confirm('Withdraw the results? Students and parents stop seeing the scores until you release again.')) void run(() => fetchApi(`/cbt/exams/${examId}/withdraw-results`, { method: 'POST', body: '{}' }), 'Could not withdraw.'); }}>Withdraw results</Button>
+            </>
+          ) : (
+            <Button disabled={busy} onClick={() => void releaseResults()}>Release results</Button>
+          ))}
         </div>
       }
     >

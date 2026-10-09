@@ -34,6 +34,11 @@ final parentIdCardsProvider = FutureProvider.autoDispose<List<Map<String, dynami
   return _optional(() async => listOf(await ref.watch(apiClientProvider).get<dynamic>(Api.parentIdCards), ['children']));
 });
 
+/// A child's scores on CBT papers the school has released (not the report card).
+final childCbtResultsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, id) async {
+  return _optional(() async => listOf(await ref.watch(apiClientProvider).get<dynamic>(Api.parentChildCbtResults(id)), ['data']));
+});
+
 Future<List<Map<String, dynamic>>> _optional(Future<List<Map<String, dynamic>>> Function() fetch) async {
   try {
     return await fetch();
@@ -111,6 +116,7 @@ class ChildLearningView extends ConsumerWidget {
                 ),
               ),
             ],
+            _CbtResults(childId: childId),
             const SectionHeader('Homework'),
             if (work.isEmpty)
               const Padding(
@@ -159,6 +165,50 @@ class ChildLearningView extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Released CBT scores. Nothing at all until the school releases a paper.
+class _CbtResults extends ConsumerWidget {
+  const _CbtResults({required this.childId});
+
+  final int childId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rows = ref.watch(childCbtResultsProvider(childId)).valueOrNull ?? const [];
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeader('CBT results'),
+        for (final r in rows)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin, 0, AppSpacing.screenMargin, AppSpacing.sm),
+            child: OutlinedCard(
+              statusColor: r['passed'] == true ? AppColors.present : AppColors.pending,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(stringOf(r['title']), style: AppText.bodyLg),
+                  Text(
+                    [stringOf(r['subject']), Dates.dayMonth(Dates.tryParse(r['submitted_at']))].where((s) => s.isNotEmpty).join(' · '),
+                    style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${numOf(r['raw_score'])} / ${numOf(r['max_score'])} (${numOf(r['percentage']).round()}%)${r['grade'] != null ? ' · ${stringOf(r['grade'])}' : ''}',
+                    style: AppText.labelLg,
+                  ),
+                  if (r['provisional'] == true)
+                    Text('Written answers still being marked', style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

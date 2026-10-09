@@ -6,6 +6,7 @@ import { Badge, Card, Empty, ErrorNote, Loading, PageShell } from '@/components/
 import ParentTransfers from '@/components/ParentTransfers';
 import ParentHostel from '@/components/ParentHostel';
 import ParentStore from '@/components/ParentStore';
+import ParentCbtResults from '@/components/ParentCbtResults';
 import ParentIdCards from '@/components/ParentIdCards';
 import { ParentLibrary } from '@/components/LibraryBooks';
 
@@ -184,6 +185,7 @@ export default function ParentHome() {
           })}
         </div>
       )}
+      <ParentCbtResults kids={children} />
       <ParentHostel />
       <ParentIdCards />
       <ParentLibrary kids={children} />

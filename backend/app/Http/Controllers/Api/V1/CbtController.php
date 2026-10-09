@@ -1087,7 +1087,7 @@ class CbtController extends Controller
         $role = $request->user()->userProfile?->role;
         $isStaff = in_array($role, ['super_admin', 'school_admin', 'teacher'], true);
 
-        if (! $isStaff && ! $exam->show_results_immediately) {
+        if (! $isStaff && ! $exam->resultsVisible()) {
             return response()->json([
                 'message' => 'Your paper was submitted. Results will be released by your school.',
                 'released' => false,
@@ -1117,7 +1117,7 @@ class CbtController extends Controller
 
     private function resultPayload(CbtAttempt $attempt, CbtExam $exam, bool $forStaff): array
     {
-        $released = $forStaff || $exam->show_results_immediately;
+        $released = $forStaff || $exam->resultsVisible();
 
         $payload = [
             'attempt_id' => $attempt->id,

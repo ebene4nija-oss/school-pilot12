@@ -268,7 +268,7 @@ class StudentPortalController extends Controller
                 'attempt_number' => $a->attempt_number,
                 'status' => $a->status,
                 'submitted_at' => $a->submitted_at?->toIso8601String(),
-                'percentage' => $e->show_results_immediately && $a->percentage !== null && $a->isFinalised() ? (float) $a->percentage : null,
+                'percentage' => $e->resultsVisible() && $a->percentage !== null && $a->isFinalised() ? (float) $a->percentage : null,
             ])->values(),
         ])->values()]);
     }
@@ -362,7 +362,7 @@ class StudentPortalController extends Controller
         return ['id' => $exam->id, 'title' => $exam->title, 'opens_at' => $exam->opens_at?->toIso8601String(), 'closes_at' => $exam->closes_at?->toIso8601String(),
             'attempted' => (bool) $attempt, 'submitted' => in_array($attempt?->status, ['submitted', 'graded'], true),
             // Scores only where the exam shows them to candidates.
-            'percentage' => $attempt && $exam->show_results_immediately && $attempt->percentage !== null ? (float) $attempt->percentage : null];
+            'percentage' => $attempt && $exam->resultsVisible() && $attempt->percentage !== null ? (float) $attempt->percentage : null];
     }
 
     private function releasedTerms(Student $student): Collection

@@ -34,6 +34,8 @@ class CbtExam extends Model
         'show_results_immediately',
         'review_answers',
         'review_correct_answers',
+        'results_released_at',
+        'results_released_by',
         'allow_offline',
         'integrity_settings',
         'total_marks',
@@ -55,6 +57,7 @@ class CbtExam extends Model
         'show_results_immediately' => 'boolean',
         'review_answers' => 'boolean',
         'review_correct_answers' => 'boolean',
+        'results_released_at' => 'datetime',
         'allow_offline' => 'boolean',
         'integrity_settings' => 'array',
         'duration_minutes' => 'integer',
@@ -147,5 +150,14 @@ class CbtExam extends Model
         }
 
         return $total;
+    }
+
+    /**
+     * Whether candidates (and their parents) may see their score: shown on
+     * submit, or released by the school afterwards. Staff always see it.
+     */
+    public function resultsVisible(): bool
+    {
+        return (bool) $this->show_results_immediately || $this->results_released_at !== null;
     }
 }

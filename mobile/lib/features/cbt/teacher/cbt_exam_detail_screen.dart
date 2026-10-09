@@ -101,6 +101,53 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
     );
   }
 
+  /// Release this paper's scores to students and parents. Report cards are
+  /// not affected. Unmarked theory makes the server ask first.
+  Future<void> _release() async {
+    if (!await _confirm(
+      'Release the results?',
+      'Students who sat this paper, and their parents, will see their scores. '
+          'Term report cards are not affected.',
+      'Release',
+    )) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref.read(apiClientProvider).post<dynamic>(Api.cbtReleaseResults(widget.examId));
+      _say('Results released.');
+    } catch (error) {
+      final failure = asApiException(error);
+      if (failure.statusCode == 409 && mounted && await _confirm('Not ready yet', failure.message, 'Release anyway')) {
+        try {
+          await ref.read(apiClientProvider).post<dynamic>(Api.cbtReleaseResults(widget.examId), body: {'include_unmarked': true});
+          _say('Results released.');
+        } catch (again) {
+          if (mounted) _say(asApiException(again).message);
+        }
+      } else if (failure.statusCode != 409 && mounted) {
+        _say(failure.message);
+      }
+    } finally {
+      ref.invalidate(examDetailProvider(widget.examId));
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _withdraw() async {
+    if (!await _confirm(
+      'Withdraw the results?',
+      'Students and parents stop seeing the scores until you release them again.',
+      'Withdraw',
+    )) {
+      return;
+    }
+    await _run(
+      () => ref.read(apiClientProvider).post<dynamic>(Api.cbtWithdrawResults(widget.examId)),
+      'Results withdrawn.',
+    );
+  }
+
   Future<void> _remove(int questionId) => _run(
         () => ref
             .read(apiClientProvider)
@@ -212,6 +259,21 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
                   icon: const Icon(Icons.assessment_outlined),
                   label: Text('Results and marking ($attempts sat)'),
                 ),
+              ],
+              if (!isDraft && exam['show_results_immediately'] != true) ...[
+                const SizedBox(height: AppSpacing.sm),
+                if (exam['results_released_at'] == null)
+                  FilledButton.icon(
+                    onPressed: _busy ? null : _release,
+                    icon: const Icon(Icons.campaign_outlined),
+                    label: const Text('Release results to students and parents'),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : _withdraw,
+                    icon: const Icon(Icons.undo),
+                    label: const Text('Results released · withdraw'),
+                  ),
               ],
               SectionHeader(
                 'Questions (${rows.length})',

@@ -116,6 +116,9 @@ class Api {
   static String cbtSubmit(int id) => '$version/cbt/attempts/$id/submit';
   static String cbtEvents(int id) => '$version/cbt/attempts/$id/events';
   static String cbtResult(int id) => '$version/cbt/attempts/$id/result';
+  static String cbtReleaseResults(int examId) => '$version/cbt/exams/$examId/release-results';
+  static String cbtWithdrawResults(int examId) => '$version/cbt/exams/$examId/withdraw-results';
+  static String parentChildCbtResults(int studentId) => '$version/parent/children/$studentId/cbt-results';
   static const cbtOfflineSync = '$version/cbt/offline-sync';
 
   // CBT authoring and marking — staff only.

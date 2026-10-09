@@ -8,6 +8,7 @@
  */
 
 use App\Http\Controllers\Api\V1\CbtOversightController;
+use App\Http\Controllers\Api\V1\CbtResultReleaseController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('role:school_admin,teacher')->group(function () {
@@ -36,3 +37,14 @@ Route::middleware('role:school_admin')->group(function () {
     Route::post('/cbt/exams/{id}/extend', [CbtOversightController::class, 'extendExam'])->whereNumber('id');
     Route::post('/cbt/attempts/{id}/reset', [CbtOversightController::class, 'reset'])->whereNumber('id');
 });
+
+// Releasing one paper's scores to its candidates and their parents. Who may:
+// the CbtExamPolicy 'manage' check (an admin, or the teacher who set it).
+Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
+    Route::post('/cbt/exams/{id}/release-results', [CbtResultReleaseController::class, 'release'])->whereNumber('id');
+    Route::post('/cbt/exams/{id}/withdraw-results', [CbtResultReleaseController::class, 'withdraw'])->whereNumber('id');
+});
+
+// Outside the cbt/ prefix, so the controller checks the CBT switch itself.
+Route::get('/parent/children/{studentId}/cbt-results', [CbtResultReleaseController::class, 'child'])->whereNumber('studentId')->middleware('role:parent');
+
