@@ -31,6 +31,7 @@ import '../features/more/more_screen.dart';
 import '../features/more/notifications_screen.dart';
 import '../features/more/pending_sync_screen.dart';
 import '../features/more/profile_screen.dart';
+import '../features/more/send_notification_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/shell/app_shell.dart';
@@ -120,6 +121,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
       GoRoute(path: '/cbt-exams', builder: (_, __) => const CbtExamsScreen()),
       GoRoute(path: '/my-tests', builder: (_, __) => const MyTestsScreen()),
+      GoRoute(path: '/send-notification', builder: (_, __) => const SendNotificationScreen()),
       GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
       GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),
 

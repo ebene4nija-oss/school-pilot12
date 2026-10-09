@@ -70,6 +70,13 @@ class MoreScreen extends ConsumerWidget {
             label: 'Notifications',
             onTap: () => context.push('/notifications'),
           ),
+          if (role.isAdmin)
+            _Tile(
+              icon: Icons.campaign_outlined,
+              label: 'Send notification',
+              detail: 'To parents, students, teachers or all staff',
+              onTap: () => context.push('/send-notification'),
+            ),
           if (role == UserRole.teacher || role.isAdmin)
             _Tile(
               icon: Icons.calendar_month_outlined,

@@ -33,6 +33,7 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
           QuickAction(Icons.beach_access_outlined, 'Leave', '/leave'),
         ],
       UserRole.schoolAdmin || UserRole.superAdmin => const [
+          QuickAction(Icons.campaign_outlined, 'Send notice', '/send-notification'),
           QuickAction(Icons.forum_outlined, 'Messages', '/messages'),
           QuickAction(Icons.calendar_month_outlined, 'Timetable', '/timetable'),
           QuickAction(Icons.pin_outlined, 'Result PINs', '/result-pins'),

@@ -196,6 +196,9 @@ class Api {
   // 503 means the deployment has no Firebase credentials, not a client bug.
   static const notificationDeviceTest = '$version/notifications/devices/test';
   static const notificationBroadcast = '$version/notifications/broadcast';
+  static const notificationAudiencePreview =
+      '$version/notifications/audience-preview';
+  static const notificationChannels = '$version/notifications/channels';
   // The school's delivery ledger — admin-only, and about spend, not about you.
   static const notificationHistory = '$version/notifications/history';
   // The caller's own inbox. Everyone has one; `notificationHistory` is not it.
