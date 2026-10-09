@@ -119,6 +119,13 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role == UserRole.parent)
             _Tile(
+              icon: Icons.checkroom_outlined,
+              label: 'Items from the school',
+              detail: 'Confirm uniforms and books your child received',
+              onTap: () => context.push('/store'),
+            ),
+          if (role == UserRole.parent)
+            _Tile(
               icon: Icons.shield_outlined,
               label: 'Pickup and consent',
               detail: 'Who may collect your child; your data choices',

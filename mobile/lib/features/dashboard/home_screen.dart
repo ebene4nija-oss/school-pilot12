@@ -14,6 +14,7 @@ import '../clinic/clinic_screen.dart';
 import '../learn/learning_widgets.dart';
 import 'dashboard_providers.dart';
 import '../more/approvals_screen.dart';
+import '../store/parent_store_screen.dart';
 import 'quick_actions.dart';
 import 'role_homes.dart';
 
@@ -255,6 +256,32 @@ class _ApprovalsCard extends ConsumerWidget {
           icon: Icons.task_alt,
           title: '$total ${total == 1 ? 'item needs' : 'items need'} your approval',
           detail: 'Leave, lesson notes, CBT papers, admissions, broadsheets',
+          color: AppColors.pending,
+        ),
+      ),
+    );
+  }
+}
+
+/// Items the school handed over that the parent hasn't confirmed yet.
+/// Nothing at all when the school doesn't use the store.
+class _StoreConfirmCard extends ConsumerWidget {
+  const _StoreConfirmCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final waiting = intOf(mapOf(ref.watch(parentStoreProvider).valueOrNull?.data)['awaiting']);
+    if (waiting == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin, 0, AppSpacing.screenMargin, AppSpacing.sm),
+      child: OutlinedCard(
+        statusColor: AppColors.pending,
+        onTap: () => context.push('/store'),
+        child: _AttentionRow(
+          icon: Icons.checkroom_outlined,
+          title: waiting == 1 ? 'Confirm items from the school' : 'Confirm $waiting hand-overs from the school',
+          detail: 'Uniforms, books and other items handed to your child',
           color: AppColors.pending,
         ),
       ),
@@ -633,6 +660,7 @@ class _ParentFeed extends ConsumerWidget {
               onRefresh: () => ref.invalidate(parentFeedProvider),
             ),
             const QuickActionsRow(),
+            const _StoreConfirmCard(),
             if (outstanding > 0)
               _pad(
                 OutlinedCard(

@@ -302,6 +302,10 @@ class Api {
   static const myHostel = '$version/me/hostel';
   static const parentHostel = '$version/parent/hostel';
 
+  // School store: a parent confirms items handed to their child
+  static const parentInventory = '$version/parent/inventory';
+  static String parentInventoryConfirm(int id) => '$version/parent/inventory/issues/$id/confirm';
+
   // Digital ID cards, where the school issues them
   static const myIdCard = '$version/me/id-card';
   static const parentIdCards = '$version/parent/id-cards';

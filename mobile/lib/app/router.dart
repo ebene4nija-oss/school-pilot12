@@ -46,6 +46,7 @@ import '../features/staff/leave_screen.dart';
 import '../features/staff/payslips_screen.dart';
 import '../features/students/students_screen.dart';
 import '../features/teaching/ai_studio_screen.dart';
+import '../features/store/parent_store_screen.dart';
 import '../features/teaching/lesson_notes_screen.dart';
 import '../features/timetable/timetable_screen.dart';
 import 'navigation.dart';
@@ -108,6 +109,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/library/desk', builder: (_, __) => const LibraryDeskScreen()),
       GoRoute(path: '/id-card', builder: (_, __) => const IdCardScreen()),
       GoRoute(path: '/hostel', builder: (_, __) => const HostelScreen()),
+      GoRoute(path: '/store', builder: (_, __) => const ParentStoreScreen()),
       GoRoute(path: '/safety', builder: (_, __) => const SafetyScreen()),
       GoRoute(path: '/virtual-classes', builder: (_, __) => const VirtualClassesScreen()),
       GoRoute(path: '/payroll', builder: (_, __) => const PayrollScreen()),
