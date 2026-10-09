@@ -83,15 +83,9 @@ class HeadResolver
             return [];
         }
 
-        return DB::table('teacher_subjects')
-            ->where('school_id', $schoolId)
-            ->where('subject_id', $subjectId)
-            ->where(fn ($q) => $q->where('class_id', $classId)->orWhereNull('class_id'))
-            ->pluck('teacher_id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        // Assigned subject teachers, and class teachers where the section
+        // is taught by class teachers.
+        return app(\App\Services\Academics\TeachingAssignments::class)->teachersFor($schoolId, $classId, null, $subjectId);
     }
 
     private function classTeachers(int $schoolId, int $classId): array

@@ -126,7 +126,7 @@ export default function SubjectsPage() {
         {([
           ['subjects', `Subjects (${active.length})`],
           ['classes', 'Subjects per class'],
-          ['teachers', 'Who teaches what'],
+          ['teachers', 'Assignment list'],
         ] as [Tab, string][]).map(([id, label]) => (
           <button
             key={id}

@@ -117,14 +117,17 @@ class ParentPortalController extends Controller
             $add(\App\Models\ClassTeacherAssignment::formTeacherFor($schoolId, $sessionId, (int) $student->class_id, $student->arm_id ? (int) $student->arm_id : null), 'Form teacher');
         }
 
-        \Illuminate\Support\Facades\DB::table('teacher_subjects')
-            ->join('users', 'users.id', '=', 'teacher_subjects.teacher_id')
-            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
-            ->where('teacher_subjects.school_id', $schoolId)
-            ->where(fn ($q) => $q->where('teacher_subjects.class_id', $student->class_id)->orWhereNull('teacher_subjects.class_id'))
-            ->orderBy('subjects.name')
-            ->get(['users.id', 'users.name', 'subjects.name as subject'])
-            ->each(fn ($row) => $add((object) ['id' => $row->id, 'name' => $row->name], $row->subject.' teacher'));
+        // The child's own arm: SS 2A's Physics teacher, not SS 2B's.
+        if ($student->class_id) {
+            $rows = app(\App\Services\Academics\TeachingAssignments::class)->rows($schoolId)
+                ->where('source', 'assigned')
+                ->filter(fn ($r) => ($r->class_id === null || $r->class_id === (int) $student->class_id)
+                    && ($r->arm_id === null || $r->arm_id === ($student->arm_id ? (int) $student->arm_id : null)));
+            $names = \Illuminate\Support\Facades\DB::table('users')->whereIn('id', $rows->pluck('teacher_id')->all() ?: [0])->pluck('name', 'id');
+            $subjects = \Illuminate\Support\Facades\DB::table('subjects')->whereIn('id', $rows->pluck('subject_id')->all() ?: [0])->pluck('name', 'id');
+            $rows->sortBy(fn ($r) => $subjects[$r->subject_id] ?? '')
+                ->each(fn ($r) => $add((object) ['id' => $r->teacher_id, 'name' => $names[$r->teacher_id] ?? null], ($subjects[$r->subject_id] ?? 'Subject').' teacher'));
+        }
 
         return response()->json([
             'data' => array_values(array_map(fn ($c) => $c + ['role' => implode(', ', array_unique($c['roles']))], $contacts)),

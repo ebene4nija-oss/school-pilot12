@@ -40,6 +40,10 @@ class TeacherProductivityController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        if ($refusal = AssessmentController::notYourSubject($request->user(), $schoolId, (int) $request->subject_id, collect($request->scores)->pluck('student_id')->map(fn ($id) => (int) $id)->all())) {
+            return $refusal;
+        }
+
         $savedEntries = [];
 
         $levels = $this->classLevels($schoolId, collect($request->scores)->pluck('student_id')->all());
@@ -201,6 +205,12 @@ class TeacherProductivityController extends Controller
 
             if (! $student) {
                 $errors[] = "Row {$rowNum}: student not found in this school.";
+
+                continue;
+            }
+
+            if (AssessmentController::notYourSubject($request->user(), $schoolId, (int) $request->subject_id, [(int) $student->id])) {
+                $errors[] = "Row {$rowNum}: you do not teach this subject to this student's class.";
 
                 continue;
             }

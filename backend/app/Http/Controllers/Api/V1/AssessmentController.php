@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\Academics\TeachingAssignments;
 use App\Models\AuditLog;
 use App\Models\CaScheme;
 use App\Models\ReportCardToken;
@@ -41,6 +42,11 @@ class AssessmentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // A teacher enters marks only for a subject they teach this student.
+        if ($refusal = $this->notYourSubject($user, $schoolId, (int) $request->input('subject_id'), [(int) $request->input('student_id')])) {
+            return $refusal;
+        }
+
         // The same writer CA-from-coursework uses: the scheme in force, the
         // broadsheet locks, grading and class positions.
         try {
@@ -67,6 +73,26 @@ class AssessmentController extends Controller
             ],
             'score_entry' => $entry,
         ]);
+    }
+
+    /**
+     * A 403 when a teacher is not the one who teaches this subject to these
+     * students (assigned, or the class teacher in a class-teacher section).
+     * Admins, and teachers the school lets see everyone, are not limited.
+     */
+    public static function notYourSubject($user, int $schoolId, int $subjectId, array $studentIds): ?\Illuminate\Http\JsonResponse
+    {
+        if ($user->userProfile?->role !== 'teacher' || \App\Support\TeacherScope::seesWholeSchool($user)) {
+            return null;
+        }
+
+        $missing = app(TeachingAssignments::class)->notTaught($schoolId, $user->id, $subjectId, $studentIds);
+
+        return $missing === [] ? null : response()->json([
+            'message' => 'You can only enter marks for a subject you teach to that class. Ask an admin to assign you on Who teaches what.',
+            'code' => 'not_your_subject',
+            'students' => $missing,
+        ], 403);
     }
 
     // ==================================================================
@@ -273,11 +299,7 @@ class AssessmentController extends Controller
          * person who taught them — not to whoever opens the queue first.
          */
         if ($role === 'teacher') {
-            $query->whereIn('score_entries.subject_id', function ($sub) use ($user) {
-                $sub->select('subject_id')
-                    ->from('teacher_subjects')
-                    ->where('teacher_id', $user->id);
-            });
+            $query->whereIn('score_entries.subject_id', app(TeachingAssignments::class)->rows($this->schoolId(), $user->id)->pluck('subject_id')->unique()->all() ?: [0]);
         }
 
         if ($termId = $request->query('term_id')) {

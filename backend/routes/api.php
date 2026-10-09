@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\AcademicHistoryController;
 use App\Http\Controllers\Api\V1\AcademicStructureController;
 use App\Http\Controllers\Api\V1\ClassStructureController;
 use App\Http\Controllers\Api\V1\QuestionBankBulkController;
+use App\Http\Controllers\Api\V1\TeachingController;
 use App\Http\Controllers\Api\V1\AccountingController;
 use App\Http\Controllers\Api\V1\AddedFeaturesController;
 use App\Http\Controllers\Api\V1\AdmissionController;
@@ -567,6 +568,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/subjects/assign-teacher', [SubjectManagementController::class, 'assignTeacher'])->middleware('role:super_admin,school_admin');
         Route::post('/subjects/remove-teacher', [SubjectManagementController::class, 'removeTeacher'])->middleware('role:super_admin,school_admin');
         Route::get('/teachers/{teacherId}/subjects', [SubjectManagementController::class, 'getTeacherSubjects'])->middleware('role:super_admin,school_admin,teacher');
+        // Who teaches what in a section: class teachers, subject teachers per arm, gaps, loads.
+        Route::get('/teaching/overview', [TeachingController::class, 'overview'])->middleware('role:super_admin,school_admin');
         Route::post('/classes/subjects', [SubjectManagementController::class, 'setClassSubjects'])->middleware('role:super_admin,school_admin');
         Route::get('/classes/{classId}/subjects', [SubjectManagementController::class, 'getClassSubjects']);
         Route::post('/students/{studentId}/subjects', [SubjectManagementController::class, 'enrollStudentSubjects'])->middleware('role:super_admin,school_admin,student');

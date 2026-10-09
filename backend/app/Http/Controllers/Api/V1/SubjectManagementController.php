@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Services\Academics\SubjectOffering;
+use App\Services\Academics\TeachingAssignments;
 use App\Support\Sections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,12 +182,14 @@ class SubjectManagementController extends Controller
             ->join('subjects', 'teacher_subjects.subject_id', '=', 'subjects.id')
             ->join('users', 'teacher_subjects.teacher_id', '=', 'users.id')
             ->leftJoin('classes', 'teacher_subjects.class_id', '=', 'classes.id')
+            ->leftJoin('arms', 'teacher_subjects.arm_id', '=', 'arms.id')
             ->where('teacher_subjects.school_id', $schoolId)
             ->select(
                 'teacher_subjects.id', 'teacher_subjects.is_primary',
                 'subjects.id as subject_id', 'subjects.name as subject_name',
                 'users.id as teacher_id', 'users.name as teacher_name',
-                'classes.id as class_id', 'classes.name as class_name'
+                'classes.id as class_id', 'classes.name as class_name',
+                'arms.id as arm_id', 'arms.name as arm_name'
             )
             ->orderBy('subjects.name')
             ->orderBy('classes.name')
@@ -232,11 +235,24 @@ class SubjectManagementController extends Controller
                 ->whereIn('role', ['teacher', 'school_admin'])],
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
             'class_id'   => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            // One arm of the class (SS 2A's Physics); none = every arm.
+            'arm_id'     => ['nullable', Rule::exists('arms', 'id')->where('class_id', $request->input('class_id'))],
             'is_primary' => 'nullable|boolean',
+            // Make this teacher the only one for the subject in this class/arm.
+            'replace'    => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->boolean('replace') && $request->class_id) {
+            DB::table('teacher_subjects')
+                ->where('school_id', $schoolId)
+                ->where('subject_id', $request->subject_id)
+                ->where('class_id', $request->class_id)
+                ->where(fn ($q) => $request->arm_id ? $q->where('arm_id', $request->arm_id) : $q->whereNull('arm_id'))
+                ->delete();
         }
 
         DB::table('teacher_subjects')->updateOrInsert(
@@ -245,6 +261,7 @@ class SubjectManagementController extends Controller
                 'teacher_id' => $request->teacher_id,
                 'subject_id' => $request->subject_id,
                 'class_id'   => $request->class_id,
+                'arm_id'     => $request->arm_id,
             ],
             [
                 'is_primary'  => $request->is_primary ?? true,
@@ -264,6 +281,7 @@ class SubjectManagementController extends Controller
             'teacher_id' => 'required|integer',
             'subject_id' => 'required|integer',
             'class_id'   => 'nullable|integer',
+            'arm_id'     => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
@@ -283,6 +301,14 @@ class SubjectManagementController extends Controller
             $query->whereNull('class_id');
         }
 
+        // Same rule for the arm: a value is that arm, an explicit null the
+        // whole-class assignment, a missing key every arm.
+        if ($request->arm_id) {
+            $query->where('arm_id', $request->arm_id);
+        } elseif ($request->has('arm_id')) {
+            $query->whereNull('arm_id');
+        }
+
         $query->delete();
 
         return response()->json(['message' => 'Teacher removed from subject.']);
@@ -292,19 +318,34 @@ class SubjectManagementController extends Controller
     {
         $schoolId = $this->getSchoolId($request);
 
-        $subjects = DB::table('teacher_subjects')
-            ->join('subjects', 'teacher_subjects.subject_id', '=', 'subjects.id')
-            ->leftJoin('classes', 'teacher_subjects.class_id', '=', 'classes.id')
-            ->where('teacher_subjects.school_id', $schoolId)
-            ->where('teacher_subjects.teacher_id', $teacherId)
-            ->select(
-                'subjects.id as subject_id', 'subjects.name as subject_name', 'subjects.code',
-                'classes.id as class_id', 'classes.name as class_name',
-                'teacher_subjects.is_primary'
-            )
-            ->get();
+        /*
+         * What they teach in effect: their subject assignments, and in a
+         * section taught by class teachers every subject of their class. One
+         * row per subject and class; `arm_ids` says which arms (empty: all).
+         */
+        $rows = app(TeachingAssignments::class)->rows($schoolId, (int) $teacherId);
+        $subjects = DB::table('subjects')->where('school_id', $schoolId)->whereIn('id', $rows->pluck('subject_id')->all() ?: [0])->get(['id', 'name', 'code'])->keyBy('id');
+        $classes = DB::table('classes')->where('school_id', $schoolId)->pluck('name', 'id');
+        $arms = DB::table('arms')->where('school_id', $schoolId)->pluck('name', 'id');
 
-        return response()->json(['data' => $subjects]);
+        $data = $rows->groupBy(fn ($r) => $r->subject_id.':'.($r->class_id ?? 0))->map(function ($group) use ($subjects, $classes, $arms) {
+            $first = $group->first();
+            $armIds = $group->contains(fn ($r) => $r->arm_id === null) ? [] : $group->pluck('arm_id')->unique()->sort()->values()->all();
+
+            return [
+                'subject_id' => $first->subject_id,
+                'subject_name' => $subjects[$first->subject_id]->name ?? null,
+                'code' => $subjects[$first->subject_id]->code ?? null,
+                'class_id' => $first->class_id,
+                'class_name' => $first->class_id ? ($classes[$first->class_id] ?? null) : null,
+                'arm_ids' => $armIds,
+                'arm_names' => array_values(array_filter(array_map(fn ($id) => $arms[$id] ?? null, $armIds))),
+                'source' => $group->contains('source', 'assigned') ? 'assigned' : 'class_teacher',
+                'is_primary' => true,
+            ];
+        })->sortBy(['class_name', 'subject_name'])->values();
+
+        return response()->json(['data' => $data]);
     }
 
     // ─── Class ↔ Subject Mapping (Compulsory vs Optional) ────────────

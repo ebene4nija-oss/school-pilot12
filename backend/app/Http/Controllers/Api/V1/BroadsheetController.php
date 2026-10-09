@@ -847,11 +847,8 @@ class BroadsheetController extends Controller
         $user = $request->user();
 
         $viewable = $this->canViewClass($user, $broadsheet->school_id, $class)
-            || DB::table('teacher_subjects')
-                ->where('school_id', $broadsheet->school_id)
-                ->where('teacher_id', $user->id)
-                ->where(fn ($q) => $q->where('class_id', $class->id)->orWhereNull('class_id'))
-                ->exists();
+            || app(\App\Services\Academics\TeachingAssignments::class)->rows($broadsheet->school_id, $user->id)
+                ->contains(fn ($r) => $r->class_id === null || $r->class_id === (int) $class->id);
 
         abort_unless($viewable, 403, 'You do not have access to this broadsheet.');
 

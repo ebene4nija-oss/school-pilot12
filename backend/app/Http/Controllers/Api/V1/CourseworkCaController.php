@@ -83,8 +83,8 @@ class CourseworkCaController extends Controller
 
         $role = $request->user()->userProfile?->role;
         if (! in_array($role, ['super_admin', 'school_admin'], true)) {
-            $teaches = DB::table('teacher_subjects')->where('school_id', $schoolId)->where('teacher_id', $request->user()->id)->where('subject_id', $data['subject_id'])
-                ->where(fn ($q) => $q->where('class_id', $data['class_id'])->orWhereNull('class_id'))->exists();
+            $teaches = app(\App\Services\Academics\TeachingAssignments::class)
+                ->teaches($schoolId, $request->user()->id, (int) $data['class_id'], null, (int) $data['subject_id']);
             abort_unless($teaches, 403, 'Only the subject teacher fills this CA.');
         }
 

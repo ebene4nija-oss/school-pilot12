@@ -18,6 +18,7 @@ use App\Models\StudentClassHistory;
 use App\Models\Subject;
 use App\Models\Term;
 use App\Services\Academics\SubjectOffering;
+use App\Services\Academics\TeachingAssignments;
 use App\Services\Lms\LmsService;
 use App\Services\ResultPinService;
 use App\Support\CurrentTerm;
@@ -304,10 +305,17 @@ class StudentPortalController extends Controller
     /** @return array<int, array<int, string>> subject id => teacher names */
     private function teachers(Student $student, array $subjectIds): array
     {
-        return DB::table('teacher_subjects')->join('users', 'users.id', '=', 'teacher_subjects.teacher_id')
-            ->where('teacher_subjects.school_id', $student->school_id)->whereIn('teacher_subjects.subject_id', $subjectIds ?: [0])
-            ->where(fn ($q) => $q->where('teacher_subjects.class_id', $student->class_id)->orWhereNull('teacher_subjects.class_id'))
-            ->get(['teacher_subjects.subject_id', 'users.name'])->groupBy('subject_id')->map(fn ($g) => $g->pluck('name')->unique()->values()->all())->all();
+        if (! $student->class_id) {
+            return [];
+        }
+
+        // Who teaches this student's own arm, class teachers included.
+        $rows = app(TeachingAssignments::class)->rows((int) $student->school_id)
+            ->filter(fn ($r) => in_array($r->subject_id, $subjectIds, true)
+                && TeachingAssignments::covers($r, (int) $student->class_id, $student->arm_id ? (int) $student->arm_id : null, $r->subject_id));
+        $names = DB::table('users')->whereIn('id', $rows->pluck('teacher_id')->all() ?: [0])->pluck('name', 'id');
+
+        return $rows->groupBy('subject_id')->map(fn ($g) => $g->map(fn ($r) => $names[$r->teacher_id] ?? null)->filter()->unique()->values()->all())->all();
     }
 
     private function timetable(Student $student): Collection

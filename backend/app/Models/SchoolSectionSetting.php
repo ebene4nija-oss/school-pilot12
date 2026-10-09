@@ -14,12 +14,14 @@ class SchoolSectionSetting extends Model
         'school_id',
         'secondary_heads_mode',
         'approval_chains',
+        'teaching_models',
         'scheme_approval_delegates',
         'result_workflow_enabled',
     ];
 
     protected $casts = [
         'approval_chains' => 'array',
+        'teaching_models' => 'array',
         'scheme_approval_delegates' => 'array',
         'result_workflow_enabled' => 'boolean',
     ];
@@ -32,6 +34,7 @@ class SchoolSectionSetting extends Model
                 'school_id' => $schoolId,
                 'secondary_heads_mode' => 'single_principal',
                 'approval_chains' => null,
+                'teaching_models' => null,
                 'scheme_approval_delegates' => [],
                 'result_workflow_enabled' => false,
             ]);

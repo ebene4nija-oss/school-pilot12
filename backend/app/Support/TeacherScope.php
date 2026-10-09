@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\DB;
  * A teacher teaches a student when, for the student's current class, they are
  * - its form or assistant teacher this session (for the student's arm, or for
  *   the whole class when the assignment names no arm), or
- * - assigned to teach any subject in it (`teacher_subjects`, which records the
- *   class but not the arm, so it covers every arm of that class).
+ * - assigned to teach any subject in it (`teacher_subjects`): in the
+ *   student's arm when the assignment names one, else in every arm.
  *
  * A teacher whose school admin has granted `sees_all_students` sees everyone,
  * as does any role that is not a teacher (the policy decides those).
@@ -43,15 +43,21 @@ class TeacherScope
             return self::$memo[$key];
         }
 
-        $classes = DB::table('teacher_subjects')
+        $classes = [];
+        $arms = [];
+
+        // A subject assignment to one arm covers that arm; with no arm, the class.
+        $taught = DB::table('teacher_subjects')
             ->where('school_id', $schoolId)
             ->where('teacher_id', $user->id)
             ->whereNotNull('class_id')
-            ->pluck('class_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+            ->get(['class_id', 'arm_id']);
 
-        $arms = [];
+        foreach ($taught as $row) {
+            $row->arm_id === null
+                ? $classes[] = (int) $row->class_id
+                : $arms[] = [(int) $row->class_id, (int) $row->arm_id];
+        }
         $sessionId = self::currentSessionId($schoolId);
 
         if ($sessionId) {

@@ -8,6 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\SchoolSectionSetting;
 use App\Models\SectionHeadAssignment;
 use App\Models\User;
+use App\Services\Academics\TeachingAssignments;
 use App\Services\Sections\HeadResolver;
 use App\Support\Sections;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,9 @@ class SectionsController extends Controller
             'result_workflow_enabled' => (bool) $settings->result_workflow_enabled,
             'scheme_approval_delegates' => User::whereIn('id', (array) $settings->scheme_approval_delegates)->get(['id', 'name']),
             'approval_chains' => $chains,
+            // Class teacher teaches everything, or a teacher per subject.
+            'teaching_models' => TeachingAssignments::models($schoolId),
+            'teaching_model_options' => TeachingAssignments::MODELS,
             'sections' => Sections::SECTIONS,
             'level_groups' => Sections::LEVEL_GROUPS,
             'step_roles' => Sections::STEP_ROLES,
@@ -61,7 +65,14 @@ class SectionsController extends Controller
             'approval_chains.*.*.enabled' => 'required_with:approval_chains|boolean',
             'scheme_approval_delegates' => 'sometimes|array',
             'scheme_approval_delegates.*' => 'integer',
+            'teaching_models' => 'sometimes|array:'.implode(',', array_keys(Sections::SECTIONS)),
+            'teaching_models.*' => [Rule::in(array_keys(TeachingAssignments::MODELS))],
         ]);
+
+        if (isset($data['teaching_models'])) {
+            // One section at a time is fine; the others keep what they had.
+            $data['teaching_models'] = $data['teaching_models'] + TeachingAssignments::models($schoolId);
+        }
 
         if (isset($data['approval_chains'])) {
             $problems = [];

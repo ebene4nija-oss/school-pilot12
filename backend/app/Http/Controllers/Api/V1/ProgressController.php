@@ -489,9 +489,9 @@ class ProgressController extends Controller
             return null;
         }
 
-        $subjects = DB::table('teacher_subjects')->where('teacher_id', $user->id)
-            ->where(fn ($q) => $q->where('class_id', $class->id)->orWhereNull('class_id'))
-            ->pluck('subject_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $subjects = app(\App\Services\Academics\TeachingAssignments::class)->rows((int) $this->schoolId(), $user->id)
+            ->filter(fn ($r) => $r->class_id === null || $r->class_id === (int) $class->id)
+            ->pluck('subject_id')->unique()->values()->all();
 
         return $subjects === [] ? false : $subjects;
     }

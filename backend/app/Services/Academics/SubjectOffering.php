@@ -115,7 +115,7 @@ class SubjectOffering
         $offered = $this->forArm($schoolId, $classId, $armId);
 
         if ($offered !== []) {
-            return Subject::where('school_id', $schoolId)
+            return Subject::withoutGlobalScopes()->where('school_id', $schoolId)
                 ->where('is_active', true)
                 ->whereIn('id', array_keys($offered))
                 ->orderBy('name')
@@ -123,7 +123,7 @@ class SubjectOffering
                 ->each(fn (Subject $s) => $s->setAttribute('offered_as', $offered[$s->id]));
         }
 
-        $class = SchoolClass::where('school_id', $schoolId)->find($classId);
+        $class = SchoolClass::withoutGlobalScopes()->where('school_id', $schoolId)->find($classId);
 
         return $class ? $this->subjectsAtLevel($schoolId, Sections::levelGroupOf($class->level_category)) : collect();
     }
@@ -131,7 +131,7 @@ class SubjectOffering
     /** Active subjects tagged for a level group (or untagged). */
     public function subjectsAtLevel(int $schoolId, string $levelGroup): Collection
     {
-        return Subject::where('school_id', $schoolId)
+        return Subject::withoutGlobalScopes()->where('school_id', $schoolId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get()

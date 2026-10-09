@@ -139,6 +139,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     items: [
       { href: '/classes', icon: '🏷️', label: 'Classes & arms', roles: ['school_admin'] },
       { href: '/subjects', icon: '📘', label: 'Subjects', roles: ['school_admin'] },
+      { href: '/teaching', icon: '🧑‍🏫', label: 'Who teaches what', roles: ['school_admin'] },
       { href: '/timetable', icon: '🗓️', label: 'Timetable', roles: ['school_admin', 'teacher'] },
       { href: '/exam-timetable', icon: '🗒️', label: 'Exam timetable', roles: ['school_admin'] },
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
