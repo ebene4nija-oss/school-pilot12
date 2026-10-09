@@ -19,6 +19,16 @@ const paths = {
   apps: "M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2",
   check: "M5 12.5l4.5 4.5L19 7.5",
   shield: "M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  gift: "M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7C10.5 4 7 4 7 6s3 1 5 1zM12 7c1.5-3 5-3 5-1s-3 1-5 1z",
+  sheet: "M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h8M12 12v8",
+  paper: "M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4",
+  portal: "M4 4h16v12H4zM8 20h8M12 16v4M10 8l-2 2 2 2M14 8l2 2-2 2",
+  calendar: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  bell: "M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0",
+  unlock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 7.6-1.8",
+  chat: "M4 5h16v11H9l-5 4z",
+  arrow: "M5 12h14M13 6l6 6-6 6",
 } as const;
 
 export type IconName = keyof typeof paths;
