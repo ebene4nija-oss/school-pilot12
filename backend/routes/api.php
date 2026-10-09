@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AbsenceAlertController;
 use App\Http\Controllers\Api\V1\AcademicHistoryController;
 use App\Http\Controllers\Api\V1\AcademicStructureController;
 use App\Http\Controllers\Api\V1\ClassStructureController;
+use App\Http\Controllers\Api\V1\PlatformMaintenanceController;
 use App\Http\Controllers\Api\V1\QuestionBankBulkController;
 use App\Http\Controllers\Api\V1\TeachingController;
 use App\Http\Controllers\Api\V1\AccountingController;
@@ -1080,6 +1081,10 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/audit-log', [PlatformSecurityController::class, 'auditLog']);
             Route::get('/platform/security/admins', [PlatformSecurityController::class, 'admins']);
             Route::post('/platform/security/admins/{userId}/revoke-sessions', [PlatformSecurityController::class, 'revokeSessions']);
+
+            // Cache and housekeeping: clear caches, compiled views, restart workers.
+            Route::get('/platform/maintenance', [PlatformMaintenanceController::class, 'status']);
+            Route::post('/platform/maintenance', [PlatformMaintenanceController::class, 'run']);
 
             Route::get('/platform/result-pins/price-tiers', [PlatformResultPinController::class, 'listPriceTiers']);
             Route::post('/platform/result-pins/price-tiers', [PlatformResultPinController::class, 'storePriceTier']);

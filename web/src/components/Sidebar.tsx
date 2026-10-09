@@ -74,6 +74,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin/audit-log', icon: '📜', label: 'Audit log', roles: ['super_admin'] },
       { href: '/super-admin/compliance', icon: '💾', label: 'Backups & data requests', roles: ['super_admin'] },
       { href: '/super-admin/settings', icon: '🔧', label: 'Platform settings', roles: ['super_admin'] },
+      { href: '/super-admin/maintenance', icon: '🧹', label: 'Cache & maintenance', roles: ['super_admin'] },
     ],
   },
   {
