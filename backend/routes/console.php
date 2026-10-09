@@ -100,6 +100,19 @@ Artisan::command('library:daily', function () {
     $this->info("Expired {$r['expired']} hold(s); {$r['due']} due reminder(s); {$r['overdue']} overdue notice(s).");
 })->purpose('Library holds, due reminders and overdue notices');
 
+/*
+ * School bus: papers about to expire and services coming due, one reminder
+ * each to the school's admins.
+ */
+Artisan::command('transport:daily', function () {
+    $r = app(\App\Services\Transport\TransportService::class)->dailyReminders();
+    $this->info("{$r['documents']} papers reminder(s); {$r['services']} service reminder(s).");
+})->purpose('Bus papers and service reminders');
+
+Schedule::command('transport:daily')
+    ->dailyAt('06:45')
+    ->withoutOverlapping();
+
 Schedule::command('library:daily')
     ->dailyAt('07:00')
     ->withoutOverlapping();

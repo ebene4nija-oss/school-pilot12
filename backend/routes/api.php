@@ -20,7 +20,6 @@ use App\Http\Controllers\Api\V1\AttendanceTodayController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\CbtController;
-use App\Http\Controllers\Api\V1\CbtOfflineBundleController;
 use App\Http\Controllers\Api\V1\CbtQuestionGroupController;
 use App\Http\Controllers\Api\V1\ClassTeacherController;
 use App\Http\Controllers\Api\V1\ExamTimetableController;
@@ -300,6 +299,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         require __DIR__.'/modules/hr.php';
         require __DIR__.'/modules/library.php';
         require __DIR__.'/modules/inventory.php';
+        require __DIR__.'/modules/transport.php';
         require __DIR__.'/modules/timetable.php';
 
         /*
@@ -805,34 +805,10 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/cbt/exams/{examId}/offline-package', [CbtController::class, 'offlinePackage'])
             ->middleware('role:super_admin,school_admin,teacher,student');
 
-        // Kept as-is: the mobile app sits a paper as the candidate and syncs
-        // its own single attempt. The lab relay cannot use this — it uploads
-        // for a whole room while authenticated as staff — and gets the batch
-        // route below instead.
+        // Answers a candidate's device held while the connection was down —
+        // the mobile app, and the web runner on an exam-hall PC — sent in one
+        // go when it returns, optionally with the submit.
         Route::post('/cbt/offline-sync', [CbtController::class, 'syncOfflineAnswers'])->middleware('role:student');
-
-        /*
-        |------------------------------------------------------------------
-        | Offline lab relay (docs/offline-cbt-client.md §9.1–§9.3)
-        |------------------------------------------------------------------
-        | The relay is a staff-authenticated API consumer, not a candidate. It
-        | touches the network exactly three times: it takes delivery of an
-        | encrypted bundle the day before, collects the key on exam morning,
-        | and uploads the room afterwards. Nothing here is reachable during
-        | the paper, which is the entire point of the component.
-        |
-        | Key release is throttled and audited on every call, granted or
-        | refused: an unlock is the moment a paper becomes readable on a
-        | machine we do not control.
-        */
-        Route::middleware('role:super_admin,school_admin,teacher')->group(function () {
-            Route::get('/cbt/exams/{examId}/offline-bundles', [CbtOfflineBundleController::class, 'index']);
-            Route::post('/cbt/exams/{examId}/offline-bundle', [CbtOfflineBundleController::class, 'store']);
-            Route::post('/cbt/offline-bundle/{bundleId}/key', [CbtOfflineBundleController::class, 'releaseKey'])
-                ->middleware('throttle:10,1');
-            Route::post('/cbt/offline-bundle/{bundleId}/revoke', [CbtOfflineBundleController::class, 'revoke']);
-            Route::post('/cbt/offline-sync/batch', [CbtOfflineBundleController::class, 'batchSync']);
-        });
 
         /*
         |------------------------------------------------------------------

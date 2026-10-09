@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -37,6 +38,17 @@ final parentIdCardsProvider = FutureProvider.autoDispose<List<Map<String, dynami
 /// A child's scores on CBT papers the school has released (not the report card).
 final childCbtResultsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, id) async {
   return _optional(() async => listOf(await ref.watch(apiClientProvider).get<dynamic>(Api.parentChildCbtResults(id)), ['data']));
+});
+
+/// The child's school bus, when they ride it: bus, pickup point, driver, running or not.
+final childTransportProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, id) async {
+  try {
+    return mapOf(await ref.watch(apiClientProvider).get<dynamic>(Api.parentChildTransport(id)));
+  } catch (error) {
+    final failure = asApiException(error);
+    if (failure.isForbidden || failure.isNotFound) return const {};
+    rethrow;
+  }
 });
 
 Future<List<Map<String, dynamic>>> _optional(Future<List<Map<String, dynamic>>> Function() fetch) async {
@@ -169,6 +181,58 @@ class ChildLearningView extends ConsumerWidget {
   }
 }
 
+/// The school bus, for a child on the bus list. Nothing otherwise.
+class _SchoolBus extends ConsumerWidget {
+  const _SchoolBus({required this.childId});
+
+  final int childId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ride = ref.watch(childTransportProvider(childId)).valueOrNull ?? const {};
+    if (ride['rides'] != true) return const SizedBox.shrink();
+    final bus = mapOf(ride['bus']);
+    final running = bus['in_service'] != false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeader('School bus'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
+          child: OutlinedCard(
+            statusColor: bus.isEmpty ? null : (running ? AppColors.present : AppColors.absent),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: bus.isEmpty
+                  ? [const Text("On the bus list. The school hasn't assigned a bus yet.", style: AppText.bodyMd)]
+                  : [
+                      Row(
+                        children: [
+                          Expanded(child: Text([stringOf(bus['bus_number']), stringOf(bus['route_name'])].where((s) => s.isNotEmpty).join(' · '), style: AppText.bodyLg)),
+                          StatusChip(running ? 'Running' : 'Off the road', color: running ? AppColors.present : AppColors.absent),
+                        ],
+                      ),
+                      if (stringOf(ride['pickup_point']).isNotEmpty)
+                        Text('Pickup: ${stringOf(ride['pickup_point'])}', style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text('Driver: ${stringOf(bus['driver_name'])}', style: AppText.bodyMd),
+                      if (stringOf(bus['driver_phone']).isNotEmpty)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
+                          onPressed: () => launchUrl(Uri(scheme: 'tel', path: stringOf(bus['driver_phone']))),
+                          icon: const Icon(Icons.call_outlined, size: 18),
+                          label: Text('Call ${stringOf(bus['driver_phone'])}'),
+                        ),
+                    ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Released CBT scores. Nothing at all until the school releases a paper.
 class _CbtResults extends ConsumerWidget {
   const _CbtResults({required this.childId});
@@ -240,6 +304,7 @@ class ChildMoreView extends ConsumerWidget {
       },
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: [
+        _SchoolBus(childId: childId),
         const SectionHeader('Library books'),
         // Its own scrolling list, so it gets a bounded box inside this one.
         SizedBox(height: 280, child: LibraryBooksView(studentId: childId)),
