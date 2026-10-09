@@ -72,6 +72,33 @@ class PartnerPortalTest extends TestCase
         $this->signIn($password)->assertOk()->assertJsonPath('user.role', 'partner');
     }
 
+    public function test_approving_a_partner_emails_a_setup_link_never_the_password(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        [, $password] = $this->approvedPartner();
+
+        $this->assertNotEmpty($password);
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\CredentialLinkMail::class, function ($mail) use ($password) {
+            return $mail->hasTo('ada@p.test')
+                && str_contains($mail->body, '/reset-password?')
+                && ! str_contains($mail->body, $password);
+        });
+    }
+
+    public function test_the_operator_is_told_when_the_email_could_not_be_sent(): void
+    {
+        \Illuminate\Support\Facades\Mail::shouldReceive('to')->andThrow(new \RuntimeException('smtp down'));
+
+        $res = $this->actingAs($this->operator, 'sanctum')
+            ->postJson('/api/v1/platform/partners', ['name' => 'Ada Partner', 'email' => 'ada@p.test'])
+            ->assertCreated();
+
+        $this->assertFalse($res->json('login.email_sent'));
+        $this->assertNotEmpty($res->json('login.temporary_password'));
+        $this->assertNotNull(Partner::where('email', 'ada@p.test')->value('user_id'));
+    }
+
     public function test_a_partner_signs_in_on_the_platform_host_but_not_on_a_schools(): void
     {
         [, $password] = $this->approvedPartner();

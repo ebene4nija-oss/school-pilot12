@@ -10,6 +10,8 @@ use App\Models\PartnerCommission;
 use App\Models\PartnerPayout;
 use App\Models\School;
 use App\Models\User;
+use App\Services\NotificationService;
+use App\Services\PasswordResetService;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +137,10 @@ class PlatformPartnerController extends Controller
      * or null when the partner is not approved or already has a login. The
      * partner must change the password on first sign-in.
      *
-     * @return array{email: string, temporary_password: string}|null
+     * The partner is also emailed a link to set their own password; `email_sent`
+     * tells the operator whether it went out or the credentials need passing on.
+     *
+     * @return array{email: string, temporary_password: string, email_sent: bool}|null
      */
     private function provisionLogin(Partner $partner): ?array
     {
@@ -159,7 +164,49 @@ class PlatformPartnerController extends Controller
 
         $partner->update(['user_id' => $user->id]);
 
-        return ['email' => $user->email, 'temporary_password' => $password];
+        return [
+            'email' => $user->email,
+            'temporary_password' => $password,
+            'email_sent' => $this->sendWelcome($user, $partner),
+        ];
+    }
+
+    /**
+     * Welcome email with a set-your-password link, pointed at the platform's own
+     * host (a partner belongs to no school). The password itself is never
+     * emailed. Mail may not be configured, and an approved partner must not be
+     * rolled back because it was not, so failure is reported to the operator
+     * (`email_sent: false`) instead of thrown.
+     */
+    private function sendWelcome(User $user, Partner $partner): bool
+    {
+        try {
+            $resets = app(PasswordResetService::class);
+            $platform = School::query()->where('is_platform', true)->first();
+            $link = $resets->linkFor($user, $resets->issueToken($user), $platform);
+            $minutes = $resets->expiryMinutes();
+
+            $result = app(NotificationService::class)->email(
+                $user,
+                "Hello {$partner->name},\n\n"
+                . "You have been approved as a SchoolPilot partner. You earn commission on every term bill paid by a school you introduce, for as long as the school stays.\n\n"
+                . "Set your password here:\n\n{$link}\n\n"
+                . "Sign in afterwards with this email address: {$user->email}\n\n"
+                . "Your referral code is {$partner->code}. Your referral link and earnings are on your partner page once you sign in.\n\n"
+                . "The link expires in {$minutes} minutes. If it expires, use \"Forgot password\" on the sign-in screen to get a new one.",
+                [
+                    'subject' => 'Welcome to the SchoolPilot partner programme',
+                    'category' => 'account_setup',
+                    'log_body' => 'Partner welcome email sent. The link itself is not stored.',
+                ],
+            );
+
+            return ($result['status'] ?? null) === 'sent';
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 
     /** A partner's schools, commissions and payouts. */

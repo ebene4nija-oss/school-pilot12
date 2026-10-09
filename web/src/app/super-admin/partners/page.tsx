@@ -39,6 +39,7 @@ interface SchoolOption {
 interface Login {
   email: string;
   temporary_password: string;
+  email_sent: boolean;
 }
 
 const TONE = { pending: 'amber', active: 'green', suspended: 'red' } as const;
@@ -169,14 +170,26 @@ export default function PartnersPage() {
       )}
       {login && (
         <div role="status" className="mb-6 rounded-lg border border-accent/40 bg-caution-soft px-4 py-3 text-sm text-ink">
-          <p className="font-semibold">Sign-in for {login.name} — shown once.</p>
-          <p className="mt-1">
-            Email <span className="font-mono">{login.login.email}</span> · temporary password{' '}
-            <span className="font-mono">{login.login.temporary_password}</span>
-          </p>
-          <p className="mt-1 text-ink-muted">They sign in at the same address as the operator console and must change the password on first sign-in.</p>
+          {login.login.email_sent ? (
+            <>
+              <p className="font-semibold">{login.name} has been emailed a link to set their password.</p>
+              <p className="mt-1 text-ink-muted">
+                Sent to <span className="font-mono">{login.login.email}</span>. The link expires in an hour; they can use “Forgot password” for a new one. Backup password, shown once:{' '}
+                <span className="font-mono">{login.login.temporary_password}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">The email to {login.name} could not be sent. Pass these on yourself — shown once.</p>
+              <p className="mt-1">
+                Email <span className="font-mono">{login.login.email}</span> · temporary password{' '}
+                <span className="font-mono">{login.login.temporary_password}</span>
+              </p>
+              <p className="mt-1 text-ink-muted">They sign in at the same address as the operator console and must change the password on first sign-in.</p>
+            </>
+          )}
           <button type="button" onClick={() => setLogin(null)} className="mt-2 text-xs underline">
-            I have passed it on
+            Dismiss
           </button>
         </div>
       )}
