@@ -220,14 +220,16 @@ ThemeData buildAppTheme() {
     // Depth is a 1px outline over a tonal ground. There are no shadows in this
     // system, so every surface that defaults to one is flattened here rather
     // than at each call site.
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       foregroundColor: AppColors.onSurface,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: AppText.headlineSm,
+      // A theme title style replaces the default outright, colour included;
+      // left colourless, Flutter draws it white on this light bar.
+      titleTextStyle: AppText.headlineSm.copyWith(color: AppColors.onSurface),
     ),
     cardTheme: CardThemeData(
       color: AppColors.surfaceContainerLowest,
@@ -359,13 +361,15 @@ ThemeData buildAppTheme() {
       backgroundColor: AppColors.surfaceContainer,
       side: BorderSide.none,
       shape: const StadiumBorder(),
-      labelStyle: AppText.labelSm,
+      labelStyle: AppText.labelSm.copyWith(color: AppColors.onSurface),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     ),
-    listTileTheme: const ListTileThemeData(
+    // Coloured here for the same reason as the app bar title: a ListTile
+    // uses these as-is, and a colourless title rendered white.
+    listTileTheme: ListTileThemeData(
       minVerticalPadding: 12,
-      titleTextStyle: AppText.bodyLg,
-      subtitleTextStyle: AppText.bodyMd,
+      titleTextStyle: AppText.bodyLg.copyWith(color: AppColors.onSurface),
+      subtitleTextStyle: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
     ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -383,6 +387,6 @@ ThemeData buildAppTheme() {
       bodyMedium: AppText.bodyMd,
       labelLarge: AppText.labelLg,
       labelSmall: AppText.labelSm,
-    ),
+    ).apply(bodyColor: AppColors.onSurface, displayColor: AppColors.onSurface),
   );
 }
