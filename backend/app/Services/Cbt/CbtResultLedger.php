@@ -24,7 +24,16 @@ class CbtResultLedger
         $exam = CbtExam::withoutGlobalScopes()->find($attempt->exam_id);
 
         return DB::transaction(function () use ($attempt, $reason, $by, $regradeJobId, $extraRules, $exam) {
-            $next = (int) CbtResultRevision::withoutGlobalScopes()->where('attempt_id', $attempt->id)->lockForUpdate()->max('revision') + 1;
+            /*
+             * Lock the attempt, then read the highest revision. Postgres
+             * refuses FOR UPDATE on an aggregate ("max(...) ... for update"),
+             * which made every submit on production a 500 while SQLite, which
+             * ignores the lock, passed every test. Locking the attempt row
+             * also serialises the first revision, where there is no revision
+             * row yet to lock.
+             */
+            CbtAttempt::withoutGlobalScopes()->whereKey($attempt->id)->lockForUpdate()->first();
+            $next = (int) CbtResultRevision::withoutGlobalScopes()->where('attempt_id', $attempt->id)->max('revision') + 1;
 
             return CbtResultRevision::withoutGlobalScopes()->create([
                 'school_id' => $attempt->school_id,
