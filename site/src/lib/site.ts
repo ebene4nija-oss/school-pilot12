@@ -80,6 +80,7 @@ export const nav = [
   { href: "/solutions/school-owners/", label: "For school leaders" },
   { href: "/pricing/", label: "Pricing" },
   { href: "/migrate/", label: "Switching" },
+  { href: "/partners/", label: "Partners" },
 ];
 
 /** Blog and Compare join the footer once the console has content for them. */
