@@ -72,6 +72,13 @@ class MoreScreen extends ConsumerWidget {
           ),
           if (role.isAdmin)
             _Tile(
+              icon: Icons.today_outlined,
+              label: 'Today',
+              detail: 'Registers, absences and staff clock-ins',
+              onTap: () => context.push('/school-today'),
+            ),
+          if (role.isAdmin)
+            _Tile(
               icon: Icons.task_alt,
               label: 'Approvals',
               detail: 'Leave, lesson notes, CBT, admissions, broadsheets',

@@ -18,6 +18,8 @@ class Api {
   // Analytics dashboards
   static const analyticsPrincipal = '$version/analytics/principal';
   static const approvals = '$version/approvals';
+  static const attendanceToday = '$version/attendance/today';
+  static String studentQuickView(int id) => '$version/student-directory/$id/quick-view';
   // Decisions the approvals inbox makes, each through its own endpoint.
   static String learningMaterialReview(int id) =>
       '$version/learning-materials/$id/review';

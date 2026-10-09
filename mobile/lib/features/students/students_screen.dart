@@ -9,6 +9,8 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'enrol_student_screen.dart';
+import 'student_profile_sheet.dart';
 
 final rosterProvider =
     FutureProvider.autoDispose<Cached<List<Map<String, dynamic>>>>((ref) async {
@@ -45,6 +47,22 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Students')),
+      // Front-desk enrolment; admins only (the route is admin-only too).
+      floatingActionButton: ref.watch(currentRoleProvider).isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final message = await Navigator.of(context).push<String>(
+                  MaterialPageRoute(builder: (_) => const EnrolStudentScreen()),
+                );
+                ref.invalidate(rosterProvider);
+                if (message != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                }
+              },
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Enrol'),
+            )
+          : null,
       body: CachedView<List<Map<String, dynamic>>>(
         value: roster,
         onRetry: () => ref.invalidate(rosterProvider),
@@ -213,7 +231,8 @@ class _StudentCard extends StatelessWidget {
       statusColor: owing > 0 ? AppColors.overdue : AppColors.paid,
       onTap: () => showModalBottomSheet<void>(
         context: context,
-        builder: (_) => _StudentSheet(student: student),
+        isScrollControlled: true,
+        builder: (_) => StudentProfileSheet(student: student),
       ),
       child: Row(
         children: [
@@ -241,84 +260,4 @@ class _StudentCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StudentSheet extends StatelessWidget {
-  const _StudentSheet({required this.student});
-
-  final Map<String, dynamic> student;
-
-  @override
-  Widget build(BuildContext context) {
-    final name = stringOf(
-      student['name'] ?? student['full_name'] ?? nameOf(student['user']),
-      'Student',
-    );
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                InitialsAvatar(name, size: 56),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: AppText.headlineSm),
-                      Text(
-                        stringOf(
-                          nameOf(student['class']) ?? student['class_name'],
-                        ),
-                        style: AppText.bodyMd
-                            .copyWith(color: AppColors.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _detail('Admission number',
-                stringOf(student['admission_number'] ?? student['adm_no'], '—')),
-            _detail('Gender', stringOf(student['gender'], '—')),
-            _detail(
-              'Date of birth',
-              Dates.full(Dates.tryParse(student['date_of_birth'])),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Health data is deliberately not shown here. It is a separate,
-            // audited endpoint restricted to admins and guardians, and it is
-            // never cached on the device (NDPA, doc §12).
-            Text(
-              'Health records are held separately and are not shown in the app.',
-              style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _detail(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 150,
-              child: Text(
-                label,
-                style: AppText.labelSm
-                    .copyWith(color: AppColors.onSurfaceVariant),
-              ),
-            ),
-            Expanded(child: Text(value, style: AppText.bodyMd)),
-          ],
-        ),
-      );
 }

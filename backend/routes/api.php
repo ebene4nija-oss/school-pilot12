@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\AdmissionController;
 use App\Http\Controllers\Api\V1\AiStudioController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\ApprovalsController;
+use App\Http\Controllers\Api\V1\AttendanceTodayController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\CbtController;
@@ -236,6 +237,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/attendance/bulk', [AttendanceController::class, 'markBulkAttendance'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/attendance/register', [AttendanceController::class, 'classRegister'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/attendance/corrections', [AttendanceController::class, 'corrections'])->middleware('role:super_admin,school_admin,teacher');
+        // The whole school today: registers in, who is absent, staff clocked in.
+        Route::get('/attendance/today', [AttendanceTodayController::class, 'show'])->middleware('role:super_admin,school_admin');
         Route::post('/attendance/staff-gps', [AttendanceController::class, 'staffGpsClockIn'])->middleware('role:super_admin,school_admin,teacher');
 
         // Timetable Solver Engine & Management

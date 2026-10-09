@@ -6,6 +6,7 @@ import '../core/auth/auth_controller.dart';
 import '../core/providers.dart';
 import '../features/academics/academics_screen.dart';
 import '../features/attendance/register_tab.dart';
+import '../features/attendance/school_today_screen.dart';
 import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/cbt/teacher/cbt_exams_screen.dart';
@@ -126,6 +127,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/set-homework', builder: (_, __) => const TeacherHomeworkScreen()),
       GoRoute(path: '/send-notification', builder: (_, __) => const SendNotificationScreen()),
       GoRoute(path: '/approvals', builder: (_, __) => const ApprovalsScreen()),
+      GoRoute(path: '/school-today', builder: (_, __) => const SchoolTodayScreen()),
       GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
       GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),
 
