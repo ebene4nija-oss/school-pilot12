@@ -71,6 +71,31 @@ class MessagingTest extends TestCase
         $this->assertSame($this->parent->id, $thread->parent_id);
     }
 
+    /**
+     * The other side is told a message arrived, by name only: the text of a
+     * message about a child never goes onto a lock screen.
+     */
+    public function test_the_recipient_is_notified_without_the_message_text()
+    {
+        $this->actingAs($this->parent, 'sanctum')
+            ->postJson($this->url('/messages/send'), ['recipient_id' => $this->teacher->id, 'body' => 'My son has a fever today.'])
+            ->assertStatus(201);
+
+        $note = \Illuminate\Support\Facades\DB::table('notification_logs')
+            ->where('user_id', $this->teacher->id)->where('category', 'message')->where('channel', 'in_app')->first();
+
+        $this->assertNotNull($note);
+        $this->assertStringContainsString('Parent One', $note->body);
+        $this->assertStringNotContainsString('fever', $note->body);
+
+        // The reply goes the other way.
+        $thread = MessageThread::first();
+        $this->actingAs($this->teacher, 'sanctum')
+            ->postJson($this->url('/messages/send'), ['thread_id' => $thread->id, 'body' => 'Thank you, noted.'])
+            ->assertStatus(201);
+        $this->assertTrue(\Illuminate\Support\Facades\DB::table('notification_logs')->where('user_id', $this->parent->id)->where('category', 'message')->exists());
+    }
+
     public function test_teacher_initiated_thread_stores_roles_the_right_way_round()
     {
         $this->actingAs($this->teacher, 'sanctum')

@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\MessageThread;
 use App\Models\Message;
 use App\Models\User;
+use App\Support\InAppNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use ZipArchive;
@@ -176,7 +177,7 @@ class AddedFeaturesController extends Controller
                 $query->where('teacher_id', $userId)
                       ->orWhere('parent_id', $userId);
             })
-            ->with(['teacher', 'parent', 'student', 'messages' => function ($q) {
+            ->with(['teacher', 'parent', 'student.user:id,name', 'messages' => function ($q) {
                 $q->latest()->limit(1);
             }])
             ->latest('last_message_at')
@@ -328,6 +329,14 @@ class AddedFeaturesController extends Controller
 
         $thread->update(['last_message_at' => now()]);
 
+        /*
+         * Tell the other side. Who wrote, never what: a push lands on a lock
+         * screen, and a message about a child is not for whoever picks up
+         * the phone.
+         */
+        $recipientId = (int) $thread->teacher_id === (int) $senderId ? (int) $thread->parent_id : (int) $thread->teacher_id;
+        InAppNotifier::send((int) $schoolId, [$recipientId], 'message', 'New message', "{$sender->name} sent you a message in SchoolPilot.", true);
+
         return response()->json([
             'message' => 'Message sent successfully',
             'data'    => $message->load('sender')
@@ -386,7 +395,7 @@ class AddedFeaturesController extends Controller
 
         return response()->json([
             // Participants and subject, without the messages hanging off them.
-            'thread' => $thread->load(['teacher:id,name', 'parent:id,name', 'student']),
+            'thread' => $thread->load(['teacher:id,name', 'parent:id,name', 'student.user:id,name']),
             /*
              * Top level, and oldest-first.
              *

@@ -94,6 +94,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/parent/results', icon: '📄', label: 'Results', roles: ['parent'] },
       { href: '/parent/fees', icon: '💳', label: 'Fees', roles: ['parent'] },
       { href: '/parent/messages', icon: '💬', label: 'Messages', roles: ['parent'] },
+      { href: '/messages', icon: '💬', label: 'Messages', roles: ['school_admin', 'teacher'] },
       { href: '/inbox', icon: '🔔', label: 'Notifications', roles: ['parent'] },
       { href: '/account', icon: '👤', label: 'My account', roles: ['parent'] },
       { href: '/setup-wizard', icon: '⚙️', label: 'Setup checklist', roles: ['school_admin'] },

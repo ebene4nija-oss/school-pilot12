@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -177,12 +179,42 @@ class ThreadScreen extends ConsumerStatefulWidget {
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   final _input = TextEditingController();
+  final _scroll = ScrollController();
   bool _sending = false;
+  Timer? _poll;
+  int _shown = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    // While the conversation is open and the app is in front, check for
+    // replies every few seconds, so it reads like a chat. The previous
+    // messages stay on screen during the refresh.
+    _poll = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (!mounted || _sending) return;
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+      ref.invalidate(threadProvider(widget.threadId));
+    });
+  }
 
   @override
   void dispose() {
+    _poll?.cancel();
+    _scroll.dispose();
     _input.dispose();
     super.dispose();
+  }
+
+  /// Jump to the newest message when the count changes, not on every refresh.
+  void _followNewest(int count) {
+    if (count == _shown) return;
+    _shown = count;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      // Opening or receiving marks messages read: refresh the list's badges.
+      ref.invalidate(threadsProvider);
+    });
   }
 
   Future<void> _send() async {
@@ -233,7 +265,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   );
                 }
 
+                _followNewest(messages.length);
                 return ListView.builder(
+                  controller: _scroll,
                   padding: const EdgeInsets.all(AppSpacing.screenMargin),
                   itemCount: messages.length,
                   itemBuilder: (context, i) {
@@ -272,7 +306,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              Dates.time(Dates.tryParse(message['created_at'])),
+                              '${Dates.time(Dates.tryParse(message['created_at']))}'
+                              '${mine ? (message['read_at'] != null ? ' · Seen' : ' · Sent') : ''}',
                               style: AppText.labelSm.copyWith(
                                 color: mine
                                     ? AppColors.onPrimaryContainer
