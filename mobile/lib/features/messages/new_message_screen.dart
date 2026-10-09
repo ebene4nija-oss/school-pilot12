@@ -10,6 +10,7 @@ import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import '../dashboard/dashboard_providers.dart';
 import 'messages_screen.dart';
 
 /// A teacher writing to a family: pick the student, then the parent.
@@ -84,6 +85,7 @@ class _NewMessageScreenState extends ConsumerState<NewMessageScreen> {
     final threadId = await Navigator.of(context).push<int>(
       MaterialPageRoute(
         builder: (_) => _ComposeScreen(
+          recipientsUrl: Api.studentMessageRecipients(intOf(student['id'])),
           studentId: intOf(student['id']),
           studentName: stringOf(student['name'], 'Student'),
         ),
@@ -152,18 +154,30 @@ class _NewMessageScreenState extends ConsumerState<NewMessageScreen> {
   }
 }
 
+/// Who can be written to about a child: the child's parents for staff
+/// (`/students/{id}/message-recipients`), the child's teachers for a parent
+/// (`/parent/children/{id}/contacts`). Rows carry `user_id` and `name`.
 final _recipientsProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, int>((ref, studentId) async {
+    .family<List<Map<String, dynamic>>, String>((ref, url) async {
   final api = ref.watch(apiClientProvider);
-  final data = await api.get<dynamic>(Api.studentMessageRecipients(studentId));
-  return listOf(data, ['recipients']);
+  final data = await api.get<dynamic>(url);
+  return listOf(data, ['recipients', 'contacts']);
 });
 
 class _ComposeScreen extends ConsumerStatefulWidget {
-  const _ComposeScreen({required this.studentId, required this.studentName});
+  const _ComposeScreen({
+    required this.studentId,
+    required this.studentName,
+    required this.recipientsUrl,
+    this.toParents = true,
+  });
 
   final int studentId;
   final String studentName;
+  final String recipientsUrl;
+
+  /// Staff writing to a family, or a parent writing to the school.
+  final bool toParents;
 
   @override
   ConsumerState<_ComposeScreen> createState() => _ComposeScreenState();
@@ -214,7 +228,7 @@ class _ComposeScreenState extends ConsumerState<_ComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final recipients = ref.watch(_recipientsProvider(widget.studentId));
+    final recipients = ref.watch(_recipientsProvider(widget.recipientsUrl));
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.studentName)),
@@ -222,15 +236,17 @@ class _ComposeScreenState extends ConsumerState<_ComposeScreen> {
         loading: () => const LoadingState(rows: 3),
         error: (error, _) => ErrorState(
           error: asApiException(error),
-          onRetry: () => ref.invalidate(_recipientsProvider(widget.studentId)),
+          onRetry: () => ref.invalidate(_recipientsProvider(widget.recipientsUrl)),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.family_restroom,
-              title: 'No parent on the app yet',
-              message: "This student's parents have no SchoolPilot account to "
-                  'receive messages. The school office can link them.',
+              title: widget.toParents ? 'No parent on the app yet' : 'No teachers listed yet',
+              message: widget.toParents
+                  ? "This student's parents have no SchoolPilot account to "
+                      'receive messages. The school office can link them.'
+                  : "Your child's class has no teachers assigned yet. Contact the school office.",
             );
           }
 
@@ -256,9 +272,9 @@ class _ComposeScreenState extends ConsumerState<_ComposeScreen> {
                       ? null
                       : () => setState(() => _recipientId = intOf(r['user_id'])),
                   title: Text(stringOf(r['name'], 'Parent')),
-                  subtitle: stringOf(r['relationship']).isEmpty
+                  subtitle: stringOf(r['relationship'] ?? r['role']).isEmpty
                       ? null
-                      : Text(stringOf(r['relationship'])),
+                      : Text(stringOf(r['relationship'] ?? r['role'])),
                 ),
               const SizedBox(height: AppSpacing.md),
               TextField(
@@ -292,6 +308,63 @@ class _ComposeScreenState extends ConsumerState<_ComposeScreen> {
                     : const Icon(Icons.send),
                 label: const Text('Send'),
               ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+/// A parent starting a conversation with one of their child's teachers.
+/// Choose the child (when there is more than one), then the teacher.
+class ParentNewMessageScreen extends ConsumerWidget {
+  const ParentNewMessageScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final children = ref.watch(myChildrenProvider);
+
+    Future<void> open(Map<String, dynamic> child) async {
+      final threadId = await Navigator.of(context).push<int>(
+        MaterialPageRoute(
+          builder: (_) => _ComposeScreen(
+            recipientsUrl: Api.parentChildContacts(intOf(child['id'])),
+            studentId: intOf(child['id']),
+            studentName: stringOf(child['name'], 'my child'),
+            toParents: false,
+          ),
+        ),
+      );
+      if (threadId != null && context.mounted) Navigator.pop(context, threadId);
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('New message')),
+      body: children.when(
+        loading: () => const LoadingState(rows: 2),
+        error: (error, _) => ErrorState(error: asApiException(error), onRetry: () => ref.invalidate(myChildrenProvider)),
+        data: (list) {
+          if (list.isEmpty) {
+            return const EmptyState(
+              icon: Icons.child_care,
+              title: 'No children linked',
+              message: 'Ask the school to link your child to your account.',
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenMargin),
+            children: [
+              Text('Which child is this about?', style: AppText.labelLg),
+              for (final child in list)
+                ListTile(
+                  leading: InitialsAvatar(stringOf(child['name'], '?')),
+                  title: Text(stringOf(child['name'], 'Child')),
+                  subtitle: Text(stringOf(nameOf(child['class']) ?? child['class_name'])),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => open(child),
+                ),
             ],
           );
         },

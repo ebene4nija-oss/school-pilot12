@@ -12,6 +12,7 @@ import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
+import '../learn/learning_widgets.dart';
 import 'fees_overview.dart';
 import 'gateway_checkout.dart';
 
@@ -48,14 +49,15 @@ final statementProvider =
   final api = ref.watch(apiClientProvider);
   final cache = ref.watch(cacheStoreProvider);
   final role = ref.watch(currentRoleProvider);
-  final user = ref.watch(currentUserProvider);
 
-  // A guardian reads the selected child's statement; a student reads their own.
+  // A guardian reads the selected child's statement; a student reads their
+  // own. The student's id is their *student* record, from /me/dashboard — the
+  // login id was sent here before, and no student's fees ever loaded.
   final studentId = role == UserRole.parent
       ? ref.watch(selectedChildIdProvider)
-      : user?.id;
+      : intOf(fieldOf(mapOf((await ref.watch(myDayProvider.future)).data)['student'], 'id'));
 
-  if (studentId == null) {
+  if (studentId == null || studentId == 0) {
     throw StateError('No student selected');
   }
 

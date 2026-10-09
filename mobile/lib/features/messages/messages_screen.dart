@@ -41,11 +41,11 @@ class MessagesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Messages')),
-      // Staff start conversations with families; a parent replies, or writes
-      // from a teacher's thread.
-      floatingActionButton: role == UserRole.teacher || role.isAdmin
+      // Staff write to a child's parents; a parent writes to their child's
+      // teachers. Both start from the child.
+      floatingActionButton: role == UserRole.teacher || role.isAdmin || role == UserRole.parent
           ? FloatingActionButton.extended(
-              onPressed: () => _compose(context),
+              onPressed: () => _compose(context, parent: role == UserRole.parent),
               icon: const Icon(Icons.edit_outlined),
               label: const Text('New message'),
             )
@@ -87,10 +87,12 @@ class MessagesScreen extends ConsumerWidget {
   }
 
   /// Opens the new conversation once it is sent, so the teacher sees it land.
-  Future<void> _compose(BuildContext context) async {
+  Future<void> _compose(BuildContext context, {bool parent = false}) async {
     final navigator = Navigator.of(context);
     final threadId = await navigator.push<int>(
-      MaterialPageRoute(builder: (_) => const NewMessageScreen()),
+      MaterialPageRoute(
+        builder: (_) => parent ? const ParentNewMessageScreen() : const NewMessageScreen(),
+      ),
     );
 
     if (threadId == null || threadId == 0) return;

@@ -18,6 +18,7 @@ class Api {
   // Analytics dashboards
   static const analyticsPrincipal = '$version/analytics/principal';
   static const approvals = '$version/approvals';
+  static const reportEntries = '$version/report-entries';
   static const attendanceToday = '$version/attendance/today';
   static String studentQuickView(int id) => '$version/student-directory/$id/quick-view';
   // Decisions the approvals inbox makes, each through its own endpoint.
@@ -186,6 +187,9 @@ class Api {
   // `parentChildren` is the only way to learn a studentId: /students is
   // staff-only and every other parent route takes an id it does not hand out.
   static const parentChildren = '$version/parent/children';
+  // A child's teachers, for a parent starting a conversation.
+  static String parentChildContacts(int studentId) =>
+      '$version/parent/children/$studentId/contacts';
   static String parentFeed(int studentId) => '$version/parent/feed/$studentId';
   static const pickupAuthorization = '$version/parent/pickup-authorization';
   static const pickupAuthorizations = '$version/parent/pickup-authorizations';

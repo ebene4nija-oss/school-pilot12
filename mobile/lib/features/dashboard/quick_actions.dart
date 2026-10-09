@@ -19,6 +19,7 @@ class QuickAction {
 List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
       UserRole.student => const [
           QuickAction(Icons.quiz_outlined, 'My tests', '/my-tests'),
+          QuickAction(Icons.payments_outlined, 'My fees', '/fees'),
           QuickAction(Icons.auto_awesome_outlined, 'AI tutor', '/learn/tutor'),
           QuickAction(Icons.menu_book_outlined, 'Library', '/library'),
           QuickAction(Icons.badge_outlined, 'ID card', '/id-card'),
@@ -26,6 +27,8 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
         ],
       UserRole.teacher => const [
           QuickAction(Icons.assignment_outlined, 'Homework', '/set-homework'),
+          QuickAction(Icons.people_outline, 'Students', '/students'),
+          QuickAction(Icons.star_rate_outlined, 'Ratings', '/report-entries'),
           QuickAction(Icons.quiz_outlined, 'CBT exams', '/cbt-exams'),
           QuickAction(Icons.description_outlined, 'Lesson notes', '/lesson-notes'),
           QuickAction(Icons.auto_awesome_outlined, 'AI Studio', '/ai-studio'),

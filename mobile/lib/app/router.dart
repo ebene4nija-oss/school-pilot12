@@ -21,6 +21,7 @@ import '../features/finance/bursary_tools.dart';
 import '../features/finance/fees_screen.dart';
 import '../features/gradebook/comment_review_screen.dart';
 import '../features/gradebook/gradebook_tab.dart';
+import '../features/gradebook/report_entries_screen.dart';
 import '../features/homework/teacher_homework_screen.dart';
 import '../features/hostel/hostel_screen.dart';
 import '../features/idcard/id_card_screen.dart';
@@ -131,6 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/school-today', builder: (_, __) => const SchoolTodayScreen()),
       GoRoute(path: '/payments-ledger', builder: (_, __) => const PaymentsLedgerScreen()),
       GoRoute(path: '/expenses', builder: (_, __) => const ExpensesScreen()),
+      GoRoute(path: '/report-entries', builder: (_, __) => const ReportEntriesScreen()),
       GoRoute(path: '/lesson-notes', builder: (_, __) => const LessonNotesScreen()),
       GoRoute(path: '/result-pins', builder: (_, __) => const PinInventoryScreen()),
 
