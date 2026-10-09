@@ -197,7 +197,7 @@ def create_feature_guide_pdf(filename):
     meta_text = Paragraph(
         "<font color='#002447'><b>PRODUCT FEATURE & ARCHITECTURE SPECIFICATION</b></font><br/>"
         "<font color='#835500' size=8>Cloud-Based K-12 School Management System</font><br/>"
-        "<font color='#666666' size=7.5>Version 2.0 • October 2026 • Software-Only • Zero Hardware Required</font>",
+        "<font color='#666666' size=7.5>Version 2.1 • October 2026 • Software-Only • Zero Hardware Required</font>",
         ParagraphStyle('MetaText', parent=styles['Normal'], alignment=TA_RIGHT)
     )
     
@@ -332,6 +332,7 @@ def create_feature_guide_pdf(filename):
     features_s5 = [
         ("Integrated Payment Gateways", "Native integration with Paystack and Flutterwave enabling tuition payment via Debit Card, Bank Transfer, or USSD with automated instant receipts."),
         ("Parent Financial Ledger & Invoicing", "Real-time itemized breakdown of tuition, uniforms, bus services, and extracurricular fees with partial payment support and clear balance tracking."),
+        ("School Store (Uniforms, Books & Supplies)", "Optional stock of what the school hands to students, by size and edition; new-student packs issued at registration; charged items added to that term's invoice; parents confirm receipt in the app, and anything missing comes back to the school."),
         ("WhatsApp & SMS Communication Hub", "Automated payment reminders, attendance alerts, exam results, and school announcements sent directly to parents' mobile phones.")
     ]
 
@@ -366,7 +367,7 @@ def create_feature_guide_pdf(filename):
         [
             Paragraph("Bursar", table_cell_bold),
             Paragraph("Finance office", table_cell_style),
-            Paragraph("Term invoices, collecting payments with receipts, scholarships, hostel charges, accounting", table_cell_style)
+            Paragraph("Term invoices, collecting payments with receipts, scholarships, hostel charges, school store, accounting", table_cell_style)
         ],
         [
             Paragraph("Teacher", table_cell_bold),
@@ -381,7 +382,7 @@ def create_feature_guide_pdf(filename):
         [
             Paragraph("Parent", table_cell_bold),
             Paragraph("Guardians & Sponsors", table_cell_style),
-            Paragraph("Fees and payments, attendance, homework, report cards, hostel, pickup authorisation and consent", table_cell_style)
+            Paragraph("Fees and payments, attendance, homework, report cards, hostel, confirming items from the school store, pickup authorisation and consent", table_cell_style)
         ]
     ]
 
