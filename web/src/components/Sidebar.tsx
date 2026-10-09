@@ -54,6 +54,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin', icon: '🛡️', label: 'Schools', roles: ['super_admin'], className: 'font-semibold' },
       { href: '/super-admin/leads', icon: '📞', label: 'Website leads', roles: ['super_admin'] },
       { href: '/super-admin/website', icon: '🌐', label: 'Website', roles: ['super_admin'] },
+      { href: '/super-admin/blog', icon: '✍️', label: 'Blog', roles: ['super_admin'] },
+      { href: '/super-admin/compare', icon: '⚖️', label: 'Compare', roles: ['super_admin'] },
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/billing', icon: '💳', label: 'Billing', roles: ['super_admin'] },
       { href: '/super-admin/partners', icon: '🤝', label: 'Partners', roles: ['super_admin'] },

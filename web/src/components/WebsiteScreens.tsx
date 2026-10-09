@@ -16,7 +16,7 @@ import { Badge, Button, Card, ErrorNote, Loading } from '@/components/Page';
 interface Slot {
   slot: string;
   label: string;
-  frame: 'desktop' | 'phone';
+  frame: 'desktop' | 'phone' | 'social';
   url: string | null;
 }
 
@@ -83,7 +83,8 @@ export default function WebsiteScreens() {
     <Card title="Product screenshots">
       <p className="mb-4 text-sm text-ink-muted">
         Capture these from the Greenfield Academy demo school only — never a real school&apos;s children or records. PNG, JPG or WebP;
-        desktop at least 1000 × 600, phone portrait at least 360 × 640. {filled} of {slots.length} filled.
+        desktop at least 1000 × 600, phone portrait at least 360 × 640. The share preview (shown when a page is shared on WhatsApp, Facebook, X or
+        LinkedIn) must be at least 1200 × 630, with the logo and text kept in the middle. {filled} of {slots.length} filled.
       </p>
       <ErrorNote message={error} />
       {notice && (
@@ -99,7 +100,7 @@ export default function WebsiteScreens() {
             <li key={slot.slot} className="flex flex-col rounded-xl border border-line-soft p-3">
               <div
                 className={`flex items-center justify-center overflow-hidden rounded-lg bg-surface-sunken ${
-                  slot.frame === 'phone' ? 'aspect-[390/844] max-h-56' : 'aspect-[16/10]'
+                  slot.frame === 'phone' ? 'aspect-[390/844] max-h-56' : slot.frame === 'social' ? 'aspect-[1200/630]' : 'aspect-[16/10]'
                 }`}
               >
                 {slot.url ? (
@@ -111,7 +112,7 @@ export default function WebsiteScreens() {
               </div>
               <div className="mt-3 flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-ink">{slot.label}</p>
-                <Badge tone={slot.url ? 'green' : 'slate'}>{slot.frame === 'phone' ? 'Phone' : 'Desktop'}</Badge>
+                <Badge tone={slot.url ? 'green' : 'slate'}>{slot.frame === 'phone' ? 'Phone' : slot.frame === 'social' ? 'Share preview' : 'Desktop'}</Badge>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <label className={`cursor-pointer ${busy === slot.slot ? 'pointer-events-none opacity-60' : ''}`}>

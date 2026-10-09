@@ -14,12 +14,14 @@
     "fetch-config": "node --env-file-if-exists=.env.local scripts/fetch-site-config.mjs"
   },
   "dependencies": {
+    "markdown-it": "^15.0.2",
     "next": "^16.2.12",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

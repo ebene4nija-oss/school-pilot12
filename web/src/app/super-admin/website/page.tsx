@@ -6,7 +6,7 @@ export default function WebsiteSettingsPage() {
     <PlatformSettings
       section="website"
       title="Website"
-      subtitle="What the public site at schoolpilot.org.ng shows: contacts, the WhatsApp number, trust and legal switches, and product screenshots. Changes appear after the next site rebuild."
+      subtitle="What the public site at schoolpilot.org.ng shows: contacts, the WhatsApp number, trust and legal switches, Search Console verification, the default share preview and product screenshots. Changes appear after the next site rebuild."
     >
       <WebsiteScreens />
     </PlatformSettings>

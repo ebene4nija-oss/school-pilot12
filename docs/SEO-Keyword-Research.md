@@ -5,7 +5,7 @@ Researched 2026-10-09 from live Nigerian search results (school management, resu
 ## What the results pages show
 
 - The page-one field is a mix of local vendors (eSchool.ng, AcadaSuite, Nersapp, SchoolHub, MySkool), an international one localised for Nigeria (OpenEduCat), and listicles ("best school management software Nigeria 2026", Nairametrics, headteacher.ng). Listicles take a lot of the commercial queries.
-- Competitors lead with "free". Nersapp advertises a free core and charges roughly ₦230 per active student for result generation. Our ₦300/₦500 per student per term is not the cheapest headline, so the pages win on **breadth in one product** (results + CBT with an offline lab client + LMS + fees + HR), **Nigerian grading specifics** (CA, broadsheet, positions, WAEC/NECO), **free migration in 24 hours**, and **no per-exam CBT fees**, not on price alone.
+- Competitors lead with "free". Nersapp advertises a free core and charges ₦500 per student for result generation (confirmed by the owner 2026-10-09; an earlier search snippet said about ₦230, which was wrong). That matches our ₦500 Result Management plan and is above our ₦300 Subscription, so price is not a weakness. The pages still win mainly on **breadth in one product** (results + CBT with an offline lab client + LMS + fees + HR), **Nigerian grading specifics** (CA, broadsheet, positions, WAEC/NECO), **free migration in 24 hours**, and **no per-exam CBT fees**. Check Nersapp's current terms before any comparison copy goes on the site, and don't name them in public copy until verified.
 - CBT intent is rising: WAEC/NECO CBT compliance for 2026 is in the news, and schools are asking how to run CBT on their own labs. SchoolPilot's offline lab client matches that.
 - "Pricing" queries ("school portal price Nigeria", "school management software cost") have thin answers from competitors, because most hide prices. A page that states Naira prices clearly is a real differentiator and can earn a rich result.
 
@@ -43,5 +43,18 @@ Long-tail phrases to mirror in FAQ answers and headings (these are question-shap
 
 - No `aggregateRating` or review schema: there are no real, consented reviews (Landing PRD §14.4).
 - No competitor-comparison or "best software" pages yet. They are the biggest remaining opportunity, since listicles own those queries, but they need claims about competitors that must be verified first.
-- No Open Graph image: there is no 1200×630 asset in `public/brand/`. Add one and set `openGraph.images` in `src/app/layout.tsx`.
+- Open Graph image: now set from the console (Super Admin > Website > "Default share preview image", at least 1200×630). Until one is uploaded, shared links have no preview.
 - Next steps for ranking: add the site to Google Search Console and Bing Webmaster, submit `/sitemap.xml`, create a Google Business Profile if the office address is public, and get the volumes above before commissioning blog content (suggested first posts: "How to compute CA and exam scores", "Running CBT in a computer lab without internet", "What a school management system costs in Nigeria").
+
+## Search Console: submitting the sitemap
+
+The sitemap is at `https://schoolpilot.org.ng/sitemap.xml` and `robots.txt` points to it. It lists every public page, plus `/blog/`, each post and `/compare/` once they have content, with the real last-modified date for posts and a video entry for posts with a video. Submitting it needs your Google account:
+
+1. Go to search.google.com/search-console and add a **URL-prefix** property for `https://schoolpilot.org.ng/`.
+2. Choose the **HTML tag** method. Copy only the `content="…"` value (not the whole tag).
+3. In Super Admin > Website, paste it into **Google Search Console verification token** and save, then rebuild and deploy the site.
+4. Back in Search Console, click **Verify**.
+5. Open **Sitemaps**, enter `sitemap.xml`, and submit.
+6. Repeat on Bing Webmaster Tools if you want Bing: it can import the property from Search Console, or use the **Bing Webmaster verification token** field.
+
+Submit again after a rebuild that adds posts only if you want it picked up faster; Google re-reads the sitemap on its own.

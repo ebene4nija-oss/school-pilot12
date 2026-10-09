@@ -41,6 +41,12 @@ Operators set the site's contacts, switches and screenshots in the Super Admin c
 | Show backups | /trust omits it (needs the first restore drill) |
 | Legal pages reviewed | Legal pages carry a "draft awaiting legal review" note |
 | Product screenshots (9 slots) | Each slot shows a labelled "Screenshot to capture" frame, never a mock-up |
+| Default share preview (1200 × 630) | Shared links show no preview image. The build turns it into `/og-default.jpg` |
+| Google / Bing verification tokens | No verification tag; verify Search Console by another method |
+| Blog (Super Admin > Blog) | `/blog/` is built but `noindex`, left out of the sitemap and the footer |
+| Compare (Super Admin > Compare) | `/compare/` is built but `noindex`, left out of the sitemap and the footer; it needs a published competitor with a "last checked" date |
+
+Blog posts are Markdown (raw HTML is not rendered). A video is a YouTube or Vimeo link, embedded click-to-load, so the page makes no request to either service until a visitor presses play. Posts with a video and a cover also get a video entry in the sitemap and `VideoObject` schema. Competitor values on `/compare/` are never pre-filled; check each against the vendor's own published terms.
 
 Set `SITE_CONFIG_REQUIRED=1` on the production build so it fails if the API can't be reached, instead of shipping without the console's values. Locally, the build keeps the last config it fetched and the `NEXT_PUBLIC_*` values in `.env.local` act as a fallback.
 

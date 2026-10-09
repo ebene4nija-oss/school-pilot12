@@ -1,4 +1,5 @@
-/** Every indexable page, for the sitemap. Add a page here when you add it. */
+/** Every indexable page, for the sitemap. Add a page here when you add it.
+ *  /blog/ and /compare/ are added by sitemap.ts, and only when they have content. */
 export const routes: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
   { path: "/solutions/school-owners/", priority: 0.9 },

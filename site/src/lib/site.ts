@@ -21,6 +21,9 @@ type Console = Partial<{
   trust_show_ai: boolean;
   trust_show_backups: boolean;
   legal_reviewed: boolean;
+  og_image: string | null;
+  google_site_verification: string | null;
+  bing_site_verification: string | null;
 }>;
 
 const fromConsole = generated as Console;
@@ -52,6 +55,13 @@ export const site = {
   /** Drops the "draft awaiting legal review" note on the legal pages. */
   legalReviewed: fromConsole.legal_reviewed ?? env.NEXT_PUBLIC_LEGAL_REVIEWED === "1",
 
+  /** The default share preview uploaded in the console; unset = none. */
+  ogImage: fromConsole.og_image ?? "",
+
+  /** Search Console and Bing Webmaster ownership tokens, set in the console. */
+  googleVerification: fromConsole.google_site_verification ?? "",
+  bingVerification: fromConsole.bing_site_verification ?? "",
+
   turnstileSiteKey: env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
 
   /** Self-hosted Plausible or Umami, cookieless. Unset = no analytics script. */
@@ -72,6 +82,7 @@ export const nav = [
   { href: "/migrate/", label: "Switching" },
 ];
 
+/** Blog and Compare join the footer once the console has content for them. */
 export const footer = [
   {
     title: "Product",

@@ -1,6 +1,22 @@
 import Link from "next/link";
-import { footer, hasWhatsApp, site } from "@/lib/site";
+import { hasBlog } from "@/lib/blog";
+import { hasComparison } from "@/lib/comparison";
+import { footer as baseFooter, hasWhatsApp, site } from "@/lib/site";
 import { Logo } from "./Logo";
+
+// Blog and Compare appear once the console has content for them.
+const footer = baseFooter.map((group) =>
+  group.title === "Company"
+    ? {
+        ...group,
+        links: [
+          ...(hasBlog ? [{ href: "/blog/", label: "Blog" }] : []),
+          ...(hasComparison ? [{ href: "/compare/", label: "Compare" }] : []),
+          ...group.links,
+        ],
+      }
+    : group,
+);
 
 export function Footer() {
   return (

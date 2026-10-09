@@ -24,7 +24,12 @@ export const metadata: Metadata = {
   },
   description,
   alternates: { canonical: "/", languages: { "en-NG": "/" } },
+  verification: {
+    google: site.googleVerification || undefined,
+    other: site.bingVerification ? { "msvalidate.01": site.bingVerification } : undefined,
+  },
   openGraph: {
+    ...(site.ogImage ? { images: [{ url: site.ogImage, width: 1200, height: 630, alt: "SchoolPilot school management system" }] } : {}),
     type: "website",
     locale: "en_NG",
     siteName: "SchoolPilot",
@@ -32,7 +37,7 @@ export const metadata: Metadata = {
     description,
     url: "/",
   },
-  twitter: { card: "summary_large_image", title: "School Management System for Nigerian Schools | SchoolPilot", description },
+  twitter: { card: "summary_large_image", ...(site.ogImage ? { images: [site.ogImage] } : {}), title: "School Management System for Nigerian Schools | SchoolPilot", description },
   icons: { icon: "/brand/mark.webp" },
 };
 

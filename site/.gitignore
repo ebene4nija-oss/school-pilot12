@@ -9,3 +9,5 @@ public/brand/
 # Pulled from the console by scripts/fetch-site-config.mjs
 src/generated/
 public/screens/
+public/blog/
+public/og-default.jpg

@@ -48,6 +48,8 @@ use App\Http\Controllers\Api\V1\PlatformReportCardDesignController;
 use App\Http\Controllers\Api\V1\PlatformResultPinController;
 use App\Http\Controllers\Api\V1\PlatformSecurityController;
 use App\Http\Controllers\Api\V1\PlatformSettingsController;
+use App\Http\Controllers\Api\V1\PlatformBlogController;
+use App\Http\Controllers\Api\V1\PlatformComparisonController;
 use App\Http\Controllers\Api\V1\PlatformWebsiteController;
 use App\Http\Controllers\Api\V1\PublicMarketingController;
 use App\Http\Controllers\Api\V1\ReportCardDesignRequestController;
@@ -103,6 +105,10 @@ Route::prefix('public')->group(function () {
         ->middleware('throttle:60,1');
     // Read by the site's build: console-managed contacts, switches and screenshots.
     Route::get('/site-config', [PlatformWebsiteController::class, 'siteConfig'])
+        ->middleware('throttle:30,1');
+    Route::get('/blog', [PlatformBlogController::class, 'publicIndex'])
+        ->middleware('throttle:30,1');
+    Route::get('/comparison', [PlatformComparisonController::class, 'publicShow'])
         ->middleware('throttle:30,1');
 });
 
@@ -975,6 +981,17 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/website/screens', [PlatformWebsiteController::class, 'screens']);
             Route::post('/platform/website/screens/{slot}', [PlatformWebsiteController::class, 'upload']);
             Route::delete('/platform/website/screens/{slot}', [PlatformWebsiteController::class, 'destroy']);
+
+            // The marketing site's blog and comparison table.
+            Route::get('/platform/blog', [PlatformBlogController::class, 'index']);
+            Route::post('/platform/blog', [PlatformBlogController::class, 'store']);
+            Route::get('/platform/blog/{id}', [PlatformBlogController::class, 'show'])->whereNumber('id');
+            Route::put('/platform/blog/{id}', [PlatformBlogController::class, 'update'])->whereNumber('id');
+            Route::delete('/platform/blog/{id}', [PlatformBlogController::class, 'destroy'])->whereNumber('id');
+            Route::post('/platform/blog/{id}/cover', [PlatformBlogController::class, 'uploadCover'])->whereNumber('id');
+            Route::delete('/platform/blog/{id}/cover', [PlatformBlogController::class, 'destroyCover'])->whereNumber('id');
+            Route::get('/platform/comparison', [PlatformComparisonController::class, 'show']);
+            Route::put('/platform/comparison', [PlatformComparisonController::class, 'update']);
 
             /*
              * Platform settings and AI configuration (doc §5). Integration keys,

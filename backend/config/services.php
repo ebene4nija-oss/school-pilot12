@@ -271,6 +271,8 @@ return [
             'trust_show_ai' => false,
             'trust_show_backups' => false,
             'legal_reviewed' => false,
+            'google_site_verification' => null,
+            'bing_site_verification' => null,
         ],
     ],
 

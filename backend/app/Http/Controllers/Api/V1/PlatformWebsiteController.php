@@ -38,6 +38,8 @@ class PlatformWebsiteController extends Controller
         'score-entry-phone' => ['label' => 'Teacher score entry, mobile', 'frame' => 'phone'],
         'parent-app-phone' => ['label' => 'Parent app: result and fee balance', 'frame' => 'phone'],
         'student-app-phone' => ['label' => 'Student app: materials and assignments', 'frame' => 'phone'],
+        // The default preview when a page is shared on WhatsApp, Facebook, X or LinkedIn.
+        'social-preview' => ['label' => 'Default share preview image', 'frame' => 'social'],
     ];
 
     /** Operator: every slot, with its current image if there is one. */
@@ -62,7 +64,8 @@ class PlatformWebsiteController extends Controller
             return response()->json(['message' => 'No such screenshot slot.'], 404);
         }
 
-        $phone = self::SLOTS[$slot]['frame'] === 'phone';
+        $frame = self::SLOTS[$slot]['frame'];
+        $phone = $frame === 'phone';
 
         $request->validate([
             'image' => [
@@ -71,12 +74,18 @@ class PlatformWebsiteController extends Controller
                 'mimes:png,jpg,jpeg,webp',
                 'max:4096',
                 // Big enough to stay sharp on the site; phones are portrait.
-                $phone ? 'dimensions:min_width=360,min_height=640' : 'dimensions:min_width=1000,min_height=600',
+                match ($frame) {
+                    'phone' => 'dimensions:min_width=360,min_height=640',
+                    'social' => 'dimensions:min_width=1200,min_height=630',
+                    default => 'dimensions:min_width=1000,min_height=600',
+                },
             ],
         ], [
-            'image.dimensions' => $phone
-                ? 'Use a portrait phone screenshot at least 360 × 640 pixels.'
-                : 'Use a screenshot at least 1000 × 600 pixels.',
+            'image.dimensions' => match ($frame) {
+                'phone' => 'Use a portrait phone screenshot at least 360 × 640 pixels.',
+                'social' => 'Use an image at least 1200 × 630 pixels, with the logo and text kept in the middle so cropping cannot cut them.',
+                default => 'Use a screenshot at least 1000 × 600 pixels.',
+            },
         ]);
 
         $file = $request->file('image');
@@ -140,10 +149,20 @@ class PlatformWebsiteController extends Controller
             'trust_show_ai' => (bool) $config['trust_show_ai'],
             'trust_show_backups' => (bool) $config['trust_show_backups'],
             'legal_reviewed' => (bool) $config['legal_reviewed'],
+            'google_site_verification' => $this->token($config['google_site_verification'] ?? null),
+            'bing_site_verification' => $this->token($config['bing_site_verification'] ?? null),
             'screens' => collect(self::SLOTS)->mapWithKeys(fn (array $slot, string $key) => [
                 $key => isset($current[$key]) ? Storage::disk('public')->url($current[$key]) : null,
             ]),
         ]);
+    }
+
+    /** A verification token is letters, digits, dashes and underscores; anything else is dropped rather than printed into the site's HTML. */
+    private function token(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return preg_match('/^[A-Za-z0-9_-]{10,100}$/', $value) ? $value : null;
     }
 
     /** @return array<string, string> slot => stored path */

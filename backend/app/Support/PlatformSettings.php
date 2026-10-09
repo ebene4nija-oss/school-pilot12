@@ -366,6 +366,20 @@ class PlatformSettings
                 'type' => 'bool',
                 'help' => 'Removes the "draft awaiting legal review" note from Privacy, Terms and Data policy. Only once legal review has signed them off.',
             ],
+            'services.marketing.site.google_site_verification' => [
+                'group' => 'website',
+                'label' => 'Google Search Console verification token',
+                'type' => 'string',
+                'max' => 100,
+                'help' => 'Only the token from the HTML-tag method (the content="…" value), not the whole tag. Lets Google confirm you own the site so you can submit /sitemap.xml.',
+            ],
+            'services.marketing.site.bing_site_verification' => [
+                'group' => 'website',
+                'label' => 'Bing Webmaster verification token',
+                'type' => 'string',
+                'max' => 100,
+                'help' => 'Only the content value of the msvalidate.01 tag.',
+            ],
         ];
     }
 
