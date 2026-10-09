@@ -33,6 +33,14 @@ export const site = {
   name: "SchoolPilot",
   url: env.NEXT_PUBLIC_SITE_URL ?? "https://schoolpilot.org.ng",
   tenantDomain: env.NEXT_PUBLIC_TENANT_DOMAIN ?? "schoolpilot.org.ng",
+
+  /**
+   * Partners sign in on the platform's own host, never a school's (the API
+   * refuses a partner anywhere else). Matches PLATFORM_SUBDOMAIN on the backend.
+   */
+  partnerLoginUrl:
+    env.NEXT_PUBLIC_PARTNER_LOGIN_URL ??
+    `https://${env.NEXT_PUBLIC_PLATFORM_SUBDOMAIN ?? "admin"}.${env.NEXT_PUBLIC_TENANT_DOMAIN ?? "schoolpilot.org.ng"}/login`,
   apiBase: (env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1").replace(/\/$/, ""),
 
   /** Digits only, international form, e.g. 2348031234567. Unset = no WhatsApp CTA. */
@@ -114,6 +122,7 @@ export const footer = [
       { href: "/faq/", label: "FAQ" },
       { href: "/partners/", label: "Partners" },
       { href: "/schools/", label: "School login" },
+      { href: "/partners/#sign-in", label: "Partner sign-in" },
     ],
   },
   {

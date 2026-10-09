@@ -4,6 +4,7 @@ import { FaqList, PageHero, Section, Steps } from "@/components/Blocks";
 import { PartnerForm } from "@/components/PartnerForm";
 import type { Faq } from "@/content/home";
 import { RESULTS, naira } from "@/lib/pricing";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Partner Programme: Earn 30% on Every School You Introduce",
@@ -63,6 +64,11 @@ const faqs: Faq[] = [
     a: "Their name, whether they are active, and what you have earned from them. You never see their students, staff, results or fees. Those belong to the school.",
   },
   {
+    id: "sign-in",
+    q: "Where do I sign in?",
+    a: `At ${site.partnerLoginUrl.replace(/^https?:\/\//, "")} with the email you applied with. When you are approved we email you a link to set your password; if it expires, use "Forgot password" on the sign-in page.`,
+  },
+  {
     id: "cost",
     q: "Does it cost anything to join?",
     a: "No. There is no fee, no target and no exclusivity. You can introduce schools alongside whatever else you do.",
@@ -86,6 +92,12 @@ export default function PartnersPage() {
           <a href="#apply" className="btn btn-primary">Apply to become a partner</a>
           <a href="#how" className="btn btn-secondary">See how it works</a>
         </div>
+        <p id="sign-in" className="mt-5 scroll-mt-24 text-ink-muted">
+          Already a partner?{" "}
+          <a href={site.partnerLoginUrl} className="font-semibold text-brand underline underline-offset-4">
+            Sign in to your partner page →
+          </a>
+        </p>
       </PageHero>
 
       <Section id="who" title="Who it is for" intro="If school owners listen to you, you can be a partner.">

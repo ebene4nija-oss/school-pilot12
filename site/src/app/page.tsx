@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { allInOne, boarding, hero, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
+import { allInOne, boarding, hero, store, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
 import { CtaBand, FaqList, Section } from "@/components/Blocks";
 import { DemoSchoolLink, PrimaryCta, SecondaryCta } from "@/components/Cta";
 import { ProductShot } from "@/components/ProductShot";
@@ -211,6 +211,31 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 6c · School store */}
+      <Section
+        id="store"
+        tone="surface"
+        eyebrow="School store"
+        title={store.title}
+        intro={store.intro}
+      >
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {store.items.map((item, i) => (
+            <li key={item.id} data-reveal style={d(i * 110)} className="lift rounded-2xl border border-line-soft bg-canvas p-6">
+              <IconTile name={item.icon} tone="accent" />
+              <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
+              <p className="mt-2 text-[0.95rem] text-ink-muted">{item.text}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 text-ink-muted">
+          Optional: it stays off until your school switches it on.{" "}
+          <Link href="/features/school-administration/" className="font-semibold text-brand underline underline-offset-4">
+            See school administration <span className="arrow-nudge">→</span>
+          </Link>
+        </p>
+      </Section>
 
       {/* 7 · Why us */}
       <Section id="why" tone="surface" eyebrow="Why SchoolPilot" title="Built around how Nigerian schools actually work.">

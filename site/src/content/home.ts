@@ -80,7 +80,7 @@ export const allInOne = [
   { id: "cbt", title: "CBT + lab client", items: "Online CBT, plus a computer-lab client that runs exams with no internet", href: "/features/cbt/" },
   { id: "lms", title: "LMS", items: "Learning materials, assignments, lesson plans, virtual classes, AI tutor", href: "/features/lms/" },
   { id: "finance", title: "Fees & finance", items: "Invoices, instalments, scholarships, online payment, expenses", href: "/features/fees-finance/" },
-  { id: "admin", title: "School administration", items: "Admissions, attendance, timetable, HR and payroll, communication, boarding, library, transport, ID cards", href: "/features/school-administration/" },
+  { id: "admin", title: "School administration", items: "Admissions, attendance, timetable, HR and payroll, communication, boarding, school store, library, transport, ID cards", href: "/features/school-administration/" },
   { id: "people", title: "Apps for everyone", items: "Admin, teachers, parents and students on web, Android and iOS", href: "/solutions/school-owners/" },
 ];
 
@@ -202,5 +202,21 @@ export const boarding = {
     { id: "welfare", icon: "shield", title: "Welfare, incidents and sick bay", text: "Welfare notes, incident records and sick-bay visits, seen only by the staff who should." },
     { id: "roster", icon: "calendar", title: "Duty roster and room checks", text: "Publish the house staff rota, inspect rooms, and track repairs boarders report." },
     { id: "fees", icon: "fees", title: "Boarding fees billed for you", text: "Hostel charges go straight onto each boarder's fee account, alongside tuition." },
+  ],
+} as const;
+
+/**
+ * The school store: uniforms, books and consumables handed to students,
+ * confirmed by parents. Maps to backend/routes/modules/inventory.php. Optional
+ * per school; no price claim (it carries no separate charge in pricing.ts).
+ */
+export const store = {
+  title: "Uniforms, books and supplies, without the missing-item arguments.",
+  intro: "Keep stock of what you hand to students, give a new student everything in one go at registration, and let parents confirm in the app that it all arrived.",
+  items: [
+    { id: "stock", icon: "sheet", title: "Stock you can trust", text: "Every size and edition has its own count. Deliveries, corrections and hand-overs are all recorded, and low stock is flagged." },
+    { id: "packs", icon: "gift", title: "New-student packs", text: "Set up a pack once, like “JSS 1 new student pack”, and hand it over at registration in one step." },
+    { id: "fees", icon: "fees", title: "Straight onto the fees", text: "You choose which items are charged. Charged items go onto that term’s invoice; free ones go out at no charge." },
+    { id: "confirm", icon: "check", title: "Parents confirm receipt", text: "Parents tick what arrived in their app. Anything missing comes back to you with a note, so you can sort it out." },
   ],
 } as const;
