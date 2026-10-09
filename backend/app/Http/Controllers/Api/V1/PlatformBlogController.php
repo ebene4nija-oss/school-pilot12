@@ -35,7 +35,10 @@ class PlatformBlogController extends Controller
                     'updated_at' => $p->updated_at,
                     'cover_url' => $this->coverUrl($p),
                     'category' => $p->category,
+                    'video_placement' => $p->video_placement,
                 ]),
+            // The editor's "also show this video on" choices.
+            'video_placements' => BlogPost::VIDEO_PLACEMENTS,
         ]);
     }
 
@@ -142,6 +145,7 @@ class PlatformBlogController extends Controller
             'body' => ['required', 'string', 'max:100000'],
             'cover_alt' => ['nullable', 'string', 'max:200'],
             'video_url' => ['nullable', 'string', 'max:300'],
+            'video_placement' => ['nullable', Rule::in(array_keys(BlogPost::VIDEO_PLACEMENTS))],
             'meta_title' => ['nullable', 'string', 'max:70'],
             'meta_description' => ['nullable', 'string', 'max:170'],
             'author_name' => ['nullable', 'string', 'max:80'],
@@ -167,6 +171,15 @@ class PlatformBlogController extends Controller
         $data['slug'] = ($data['slug'] ?? null) ?: $post?->slug ?: $this->uniqueSlug($data['title']);
         $data['author_name'] = ($data['author_name'] ?? null) ?: 'SchoolPilot team';
         $data['video_url'] = ($data['video_url'] ?? null) ?: null;
+
+        // A placement shows the post's video somewhere else on the site; without a video there is nothing to show.
+        if (! empty($data['video_placement']) && ! $data['video_url']) {
+            abort(response()->json([
+                'message' => 'Add a video before choosing where else it appears.',
+                'errors' => ['video_placement' => ['Add a YouTube or Vimeo link first.']],
+            ], 422));
+        }
+        $data['video_placement'] = ($data['video_placement'] ?? null) ?: null;
 
         // Stamped once, the first time the post goes live.
         // Or the date the operator chose, which may be in the future.
@@ -201,6 +214,7 @@ class PlatformBlogController extends Controller
             'cover_alt' => $p->cover_alt,
             'video_url' => $p->video_url,
             'video' => BlogPost::parseVideo($p->video_url),
+            'video_placement' => $p->video_placement,
             'meta_title' => $p->meta_title,
             'meta_description' => $p->meta_description,
             'author_name' => $p->author_name,

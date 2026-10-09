@@ -151,6 +151,8 @@ class PlatformWebsiteController extends Controller
             'legal_reviewed' => (bool) $config['legal_reviewed'],
             'google_site_verification' => $this->token($config['google_site_verification'] ?? null),
             'bing_site_verification' => $this->token($config['bing_site_verification'] ?? null),
+            // The site's /download/ page states the version; the button itself uses the stable link.
+            'offline_client' => OfflineClientReleaseController::summary(),
             'screens' => collect(self::SLOTS)->mapWithKeys(fn (array $slot, string $key) => [
                 $key => isset($current[$key]) ? Storage::disk('public')->url($current[$key]) : null,
             ]),

@@ -8,12 +8,29 @@ use Illuminate\Database\Eloquent\Model;
 class BlogPost extends Model
 {
     protected $fillable = [
-        'slug', 'title', 'excerpt', 'body', 'cover_path', 'cover_alt', 'video_url',
+        'slug', 'title', 'excerpt', 'body', 'cover_path', 'cover_alt', 'video_url', 'video_placement',
         'meta_title', 'meta_description', 'author_name', 'status', 'published_at',
         'category', 'tags',
     ];
 
     protected $casts = ['published_at' => 'datetime', 'tags' => 'array'];
+
+    /**
+     * Where a post's video can also appear on the site, beside the post
+     * itself: the homepage, a feature page (by its slug in site/src/content/
+     * features.ts) or the offline CBT client's download page. Keep in step
+     * with the site.
+     */
+    public const VIDEO_PLACEMENTS = [
+        'home' => 'Homepage',
+        'results-report-cards' => 'Results & Report Cards page',
+        'cbt' => 'CBT page',
+        'fees-finance' => 'Fees & Finance page',
+        'student-management' => 'Student Management page',
+        'lms' => 'LMS page',
+        'school-administration' => 'School Administration page',
+        'download' => 'Offline CBT client download page',
+    ];
 
     /**
      * A YouTube or Vimeo link reduced to provider and id, or null when it is

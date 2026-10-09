@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\V1\Phase1And2Controller;
 use App\Http\Controllers\Api\V1\PlatformAccessController;
 use App\Http\Controllers\Api\V1\PlatformAiRemarksController;
 use App\Http\Controllers\Api\V1\PlatformAnnouncementController;
+use App\Http\Controllers\Api\V1\OfflineClientReleaseController;
 use App\Http\Controllers\Api\V1\PartnerMaterialController;
 use App\Http\Controllers\Api\V1\PartnerPortalController;
 use App\Http\Controllers\Api\V1\PlatformBillingController;
@@ -116,6 +117,12 @@ Route::prefix('public')->group(function () {
         ->middleware('throttle:30,1');
     Route::get('/comparison', [PlatformComparisonController::class, 'publicShow'])
         ->middleware('throttle:30,1');
+    // The offline CBT lab client: one stable link that redirects to the current
+    // installer, and the version installed clients compare themselves against.
+    Route::get('/downloads/offline-cbt', [OfflineClientReleaseController::class, 'download'])
+        ->middleware('throttle:30,1');
+    Route::get('/downloads/offline-cbt/latest', [OfflineClientReleaseController::class, 'latest'])
+        ->middleware('throttle:60,1');
 });
 
 Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(function () {
@@ -1001,6 +1008,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/website/screens', [PlatformWebsiteController::class, 'screens']);
             Route::post('/platform/website/screens/{slot}', [PlatformWebsiteController::class, 'upload']);
             Route::delete('/platform/website/screens/{slot}', [PlatformWebsiteController::class, 'destroy']);
+
+            // Offline CBT lab client releases, linked by URL (installers are never uploaded).
+            Route::get('/platform/downloads/offline-cbt', [OfflineClientReleaseController::class, 'index']);
+            Route::post('/platform/downloads/offline-cbt', [OfflineClientReleaseController::class, 'store']);
+            Route::put('/platform/downloads/offline-cbt/{id}', [OfflineClientReleaseController::class, 'update'])->whereNumber('id');
+            Route::delete('/platform/downloads/offline-cbt/{id}', [OfflineClientReleaseController::class, 'destroy'])->whereNumber('id');
 
             // The marketing site's blog and comparison table.
             Route::get('/platform/blog', [PlatformBlogController::class, 'index']);
