@@ -163,7 +163,9 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
 
     try {
       final res = await ref.read(apiClientProvider).post<Map<String, dynamic>>(
-            Api.cbtStart(intOf(widget.exam['id'])),
+            // `/cbt/available` names it `exam_id`. Reading `id` started exam 0
+            // and every student got "not found".
+            Api.cbtStart(intOf(widget.exam['exam_id'] ?? widget.exam['id'])),
           );
 
       final attemptId = intOf(
@@ -201,6 +203,11 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
     final open = opensAt == null || opensAt.isBefore(DateTime.now());
     final duration = intOf(exam['duration_minutes']);
     final questions = intOf(exam['question_count'] ?? exam['questions_count']);
+    final resumable = intOf(exam['resumable_attempt_id']) > 0;
+    final canStart = exam['can_start'] != false;
+    final allowed = intOf(exam['attempts_allowed']);
+    final used = intOf(exam['attempts_used']);
+    final closesAt = Dates.tryParse(exam['closes_at']);
 
     return OutlinedCard(
       statusColor: open ? AppColors.present : AppColors.late,
@@ -217,6 +224,14 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
             ].where((s) => s.isNotEmpty).join(' · '),
             style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
           ),
+          if (closesAt != null || allowed > 1)
+            Text(
+              [
+                if (closesAt != null) 'Closes ${Dates.dayAndTime(closesAt)}',
+                if (allowed > 1) 'Attempt ${used + 1} of $allowed',
+              ].join(' · '),
+              style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+            ),
           if (!open) ...[
             const SizedBox(height: AppSpacing.sm),
             StatusChip.pending('Opens ${Dates.dayAndTime(opensAt)}'),
@@ -225,8 +240,16 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: !open || _starting ? null : _start,
-              child: Text(_starting ? 'Starting…' : 'Start'),
+              onPressed: !open || !canStart || _starting ? null : _start,
+              child: Text(
+                _starting
+                    ? 'Opening…'
+                    : resumable
+                        ? 'Resume'
+                        : canStart
+                            ? 'Start'
+                            : 'No attempts left',
+              ),
             ),
           ),
         ],
