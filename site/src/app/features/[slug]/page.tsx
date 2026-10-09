@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { features, getFeature } from "@/content/features";
 import { Callout, CtaBand, FaqList, PageHero, Section, Steps } from "@/components/Blocks";
-import { ProductShot } from "@/components/ProductShot";
+import { FeatureVisual } from "@/components/FeatureVisual";
+import { Icon, IconTile } from "@/components/Icon";
 import { JsonLd, breadcrumbs, faqPage } from "@/components/JsonLd";
 
 export const dynamicParams = false;
@@ -38,7 +39,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           faqPage(feature.faq),
         ]}
       />
-      <PageHero eyebrow={feature.name} title={feature.title} sub={feature.sub} />
+      <PageHero eyebrow={feature.name} icon={feature.icon} title={feature.title} sub={feature.sub} />
 
       <Section id="problem" eyebrow="The problem today" title="Sound familiar?">
         <ul className="grid gap-4 md:grid-cols-3">
@@ -53,7 +54,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
       <Section id="how" tone="surface" eyebrow="How it works" title={`How SchoolPilot solves it`}>
         <div className="grid items-start gap-10 lg:grid-cols-[1.1fr_1fr]">
           <Steps steps={feature.steps} />
-          <ProductShot src={feature.shot.src} alt={feature.shot.alt} phone={feature.shot.phone} />
+          <FeatureVisual shot={feature.shot} icon={feature.icon} name={feature.name} points={feature.benefits.map((b) => b.title)} />
         </div>
       </Section>
 
@@ -61,7 +62,10 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {feature.benefits.map((b) => (
             <article key={b.title} className="rounded-xl border border-line-soft bg-surface p-5">
-              <h3 className="text-lg font-semibold">{b.title}</h3>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-positive/15 text-positive">
+                <Icon name="check" size={18} />
+              </span>
+              <h3 className="mt-3 text-lg font-semibold">{b.title}</h3>
               <p className="mt-1 text-ink-muted">{b.text}</p>
             </article>
           ))}
@@ -92,7 +96,10 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           {related.map((r) => (
             <li key={r.slug}>
               <Link href={`/features/${r.slug}/`} className="block h-full rounded-xl border border-line-soft bg-surface p-5 hover:border-brand">
-                <span className="eyebrow">{r.name}</span>
+                <span className="flex items-center gap-3">
+                  <IconTile name={r.icon} size="sm" />
+                  <span className="eyebrow">{r.name}</span>
+                </span>
                 <span className="mt-2 block font-display text-lg font-semibold text-brand">{r.title}</span>
               </Link>
             </li>

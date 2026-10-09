@@ -3,11 +3,13 @@
  * with the problem in the school's words, then how SchoolPilot solves it,
  * then proof. Workflows describe only what the code ships today.
  */
+import type { IconName } from "@/components/Icon";
 import type { Faq } from "./home";
 
 export type Feature = {
   slug: string;
   name: string;
+  icon: IconName;
   title: string;
   sub: string;
   seoTitle: string;
@@ -26,6 +28,7 @@ export const features: Feature[] = [
   {
     slug: "results-report-cards",
     name: "Results & Report Cards",
+    icon: "results",
     title: "From first CA to signed report card. Without a spreadsheet.",
     sub: "Set your CA scheme once. Teachers enter scores on their phones, SchoolPilot computes the broadsheet and positions, and report cards go to parents in one step.",
     seoTitle: "School Result Management & Report Card Software",
@@ -68,6 +71,7 @@ export const features: Feature[] = [
   {
     slug: "cbt",
     name: "CBT",
+    icon: "cbt",
     title: "CBT for your computer lab, with or without internet.",
     sub: "Set papers once in SchoolPilot and run them online, or in your computer lab with the SchoolPilot CBT lab client: one school laptop carries the paper in and serves it to every lab PC over your local network. No internet needed during the exam.",
     seoTitle: "School CBT Software with an Offline Computer-Lab Client",
@@ -108,6 +112,7 @@ export const features: Feature[] = [
   {
     slug: "fees-finance",
     name: "Fees & Finance",
+    icon: "fees",
     title: "Know who owes, and how much, before resumption.",
     sub: "Bill every class for the term, accept part-payments, apply scholarships, take payment online and see every balance in one place.",
     seoTitle: "School Fees Management Software for Nigerian Schools",
@@ -146,6 +151,7 @@ export const features: Feature[] = [
   {
     slug: "student-management",
     name: "Student Management",
+    icon: "students",
     title: "Know every student, from Nursery 1 to SS3.",
     sub: "One profile per student: guardians, class and arm, attendance, results and history, carried forward every session.",
     seoTitle: "Student Management System for Nigerian Schools",
@@ -183,6 +189,7 @@ export const features: Feature[] = [
   {
     slug: "lms",
     name: "LMS (Digital Learning)",
+    icon: "lms",
     title: "A learning management system built into your school's portal.",
     sub: "SchoolPilot's LMS puts lesson materials, assignments, lesson plans and virtual classes in the same system as your results and records. Students learn from the app, parents can follow along, and the admin sees it all.",
     seoTitle: "School LMS for Nigerian Schools: Materials, Assignments, Virtual Classes",
@@ -223,6 +230,7 @@ export const features: Feature[] = [
   {
     slug: "school-administration",
     name: "School Administration",
+    icon: "admin",
     title: "Run the whole school office from one system.",
     sub: "Admissions, attendance, timetables, staff and payroll, communication, boarding, library, transport and ID cards, all on the same records as your results, CBT and LMS.",
     seoTitle: "School Administration Software for Nigerian Schools",

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Faq } from "@/content/home";
 import { DemoSchoolLink, PrimaryCta, SecondaryCta } from "./Cta";
+import { IconTile, type IconName } from "./Icon";
 
 /** A page section with an optional eyebrow, heading and intro. */
 export function Section({
@@ -41,11 +42,30 @@ export function Section({
 }
 
 /** Hero for inner pages: outcome headline first, the module name second. */
-export function PageHero({ eyebrow, title, sub, children }: { eyebrow: string; title: string; sub: ReactNode; children?: ReactNode }) {
+export function PageHero({
+  eyebrow,
+  title,
+  sub,
+  icon,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  sub: ReactNode;
+  icon?: IconName;
+  children?: ReactNode;
+}) {
   return (
     <section data-hero className="bg-surface py-14 md:py-20">
       <div className="container-site max-w-4xl">
-        <p className="eyebrow">{eyebrow}</p>
+        {icon ? (
+          <div className="flex items-center gap-3">
+            <IconTile name={icon} />
+            <p className="eyebrow">{eyebrow}</p>
+          </div>
+        ) : (
+          <p className="eyebrow">{eyebrow}</p>
+        )}
         <h1 className="mt-3 text-4xl font-bold md:text-5xl">{title}</h1>
         <div className="mt-5 text-lg text-ink-muted md:text-xl">{sub}</div>
         {children ?? (

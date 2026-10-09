@@ -131,13 +131,16 @@ await writeFile(configFile, JSON.stringify(settings, null, 2) + "\n");
 // build keeps whatever it fetched last, or an empty blog and no compare page.
 async function getJson(endpoint) {
   const res = await fetch(`${apiBase}${endpoint}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15_000) });
+  // 404: an API that predates the blog and compare endpoints. Nothing to show
+  // yet, which is not a reason to fail a strict build.
+  if (res.status === 404) return { data: null };
   if (!res.ok) throw new Error(`${endpoint} answered ${res.status}`);
   return res.json();
 }
 
 let posts = 0;
 try {
-  const { data } = await getJson("/public/blog");
+  const data = (await getJson("/public/blog")).data ?? [];
   await mkdir(blogDir, { recursive: true });
   const keep = new Set();
   const out = [];
