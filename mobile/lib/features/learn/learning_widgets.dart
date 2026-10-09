@@ -50,14 +50,36 @@ Future<void> openMaterial(BuildContext context, WidgetRef ref, int id) async {
 
 /// Today's lessons on the student's home screen.
 class TodayLessonsCard extends ConsumerWidget {
-  const TodayLessonsCard({super.key});
+  const TodayLessonsCard({super.key, this.showWhenEmpty = false});
+
+  /// On the student home the section stays, saying there is nothing today,
+  /// rather than vanishing and leaving the student to wonder whether it broke.
+  final bool showWhenEmpty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final day = ref.watch(myDayProvider).valueOrNull?.data;
+    final state = ref.watch(myDayProvider);
+    final day = state.valueOrNull?.data;
     final today = mapOf(mapOf(day)['today']);
     final periods = listOf(today['periods']);
-    if (periods.isEmpty) return const SizedBox.shrink();
+    if (periods.isEmpty) {
+      if (!showWhenEmpty || state.isLoading) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionHeader("Today's lessons"),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
+            child: Text(
+              state.hasError
+                  ? "Could not load today's timetable. Pull down to try again."
+                  : 'No lessons on your timetable today.',
+              style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

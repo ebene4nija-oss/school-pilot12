@@ -118,7 +118,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Expanded(
-                child: forDay.isEmpty
+                child: entries.isEmpty
+                    // A whole empty week is not "nothing on Monday": the
+                    // school has not published a timetable for this class.
+                    ? EmptyState(
+                        icon: Icons.calendar_month_outlined,
+                        title: 'No timetable yet',
+                        message: role == UserRole.student
+                            ? 'Your school has not published a timetable for '
+                                'your class yet. It will appear here once it does.'
+                            : 'No published timetable includes your lessons yet.',
+                      )
+                    : forDay.isEmpty
                     ? const EmptyState(
                         icon: Icons.event_available_outlined,
                         title: 'Nothing scheduled',

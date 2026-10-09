@@ -80,7 +80,11 @@ class _DashboardScaffold extends ConsumerWidget {
         value: dashboard,
         onRetry: () => ref.invalidate(dashboardProvider),
         builder: (context, data, meta) => RefreshableList(
-          onRefresh: () async => ref.refresh(dashboardProvider.future),
+          onRefresh: () async {
+            // The student home also reads /me/dashboard; refresh it together.
+            ref.invalidate(myDayProvider);
+            return ref.refresh(dashboardProvider.future);
+          },
           children: [
             FreshnessLine(
               fetchedAt: meta.fetchedAt,
@@ -385,28 +389,126 @@ class _StudentDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
+    // `/me/dashboard` is the student portal's own summary: today's lessons,
+    // attendance, assignments not yet handed in, upcoming tests.
+    final me = mapOf(ref.watch(myDayProvider).valueOrNull?.data);
 
     return _DashboardScaffold(
       title: 'Hello, ${user?.name.split(' ').first ?? 'there'}',
-      subtitle: user?.role.label,
+      subtitle: stringOf(fieldOf(me['student'], 'class'), user?.role.label ?? ''),
       builder: (data) {
-        final average = numOf(data['average'] ?? data['term_average']);
-        final attendance = numOf(data['attendance_rate'] ?? data['attendance']);
-        final homework = listOf(data['homework'] ?? data['due_soon']);
+        // These used to read keys neither endpoint sends, so every student
+        // saw 0.0% and 0% whatever their record said.
+        final released = listOf(data['score_breakdown']).isNotEmpty;
+        final average = numOf(data['overall_average'] ?? data['average']);
+        final attendanceRate = fieldOf(me['attendance'], 'rate') ??
+            fieldOf(data['attendance_last_30_days'], 'percentage');
+
+        final homework = listOf(me['assignments_due']).isNotEmpty
+            ? listOf(me['assignments_due'])
+            : listOf(data['homework_due']);
+        final tests = listOf(me['upcoming_tests']).isNotEmpty
+            ? listOf(me['upcoming_tests'])
+            : listOf(data['upcoming_tests']);
 
         return [
           _tileRow([
             StatTile(
               label: 'Average this term',
-              value: '${average.toStringAsFixed(1)}%',
+              value: released ? '${average.toStringAsFixed(1)}%' : '—',
+              caption: released ? null : 'No results released yet',
               onTap: () => context.go('/results'),
             ),
             StatTile(
               label: 'Attendance',
-              value: '${attendance.toStringAsFixed(0)}%',
+              value: attendanceRate == null
+                  ? '—'
+                  : '${numOf(attendanceRate).toStringAsFixed(0)}%',
+              caption: attendanceRate == null ? 'Not marked yet' : 'this term',
             ),
           ]),
-          const TodayLessonsCard(),
+          const TodayLessonsCard(showWhenEmpty: true),
+          if (tests.isNotEmpty) ...[
+            const SectionHeader('Upcoming tests'),
+            for (final t in tests.take(3))
+              _pad(
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: OutlinedCard(
+                    statusColor: AppColors.secondary,
+                    onTap: () => context.go('/learn'),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.quiz_outlined, color: AppColors.secondary),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(stringOf(t['title'], 'Test'), style: AppText.bodyLg),
+                              Text(
+                                [
+                                  stringOf(nameOf(t['subject'])),
+                                  if (Dates.tryParse(t['opens_at']) != null)
+                                    'opens ${Dates.dayAndTime(Dates.tryParse(t['opens_at']))}',
+                                ].where((x) => x.isNotEmpty).join(' · '),
+                                style: AppText.bodyMd
+                                    .copyWith(color: AppColors.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: AppColors.outline),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+          const SectionHeader('Assignments due'),
+          if (homework.isEmpty)
+            _pad(
+              Text(
+                'Nothing due — you are all caught up.',
+                style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              ),
+            ),
+          for (final h in homework.take(5))
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.screenMargin,
+                right: AppSpacing.screenMargin,
+                bottom: AppSpacing.sm,
+              ),
+              child: OutlinedCard(
+                statusColor: AppColors.pending,
+                onTap: () => context.go('/learn'),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            stringOf(h['title'], 'Assignment'),
+                            style: AppText.bodyLg,
+                          ),
+                          Text(
+                            stringOf(nameOf(h['subject'])),
+                            style: AppText.bodyMd.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    StatusChip.pending(
+                      'Due ${Dates.dayMonth(Dates.tryParse(h['due_date']))}',
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: AppSpacing.sm),
           _pad(
             OutlinedCard(
@@ -434,45 +536,6 @@ class _StudentDashboard extends ConsumerWidget {
               ),
             ),
           ),
-          if (homework.isNotEmpty) ...[
-            const SectionHeader('Due soon'),
-            for (final h in homework.take(5))
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.screenMargin,
-                  right: AppSpacing.screenMargin,
-                  bottom: AppSpacing.sm,
-                ),
-                child: OutlinedCard(
-                  statusColor: AppColors.pending,
-                  onTap: () => context.go('/learn'),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              stringOf(h['title'], 'Homework'),
-                              style: AppText.bodyLg,
-                            ),
-                            Text(
-                              stringOf(nameOf(h['subject']) ?? h['subject']),
-                              style: AppText.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      StatusChip.pending(
-                        'Due ${Dates.dayMonth(Dates.tryParse(h['due_date']))}',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
         ];
       },
     );
