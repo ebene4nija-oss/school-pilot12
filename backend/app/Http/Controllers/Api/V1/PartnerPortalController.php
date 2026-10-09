@@ -47,7 +47,7 @@ class PartnerPortalController extends Controller
                 'code' => $partner->code,
                 'has_bank_details' => filled($partner->account_number),
             ],
-            'referral_link' => rtrim((string) config('services.marketing.site_url', 'https://schoolpilot.org.ng'), '/').'/?p='.$partner->code,
+            'referral_link' => $partner->referralLink(),
             'owed_naira' => $owed / 100,
             'paid_naira' => $paid / 100,
             'lifetime_naira' => ($owed + $paid) / 100,

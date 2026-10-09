@@ -59,6 +59,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/super-admin/migrations', icon: '📥', label: 'Onboarding & migrations', roles: ['super_admin'] },
       { href: '/super-admin/billing', icon: '💳', label: 'Billing', roles: ['super_admin'] },
       { href: '/super-admin/partners', icon: '🤝', label: 'Partners', roles: ['super_admin'] },
+      { href: '/super-admin/partner-materials', icon: '🗂️', label: 'Partner materials', roles: ['super_admin'] },
       { href: '/super-admin/result-pins', icon: '🎟️', label: 'Result PINs', roles: ['super_admin'] },
       { href: '/super-admin/report-card-requests', icon: '🖨️', label: 'Report card requests', roles: ['super_admin'], badge: 'rc_requests' },
       { href: '/super-admin/announcements', icon: '📣', label: 'Announcements', roles: ['super_admin'] },

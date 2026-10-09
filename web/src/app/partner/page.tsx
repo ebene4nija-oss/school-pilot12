@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
+import PartnerMaterials from '@/components/PartnerMaterials';
 
 /**
  * The partner's own page: their referral link, the schools credited to them,
@@ -147,6 +148,10 @@ export default function PartnerPage() {
               </span>
             </div>
           </Card>
+
+          <div className="mt-6">
+            <PartnerMaterials />
+          </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <Card title="Your schools">

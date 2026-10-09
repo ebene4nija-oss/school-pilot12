@@ -69,4 +69,10 @@ class Partner extends Model
     {
         return $this->hasMany(PartnerPayout::class);
     }
+
+    /** The marketing-site link that credits a school to this partner. */
+    public function referralLink(): string
+    {
+        return rtrim((string) config('services.marketing.site_url', 'https://schoolpilot.org.ng'), '/').'/?p='.$this->code;
+    }
 }

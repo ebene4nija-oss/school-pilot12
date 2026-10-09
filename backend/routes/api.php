@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\V1\Phase1And2Controller;
 use App\Http\Controllers\Api\V1\PlatformAccessController;
 use App\Http\Controllers\Api\V1\PlatformAiRemarksController;
 use App\Http\Controllers\Api\V1\PlatformAnnouncementController;
+use App\Http\Controllers\Api\V1\PartnerMaterialController;
 use App\Http\Controllers\Api\V1\PartnerPortalController;
 use App\Http\Controllers\Api\V1\PlatformBillingController;
 use App\Http\Controllers\Api\V1\PlatformPartnerController;
@@ -981,6 +982,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/payouts', [PartnerPortalController::class, 'payouts']);
             Route::get('/bank', [PartnerPortalController::class, 'bank']);
             Route::put('/bank', [PartnerPortalController::class, 'updateBank']);
+            // Brochures, social images and scripts to sell with.
+            Route::get('/materials', [PartnerMaterialController::class, 'forPartner']);
+            Route::get('/materials/{id}/download', [PartnerMaterialController::class, 'partnerDownload'])->whereNumber('id');
         });
 
         // SchoolPilot platform operators only.
@@ -1008,6 +1012,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/platform/partners/{id}', [PlatformPartnerController::class, 'show'])->whereNumber('id');
             Route::put('/platform/partners/{id}', [PlatformPartnerController::class, 'update'])->whereNumber('id');
             Route::post('/platform/partners/{id}/payouts', [PlatformPartnerController::class, 'payout'])->whereNumber('id');
+            // Partner materials. POST to {id} as well as PUT: a replacement file is multipart.
+            Route::get('/platform/partner-materials', [PartnerMaterialController::class, 'index']);
+            Route::post('/platform/partner-materials', [PartnerMaterialController::class, 'store']);
+            Route::match(['put', 'post'], '/platform/partner-materials/{id}', [PartnerMaterialController::class, 'update'])->whereNumber('id');
+            Route::delete('/platform/partner-materials/{id}', [PartnerMaterialController::class, 'destroy'])->whereNumber('id');
+            Route::get('/platform/partner-materials/{id}/download', [PartnerMaterialController::class, 'operatorDownload'])->whereNumber('id');
             Route::put('/platform/schools/{schoolId}/partner', [PlatformPartnerController::class, 'attachSchool'])->whereNumber('schoolId');
             Route::put('/platform/leads/{leadId}/partner', [PlatformPartnerController::class, 'attachLead'])->whereNumber('leadId');
 
