@@ -148,10 +148,10 @@ class TimetableGeneratorTest extends TestCase
         $entries = collect($response->json('timetable'));
         $lessons = $entries->where('is_break', false);
 
-        // Six classes of two arms, each arm its own week: five days, eight
-        // periods each, plus two breaks a day.
-        $this->assertSame(12 * 5 * 8, $lessons->count());
-        $this->assertSame(12 * 5 * 2, $entries->where('is_break', true)->count());
+        // Fifteen arms (six secondary classes of two, Nursery 2, Primary 4 of
+        // two), each its own week: five days, eight periods, two breaks a day.
+        $this->assertSame(15 * 5 * 8, $lessons->count());
+        $this->assertSame(15 * 5 * 2, $entries->where('is_break', true)->count());
 
         // No teacher in two rooms at once.
         $lessons->groupBy(fn ($e) => "{$e['teacher_id']}|{$e['day']}|{$e['slot']}")
@@ -178,7 +178,7 @@ class TimetableGeneratorTest extends TestCase
         $this->withToken($token)->getJson(self::URL.'/versions')
             ->assertOk()
             ->assertJsonPath('versions.0.id', $versionId)
-            ->assertJsonPath('versions.0.entries_count', 12 * 5 * 10);
+            ->assertJsonPath('versions.0.entries_count', 15 * 5 * 10);
 
         $draft = $this->withToken($token)->getJson(self::URL."/view?version_id={$versionId}")->assertOk();
         $lesson = collect($draft->json('entries'))->firstWhere('is_break', false);
@@ -191,7 +191,7 @@ class TimetableGeneratorTest extends TestCase
 
         $this->withToken($token)->postJson(self::URL."/versions/{$versionId}/publish")->assertOk();
 
-        $this->withToken($token)->getJson(self::URL.'/view')->assertOk()->assertJsonCount(12 * 5 * 10, 'entries');
+        $this->withToken($token)->getJson(self::URL.'/view')->assertOk()->assertJsonCount(15 * 5 * 10, 'entries');
     }
 
     public function test_a_class_without_teachers_is_skipped_not_fatal(): void

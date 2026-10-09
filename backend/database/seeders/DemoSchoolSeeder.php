@@ -72,6 +72,14 @@ class DemoSchoolSeeder extends Seeder
             $this->releaseResults($classes, $current, $admin);
             $this->createFees($students, $classes, $current);
             $this->createAttendance($students, $current);
+
+            // Nursery and primary: taught by class teachers, with a specialist.
+            [$early, $earlyStudents] = $this->createEarlyYears($subjects, $session, $current, $admin, count($students));
+            $this->createFees($earlyStudents, $early, $current, count($students));
+            $this->createAttendance($earlyStudents, $current);
+
+            $this->createQuestionBank($classes, $early, $subjects);
+            $this->createExamTimetable($classes, $early, $subjects, $current);
         });
 
         $this->command?->info('Greenfield Academy is ready: http://greenfield.localhost (or send X-School-Subdomain: greenfield).');
@@ -80,6 +88,7 @@ class DemoSchoolSeeder extends Seeder
             ['Bursar', 'bursar@'.self::DOMAIN, 'password'],
             ['Nurse', 'nurse@'.self::DOMAIN, 'password'],
             ['Teacher (JSS 1 Gold form teacher)', 'teacher@'.self::DOMAIN, 'password'],
+            ['Primary 4 Gold class teacher', 'rose.eke@'.self::DOMAIN, 'password'],
             ['Parent (two children)', 'parent@'.self::DOMAIN, 'password'],
             ['Student (JSS 1 Gold)', 'student@'.self::DOMAIN, 'password'],
         ]);
@@ -207,38 +216,53 @@ class DemoSchoolSeeder extends Seeder
     }
 
     /** @return array{junior: array<string, int>, senior: array<string, int>} */
+    /**
+     * The subject list, each tagged with the levels it is taught at, so a
+     * Nursery 2 picker shows Number Work and never Physics. Mathematics and
+     * English run from nursery to SS 3 and carry no tag.
+     */
     private function createSubjects(): array
     {
-        $junior = [
-            'Mathematics' => ['MTH', 'core', null],
-            'English Language' => ['ENG', 'core', null],
-            'Basic Science' => ['BSC', 'core', null],
-            'Basic Technology' => ['BTE', 'core', null],
-            'Social Studies' => ['SOS', 'core', null],
-            'Civic Education' => ['CVE', 'core', null],
-            'Business Studies' => ['BUS', 'core', null],
-            'Computer Studies' => ['CMP', 'core', null],
-            'Christian Religious Studies' => ['CRS', 'elective', null],
-            'Yoruba' => ['YOR', 'elective', null],
-        ];
+        $pj = ['primary', 'junior_secondary'];
+        $pjs = ['primary', 'junior_secondary', 'senior_secondary'];
+        $ss = ['senior_secondary'];
 
-        $senior = [
-            'Physics' => ['PHY', 'elective', 'Science'],
-            'Chemistry' => ['CHM', 'elective', 'Science'],
-            'Biology' => ['BIO', 'core', 'Science'],
-            'Economics' => ['ECO', 'elective', 'Commercial'],
-            'Government' => ['GOV', 'elective', 'Arts'],
-            'Literature in English' => ['LIT', 'elective', 'Arts'],
+        // name => [code, category, department, levels]
+        $all = [
+            'Mathematics' => ['MTH', 'core', null, null],
+            'English Language' => ['ENG', 'core', null, null],
+            'Basic Science' => ['BSC', 'core', null, $pj],
+            'Basic Technology' => ['BTE', 'core', null, ['junior_secondary']],
+            'Social Studies' => ['SOS', 'core', null, $pj],
+            'Civic Education' => ['CVE', 'core', null, $pjs],
+            'Business Studies' => ['BUS', 'core', null, ['junior_secondary']],
+            'Computer Studies' => ['CMP', 'core', null, $pjs],
+            'Christian Religious Studies' => ['CRS', 'elective', null, $pj],
+            'Yoruba' => ['YOR', 'elective', null, $pj],
+            'Physics' => ['PHY', 'core', 'science', $ss],
+            'Chemistry' => ['CHM', 'core', 'science', $ss],
+            'Biology' => ['BIO', 'core', 'science', $ss],
+            'Economics' => ['ECO', 'core', 'commercial', $ss],
+            'Government' => ['GOV', 'core', 'arts', $ss],
+            'Literature in English' => ['LIT', 'core', 'arts', $ss],
+            'Number Work' => ['NUM', 'core', null, ['nursery']],
+            'Letter Work' => ['LET', 'core', null, ['nursery']],
+            'Rhymes and Songs' => ['RHY', 'core', null, ['nursery']],
+            'Health Habits' => ['HHB', 'core', null, ['nursery']],
+            'Verbal Reasoning' => ['VRB', 'core', null, ['primary']],
+            'Quantitative Reasoning' => ['QTR', 'core', null, ['primary']],
+            'French' => ['FRE', 'core', null, $pj],
         ];
 
         $ids = [];
-        foreach ($junior + $senior as $name => [$code, $category, $department]) {
+        foreach ($all as $name => [$code, $category, $department, $levels]) {
             $ids[$name] = DB::table('subjects')->insertGetId($this->stamp([
                 'school_id' => $this->schoolId,
                 'name' => $name,
                 'code' => $code,
                 'category' => $category,
                 'department' => $department,
+                'level_groups' => $levels ? json_encode($levels) : null,
                 'is_active' => true,
             ]));
         }
@@ -246,10 +270,21 @@ class DemoSchoolSeeder extends Seeder
         $pick = fn (array $names) => array_intersect_key($ids, array_flip($names));
 
         return [
-            'junior' => $pick(array_keys($junior)),
-            'senior' => $pick(['Mathematics', 'English Language', 'Civic Education', 'Computer Studies', ...array_keys($senior)]),
+            'junior' => $pick(['Mathematics', 'English Language', 'Basic Science', 'Basic Technology', 'Social Studies', 'Civic Education', 'Business Studies', 'Computer Studies', 'Christian Religious Studies', 'Yoruba']),
+            'senior' => $pick(['Mathematics', 'English Language', 'Civic Education', 'Computer Studies', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government', 'Literature in English']),
+            'nursery' => $pick(['Number Work', 'Letter Work', 'Rhymes and Songs', 'Health Habits', 'English Language']),
+            'primary' => $pick(['Mathematics', 'English Language', 'Basic Science', 'Social Studies', 'Verbal Reasoning', 'Quantitative Reasoning', 'French', 'Computer Studies']),
         ];
     }
+
+    /** Which SS streams take a subject; null = every arm. */
+    private const STREAM_SUBJECTS = [
+        'Physics' => ['science'],
+        'Chemistry' => ['science'],
+        'Economics' => ['arts'],
+        'Government' => ['arts'],
+        'Literature in English' => ['arts'],
+    ];
 
     /**
      * @return array<int, array{id: int, name: string, level: string, arms: array<string, int>}>
@@ -264,7 +299,8 @@ class DemoSchoolSeeder extends Seeder
                 'school_id' => $this->schoolId,
                 'name' => $name,
                 'level_category' => $level,
-                'order_index' => $i + 1,
+                // After Nursery 2 and Primary 4.
+                'order_index' => $i + 3,
                 'is_exit_class' => $name === 'SS 3',
             ]));
 
@@ -274,6 +310,10 @@ class DemoSchoolSeeder extends Seeder
                     'school_id' => $this->schoolId,
                     'class_id' => $id,
                     'name' => $arm,
+                    // SS is streamed: Gold the sciences, Blue the arts.
+                    'stream' => $level === 'senior_secondary' ? ($arm === 'Gold' ? 'science' : 'arts') : null,
+                    // JSS 2 Gold keeps the year's strongest students (staff only).
+                    'is_merit' => $name === 'JSS 2' && $arm === 'Gold',
                 ]));
             }
 
@@ -361,15 +401,23 @@ class DemoSchoolSeeder extends Seeder
             $level = $class['level'] === 'junior_secondary' ? 'junior' : 'senior';
 
             foreach ($subjects[$level] as $name => $subjectId) {
+                $streams = self::STREAM_SUBJECTS[$name] ?? null;
+
                 DB::table('class_subjects')->insert($this->stamp([
                     'school_id' => $this->schoolId,
                     'class_id' => $class['id'],
                     'subject_id' => $subjectId,
-                    'is_compulsory' => ! in_array($name, ['Christian Religious Studies', 'Yoruba', 'Physics', 'Chemistry', 'Economics', 'Government', 'Literature in English'], true),
+                    'is_compulsory' => ! in_array($name, ['Christian Religious Studies', 'Yoruba'], true),
+                    'streams' => $streams ? json_encode($streams) : null,
                 ]));
 
-                // Each arm has its own teacher for the subject.
+                // Each arm has its own teacher for the subject — only where
+                // the arm's stream takes it.
                 foreach ($class['arms'] as $armName => $armId) {
+                    if ($streams && $level === 'senior' && ! in_array($armName === 'Gold' ? 'science' : 'arts', $streams, true)) {
+                        continue;
+                    }
+
                     DB::table('teacher_subjects')->insert($this->stamp([
                         'school_id' => $this->schoolId,
                         'teacher_id' => $bySubject[$armName][$level][$subjectId],
@@ -483,8 +531,8 @@ class DemoSchoolSeeder extends Seeder
                         'first' => $first,
                         'class' => $class,
                         'arm_id' => $armId,
-                        // Seniors take either sciences or arts/commercial.
-                        'track' => $n % 2 === 0 ? 'science' : 'arts',
+                        // Seniors follow their arm's stream: Gold sciences, Blue arts.
+                        'track' => $armName === 'Gold' ? 'science' : 'arts',
                     ];
                 }
             }
@@ -715,11 +763,16 @@ class DemoSchoolSeeder extends Seeder
      * quarter not at all, which is what a bursar's dashboard looks like three
      * weeks into term.
      */
-    private function createFees(array $students, array $classes, int $term): void
+    private function createFees(array $students, array $classes, int $term, int $offset = 0): void
     {
         $structures = [];
         foreach ($classes as $class) {
-            $tuition = $class['level'] === 'junior_secondary' ? 185000 : 210000;
+            $tuition = match ($class['level']) {
+                'nursery' => 120000,
+                'primary' => 150000,
+                'junior_secondary' => 185000,
+                default => 210000,
+            };
 
             foreach ([
                 ["{$class['name']} Tuition", $tuition, true],
@@ -755,7 +808,7 @@ class DemoSchoolSeeder extends Seeder
                 'school_id' => $this->schoolId,
                 'term_id' => $term,
                 'student_id' => $student['id'],
-                'invoice_number' => sprintf('GFA-INV-2627-1-%04d', $i + 1),
+                'invoice_number' => sprintf('GFA-INV-2627-1-%04d', $offset + $i + 1),
                 'total_amount' => $total,
                 'amount_paid' => $paid,
                 'status' => $paid === 0 ? 'unpaid' : ($paid >= $total ? 'paid' : 'partial'),
@@ -776,7 +829,7 @@ class DemoSchoolSeeder extends Seeder
                 DB::table('payments')->insert($this->stamp([
                     'school_id' => $this->schoolId,
                     'invoice_id' => $invoiceId,
-                    'reference' => sprintf('GFA-DEMO-%06d', $i + 1),
+                    'reference' => sprintf('GFA-DEMO-%06d', $offset + $i + 1),
                     'amount' => $paid,
                     'gateway' => $this->pick(['paystack', 'paystack', 'flutterwave', 'bank_transfer', 'cash']),
                     'status' => 'successful',
@@ -815,6 +868,217 @@ class DemoSchoolSeeder extends Seeder
 
         foreach (array_chunk($rows, 200) as $chunk) {
             DB::table('attendance_records')->insert($chunk);
+        }
+    }
+
+    /**
+     * Nursery 2 and Primary 4 (two arms). Each arm's class teacher teaches
+     * every subject, which is how the school's nursery and primary sections
+     * are set to work; Primary 4 has a French specialist who takes French
+     * from both class teachers. Eight pupils an arm, with parents.
+     *
+     * @return array{0: array<int, array>, 1: array<int, array>} classes, students
+     */
+    private function createEarlyYears(array $subjects, int $session, int $term, int $admin, int $admissionOffset): array
+    {
+        $classes = [];
+        foreach ([['Nursery 2', 'nursery', ['Gold']], ['Primary 4', 'primary', ['Gold', 'Blue']]] as $i => [$name, $level, $armNames]) {
+            $id = DB::table('classes')->insertGetId($this->stamp([
+                'school_id' => $this->schoolId, 'name' => $name, 'level_category' => $level, 'order_index' => $i + 1, 'is_exit_class' => false,
+            ]));
+
+            $arms = [];
+            foreach ($armNames as $arm) {
+                $arms[$arm] = DB::table('arms')->insertGetId($this->stamp(['school_id' => $this->schoolId, 'class_id' => $id, 'name' => $arm]));
+            }
+
+            foreach ($subjects[$level] as $subjectId) {
+                DB::table('class_subjects')->insert($this->stamp([
+                    'school_id' => $this->schoolId, 'class_id' => $id, 'subject_id' => $subjectId, 'is_compulsory' => true,
+                ]));
+            }
+
+            $classes[] = ['id' => $id, 'name' => $name, 'level' => $level, 'arms' => $arms];
+        }
+
+        // [name, gender, class index, arm] — the class teachers; then the specialist.
+        $staff = [
+            ['Mrs Patience Okon', 'female', 0, 'Gold'],
+            ['Mrs Rose Eke', 'female', 1, 'Gold'],
+            ['Mr Daniel Ojo', 'male', 1, 'Blue'],
+            ['Mme Claire Mensah', 'female', null, null],
+        ];
+
+        foreach ($staff as $i => [$name, $gender, $classIndex, $arm]) {
+            $no = sprintf('GFA/ST/%03d', 40 + $i);
+            $id = $this->user($name, Str::slug(Str::after($name, ' '), '.'), 'teacher', sprintf('0803200%04d', $i + 1), $gender);
+            $this->staff($id, $no, 'Teacher', 220000, $classIndex === null ? 'B.A. French' : 'NCE');
+
+            DB::table('teacher_profiles')->insert($this->stamp([
+                'school_id' => $this->schoolId, 'user_id' => $id, 'employee_id' => $no,
+                'qualification' => $classIndex === null ? 'B.A. French' : 'NCE',
+                'specialization' => $classIndex === null ? 'French' : 'Early years',
+                'years_of_experience' => 4 + $i,
+                'subjects_taught' => json_encode($classIndex === null ? ['French'] : ['All subjects']),
+                'date_joined' => '2021-09-01', 'contract_type' => 'full_time',
+            ]));
+
+            if ($classIndex !== null) {
+                DB::table('class_teacher_assignments')->insert($this->stamp([
+                    'school_id' => $this->schoolId, 'session_id' => $session, 'class_id' => $classes[$classIndex]['id'],
+                    'arm_id' => $classes[$classIndex]['arms'][$arm], 'form_teacher_id' => $id, 'assigned_by' => $admin,
+                ]));
+            } else {
+                // French in both Primary 4 arms is the specialist's, not the class teachers'.
+                DB::table('teacher_subjects')->insert($this->stamp([
+                    'school_id' => $this->schoolId, 'teacher_id' => $id, 'subject_id' => $subjects['primary']['French'],
+                    'class_id' => $classes[1]['id'], 'is_primary' => true,
+                ]));
+            }
+        }
+
+        $students = [];
+        $n = $admissionOffset;
+        foreach ($classes as $c => $class) {
+            foreach ($class['arms'] as $armName => $armId) {
+                for ($k = 0; $k < 8; $k++) {
+                    $n++;
+                    $gender = mt_rand(0, 1) ? 'male' : 'female';
+                    $first = $this->pick($gender === 'male' ? self::FIRST_NAMES_M : self::FIRST_NAMES_F);
+                    $surname = $this->pick(self::SURNAMES);
+                    $userId = $this->user("{$first} {$surname}", sprintf('gfa%04d', $n), 'student', null, $gender);
+
+                    $studentId = DB::table('students')->insertGetId($this->stamp([
+                        'school_id' => $this->schoolId, 'user_id' => $userId, 'class_id' => $class['id'], 'arm_id' => $armId,
+                        'admission_number' => sprintf('GFA/2026/%04d', $n),
+                        // Nursery 2 about 4, Primary 4 about 8.
+                        'date_of_birth' => sprintf('%d-%02d-%02d', $c === 0 ? 2022 : 2018, mt_rand(1, 12), mt_rand(1, 28)),
+                        'gender' => $gender, 'state_of_origin' => $this->pick(self::STATES),
+                        'religion' => mt_rand(0, 2) ? 'Christianity' : 'Islam', 'status' => 'active',
+                    ]));
+
+                    DB::table('student_enrollments')->insert($this->stamp([
+                        'school_id' => $this->schoolId, 'student_id' => $studentId, 'session_id' => $session,
+                        'class_id' => $class['id'], 'arm_id' => $armId, 'status' => 'active', 'enrolled_on' => '2026-09-14',
+                    ]));
+
+                    DB::table('student_gamifications')->insertOrIgnore($this->stamp(['school_id' => $this->schoolId, 'student_id' => $studentId]));
+
+                    DB::table('student_guardian')->insert($this->stamp([
+                        'student_id' => $studentId, 'guardian_id' => $this->createParent($surname, false), 'is_primary' => true,
+                    ]));
+
+                    foreach ($subjects[$class['level']] as $subjectId) {
+                        DB::table('student_subjects')->insert($this->stamp([
+                            'school_id' => $this->schoolId, 'student_id' => $studentId, 'subject_id' => $subjectId, 'term_id' => $term,
+                            'enrollment_type' => 'compulsory', 'status' => 'active', 'enrolled_at' => $this->now,
+                        ]));
+                    }
+
+                    $students[] = ['id' => $studentId, 'user_id' => $userId, 'name' => "{$first} {$surname}", 'first' => $first, 'class' => $class, 'arm_id' => $armId, 'track' => null];
+                }
+            }
+        }
+
+        return [$classes, $students];
+    }
+
+    /**
+     * A question bank filed by class: JSS 1 Mathematics, SS 2 Physics and
+     * Primary 4 Mathematics, by the teachers who teach them, plus a handful
+     * of older English questions with no class yet ("Unsorted") to show the
+     * bulk filing tools on.
+     */
+    private function createQuestionBank(array $classes, array $early, array $subjects): void
+    {
+        $byName = fn (string $name) => collect(array_merge($classes, $early))->firstWhere('name', $name)['id'];
+        $teacher = fn (string $name) => DB::table('users')->where('name', $name)->whereIn('id', DB::table('user_profiles')->where('school_id', $this->schoolId)->pluck('user_id'))->value('id');
+
+        $sets = [
+            ['JSS 1', 'Mathematics', 'Mr Chidi Okeke', [
+                ['Fractions', 'easy', 'What is 3/4 + 1/4?', ['A' => '1', 'B' => '4/8', 'C' => '3/16', 'D' => '1/2'], 'A'],
+                ['Fractions', 'medium', 'Simplify 12/18.', ['A' => '2/3', 'B' => '3/4', 'C' => '6/9', 'D' => '4/6'], 'A'],
+                ['Whole numbers', 'easy', 'What is the place value of 7 in 4,718?', ['A' => 'Units', 'B' => 'Tens', 'C' => 'Hundreds', 'D' => 'Thousands'], 'C'],
+                ['Whole numbers', 'medium', 'Round 2,846 to the nearest hundred.', ['A' => '2,800', 'B' => '2,850', 'C' => '2,900', 'D' => '3,000'], 'A'],
+                ['Algebra', 'medium', 'If x + 5 = 12, what is x?', ['A' => '5', 'B' => '7', 'C' => '12', 'D' => '17'], 'B'],
+                ['Algebra', 'hard', 'Solve 3x - 4 = 11.', ['A' => '3', 'B' => '4', 'C' => '5', 'D' => '7'], 'C'],
+            ]],
+            ['SS 2', 'Physics', 'Mr Victor Eze', [
+                ['Motion', 'easy', 'The SI unit of force is the', ['A' => 'Joule', 'B' => 'Newton', 'C' => 'Watt', 'D' => 'Pascal'], 'B'],
+                ['Motion', 'medium', 'A car moves 100 m in 20 s. Its average speed is', ['A' => '2 m/s', 'B' => '5 m/s', 'C' => '20 m/s', 'D' => '2000 m/s'], 'B'],
+                ['Energy', 'medium', 'Which of these is a scalar quantity?', ['A' => 'Velocity', 'B' => 'Force', 'C' => 'Energy', 'D' => 'Displacement'], 'C'],
+                ['Electricity', 'hard', 'A 12 V battery drives 3 A through a resistor. Its resistance is', ['A' => '4 Ω', 'B' => '9 Ω', 'C' => '15 Ω', 'D' => '36 Ω'], 'A'],
+                ['Waves', 'medium', 'Sound cannot travel through', ['A' => 'Water', 'B' => 'Steel', 'C' => 'Air', 'D' => 'A vacuum'], 'D'],
+            ]],
+            ['Primary 4', 'Mathematics', 'Mrs Rose Eke', [
+                ['Addition', 'easy', 'What is 245 + 132?', ['A' => '367', 'B' => '377', 'C' => '387', 'D' => '477'], 'B'],
+                ['Multiplication', 'easy', 'What is 7 × 8?', ['A' => '54', 'B' => '56', 'C' => '58', 'D' => '64'], 'B'],
+                ['Money', 'medium', 'Ada has ₦500 and buys a pen for ₦150. How much is left?', ['A' => '₦250', 'B' => '₦300', 'C' => '₦350', 'D' => '₦650'], 'C'],
+                ['Time', 'medium', 'How many minutes are in 2 hours?', ['A' => '60', 'B' => '100', 'C' => '120', 'D' => '200'], 'C'],
+            ]],
+            [null, 'English Language', 'Mrs Funke Alabi', [
+                ['Grammar', 'easy', 'Choose the plural of "child".', ['A' => 'Childs', 'B' => 'Children', 'C' => 'Childes', 'D' => 'Childrens'], 'B'],
+                ['Grammar', 'medium', 'Which word is a verb? "The girl sings beautifully."', ['A' => 'girl', 'B' => 'sings', 'C' => 'beautifully', 'D' => 'the'], 'B'],
+                ['Vocabulary', 'medium', 'The opposite of "generous" is', ['A' => 'kind', 'B' => 'mean', 'C' => 'rich', 'D' => 'happy'], 'B'],
+                ['Comprehension', 'easy', 'A synonym of "begin" is', ['A' => 'end', 'B' => 'start', 'C' => 'stop', 'D' => 'wait'], 'B'],
+            ]],
+        ];
+
+        $rows = [];
+        foreach ($sets as [$className, $subject, $author, $questions]) {
+            foreach ($questions as [$topic, $difficulty, $text, $options, $answer]) {
+                $rows[] = $this->stamp([
+                    'school_id' => $this->schoolId,
+                    'subject_id' => DB::table('subjects')->where('school_id', $this->schoolId)->where('name', $subject)->value('id'),
+                    'class_id' => $className ? $byName($className) : null,
+                    'topic' => $topic, 'question' => $text, 'options' => json_encode($options), 'correct_answer' => $answer,
+                    'difficulty' => $difficulty, 'question_type' => 'multiple_choice', 'marks' => 1,
+                    'status' => 'approved', 'created_by' => $teacher($author),
+                ]);
+            }
+        }
+
+        DB::table('question_bank')->insert($rows);
+    }
+
+    /**
+     * Venues and a draft first-term exam timetable. SS 2 papers are written in
+     * the Main Hall by everyone taking the subject (Physics: the science arm;
+     * Literature: the arts arm); JSS 1 and Primary 4 write in their own
+     * classrooms.
+     */
+    private function createExamTimetable(array $classes, array $early, array $subjects, int $term): void
+    {
+        $hall = DB::table('venues')->insertGetId($this->stamp(['school_id' => $this->schoolId, 'name' => 'Main Hall', 'kind' => 'hall', 'capacity' => 120, 'shared' => true, 'active' => true]));
+        DB::table('venues')->insert($this->stamp(['school_id' => $this->schoolId, 'name' => 'Science Lab', 'kind' => 'lab', 'capacity' => 40, 'shared' => false, 'active' => true]));
+
+        $timetable = DB::table('exam_timetables')->insertGetId($this->stamp([
+            'school_id' => $this->schoolId, 'term_id' => $term, 'name' => 'First Term Examinations', 'status' => 'draft',
+        ]));
+
+        $class = fn (string $name) => collect(array_merge($classes, $early))->firstWhere('name', $name)['id'];
+        $subject = fn (string $name) => DB::table('subjects')->where('school_id', $this->schoolId)->where('name', $name)->value('id');
+        $day = fn (int $n) => CarbonImmutable::parse('2026-12-07')->addDays($n)->toDateString();
+
+        // [class, subject, day, start, end, where]
+        $papers = [
+            ['SS 2', 'Physics', 0, '09:00', '11:00', 'hall'],
+            ['SS 2', 'Literature in English', 0, '12:00', '14:00', 'hall'],
+            ['SS 2', 'Mathematics', 1, '09:00', '11:30', 'hall'],
+            ['JSS 1', 'Mathematics', 1, '09:00', '10:30', 'own'],
+            ['JSS 1', 'English Language', 2, '09:00', '10:30', 'own'],
+            ['Primary 4', 'French', 2, '11:00', '12:00', 'own'],
+        ];
+
+        foreach ($papers as [$className, $subjectName, $offset, $start, $end, $where]) {
+            DB::table('exam_sittings')->insert($this->stamp([
+                'school_id' => $this->schoolId, 'exam_timetable_id' => $timetable,
+                'class_id' => $class($className), 'arm_id' => null, 'subject_id' => $subject($subjectName),
+                'exam_date' => $day($offset), 'start_time' => "{$start}:00", 'end_time' => "{$end}:00",
+                'venue_mode' => $where === 'hall' ? 'hall' : 'own_classrooms',
+                'venue_id' => $where === 'hall' ? $hall : null,
+                'venue' => $where === 'hall' ? 'Main Hall' : null,
+            ]));
         }
     }
 
