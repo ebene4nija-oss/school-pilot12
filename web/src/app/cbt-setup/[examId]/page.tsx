@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ApiError, errorText, fetchApi } from '@/lib/api';
@@ -138,16 +138,26 @@ export default function ExamEditor() {
 type Run = (fn: () => Promise<{ message?: string; notice?: string }>, fallback: string) => Promise<void>;
 
 function Paper({ exam, draft, busy, run }: { exam: Exam; draft: boolean; busy: boolean; run: Run }) {
-  const [search, setSearch] = useState({ search: '', topic: '', question_type: '' });
-  const [bank, setBank] = useState<Bank[] | null>(null);
+  const [search, setSearch] = useState({ search: '', topic: '', question_type: '', difficulty: '' });
+  // A paper for one class shows that class's questions unless asked otherwise.
+  const [otherClasses, setOtherClasses] = useState(false);
+  const [bank, setBank] = useState<{ data: Bank[]; total: number } | null>(null);
   const [picked, setPicked] = useState<Record<number, { marks: string; section: string }>>({});
+  const [sectionForAll, setSectionForAll] = useState('');
   const onPaper = new Set(exam.exam_questions.map((q) => q.question_id));
 
+  // The same filters the bank list takes, so "add all matching" adds what is shown.
+  const filters = useMemo(() => ({
+    status: 'approved',
+    subject_id: String(exam.subject_id),
+    ...(exam.class_id && !otherClasses ? { class_id: String(exam.class_id) } : {}),
+    ...Object.fromEntries(Object.entries(search).filter(([, v]) => v)),
+  }), [search, exam.subject_id, exam.class_id, otherClasses]);
+
   const find = useCallback(async () => {
-    const qs = new URLSearchParams({ per_page: '50', status: 'approved', subject_id: String(exam.subject_id), ...Object.fromEntries(Object.entries(search).filter(([, v]) => v)) });
-    const r = await fetchApi<{ data: Bank[] }>(`/cbt/questions?${qs}`);
-    setBank(r.data);
-  }, [search, exam.subject_id]);
+    const r = await fetchApi<{ data: Bank[]; total: number }>(`/cbt/questions?${new URLSearchParams({ per_page: '100', ...filters })}`);
+    setBank({ data: r.data, total: r.total });
+  }, [filters]);
 
   useEffect(() => {
     if (!draft) return;
@@ -160,6 +170,16 @@ function Paper({ exam, draft, busy, run }: { exam: Exam; draft: boolean; busy: b
     method: 'POST',
     body: JSON.stringify({ questions: Object.entries(picked).map(([id, p]) => ({ question_id: Number(id), marks: p.marks ? Number(p.marks) : undefined, section: p.section || undefined })) }),
   }).then((r) => { setPicked({}); return r as { message?: string }; }), 'Could not add those questions.');
+
+  const addAllMatching = () => {
+    if (!bank || !window.confirm(`Add every matching question (${bank.total}) not already on the paper, with their own marks?`)) return;
+    void run(() => fetchApi('/cbt/questions/bulk', { method: 'POST', body: JSON.stringify({ action: 'add_to_exam', exam_id: exam.id, filters }) })
+      .then((r) => { setPicked({}); return r as { message?: string }; }), 'Could not add those questions.');
+  };
+
+  const shown = bank?.data.filter((b) => !onPaper.has(b.id)) ?? [];
+  const allTicked = shown.length > 0 && shown.every((b) => picked[b.id]);
+  const tickAll = (on: boolean) => setPicked(on ? Object.fromEntries(shown.map((b) => [b.id, picked[b.id] ?? { marks: '', section: sectionForAll }])) : {});
 
   return (
     <div className="space-y-5">
@@ -181,15 +201,24 @@ function Paper({ exam, draft, busy, run }: { exam: Exam; draft: boolean; busy: b
       </Card>
 
       {draft && (
-        <Card title="Add from the question bank" description={`Showing ready ${exam.subject?.name ?? ''} questions.`}>
-          <div className="mb-3 grid gap-3 sm:grid-cols-3">
+        <Card title="Add from the question bank" description={`Showing ready ${exam.subject?.name ?? ''} questions${exam.class_id && !otherClasses ? ' written for this class' : ' from every class'}.`}>
+          <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Search"><input className={inputClass} value={search.search} onChange={(e) => setSearch({ ...search, search: e.target.value })} /></Field>
             <Field label="Topic"><input className={inputClass} value={search.topic} onChange={(e) => setSearch({ ...search, topic: e.target.value })} /></Field>
             <Field label="Type"><select className={inputClass} value={search.question_type} onChange={(e) => setSearch({ ...search, question_type: e.target.value })}><option value="">All</option>{TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
+            <Field label="Difficulty"><select className={inputClass} value={search.difficulty} onChange={(e) => setSearch({ ...search, difficulty: e.target.value })}><option value="">All</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></Field>
           </div>
-          {!bank ? <Loading /> : bank.length === 0 ? <Empty>No matching questions. <Link href="/cbt-bank" className="text-brand underline">Write some in the Question bank</Link>.</Empty> : (
+          <div className="mb-3 flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-brand" checked={allTicked} disabled={shown.length === 0} onChange={(e) => tickAll(e.target.checked)} /> Tick all shown ({shown.length})</label>
+            {exam.class_id && <label className="flex items-center gap-2 text-ink-muted"><input type="checkbox" className="h-4 w-4 accent-brand" checked={otherClasses} onChange={(e) => { setOtherClasses(e.target.checked); setPicked({}); }} /> Include other classes’ questions</label>}
+            <span className="flex items-center gap-2">
+              <input className={`${inputClass} w-36`} placeholder="Section for ticked" value={sectionForAll} onChange={(e) => setSectionForAll(e.target.value)} aria-label="Section for every ticked question" />
+              <Button variant="secondary" disabled={!sectionForAll || Object.keys(picked).length === 0} onClick={() => setPicked(Object.fromEntries(Object.entries(picked).map(([id, p]) => [id, { ...p, section: sectionForAll }])))}>Apply</Button>
+            </span>
+          </div>
+          {!bank ? <Loading /> : shown.length === 0 ? <Empty>No matching questions. <Link href="/cbt-bank" className="text-brand underline">Write some in the Question bank</Link>.</Empty> : (
             <Table columns={['', 'Question', 'Type', 'Marks on this paper', 'Section']}>
-              {bank.filter((b) => !onPaper.has(b.id)).map((b) => {
+              {shown.map((b) => {
                 const p = picked[b.id];
                 return (
                   <tr key={b.id}>
@@ -203,7 +232,11 @@ function Paper({ exam, draft, busy, run }: { exam: Exam; draft: boolean; busy: b
               })}
             </Table>
           )}
-          <Button className="mt-3" disabled={busy || Object.keys(picked).length === 0} onClick={attach}>Add {Object.keys(picked).length} question(s) to the paper</Button>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button disabled={busy || Object.keys(picked).length === 0} onClick={attach}>Add {Object.keys(picked).length} ticked question(s)</Button>
+            {bank && bank.total > 0 && <Button variant="secondary" disabled={busy} onClick={addAllMatching}>Add all {bank.total} matching</Button>}
+            {bank && bank.total > shown.length + onPaper.size && <span className="text-xs text-ink-muted">Showing the first 100; “Add all matching” takes every one.</span>}
+          </div>
         </Card>
       )}
     </div>

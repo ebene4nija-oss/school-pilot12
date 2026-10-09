@@ -121,4 +121,27 @@ class CbtExam extends Model
 
         return null;
     }
+
+    /** Work out the paper's total marks from its questions, and store it. */
+    public function recalculateTotalMarks(): float
+    {
+        $perQuestion = CbtExamQuestion::where('exam_id', $this->id)->with('question')->get()
+            ->map(fn ($link) => $link->question ? $link->effectiveMarks($link->question) : 0.0)
+            ->sort()
+            ->values();
+
+        // With a subset draw, the paper is worth the N highest-value questions
+        // at most — quoting the full bank total would overstate it.
+        $total = $this->questions_per_attempt
+            ? $perQuestion->reverse()->take($this->questions_per_attempt)->sum()
+            : $perQuestion->sum();
+
+        $total = round((float) $total, 2);
+
+        if ((float) $this->total_marks !== $total) {
+            $this->forceFill(['total_marks' => $total])->save();
+        }
+
+        return $total;
+    }
 }

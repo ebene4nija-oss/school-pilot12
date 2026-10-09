@@ -46,6 +46,7 @@ class QuestionBankItem extends Model
     protected $fillable = [
         'school_id',
         'subject_id',
+        'class_id',
         'group_id',
         'group_sequence',
         'topic',
@@ -83,6 +84,12 @@ class QuestionBankItem extends Model
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    /** The class it was written for; null on questions not yet filed. */
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
     }
 
     public function group()

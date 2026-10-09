@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import { Button, Field, inputClass } from '@/components/Page';
 import { RichText } from '@/components/RichContent';
 
@@ -38,6 +39,7 @@ type Zone = { id: string; label?: string; x: number; y: number; w: number; h: nu
 export interface QuestionInput {
   id?: number;
   subject_id: number | '';
+  class_id: number | '';
   group_id?: number | null;
   group_sequence?: number | null;
   topic: string;
@@ -54,8 +56,8 @@ export interface QuestionInput {
   status: string;
 }
 
-export const blankQuestion = (subjectId: number | '' = ''): QuestionInput => ({
-  subject_id: subjectId, topic: '', question: '', question_type: 'multiple_choice', options: { A: '', B: '', C: '', D: '' },
+export const blankQuestion = (subjectId: number | '' = '', classId: number | '' = ''): QuestionInput => ({
+  subject_id: subjectId, class_id: classId, topic: '', question: '', question_type: 'multiple_choice', options: { A: '', B: '', C: '', D: '' },
   correct_answer: 'A', answer_schema: null, explanation: '', difficulty: 'medium', marks: 1, negative_marks: 0, media: [], status: 'approved',
 });
 
@@ -64,10 +66,10 @@ const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
 const pct = (v: number) => Math.round(v * 1000) / 10;
 
 export default function QuestionEditor({
-  initial, subjects, groups, media, frozen, onSaved, onCancel,
+  initial, classes, groups, media, frozen, onSaved, onCancel,
 }: {
   initial: QuestionInput;
-  subjects: { id: number; name: string }[];
+  classes: { id: number; name: string }[];
   groups: { id: number; title: string }[];
   media: Media[];
   frozen?: boolean;
@@ -75,6 +77,8 @@ export default function QuestionEditor({
   onCancel: () => void;
 }) {
   const [q, setQ] = useState<QuestionInput>(initial);
+  // Every question is filed against a class; its subjects follow the class.
+  const subjects = useClassSubjects(q.class_id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -121,7 +125,7 @@ export default function QuestionEditor({
     setBusy(true);
     setError(null);
     const body: Record<string, unknown> = {
-      subject_id: Number(q.subject_id), topic: q.topic || null, question: q.question, question_type: q.question_type,
+      subject_id: Number(q.subject_id), class_id: Number(q.class_id), topic: q.topic || null, question: q.question, question_type: q.question_type,
       options: q.options, correct_answer: q.correct_answer, answer_schema: q.answer_schema, explanation: q.explanation || null,
       difficulty: q.difficulty, marks: Number(q.marks), negative_marks: Number(q.negative_marks) || 0, media: q.media,
       status: q.status, group_id: q.group_id || null, group_sequence: q.group_id ? q.group_sequence || 1 : null,
@@ -147,7 +151,8 @@ export default function QuestionEditor({
       {error && <p role="alert" className="rounded-lg bg-negative-soft px-4 py-3 text-sm text-negative">{error}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Subject"><select className={inputClass} required value={q.subject_id} onChange={(e) => setQ({ ...q, subject_id: Number(e.target.value) || '' })}><option value="">Choose…</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+        <Field label="Class"><select className={inputClass} required value={q.class_id} onChange={(e) => setQ({ ...q, class_id: Number(e.target.value) || '' })}><option value="">Choose…</option>{classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+        <Field label="Subject"><select className={inputClass} required value={q.subject_id} onChange={(e) => setQ({ ...q, subject_id: Number(e.target.value) || '' })}><option value="">Choose…</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}{q.subject_id && !subjects.some((s) => s.id === q.subject_id) && <option value={q.subject_id}>(current subject)</option>}</select></Field>
         <Field label="Topic"><input className={inputClass} value={q.topic} onChange={(e) => setQ({ ...q, topic: e.target.value })} placeholder="e.g. Simultaneous equations" /></Field>
         <Field label="Type"><select className={inputClass} value={t} onChange={(e) => changeType(e.target.value)} disabled={!!q.id}>{TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
         <Field label="Difficulty"><select className={inputClass} value={q.difficulty} onChange={(e) => setQ({ ...q, difficulty: e.target.value })}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></Field>

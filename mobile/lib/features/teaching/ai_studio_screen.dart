@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/data/cached.dart';
+import '../../core/data/reference_data.dart';
 import '../../core/providers.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/teacher/cbt_teacher_data.dart';
@@ -302,6 +303,7 @@ class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
   late final Set<int> _chosen = {
     for (var i = 0; i < widget.questions.length; i++) i,
   };
+  int? _classId;
   int? _subjectId;
   bool _saving = false;
   bool _saved = false;
@@ -312,6 +314,7 @@ class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
       final res = await ref.read(apiClientProvider).post<dynamic>(
         Api.cbtQuestionsImport,
         body: {
+          'class_id': _classId,
           'subject_id': _subjectId,
           'questions': [
             for (final i in _chosen.toList()..sort())
@@ -354,7 +357,8 @@ class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
 
   @override
   Widget build(BuildContext context) {
-    final subjects = ref.watch(schoolSubjectsProvider).valueOrNull ?? const [];
+    final classes = ref.watch(classesProvider).valueOrNull ?? const <ClassRef>[];
+    final subjects = ref.watch(classSubjectsProvider(_classId)).valueOrNull ?? const [];
 
     // Match the subject the teacher typed, so most of the time this is ready.
     if (_subjectId == null && subjects.isNotEmpty) {
@@ -395,7 +399,24 @@ class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
               ),
             ),
           const SizedBox(height: AppSpacing.sm),
+          // The bank is filed by class, so these land where a paper for it looks.
           DropdownButtonFormField<int>(
+            initialValue: _classId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Class they are for'),
+            items: [
+              for (final c in classes) DropdownMenuItem(value: c.id, child: Text(c.name)),
+            ],
+            onChanged: _saved
+                ? null
+                : (v) => setState(() {
+                      _classId = v;
+                      _subjectId = null;
+                    }),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          DropdownButtonFormField<int>(
+            key: ValueKey('bank-subject-$_classId'),
             initialValue: _subjectId,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Subject in the bank'),
@@ -412,7 +433,7 @@ class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _saving || _saved || _chosen.isEmpty || _subjectId == null
+              onPressed: _saving || _saved || _chosen.isEmpty || _classId == null || _subjectId == null
                   ? null
                   : _save,
               icon: Icon(_saved ? Icons.check : Icons.save_alt_outlined),

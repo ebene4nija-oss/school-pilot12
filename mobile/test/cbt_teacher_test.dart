@@ -5,6 +5,7 @@ import 'package:schoolpilot/features/cbt/teacher/cbt_exam_detail_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_exams_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_results_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_teacher_data.dart';
+import 'package:schoolpilot/core/data/reference_data.dart';
 import 'package:schoolpilot/features/teaching/ai_studio_screen.dart';
 
 Widget _app(Widget home, List<Override> overrides) => ProviderScope(
@@ -134,7 +135,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Ada')).dy),
     );
   });
-  testWidgets('AI questions are all ticked and the typed subject is matched', (tester) async {
+  testWidgets('AI questions are all ticked, filed to a class, and the typed subject is matched', (tester) async {
     await tester.pumpWidget(_app(
       const Scaffold(
         body: SingleChildScrollView(
@@ -150,7 +151,8 @@ void main() {
         ),
       ),
       [
-        schoolSubjectsProvider.overrideWith((ref) async => [
+        classesProvider.overrideWith((ref) async => const [ClassRef(id: 7, name: 'JSS 2')]),
+        classSubjectsProvider.overrideWith((ref, classId) async => [
               {'id': 3, 'name': 'Mathematics'},
               {'id': 4, 'name': 'English'},
             ]),
@@ -158,13 +160,22 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
+    FilledButton save() => tester.widget<FilledButton>(
+          find.ancestor(
+            of: find.text('Save 2 to question bank'),
+            matching: find.byWidgetPredicate((w) => w is FilledButton),
+          ),
+        );
+
+    // The bank is filed by class: nothing saves until one is chosen.
+    expect(save().onPressed, isNull);
+
+    await tester.tap(find.text('Class they are for'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('JSS 2').last);
+    await tester.pumpAndSettle();
+
     expect(find.text('Mathematics'), findsOneWidget);
-    final save = tester.widget<FilledButton>(
-      find.ancestor(
-        of: find.text('Save 2 to question bank'),
-        matching: find.byWidgetPredicate((w) => w is FilledButton),
-      ),
-    );
-    expect(save.onPressed, isNotNull);
+    expect(save().onPressed, isNotNull);
   });
 }

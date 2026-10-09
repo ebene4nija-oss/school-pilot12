@@ -10,6 +10,7 @@ use App\Models\CbtExamQuestion;
 use App\Models\CbtMediaAsset;
 use App\Models\QuestionBankItem;
 use App\Models\Student;
+use App\Services\Cbt\QuestionBankFilter;
 use App\Services\CbtExamService;
 use App\Services\CbtMediaService;
 use App\Services\MathContentService;
@@ -137,29 +138,9 @@ class CbtController extends Controller
     {
         $schoolId = $this->schoolId();
 
-        $query = QuestionBankItem::where('school_id', $schoolId)->with(['subject:id,name', 'group:id,title']);
+        $query = QuestionBankItem::where('school_id', $schoolId)->with(['subject:id,name', 'group:id,title', 'schoolClass:id,name']);
 
-        // `group_id=null` is a real filter, not a missing one: "show me the
-        // standalone questions" is how an author finds what is not yet
-        // attached to a passage.
-        if ($request->has('group_id')) {
-            $groupId = $request->input('group_id');
-            $query->when(
-                $groupId === null || $groupId === '' || $groupId === 'null',
-                fn ($q) => $q->whereNull('group_id'),
-                fn ($q) => $q->where('group_id', $groupId)
-            );
-        }
-
-        foreach (['subject_id', 'topic', 'difficulty', 'question_type', 'exam_body', 'status'] as $filter) {
-            if ($request->filled($filter)) {
-                $query->where($filter, $request->input($filter));
-            }
-        }
-
-        if ($request->filled('search')) {
-            $query->where('question', 'like', '%' . $request->input('search') . '%');
-        }
+        QuestionBankFilter::apply($query, $schoolId, $request->only(QuestionBankFilter::FILTERS));
 
         $questions = $query->orderByDesc('id')->paginate(min((int) $request->input('per_page', 25), 100));
 
@@ -169,6 +150,9 @@ class CbtController extends Controller
                 'id' => $item->id,
                 'subject' => $item->subject?->name,
                 'subject_id' => $item->subject_id,
+                'class_id' => $item->class_id,
+                'class' => $item->schoolClass?->name,
+                'created_by' => $item->created_by,
                 'group_id' => $item->group_id,
                 'group_title' => $item->group?->title,
                 'group_sequence' => $item->group_sequence,
@@ -195,6 +179,9 @@ class CbtController extends Controller
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
+            // Optional to the API so an older installed app can still save;
+            // the editors always send it.
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'group_id' => ['nullable', Rule::exists('cbt_question_groups', 'id')->where('school_id', $schoolId)],
             'group_sequence' => 'nullable|integer|min:1|max:99',
             'topic' => 'nullable|string|max:255',
@@ -279,6 +266,7 @@ class CbtController extends Controller
         $question = QuestionBankItem::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate([
+            'class_id' => ['sometimes', 'nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'group_id' => ['nullable', Rule::exists('cbt_question_groups', 'id')->where('school_id', $schoolId)],
             'group_sequence' => 'nullable|integer|min:1|max:99',
             'topic' => 'nullable|string|max:255',
@@ -508,6 +496,7 @@ class CbtController extends Controller
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'questions' => 'required|array|min:1|max:500',
             'questions.*.question' => 'required|string',
             'questions.*.question_type' => ['nullable', Rule::in(QuestionBankItem::TYPES)],
@@ -533,6 +522,7 @@ class CbtController extends Controller
                 QuestionBankItem::create([
                     'school_id' => $schoolId,
                     'subject_id' => $validated['subject_id'],
+                    'class_id' => $validated['class_id'] ?? null,
                     'topic' => $row['topic'] ?? null,
                     'question' => $row['question'],
                     'question_type' => $type,
@@ -861,26 +851,7 @@ class CbtController extends Controller
      */
     private function recalculateTotalMarks(CbtExam $exam): float
     {
-        $links = CbtExamQuestion::where('exam_id', $exam->id)->with('question')->get();
-
-        $perQuestion = $links
-            ->map(fn ($link) => $link->question ? $link->effectiveMarks($link->question) : 0.0)
-            ->sort()
-            ->values();
-
-        // With a subset draw, the paper is worth the N highest-value questions
-        // at most — quoting the full bank total would overstate it.
-        $total = $exam->questions_per_attempt
-            ? $perQuestion->reverse()->take($exam->questions_per_attempt)->sum()
-            : $perQuestion->sum();
-
-        $total = round((float) $total, 2);
-
-        if ((float) $exam->total_marks !== $total) {
-            $exam->forceFill(['total_marks' => $total])->save();
-        }
-
-        return $total;
+        return $exam->recalculateTotalMarks();
     }
 
     // ==================================================================

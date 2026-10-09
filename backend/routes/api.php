@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AbsenceAlertController;
 use App\Http\Controllers\Api\V1\AcademicHistoryController;
 use App\Http\Controllers\Api\V1\AcademicStructureController;
 use App\Http\Controllers\Api\V1\ClassStructureController;
+use App\Http\Controllers\Api\V1\QuestionBankBulkController;
 use App\Http\Controllers\Api\V1\AccountingController;
 use App\Http\Controllers\Api\V1\AddedFeaturesController;
 use App\Http\Controllers\Api\V1\AdmissionController;
@@ -749,6 +750,9 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::get('/cbt/questions', [CbtController::class, 'listQuestions']);
             Route::post('/cbt/questions', [CbtController::class, 'storeQuestion']);
             Route::post('/cbt/questions/import', [CbtController::class, 'importQuestions']);
+            // Filing the bank many at a time, and its table of contents.
+            Route::post('/cbt/questions/bulk', [QuestionBankBulkController::class, 'bulk']);
+            Route::get('/cbt/questions/summary', [QuestionBankBulkController::class, 'summary']);
             Route::get('/cbt/questions/{id}', [CbtController::class, 'showQuestion'])->whereNumber('id');
             Route::put('/cbt/questions/{id}', [CbtController::class, 'updateQuestion']);
             Route::delete('/cbt/questions/{id}', [CbtController::class, 'destroyQuestion']);

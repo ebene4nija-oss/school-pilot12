@@ -114,6 +114,7 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
         builder: (_) => QuestionBankPicker(
           examId: widget.examId,
           subjectId: intOf(exam['subject_id']),
+          classId: exam['class_id'] == null ? null : intOf(exam['class_id']),
           alreadyOnPaper: attached,
         ),
       ),
@@ -303,16 +304,19 @@ class _QuestionRow extends StatelessWidget {
 }
 
 /// The school's question bank for this subject, to tick and add to a paper.
+/// A paper set for one class shows that class's questions first.
 class QuestionBankPicker extends ConsumerStatefulWidget {
   const QuestionBankPicker({
     super.key,
     required this.examId,
     required this.subjectId,
     required this.alreadyOnPaper,
+    this.classId,
   });
 
   final int examId;
   final int subjectId;
+  final int? classId;
   final Set<int> alreadyOnPaper;
 
   @override
@@ -322,6 +326,7 @@ class QuestionBankPicker extends ConsumerStatefulWidget {
 class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
   final _search = TextEditingController();
   final _chosen = <int>{};
+  bool _thisClassOnly = true;
   List<Map<String, dynamic>>? _questions;
   String? _error;
   bool _saving = false;
@@ -348,7 +353,9 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
         Api.cbtQuestions,
         query: {
           if (widget.subjectId > 0) 'subject_id': widget.subjectId,
+          if (widget.classId != null && _thisClassOnly) 'class_id': widget.classId,
           if (_search.text.trim().isNotEmpty) 'search': _search.text.trim(),
+          'status': 'approved',
           'per_page': 100,
         },
       );
@@ -357,6 +364,8 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
         _questions = listOf(data)
             .where((q) => !widget.alreadyOnPaper.contains(intOf(q['id'])))
             .toList();
+        // Ticks on questions no longer listed would be added unseen.
+        _chosen.retainAll(_questions!.map((q) => intOf(q['id'])));
       });
     } catch (error) {
       if (mounted) setState(() => _error = asApiException(error).message);
@@ -411,6 +420,33 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
               ),
             ),
           ),
+          if (widget.classId != null)
+            SwitchListTile(
+              dense: true,
+              title: const Text('This class’s questions only'),
+              value: _thisClassOnly,
+              onChanged: (on) {
+                setState(() => _thisClassOnly = on);
+                _load();
+              },
+            ),
+          if (questions != null && questions.isNotEmpty)
+            CheckboxListTile(
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text('Select all (${questions.length})'),
+              value: _chosen.length == questions.length
+                  ? true
+                  : _chosen.isEmpty
+                      ? false
+                      : null,
+              tristate: true,
+              onChanged: (_) => setState(() {
+                _chosen.length == questions.length
+                    ? _chosen.clear()
+                    : _chosen.addAll(questions.map((q) => intOf(q['id'])));
+              }),
+            ),
           Expanded(
             child: _error != null
                 ? EmptyState(
