@@ -174,6 +174,19 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role.isFinance)
             _Tile(
+              icon: Icons.receipt_long_outlined,
+              label: 'Payments ledger',
+              detail: 'Every payment, with receipts to share',
+              onTap: () => context.push('/payments-ledger'),
+            ),
+          if (role.isFinance)
+            _Tile(
+              icon: Icons.shopping_bag_outlined,
+              label: 'Expenses and petty cash',
+              onTap: () => context.push('/expenses'),
+            ),
+          if (role.isFinance)
+            _Tile(
               icon: Icons.account_balance_outlined,
               label: 'Transfers to confirm',
               detail: 'Approve bank transfers once they reach the account',

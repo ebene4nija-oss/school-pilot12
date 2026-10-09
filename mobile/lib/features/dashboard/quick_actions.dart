@@ -40,6 +40,7 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
           QuickAction(Icons.forum_outlined, 'Messages', '/messages'),
           QuickAction(Icons.calendar_month_outlined, 'Timetable', '/timetable'),
           QuickAction(Icons.pin_outlined, 'Result PINs', '/result-pins'),
+          QuickAction(Icons.receipt_long_outlined, 'Payments', '/payments-ledger'),
           QuickAction(Icons.payments_outlined, 'Payroll', '/payroll'),
           QuickAction(Icons.account_balance_outlined, 'Transfers', '/fees/transfers'),
           QuickAction(Icons.auto_awesome_outlined, 'AI Studio', '/ai-studio'),
@@ -50,6 +51,8 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
           QuickAction(Icons.notifications_outlined, 'Notifications', '/notifications'),
         ],
       UserRole.bursar => const [
+          QuickAction(Icons.receipt_long_outlined, 'Payments', '/payments-ledger'),
+          QuickAction(Icons.shopping_bag_outlined, 'Expenses', '/expenses'),
           QuickAction(Icons.account_balance_outlined, 'Transfers', '/fees/transfers'),
           QuickAction(Icons.forum_outlined, 'Messages', '/messages'),
           QuickAction(Icons.receipt_long_outlined, 'Payslips', '/payslips'),

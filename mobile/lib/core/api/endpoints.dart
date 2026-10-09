@@ -139,6 +139,11 @@ class Api {
 
   // Finance
   static const payments = '$version/finance/payments';
+  static const expenses = '$version/accounting/expenses';
+  static const pettyCash = '$version/accounting/petty-cash';
+  static const scholarships = '$version/finance/scholarships';
+  static String applyDiscount(int invoiceId) =>
+      '$version/finance/invoices/$invoiceId/apply-discount';
   // Opens a hosted checkout on the school's own merchant account and returns an
   // `authorization_url`. The app holds no gateway key and mints no reference;
   // the payment is confirmed only by the gateway's signed callback to the

@@ -65,6 +65,15 @@ class ApiClient {
     return res.data as T;
   }
 
+  /// A file behind the session (a receipt PDF), as bytes.
+  Future<Uint8List> getBytes(String path) async {
+    final res = await _dio.get<List<int>>(
+      path,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(res.data ?? const []);
+  }
+
   /// [timeout] overrides the default wait for a reply, for the few calls
   /// that are slow by nature (an AI draft can take most of a minute).
   Future<T> post<T>(

@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'bursary_tools.dart';
 import 'fees_screen.dart';
 
 /// One student's fees, read live: the bursar is about to take money against
@@ -98,14 +99,44 @@ class _InvoiceCard extends ConsumerWidget {
               style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
             ),
             for (final p in payments)
-              Text(
-                '${stringOf(p['receipt_number'])} · ${Money.format(numOf(p['amount']))} · ${stringOf(p['gateway']).replaceAll('_', ' ')} · ${Dates.dayMonth(Dates.tryParse(p['paid_at']))}',
-                style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${stringOf(p['receipt_number'])} · ${Money.format(numOf(p['amount']))} · ${stringOf(p['gateway']).replaceAll('_', ' ')} · ${Dates.dayMonth(Dates.tryParse(p['paid_at']))}',
+                      style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                    ),
+                  ),
+                  if (intOf(p['payment_id']) > 0)
+                    IconButton(
+                      tooltip: 'Share receipt',
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.ios_share, size: 18),
+                      onPressed: () => shareReceipt(context, ref, intOf(p['payment_id']), stringOf(p['receipt_number'])),
+                    ),
+                ],
               ),
             if (balance > 0)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonal(
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: AppSpacing.sm,
+                children: [
+                  OutlinedButton(
+                    onPressed: () async {
+                      final done = await showModalBottomSheet<String>(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => ApplyScholarshipSheet(invoice: invoice),
+                      );
+                      if (done != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(done)));
+                        ref.invalidate(bursarStatementProvider(studentId));
+                        ref.invalidate(defaultersProvider);
+                      }
+                    },
+                    child: const Text('Apply scholarship'),
+                  ),
+                  FilledButton.tonal(
                   onPressed: () async {
                     final done = await showModalBottomSheet<String>(
                       context: context,
@@ -120,6 +151,7 @@ class _InvoiceCard extends ConsumerWidget {
                   },
                   child: const Text('Record payment'),
                 ),
+                ],
               ),
           ],
         ),
