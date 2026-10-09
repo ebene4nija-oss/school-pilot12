@@ -54,6 +54,7 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
           QuickAction(Icons.notifications_outlined, 'Notifications', '/notifications'),
         ],
       UserRole.bursar => const [
+          QuickAction(Icons.fact_check_outlined, 'Who has paid', '/fee-status'),
           QuickAction(Icons.receipt_long_outlined, 'Payments', '/payments-ledger'),
           QuickAction(Icons.shopping_bag_outlined, 'Expenses', '/expenses'),
           QuickAction(Icons.account_balance_outlined, 'Transfers', '/fees/transfers'),

@@ -347,6 +347,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
          */
         Route::middleware('role:super_admin,school_admin,bursar')->group(function () {
             Route::get('/finance/defaulters', [FeeCollectionController::class, 'defaulters']);
+            // Who has paid and who owes, by section, class and arm.
+            Route::get('/finance/fee-status', [FeeCollectionController::class, 'feeStatus']);
             // Chasing them. The finance page's reminder button was wired to
             // nothing until this existed.
             Route::post('/finance/defaulters/remind', [FeeCollectionController::class, 'remindDefaulters']);

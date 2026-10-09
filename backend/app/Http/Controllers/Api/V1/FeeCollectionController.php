@@ -7,7 +7,10 @@ use App\Models\Invoice;
 use App\Models\PaymentInstallment;
 use App\Models\Scholarship;
 use App\Models\Student;
+use App\Models\Term;
 use App\Services\FeeReminderService;
+use App\Services\Finance\FeeStatusReport;
+use App\Support\Sections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -41,6 +44,8 @@ class FeeCollectionController extends Controller
         $request->validate([
             'term_id' => ['nullable', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
             'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'arm_id' => ['nullable', Rule::exists('arms', 'id')->where('school_id', $schoolId)],
+            'section' => ['nullable', Rule::in(array_keys(Sections::SECTIONS))],
             'min_balance' => 'nullable|numeric|min:0',
         ]);
 
@@ -84,6 +89,7 @@ class FeeCollectionController extends Controller
                     'student_name' => $invoice->student?->user?->name,
                     'admission_number' => $invoice->student?->admission_number,
                     'class' => $invoice->student?->currentClass?->name,
+                'arm' => $invoice->student?->currentArm?->name,
                     'term' => $invoice->term?->name,
                     'total_amount' => (float) $invoice->total_amount,
                     'amount_paid' => (float) $invoice->amount_paid,
@@ -142,6 +148,26 @@ class FeeCollectionController extends Controller
     }
 
     /**
+     * Who has paid and who is owing for a term, totalled by section, class
+     * and arm, with every student's status. Names and amounts only: no
+     * guardian contacts, so nothing here needs the defaulter list's audit.
+     */
+    public function feeStatus(Request $request, FeeStatusReport $report)
+    {
+        $schoolId = $this->schoolId();
+
+        $data = $request->validate([
+            'term_id' => ['required', Rule::exists('terms', 'id')->where('school_id', $schoolId)],
+            'section' => ['nullable', Rule::in(array_keys(Sections::SECTIONS))],
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'arm_id' => ['nullable', Rule::exists('arms', 'id')->where('school_id', $schoolId)],
+            'status' => ['nullable', Rule::in(FeeStatusReport::STATUSES)],
+        ]);
+
+        return response()->json($report->build($schoolId, Term::where('school_id', $schoolId)->findOrFail($data['term_id']), $data));
+    }
+
+    /**
      * The outstanding-invoice query behind both the dashboard and the reminder
      * sweep, so the bursar cannot be shown one set of debtors and message
      * another.
@@ -160,9 +186,21 @@ class FeeCollectionController extends Controller
                 'student',
                 fn ($s) => $s->where('class_id', $request->integer('class_id'))
             ))
+            ->when($request->filled('arm_id'), fn ($q) => $q->whereHas(
+                'student',
+                fn ($s) => $s->where('arm_id', $request->integer('arm_id'))
+            ))
+            // Nursery, Primary or Secondary: the classes whose level falls in it.
+            ->when($request->filled('section'), fn ($q) => $q->whereHas(
+                'student',
+                fn ($s) => $s->whereIn('class_id', DB::table('classes')->where('school_id', $schoolId)->get(['id', 'level_category'])
+                    ->filter(fn ($c) => Sections::sectionOf(Sections::levelGroupOf($c->level_category)) === $request->input('section'))
+                    ->pluck('id')->all() ?: [0])
+            ))
             ->with([
                 'student.user:id,name',
                 'student.currentClass:id,name',
+                'student.currentArm:id,name',
                 // Guardian contacts, for "who would this reminder reach".
                 'student.guardians.user.userProfile',
                 'term:id,name',

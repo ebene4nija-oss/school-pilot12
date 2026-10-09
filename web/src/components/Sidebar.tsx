@@ -161,6 +161,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
     heading: 'Operations',
     items: [
       { href: '/finance', icon: '💳', label: 'Fees & finance', roles: ['school_admin', 'bursar'] },
+      { href: '/finance/fee-status', icon: '✅', label: 'Who has paid', roles: ['school_admin', 'bursar'] },
       { href: '/finance/collect', icon: '🧾', label: 'Collect payments', roles: ['school_admin', 'bursar'] },
       { href: '/finance/payments', icon: '📒', label: 'Payments ledger', roles: ['school_admin', 'bursar'] },
       { href: '/finance/scholarships', icon: '🎓', label: 'Scholarships', roles: ['school_admin', 'bursar'] },

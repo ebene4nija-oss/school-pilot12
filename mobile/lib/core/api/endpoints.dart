@@ -154,6 +154,7 @@ class Api {
   // watches for this exact path to know when to close — see GatewayCheckout.
   static const paymentReturn = '$version/payments/return';
   static const defaulters = '$version/finance/defaulters';
+  static const feeStatus = '$version/finance/fee-status';
   static const defaultersRemind = '$version/finance/defaulters/remind';
   static const reconcileTransfer = '$version/finance/payments/reconcile-bank-transfer';
   static String studentStatement(int studentId) =>

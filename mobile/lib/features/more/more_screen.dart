@@ -194,6 +194,13 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role.isFinance)
             _Tile(
+              icon: Icons.fact_check_outlined,
+              label: 'Who has paid',
+              detail: 'Paid and owing by section, class and arm',
+              onTap: () => context.push('/fee-status'),
+            ),
+          if (role.isFinance)
+            _Tile(
               icon: Icons.receipt_long_outlined,
               label: 'Payments ledger',
               detail: 'Every payment, with receipts to share',
