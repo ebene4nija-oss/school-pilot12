@@ -316,6 +316,32 @@ class ResultCheckerPinTest extends TestCase
             ->assertOk();
     }
 
+    public function test_switching_result_pins_off_opens_report_cards_free_and_stops_sales()
+    {
+        // The school charges for results, then SchoolPilot switches PINs off:
+        // families must still read their report cards, and nobody sells a PIN.
+        $this->enableChecker();
+        $this->releaseResults();
+        $this->school->forceFill(['module_switches' => json_encode(['result_pins' => false])])->save();
+
+        $this->as($this->parent)
+            ->getJson("/api/v1/result-checker/{$this->student->id}/{$this->term->id}/summary")
+            ->assertOk()
+            ->assertJsonPath('pin_required', false)
+            ->assertJsonPath('unlocked', true);
+
+        $this->as($this->parent)
+            ->get("/api/v1/result-checker/{$this->student->id}/{$this->term->id}")
+            ->assertOk();
+
+        $this->as($this->parent)
+            ->postJson('/api/v1/result-checker/purchase', ['student_id' => $this->student->id, 'term_id' => $this->term->id, 'gateway' => 'paystack'])
+            ->assertForbidden()
+            ->assertJsonPath('module', 'result_pins');
+
+        $this->as($this->admin)->getJson('/api/v1/result-pins/batches')->assertForbidden();
+    }
+
     public function test_staff_report_card_access_is_never_metered()
     {
         $this->enableChecker();

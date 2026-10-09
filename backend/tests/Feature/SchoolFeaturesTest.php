@@ -83,6 +83,50 @@ class SchoolFeaturesTest extends TestCase
         $this->getJson('/api/v1/health')->assertOk();
     }
 
+    public function test_the_results_extras_each_close_their_own_screens(): void
+    {
+        $paths = [
+            'academic_history' => ['/api/v1/academic-history/closures', '/api/v1/transfers'],
+            'developmental' => ['/api/v1/developmental/indicators'],
+            'report_card_design' => ['/api/v1/report-cards/design-requests'],
+            'result_pins' => ['/api/v1/result-pins/batches'],
+        ];
+
+        foreach ($paths as $module => $urls) {
+            foreach ($urls as $url) {
+                $this->assertNotSame(403, $this->actingAs($this->admin, 'sanctum')->getJson($url)->status(), "{$url} should be open");
+            }
+
+            $this->actingAs($this->operator, 'sanctum')
+                ->putJson("/api/v1/platform/schools/{$this->school->id}/features", ['modules' => [$module => false]])
+                ->assertOk();
+
+            foreach ($urls as $url) {
+                $this->actingAs($this->admin, 'sanctum')->getJson($url)->assertForbidden()->assertJsonPath('module', $module);
+            }
+
+            $this->actingAs($this->operator, 'sanctum')
+                ->putJson("/api/v1/platform/schools/{$this->school->id}/features", ['modules' => [$module => true]])
+                ->assertOk();
+        }
+
+        // Grading and the school's own report-card template are not part of the design switch.
+        $this->actingAs($this->operator, 'sanctum')
+            ->putJson("/api/v1/platform/schools/{$this->school->id}/features", ['modules' => ['report_card_design' => false]]);
+        $this->assertNotSame(403, $this->actingAs($this->admin, 'sanctum')->getJson('/api/v1/grading-scales')->status());
+    }
+
+    public function test_the_operator_panel_shows_every_control_and_the_school_sees_none_of_them(): void
+    {
+        $panel = $this->actingAs($this->operator, 'sanctum')->getJson("/api/v1/platform/schools/{$this->school->id}/features")->assertOk();
+
+        $this->assertArrayHasKey('results', $panel->json('access.plans'));
+        $this->assertTrue($panel->json('access.email_enabled'));
+        $this->assertSame('Assessment & results', collect($panel->json('modules'))->firstWhere('key', 'result_pins')['group']);
+
+        $this->actingAs($this->admin, 'sanctum')->getJson('/api/v1/school/features')->assertOk()->assertJsonPath('access', null);
+    }
+
     public function test_only_the_operator_switches_modules(): void
     {
         $this->actingAs($this->admin, 'sanctum')

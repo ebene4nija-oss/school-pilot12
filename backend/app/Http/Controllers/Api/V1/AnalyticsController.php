@@ -363,7 +363,7 @@ class AnalyticsController extends Controller
         $pins = app(\App\Services\ResultPinService::class);
         $open = \App\Models\Term::where('school_id', $student->school_id)->get()
             ->filter(fn ($t) => \App\Models\ResultRelease::isReleasedFor($student->school_id, $t->id, $student->class_id)
-                && (! ($school?->result_checker_enabled ?? false) || $pins->accessFor($student->school_id, $student->id, $t->id)))
+                && (! \App\Support\SchoolFeatures::resultPinsRequired($school) || $pins->accessFor($student->school_id, $student->id, $t->id)))
             ->keyBy('id');
 
         return ScoreEntry::where('school_id', $student->school_id)->where('student_id', $student->id)

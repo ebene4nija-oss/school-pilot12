@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\School;
 use App\Services\Ai\AiGateway;
+use App\Services\SchoolBilling;
 use App\Support\AiModels;
 use App\Support\SchoolFeatures;
 use App\Support\TenantContext;
@@ -121,7 +122,7 @@ class SchoolFeatureController extends Controller
             $school = School::query()->tenants()->find($schoolId);
 
             return $school
-                ? response()->json(['school' => ['id' => $school->id, 'name' => $school->name]] + $this->describe($school))
+                ? response()->json(['school' => ['id' => $school->id, 'name' => $school->name]] + $this->describe($school, true))
                 : response()->json(['message' => 'School not found'], 404);
         });
     }
@@ -154,11 +155,12 @@ class SchoolFeatureController extends Controller
 
             $this->audit($request, $school, 'platform.school.modules_changed', $before, $after);
 
-            return response()->json(['message' => "Modules saved for {$school->name}."] + $this->describe($school->fresh()));
+            return response()->json(['message' => "Modules saved for {$school->name}."] + $this->describe($school->fresh(), true));
         });
     }
 
-    private function describe(School $school): array
+    /** `$operator` adds SchoolPilot's own controls; a school never sees those. */
+    private function describe(School $school, bool $operator = false): array
     {
         $aiAvailable = (bool) ($school->ai_enabled ?? true);
         $choices = SchoolFeatures::aiFeatures($school);
@@ -167,8 +169,18 @@ class SchoolFeatureController extends Controller
             'modules' => collect(SchoolFeatures::MODULES)->map(fn ($label, $key) => [
                 'key' => $key,
                 'label' => $label,
+                'group' => SchoolFeatures::MODULE_GROUPS[$key] ?? 'Other',
                 'enabled' => SchoolFeatures::moduleEnabled($school, $key),
             ])->values(),
+            // The operator's other per-school controls, so one panel can show
+            // them all. Each is still changed through its own endpoint.
+            'access' => ! $operator ? null : [
+                'status' => $school->status,
+                'billing_plan' => $school->billing_plan,
+                'plans' => SchoolBilling::PLANS,
+                'email_enabled' => (bool) ($school->email_enabled ?? true),
+                'email_daily_limit' => $school->email_daily_limit,
+            ],
             'ai' => [
                 // SchoolPilot's switch. Off means every feature is off,
                 // whatever the school has chosen below.

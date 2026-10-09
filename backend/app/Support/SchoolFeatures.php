@@ -30,6 +30,25 @@ class SchoolFeatures
         'library' => 'Library',
         'clinic' => 'Clinic log',
         'inventory' => 'School store',
+        'result_pins' => 'Result PINs (paid result checker)',
+        'report_card_design' => 'Custom report-card design',
+        'academic_history' => 'Transcripts & transfers',
+        'developmental' => 'Early-years ratings',
+    ];
+
+    /** How the operator's panel groups the modules. */
+    public const MODULE_GROUPS = [
+        'cbt' => 'Assessment & results',
+        'result_pins' => 'Assessment & results',
+        'report_card_design' => 'Assessment & results',
+        'academic_history' => 'Assessment & results',
+        'developmental' => 'Assessment & results',
+        'live_classes' => 'Teaching',
+        'hostel' => 'Boarding & campus',
+        'inventory' => 'Boarding & campus',
+        'transport' => 'Boarding & campus',
+        'library' => 'Boarding & campus',
+        'clinic' => 'Boarding & campus',
     ];
 
     /**
@@ -47,6 +66,15 @@ class SchoolFeatures
         'clinic' => '#^health/clinic#',
         // The school also has its own switch, off until it opts in (InventorySetting).
         'inventory' => '#^(parent/)?inventory(/|$)#',
+        // PIN sales and management only. Families still open report cards
+        // through result-checker/{student}/{term}: with this off they open
+        // free, as for a school that never charged (ResultCheckerController).
+        'result_pins' => '#^(result-pins|result-checker/(purchase|redeem|my-pins))(/|$)#',
+        // Requests to SchoolPilot for a bespoke design. The school's current
+        // template and its grading stay in use.
+        'report_card_design' => '#^report-cards/design-requests(/|$)#',
+        'academic_history' => '#^((parent/children/\d+/|students/\d+/|me/)?academic-history|transfers|parent/transfers|parent/children/\d+/transfer-request)(/|$)#',
+        'developmental' => '#^developmental(/|$)#',
     ];
 
     /** AI features a school can switch off for itself, with what each does. */
@@ -71,6 +99,15 @@ class SchoolFeatures
     public static function moduleEnabled(?School $school, string $module): bool
     {
         return self::modules($school)[$module] ?? true;
+    }
+
+    /**
+     * Whether families need a PIN to open a report card: the school has
+     * switched the checker on, and SchoolPilot hasn't switched PINs off.
+     */
+    public static function resultPinsRequired(?School $school): bool
+    {
+        return (bool) ($school?->result_checker_enabled ?? false) && self::moduleEnabled($school, 'result_pins');
     }
 
     /** The module that owns a /api/v1-relative path, or null. */

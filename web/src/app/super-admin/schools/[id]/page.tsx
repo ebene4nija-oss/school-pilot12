@@ -70,7 +70,14 @@ interface Batch {
 
 /** The school's module switches, and the AI features it chose for itself (read-only here). */
 interface Features {
-  modules: { key: string; label: string; enabled: boolean }[];
+  modules: { key: string; label: string; group: string; enabled: boolean }[];
+  access: {
+    status: 'active' | 'trial' | 'suspended';
+    billing_plan: string | null;
+    plans: Record<string, string>;
+    email_enabled: boolean;
+    email_daily_limit: number | null;
+  } | null;
   ai: { available: boolean; features: { key: string; label: string; chosen: boolean; active: boolean }[] };
 }
 
@@ -366,48 +373,115 @@ export default function SchoolDetailPage() {
 
           {features && (
             <Card
-              title="Modules"
-              description="What this school can use. A module switched off disappears from the school's menu and its screens refuse; nothing is deleted, and switching it back on restores everything."
+              title="Access & features"
+              description="Everything this school can use, in one place. Change any of it at any time, not only at onboarding. A module switched off disappears from the school's menu and its screens refuse; nothing is deleted, and switching it back on restores everything."
             >
-              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {features.modules.map((module) => (
-                  <li
-                    key={module.key}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-line-soft px-3 py-2"
-                  >
-                    <span className="text-sm text-ink">{module.label}</span>
-                    <button
-                      role="switch"
-                      aria-checked={module.enabled}
-                      aria-label={`${module.label} for ${school.name}`}
+              {features.access && (
+                <div className="grid gap-4 border-b border-line-soft pb-5 sm:grid-cols-2 xl:grid-cols-4">
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-medium text-ink">Account</span>
+                    <select
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                      value={features.access.status}
                       disabled={busy}
-                      onClick={() => {
-                        if (module.enabled && !window.confirm(`Switch ${module.label} off for ${school.name}? Its screens stop working for the school until you switch it back on.`)) return;
-                        run(() =>
-                          fetchApi(`/platform/schools/${schoolId}/features`, {
-                            method: 'PUT',
-                            body: JSON.stringify({ modules: { [module.key]: !module.enabled } }),
-                          }),
-                        );
+                      onChange={(e) => {
+                        const status = e.target.value;
+                        if (status === 'suspended' && !window.confirm(`Suspend ${school.name}? Nobody at the school can sign in until you reactivate it.`)) return;
+                        run(() => fetchApi(`/platform/schools/${schoolId}/status`, { method: 'POST', body: JSON.stringify({ status }) }));
                       }}
-                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${
-                        module.enabled ? 'bg-positive-soft text-positive' : 'bg-surface-raised text-ink-muted'
-                      }`}
                     >
-                      {module.enabled ? 'On' : 'Off'}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <option value="trial">Onboarding</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block font-medium text-ink">Plan</span>
+                    <select
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                      value={features.access.billing_plan ?? ''}
+                      disabled={busy}
+                      onChange={(e) => run(() => fetchApi(`/platform/schools/${schoolId}/billing-plan`, { method: 'PUT', body: JSON.stringify({ plan: e.target.value || null }) }))}
+                    >
+                      <option value="">No plan yet</option>
+                      {Object.entries(features.access.plans).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                    </select>
+                  </label>
+                  <div className="text-sm">
+                    <span className="mb-1 block font-medium text-ink">AI</span>
+                    <Switch
+                      on={features.ai.available}
+                      label={`AI for ${school.name}`}
+                      disabled={busy}
+                      onToggle={() => run(() => fetchApi(`/platform/schools/${schoolId}/ai`, { method: 'POST', body: JSON.stringify({ enabled: !features.ai.available }) }))}
+                    />
+                    {features.ai.available && (
+                      <span className="mt-1 block text-xs text-ink-muted">
+                        School chose: {features.ai.features.filter((ai) => ai.chosen).map((ai) => ai.label).join(', ') || 'none yet'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm">
+                    <span className="mb-1 block font-medium text-ink">Email sending</span>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        on={features.access.email_enabled}
+                        label={`Email for ${school.name}`}
+                        disabled={busy}
+                        onToggle={() => run(() => fetchApi(`/platform/schools/${schoolId}/messaging`, { method: 'POST', body: JSON.stringify({ email_enabled: !features.access?.email_enabled }) }))}
+                      />
+                      {features.access.email_enabled && (
+                        <input
+                          type="number"
+                          min={0}
+                          aria-label="Daily email limit"
+                          placeholder="Default"
+                          defaultValue={features.access.email_daily_limit ?? ''}
+                          disabled={busy}
+                          onBlur={(e) => {
+                            const next = e.target.value === '' ? null : Number(e.target.value);
+                            if (next === (features.access?.email_daily_limit ?? null)) return;
+                            run(() => fetchApi(`/platform/schools/${schoolId}/messaging`, { method: 'POST', body: JSON.stringify({ email_daily_limit: next }) }));
+                          }}
+                          className="w-28 rounded-lg border border-line bg-surface px-2 py-1 text-xs"
+                        />
+                      )}
+                    </div>
+                    <span className="mt-1 block text-xs text-ink-muted">Emails per day; empty uses the platform default.</span>
+                  </div>
+                </div>
+              )}
 
+              <div className="mt-5 space-y-5">
+                {Array.from(new Set(features.modules.map((m) => m.group))).map((group) => (
+                  <div key={group}>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">{group}</p>
+                    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {features.modules.filter((m) => m.group === group).map((module) => (
+                        <li key={module.key} className="flex items-center justify-between gap-3 rounded-lg border border-line-soft px-3 py-2">
+                          <span className="text-sm text-ink">{module.label}</span>
+                          <Switch
+                            on={module.enabled}
+                            label={`${module.label} for ${school.name}`}
+                            disabled={busy}
+                            onToggle={() => {
+                              if (module.enabled && !window.confirm(`Switch ${module.label} off for ${school.name}? Its screens stop working for the school until you switch it back on.`)) return;
+                              run(() =>
+                                fetchApi(`/platform/schools/${schoolId}/features`, {
+                                  method: 'PUT',
+                                  body: JSON.stringify({ modules: { [module.key]: !module.enabled } }),
+                                }),
+                              );
+                            }}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
               <p className="mt-4 text-xs text-ink-muted">
-                AI is {features.ai.available ? 'on' : 'off'} for this school (switch it in the School card above).
-                {features.ai.available && features.ai.features.length > 0 && (
-                  <>
-                    {' '}The school has chosen:{' '}
-                    {features.ai.features.filter((ai) => ai.chosen).map((ai) => ai.label).join(', ') || 'none yet'}.
-                  </>
-                )}
+                Result PINs off: families open report cards free, and nobody can buy or sell a PIN. The school store also has the school&apos;s own on/off; this switch decides whether it may use it at all.
               </p>
             </Card>
           )}
@@ -518,5 +592,22 @@ export default function SchoolDetailPage() {
         </div>
       )}
     </PageShell>
+  );
+}
+
+/** An on/off pill with switch semantics. */
+function Switch({ on, label, disabled, onToggle }: { on: boolean; label: string; disabled?: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onToggle}
+      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${on ? 'bg-positive-soft text-positive' : 'bg-surface-raised text-ink-muted'}`}
+    >
+      {on ? 'On' : 'Off'}
+    </button>
   );
 }

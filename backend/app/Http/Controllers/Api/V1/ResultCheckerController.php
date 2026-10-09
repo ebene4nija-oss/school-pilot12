@@ -91,7 +91,7 @@ class ResultCheckerController extends Controller
         // the card freely, so the summary must not offer to sell one. It said
         // "locked" regardless, and pointed parents at a purchase they did not
         // need.
-        $pinRequired = (bool) ($school->result_checker_enabled ?? false);
+        $pinRequired = \App\Support\SchoolFeatures::resultPinsRequired($school);
 
         return response()->json([
             'student_id' => $student->id,
@@ -143,7 +143,7 @@ class ResultCheckerController extends Controller
          * existed. Defaulting the other way would paywall every school on the
          * platform the moment this deploys.
          */
-        if (! $school->result_checker_enabled) {
+        if (! \App\Support\SchoolFeatures::resultPinsRequired($school)) {
             return $this->renderCard($request, $student, $term, null);
         }
 
