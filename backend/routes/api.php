@@ -1033,6 +1033,7 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
             Route::put('/platform/blog/{id}', [PlatformBlogController::class, 'update'])->whereNumber('id');
             Route::delete('/platform/blog/{id}', [PlatformBlogController::class, 'destroy'])->whereNumber('id');
             Route::post('/platform/blog/{id}/cover', [PlatformBlogController::class, 'uploadCover'])->whereNumber('id');
+            Route::post('/platform/blog/images', [PlatformBlogController::class, 'uploadImage']);
             Route::delete('/platform/blog/{id}/cover', [PlatformBlogController::class, 'destroyCover'])->whereNumber('id');
             Route::get('/platform/comparison', [PlatformComparisonController::class, 'show']);
             Route::put('/platform/comparison', [PlatformComparisonController::class, 'update']);

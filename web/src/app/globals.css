@@ -98,3 +98,32 @@
 .font-body {
   font-family: var(--font-inter), sans-serif;
 }
+
+/*
+ * Article typography for the blog editor and its preview, close to how the
+ * public site sets a post, so what the operator sees is what readers get.
+ */
+.sp-article { color: var(--color-ink); font-size: 1.0625rem; line-height: 1.75; }
+.sp-article > * + * { margin-top: 1em; }
+.sp-article h2 { font-family: var(--font-headline, inherit); font-size: 1.6rem; font-weight: 700; line-height: 1.25; color: var(--color-brand); margin-top: 1.6em; }
+.sp-article h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; color: var(--color-brand); margin-top: 1.4em; }
+.sp-article ul { list-style: disc; padding-left: 1.4em; }
+.sp-article ol { list-style: decimal; padding-left: 1.4em; }
+.sp-article li + li { margin-top: 0.3em; }
+.sp-article li p { margin: 0; }
+.sp-article a { color: var(--color-brand); text-decoration: underline; text-underline-offset: 3px; }
+.sp-article blockquote { border-left: 4px solid var(--color-accent); padding: 0.25em 0 0.25em 1em; color: var(--color-ink-muted); font-style: italic; }
+.sp-article img { max-width: 100%; height: auto; border-radius: 0.75rem; }
+.sp-article img.ProseMirror-selectednode { outline: 3px solid var(--color-accent); }
+.sp-article hr { border: 0; border-top: 1px solid var(--color-line); margin: 2em 0; }
+.sp-article code { background: var(--color-surface-sunken); border-radius: 0.25rem; padding: 0.1em 0.35em; font-size: 0.9em; }
+.sp-article pre { background: var(--color-brand); color: #fff; border-radius: 0.5rem; padding: 1em; overflow-x: auto; }
+.sp-article pre code { background: transparent; color: inherit; padding: 0; }
+.sp-article table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.sp-article th, .sp-article td { border: 1px solid var(--color-line-soft); padding: 0.5em 0.75em; text-align: left; vertical-align: top; min-width: 4em; position: relative; }
+.sp-article th { background: var(--color-surface-sunken); font-weight: 600; }
+.sp-article .selectedCell { background: var(--color-info-soft); }
+.sp-article .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: var(--color-accent); pointer-events: none; }
+.sp-article .tableWrapper { overflow-x: auto; }
+.sp-editor .ProseMirror { min-height: 26rem; outline: none; }
+.sp-editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--color-ink-faint); float: left; height: 0; pointer-events: none; }

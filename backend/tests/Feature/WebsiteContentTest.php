@@ -61,6 +61,38 @@ class WebsiteContentTest extends TestCase
         $this->assertArrayNotHasKey('status', $feed->json('data.0'));
     }
 
+    public function test_a_post_carries_a_category_tidy_tags_and_a_reading_time(): void
+    {
+        $post = $this->actingAs($this->operator)->postJson('/api/v1/platform/blog', $this->payload([
+            'category' => ' Results ',
+            'tags' => ['CA', 'broadsheet', 'ca', ' '],
+        ]))->assertCreated();
+
+        $this->assertSame('Results', $post->json('data.category'));
+        $this->assertSame(['CA', 'broadsheet'], $post->json('data.tags'));
+        $this->assertSame(1, $post->json('data.reading_minutes'));
+        $this->assertSame(['CA', 'broadsheet'], $this->getJson('/api/v1/public/blog')->json('data.0.tags'));
+    }
+
+    public function test_a_scheduled_post_stays_off_the_feed_until_its_date(): void
+    {
+        $this->actingAs($this->operator)->postJson('/api/v1/platform/blog', $this->payload(['publish_at' => now()->addDays(3)->toIso8601String()]))->assertCreated();
+        $this->assertCount(0, $this->getJson('/api/v1/public/blog')->json('data'));
+
+        $this->travel(4)->days();
+        $this->assertCount(1, $this->getJson('/api/v1/public/blog')->json('data'));
+    }
+
+    public function test_images_can_be_placed_inside_a_post(): void
+    {
+        $url = $this->actingAs($this->operator)->post('/api/v1/platform/blog/images', ['image' => UploadedFile::fake()->image('chart.png', 800, 500)], ['Accept' => 'application/json'])
+            ->assertCreated()->json('url');
+        $this->assertStringContainsString('website/blog/inline/', $url);
+
+        $this->actingAs($this->operator)->post('/api/v1/platform/blog/images', ['image' => UploadedFile::fake()->create('x.svg', 5, 'image/svg+xml')], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+    }
+
     public function test_slugs_stay_unique_and_published_at_is_stamped_once(): void
     {
         $a = $this->actingAs($this->operator)->postJson('/api/v1/platform/blog', $this->payload())->json('data');

@@ -34,6 +34,7 @@ class PlatformBlogController extends Controller
                     'published_at' => $p->published_at,
                     'updated_at' => $p->updated_at,
                     'cover_url' => $this->coverUrl($p),
+                    'category' => $p->category,
                 ]),
         ]);
     }
@@ -96,6 +97,22 @@ class PlatformBlogController extends Controller
         return response()->json(['data' => $this->present($post->fresh())]);
     }
 
+    /**
+     * An image placed inside a post by the editor. Public, like the cover:
+     * the site shows it to every reader. Returns the address to embed.
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,gif', 'max:5120'],
+        ]);
+
+        $file = $request->file('image');
+        $path = $file->storeAs(self::DIR.'/inline', now()->format('Ym').'-'.Str::lower(Str::random(12)).'.'.$file->extension(), 'public');
+
+        return response()->json(['url' => Storage::disk('public')->url($path)], 201);
+    }
+
     /** Public: published posts, with bodies, for the site's build. */
     public function publicIndex()
     {
@@ -129,7 +146,16 @@ class PlatformBlogController extends Controller
             'meta_description' => ['nullable', 'string', 'max:170'],
             'author_name' => ['nullable', 'string', 'max:80'],
             'status' => ['required', Rule::in(['draft', 'published'])],
+            'category' => ['nullable', 'string', 'max:60'],
+            'tags' => ['nullable', 'array', 'max:12'],
+            'tags.*' => ['nullable', 'string', 'max:40'],
+            // A future date schedules the post: the site shows it from the first rebuild after then.
+            'publish_at' => ['nullable', 'date'],
         ]);
+        $publishAt = $data['publish_at'] ?? null;
+        unset($data['publish_at']);
+        $data['category'] = ($data['category'] ?? null) ? trim($data['category']) : null;
+        $data['tags'] = collect($data['tags'] ?? [])->map(fn ($t) => trim($t))->filter()->unique(fn ($t) => mb_strtolower($t))->values()->all() ?: null;
 
         if (! empty($data['video_url']) && BlogPost::parseVideo($data['video_url']) === null) {
             abort(response()->json([
@@ -143,7 +169,10 @@ class PlatformBlogController extends Controller
         $data['video_url'] = ($data['video_url'] ?? null) ?: null;
 
         // Stamped once, the first time the post goes live.
-        $data['published_at'] = $data['status'] === 'published' ? ($post?->published_at ?? now()) : $post?->published_at;
+        // Or the date the operator chose, which may be in the future.
+        $data['published_at'] = $data['status'] === 'published'
+            ? ($publishAt ? \Illuminate\Support\Carbon::parse($publishAt) : ($post?->published_at ?? now()))
+            : ($publishAt ? \Illuminate\Support\Carbon::parse($publishAt) : $post?->published_at);
 
         return $data;
     }
@@ -175,6 +204,9 @@ class PlatformBlogController extends Controller
             'meta_title' => $p->meta_title,
             'meta_description' => $p->meta_description,
             'author_name' => $p->author_name,
+            'category' => $p->category,
+            'tags' => $p->tags ?? [],
+            'reading_minutes' => max(1, (int) round(str_word_count(strip_tags((string) $p->body)) / 220)),
             'status' => $p->status,
             'published_at' => $p->published_at,
             'updated_at' => $p->updated_at,

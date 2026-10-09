@@ -10,9 +10,10 @@ class BlogPost extends Model
     protected $fillable = [
         'slug', 'title', 'excerpt', 'body', 'cover_path', 'cover_alt', 'video_url',
         'meta_title', 'meta_description', 'author_name', 'status', 'published_at',
+        'category', 'tags',
     ];
 
-    protected $casts = ['published_at' => 'datetime'];
+    protected $casts = ['published_at' => 'datetime', 'tags' => 'array'];
 
     /**
      * A YouTube or Vimeo link reduced to provider and id, or null when it is

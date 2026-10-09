@@ -33,6 +33,7 @@ export default function BlogPage() {
                   <img src={p.cover} alt={p.cover_alt ?? ""} width={1200} height={630} className="aspect-[1200/630] w-full object-cover" loading="lazy" />
                 )}
                 <div className="flex flex-1 flex-col p-5">
+                  {p.category && <p className="eyebrow">{p.category}</p>}
                   <p className="text-sm text-ink-muted">
                     {formatDate(p.published_at)} · {readingMinutes(p.body)} min read{p.video ? " · Video" : ""}
                   </p>

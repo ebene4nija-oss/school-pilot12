@@ -22,6 +22,9 @@ export type Post = {
   meta_title: string | null;
   meta_description: string | null;
   author_name: string;
+  /** Optional; older posts and builds before categories have none. */
+  category?: string | null;
+  tags?: string[];
   published_at: string;
   updated_at: string;
 };

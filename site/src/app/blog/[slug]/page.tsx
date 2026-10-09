@@ -85,6 +85,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
               <Link href="/blog/" className="hover:underline underline-offset-4">
                 Blog
               </Link>
+              {post.category && <> · {post.category}</>}
             </p>
             <h1 className="mt-3 text-3xl font-bold md:text-5xl">{post.title}</h1>
             <p className="mt-4 text-lg text-ink-muted">{post.excerpt}</p>
@@ -104,6 +105,13 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
               )
             )}
             <div className="prose-site mt-8 text-lg" dangerouslySetInnerHTML={{ __html: renderMarkdown(post.body) }} />
+            {post.tags && post.tags.length > 0 && (
+              <ul aria-label="Tags" className="mt-10 flex flex-wrap gap-2">
+                {post.tags.map((t) => (
+                  <li key={t} className="rounded-full bg-surface px-3 py-1 text-sm text-ink-muted ring-1 ring-line-soft">#{t}</li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </article>
