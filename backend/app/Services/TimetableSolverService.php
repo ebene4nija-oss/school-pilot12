@@ -81,8 +81,9 @@ class TimetableSolverService
                             continue;
                         }
 
-                        // Constraint 2: the teacher's daily cap.
-                        if (($teacherDailyWorkload[$teacherId][$day] ?? 0) >= $maxDailyTeacherWorkload) {
+                        // Constraint 2: the teacher's daily cap — not for a
+                        // class teacher, who teaches their class all day.
+                        if (empty($assignment['exempt_daily_cap']) && ($teacherDailyWorkload[$teacherId][$day] ?? 0) >= $maxDailyTeacherWorkload) {
                             continue;
                         }
 

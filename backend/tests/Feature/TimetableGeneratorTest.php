@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicSession;
 use App\Models\School;
+use App\Models\SchoolClass;
+use App\Models\Subject;
 use App\Models\User;
 use App\Models\UserProfile;
 use Database\Seeders\DemoSchoolSeeder;
@@ -19,6 +22,42 @@ class TimetableGeneratorTest extends TestCase
     use RefreshDatabase;
 
     private const URL = 'http://greenfield.localhost/api/v1/timetable';
+
+    /**
+     * A primary class with a class teacher and no subject assignments gets a
+     * full timetable taught by that teacher, all day, past the daily cap that
+     * applies to subject teachers; a specialist takes their subject.
+     */
+    public function test_a_primary_class_teacher_fills_the_timetable_with_a_specialist_for_french(): void
+    {
+        $school = School::create(['name' => 'Little Stars', 'slug' => 'stars', 'subdomain' => 'stars']);
+        $staff = fn (string $name, string $email, string $role) => tap(
+            User::create(['name' => $name, 'email' => $email, 'password' => bcrypt('password')]),
+            fn ($u) => UserProfile::create(['school_id' => $school->id, 'user_id' => $u->id, 'role' => $role])
+        );
+        $admin = $staff('Head', 'head@stars.test', 'school_admin');
+        $teacher = $staff('Mrs Ade', 'ade@stars.test', 'teacher');
+        $french = $staff('Mme Dubois', 'dubois@stars.test', 'teacher');
+
+        $session = AcademicSession::create(['school_id' => $school->id, 'name' => '2026/2027', 'start_date' => now()->subMonth(), 'end_date' => now()->addMonths(10)]);
+        $pry2 = SchoolClass::create(['school_id' => $school->id, 'name' => 'Primary 2', 'level_category' => 'primary']);
+        $subjects = collect(['English', 'Mathematics', 'Basic Science', 'Social Studies', 'Verbal Reasoning', 'Quantitative Reasoning', 'French'])->map(fn ($n) => Subject::create(['school_id' => $school->id, 'name' => $n]));
+        foreach ($subjects as $s) {
+            DB::table('class_subjects')->insert(['school_id' => $school->id, 'class_id' => $pry2->id, 'subject_id' => $s->id, 'is_compulsory' => true, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        DB::table('class_teacher_assignments')->insert(['school_id' => $school->id, 'session_id' => $session->id, 'class_id' => $pry2->id, 'form_teacher_id' => $teacher->id, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('teacher_subjects')->insert(['school_id' => $school->id, 'teacher_id' => $french->id, 'subject_id' => $subjects[6]->id, 'class_id' => $pry2->id, 'is_primary' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+        $lessons = collect($this->withToken($admin->createToken('t')->plainTextToken)
+            ->postJson('http://stars.localhost/api/v1/timetable/generate', [])->assertOk()->json('timetable'))
+            ->where('is_break', false);
+
+        $this->assertSame(5 * 8, $lessons->count());
+        $this->assertSame([$french->id], $lessons->where('subject', 'French')->pluck('teacher_id')->unique()->values()->all());
+        $this->assertSame([$teacher->id], $lessons->where('subject', '!=', 'French')->pluck('teacher_id')->unique()->values()->all());
+        // More than the six-a-day cap that binds subject teachers would allow.
+        $this->assertGreaterThan(6 * 5, $lessons->where('teacher_id', $teacher->id)->count());
+    }
 
     private function adminToken(string $email = 'admin@greenfield.test'): string
     {

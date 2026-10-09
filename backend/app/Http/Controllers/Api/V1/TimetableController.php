@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SchoolClass;
 use App\Models\TimetableEntry;
 use App\Models\TimetableVersion;
+use App\Services\Academics\TeachingAssignments;
 use App\Services\TimetableSolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,8 +44,9 @@ class TimetableController extends Controller
      *
      * Classes, teacher assignments and the bell schedule may all be sent
      * explicitly. Any that are left out come from the school's own records:
-     * who teaches which subject to which class (`teacher_subjects`), every
-     * class that has at least one such teacher, and the standard day above.
+     * who teaches which subject to which class (subject teachers, and class
+     * teachers where the section is taught by them), every class that has at
+     * least one such teacher, and the standard day above.
      * The web builder sends nothing and relies on this.
      *
      * A class with no subject teachers is left out and named in `skipped`,
@@ -239,29 +241,38 @@ class TimetableController extends Controller
     }
 
     /**
-     * Who teaches what to which class, from `teacher_subjects`, in the shape
-     * the solver takes. Ids are cast: the solver compares them strictly, and
-     * not every database driver hands integers back as integers.
+     * Who teaches what to which class, in the shape the solver takes: subject
+     * teachers, and in a section taught by class teachers the class teacher
+     * for every subject a specialist does not take (TeachingAssignments).
+     *
+     * One teacher per class and subject. The solver balances periods per
+     * entry, so two teachers for one subject (one per arm, say) would double
+     * its periods; a whole-class assignment wins, then any assignment, then
+     * the class teacher. The timetable is per class, so a subject taught by
+     * different teachers in different arms shows the first of them.
+     *
+     * A class teacher's periods are exempt from the daily cap: in primary
+     * the class teacher is meant to teach the whole day.
      */
     private function assignmentsFromRecords(int $schoolId, array $classIds): array
     {
-        return DB::table('teacher_subjects')
-            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
-            ->where('teacher_subjects.school_id', $schoolId)
-            ->whereIn('teacher_subjects.class_id', $classIds)
-            ->orderBy('subjects.name')
-            ->get([
-                'teacher_subjects.class_id',
-                'teacher_subjects.teacher_id',
-                'teacher_subjects.subject_id',
-                'subjects.name as subject_name',
+        $rows = app(TeachingAssignments::class)->rows($schoolId)
+            ->filter(fn ($r) => $r->class_id !== null && in_array($r->class_id, $classIds, true))
+            ->sortBy(fn ($r) => [$r->source === 'assigned' ? 0 : 1, $r->arm_id === null ? 0 : 1, $r->arm_id ?? 0, $r->teacher_id])
+            ->unique(fn ($r) => $r->class_id.':'.$r->subject_id);
+
+        $names = DB::table('subjects')->where('school_id', $schoolId)->whereIn('id', $rows->pluck('subject_id')->all() ?: [0])->pluck('name', 'id');
+
+        return $rows
+            ->map(fn ($r) => [
+                'class_id' => $r->class_id,
+                'teacher_id' => $r->teacher_id,
+                'subject_id' => $r->subject_id,
+                'subject_name' => $names[$r->subject_id] ?? 'Subject',
+                'exempt_daily_cap' => $r->source === 'class_teacher',
             ])
-            ->map(fn ($row) => [
-                'class_id' => (int) $row->class_id,
-                'teacher_id' => (int) $row->teacher_id,
-                'subject_id' => (int) $row->subject_id,
-                'subject_name' => $row->subject_name,
-            ])
+            ->sortBy('subject_name')
+            ->values()
             ->all();
     }
 
