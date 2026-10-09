@@ -230,7 +230,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subjects = ref.watch(schoolSubjectsProvider);
+    final subjects = ref.watch(classSubjectsProvider(_classId));
     final classes = ref.watch(classesProvider);
     // Loads the term so the paper is filed against it.
     ref.watch(termsProvider);
@@ -248,20 +248,6 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          DropdownButtonFormField<int>(
-            initialValue: _subjectId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Subject'),
-            items: [
-              for (final s in subjects.valueOrNull ?? const <Map<String, dynamic>>[])
-                DropdownMenuItem(
-                  value: intOf(s['id']),
-                  child: Text(stringOf(s['name'], 'Subject')),
-                ),
-            ],
-            onChanged: (v) => setState(() => _subjectId = v),
-          ),
-          const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<int?>(
             initialValue: _classId,
             isExpanded: true,
@@ -274,7 +260,26 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
               for (final c in classes.valueOrNull ?? const <ClassRef>[])
                 DropdownMenuItem<int?>(value: c.id, child: Text(c.name)),
             ],
-            onChanged: (v) => setState(() => _classId = v),
+            // A new class has its own subjects; the old pick may not be one.
+            onChanged: (v) => setState(() {
+              _classId = v;
+              _subjectId = null;
+            }),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<int>(
+            key: ValueKey('subject-$_classId'),
+            initialValue: _subjectId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Subject'),
+            items: [
+              for (final s in subjects.valueOrNull ?? const <Map<String, dynamic>>[])
+                DropdownMenuItem(
+                  value: intOf(s['id']),
+                  child: Text(stringOf(s['name'], 'Subject')),
+                ),
+            ],
+            onChanged: (v) => setState(() => _subjectId = v),
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(

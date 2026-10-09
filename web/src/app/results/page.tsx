@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { fetchApi, uploadApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import {
   Badge,
   Button,
@@ -110,8 +111,8 @@ export default function ResultsPage() {
 
   const [classes, setClasses] = useState<Option[]>([]);
   const [terms, setTerms] = useState<Option[]>([]);
-  const [subjects, setSubjects] = useState<Option[]>([]);
   const [classId, setClassId] = useState('');
+  const subjects = useClassSubjects(classId);
   const [termId, setTermId] = useState('');
 
   const [sheet, setSheet] = useState<Broadsheet | null>(null);
@@ -139,10 +140,9 @@ export default function ResultsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [cls, trm, subj] = await Promise.all([
+        const [cls, trm] = await Promise.all([
           fetchApi<{ data?: Option[] }>('/classes'),
           fetchApi<{ data?: Option[] }>('/terms'),
-          fetchApi<{ data?: Option[] }>('/subjects').catch(() => null),
         ]);
 
         const classList = cls.data ?? [];
@@ -150,7 +150,6 @@ export default function ResultsPage() {
 
         setClasses(classList);
         setTerms(termList);
-        setSubjects(subj?.data ?? []);
 
         if (classList[0]) setClassId(String(classList[0].id));
 

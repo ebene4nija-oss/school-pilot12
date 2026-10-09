@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi, uploadApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import { roleFromCookie } from '@/components/Sidebar';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
 
@@ -72,6 +73,9 @@ function StaffLearning({ admin }: { admin: boolean }) {
   const [up, setUp] = useState({ title: '', description: '', topic: '', class_id: '', subject_id: '', target: 'class', arm_id: '', section: 'secondary', url: '', draft: false });
   const [file, setFile] = useState<File | null>(null);
   const [plan, setPlan] = useState({ class_id: '', subject_id: '', week: '', topic: '', subtopic: '', objectives: '', activities: '', assessment: '', duration_minutes: '40' });
+  // Upload and plan pickers follow their class; the list filter keeps every subject.
+  const upSubjects = useClassSubjects(up.class_id, up.target === 'arm' ? up.arm_id : null);
+  const planSubjects = useClassSubjects(plan.class_id);
   const [section, setSection] = useState('');
 
   const load = useCallback(async () => {
@@ -181,7 +185,7 @@ function StaffLearning({ admin }: { admin: boolean }) {
           <Card title="Share a material" description="PDF, Word, PowerPoint, images, video, audio, or a link. Shared only with the class, arm or section you choose.">
             <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={upload}>
               <Field label="Title"><input className={inputClass} required value={up.title} onChange={(e) => setUp({ ...up, title: e.target.value })} /></Field>
-              <Field label="Subject"><select className={inputClass} value={up.subject_id} onChange={(e) => setUp({ ...up, subject_id: e.target.value })}><option value="">—</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+              <Field label="Subject"><select className={inputClass} value={up.subject_id} onChange={(e) => setUp({ ...up, subject_id: e.target.value })}><option value="">—</option>{upSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
               <Field label="Topic"><input className={inputClass} value={up.topic} onChange={(e) => setUp({ ...up, topic: e.target.value })} /></Field>
               <Field label="Share with">
                 <select className={inputClass} value={up.target} onChange={(e) => setUp({ ...up, target: e.target.value })}>
@@ -247,7 +251,7 @@ function StaffLearning({ admin }: { admin: boolean }) {
           <Card title="New lesson plan" description="One plan serves a classroom lesson or a virtual class. Submit it for review when ready.">
             <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(e) => { e.preventDefault(); act('/lesson-plans', { ...plan, class_id: Number(plan.class_id), subject_id: Number(plan.subject_id), week: plan.week ? Number(plan.week) : null, duration_minutes: Number(plan.duration_minutes) }); }}>
               <Field label="Class"><select className={inputClass} required value={plan.class_id} onChange={(e) => setPlan({ ...plan, class_id: e.target.value })}><option value="">Choose…</option>{classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
-              <Field label="Subject"><select className={inputClass} required value={plan.subject_id} onChange={(e) => setPlan({ ...plan, subject_id: e.target.value })}><option value="">Choose…</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+              <Field label="Subject"><select className={inputClass} required value={plan.subject_id} onChange={(e) => setPlan({ ...plan, subject_id: e.target.value })}><option value="">Choose…</option>{planSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
               <Field label="Week"><input className={inputClass} type="number" min={1} max={20} value={plan.week} onChange={(e) => setPlan({ ...plan, week: e.target.value })} /></Field>
               <Field label="Duration (min)"><input className={inputClass} type="number" min={5} value={plan.duration_minutes} onChange={(e) => setPlan({ ...plan, duration_minutes: e.target.value })} /></Field>
               <Field label="Topic"><input className={inputClass} required value={plan.topic} onChange={(e) => setPlan({ ...plan, topic: e.target.value })} /></Field>

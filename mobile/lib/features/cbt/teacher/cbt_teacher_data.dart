@@ -40,6 +40,22 @@ final schoolSubjectsProvider =
   return listOf(cached.data, ['subjects']);
 });
 
+/// The subjects one class takes (its own list, or those tagged for its
+/// level), so a Primary 3 paper never offers SS 3 Physics. Falls back to the
+/// school's whole list until a class is picked.
+final classSubjectsProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, int?>((ref, classId) async {
+  if (classId == null) return ref.watch(schoolSubjectsProvider.future);
+  final api = ref.watch(apiClientProvider);
+  final cache = ref.watch(cacheStoreProvider);
+  final cached = await cachedGet<dynamic>(
+    cache: cache,
+    key: 'ref:subjects:class:$classId',
+    fetch: () => api.get<dynamic>(Api.subjects, query: {'class_id': classId}),
+  );
+  return listOf(cached.data, ['subjects']);
+});
+
 /// Question types a teacher marks by hand. Everything else the engine marks.
 bool isHandMarked(Object? type) => stringOf(type) == 'theory';
 

@@ -256,7 +256,7 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
   @override
   Widget build(BuildContext context) {
     final classes = ref.watch(classesProvider).valueOrNull ?? const <ClassRef>[];
-    final subjects = ref.watch(schoolSubjectsProvider).valueOrNull ?? const <Map<String, dynamic>>[];
+    final subjects = ref.watch(classSubjectsProvider(_classId)).valueOrNull ?? const <Map<String, dynamic>>[];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Set homework')),
@@ -268,10 +268,15 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Class'),
             items: [for (final c in classes) DropdownMenuItem(value: c.id, child: Text(c.name))],
-            onChanged: (v) => setState(() => _classId = v),
+            // A new class has its own subjects; the old pick may not be one.
+            onChanged: (v) => setState(() {
+              _classId = v;
+              _subjectId = null;
+            }),
           ),
           const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<int>(
+            key: ValueKey('subject-$_classId'),
             initialValue: _subjectId,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Subject'),

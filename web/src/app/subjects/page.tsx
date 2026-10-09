@@ -30,12 +30,13 @@ type Subject = {
   code: string | null;
   category: 'core' | 'elective';
   department: string | null;
+  level_groups: string[] | null;
   is_active: boolean;
 };
 
-type ClassOption = { id: number; name: string };
+type ClassOption = { id: number; name: string; level_category: string; arms: { id: number; name: string; stream: string | null }[] };
 
-type ClassSubject = { id: number; name: string; code: string | null; is_compulsory: boolean };
+type ClassSubject = { id: number; name: string; code: string | null; is_compulsory: boolean; streams: string[]; max_students: number | null };
 
 type Assignment = {
   id: number;
@@ -53,10 +54,42 @@ type Tab = 'subjects' | 'classes' | 'teachers';
 
 const DEPARTMENTS = ['general', 'science', 'arts', 'commercial'];
 
+const LEVELS: [string, string][] = [
+  ['nursery', 'Nursery'],
+  ['primary', 'Primary'],
+  ['junior_secondary', 'JSS'],
+  ['senior_secondary', 'SS'],
+];
+
+/** Same rule as the API (Sections::taughtAt): no tags means every level. */
+function taughtAt(levels: string[] | null, level: string): boolean {
+  if (!levels || levels.length === 0 || levels.includes(level)) return true;
+  if (level === 'secondary') return levels.some((l) => l.endsWith('_secondary'));
+  return levels.includes('secondary') && level.endsWith('secondary');
+}
+
+function levelNames(levels: string[] | null): string {
+  if (!levels || levels.length === 0) return 'All levels';
+  return levels.map((l) => LEVELS.find(([k]) => k === l)?.[1] ?? l).join(', ');
+}
+
+function LevelPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1">
+      {LEVELS.map(([k, l]) => (
+        <label key={k} className="flex items-center gap-1.5 text-sm text-ink">
+          <input type="checkbox" className="h-4 w-4 accent-brand" checked={value.includes(k)} onChange={(e) => onChange(e.target.checked ? [...value, k] : value.filter((x) => x !== k))} />
+          {l}
+        </label>
+      ))}
+    </div>
+  );
+}
 export default function SubjectsPage() {
   const [tab, setTab] = useState<Tab>('subjects');
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [streams, setStreams] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,10 +97,11 @@ export default function SubjectsPage() {
     try {
       const [subs, cls] = await Promise.all([
         fetchApi<{ data: Subject[] }>('/subjects?include_inactive=1'),
-        fetchApi<{ data: ClassOption[] }>('/classes'),
+        fetchApi<{ data: ClassOption[]; streams: Record<string, string> }>('/classes'),
       ]);
       setSubjects(subs.data ?? []);
       setClasses(cls.data ?? []);
+      setStreams(cls.streams ?? {});
       setError(null);
     } catch (err) {
       setError(errorText(err, 'Could not load subjects.'));
@@ -113,7 +147,7 @@ export default function SubjectsPage() {
       ) : (
         <>
           {tab === 'subjects' && <SubjectList subjects={subjects} onChanged={loadSubjects} />}
-          {tab === 'classes' && <ClassSubjects classes={classes} subjects={active} />}
+          {tab === 'classes' && <ClassSubjects classes={classes} subjects={active} streams={streams} />}
           {tab === 'teachers' && <Teachers classes={classes} subjects={active} />}
         </>
       )}
@@ -122,7 +156,7 @@ export default function SubjectsPage() {
 }
 
 function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: () => void }) {
-  const blank = { name: '', code: '', category: 'core', department: 'general' };
+  const blank = { name: '', code: '', category: 'core', department: 'general', level_groups: [] as string[] };
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState<number | null>(null);
   const [edit, setEdit] = useState(blank);
@@ -189,6 +223,10 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
             </select>
           </Field>
           <div className="sm:col-span-2 lg:col-span-5">
+            <span className="mb-1 block text-sm font-medium text-ink">Taught at (leave all unticked for every level)</span>
+            <LevelPicker value={form.level_groups} onChange={(v) => setForm({ ...form, level_groups: v })} />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-5">
             <Button type="submit" disabled={busy}>Add subject</Button>
           </div>
         </form>
@@ -200,7 +238,7 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
         {subjects.length === 0 ? (
           <Empty>No subjects yet.</Empty>
         ) : (
-          <Table columns={['Subject', 'Code', 'Type', 'Department', 'Status', '']}>
+          <Table columns={['Subject', 'Code', 'Type', 'Department', 'Levels', 'Status', '']}>
             {subjects.map((s) =>
               editing === s.id ? (
                 <tr key={s.id}>
@@ -223,10 +261,13 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
                       ))}
                     </select>
                   </Cell>
+                  <Cell>
+                    <LevelPicker value={edit.level_groups} onChange={(v) => setEdit({ ...edit, level_groups: v })} />
+                  </Cell>
                   <Cell>{null}</Cell>
                   <Cell>
                     <div className="flex gap-2">
-                      <Button disabled={busy} onClick={() => save(s.id, { name: edit.name.trim(), code: edit.code.trim() || null, category: edit.category, department: edit.department })}>
+                      <Button disabled={busy} onClick={() => save(s.id, { name: edit.name.trim(), code: edit.code.trim() || null, category: edit.category, department: edit.department, level_groups: edit.level_groups })}>
                         Save
                       </Button>
                       <Button variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
@@ -239,6 +280,7 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
                   <Cell className="font-mono text-xs">{s.code ?? '—'}</Cell>
                   <Cell className="capitalize">{s.category}</Cell>
                   <Cell className="capitalize">{s.department ?? '—'}</Cell>
+                  <Cell className="text-xs">{levelNames(s.level_groups)}</Cell>
                   <Cell>
                     <Badge tone={s.is_active ? 'green' : 'slate'}>{s.is_active ? 'Offered' : 'Switched off'}</Badge>
                   </Cell>
@@ -248,7 +290,7 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
                         variant="secondary"
                         onClick={() => {
                           setEditing(s.id);
-                          setEdit({ name: s.name, code: s.code ?? '', category: s.category, department: s.department ?? 'general' });
+                          setEdit({ name: s.name, code: s.code ?? '', category: s.category, department: s.department ?? 'general', level_groups: s.level_groups ?? [] });
                         }}
                       >
                         Edit
@@ -268,11 +310,13 @@ function SubjectList({ subjects, onChanged }: { subjects: Subject[]; onChanged: 
   );
 }
 
-function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects: Subject[] }) {
+function ClassSubjects({ classes, subjects, streams }: { classes: ClassOption[]; subjects: Subject[]; streams: Record<string, string> }) {
   const [classId, setClassId] = useState(classes[0] ? String(classes[0].id) : '');
   const [offered, setOffered] = useState<ClassSubject[]>([]);
   const [picked, setPicked] = useState<number[]>([]);
   const [compulsory, setCompulsory] = useState(true);
+  const [forStreams, setForStreams] = useState<string[]>([]);
+  const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -301,12 +345,30 @@ function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects
     try {
       await fetchApi('/classes/subjects', {
         method: 'POST',
-        body: JSON.stringify({ class_id: Number(classId), subjects: picked.map((id) => ({ subject_id: id, is_compulsory: compulsory })) }),
+        body: JSON.stringify({ class_id: Number(classId), subjects: picked.map((id) => ({ subject_id: id, is_compulsory: compulsory, streams: forStreams })) }),
       });
       setPicked([]);
       await load(classId);
     } catch (err) {
       setError(errorText(err, 'Could not add those subjects.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Turn one stream on or off for a subject the class already offers. */
+  const toggleStream = async (s: ClassSubject, stream: string) => {
+    const next = s.streams.includes(stream) ? s.streams.filter((x) => x !== stream) : [...s.streams, stream];
+    setBusy(true);
+    setError(null);
+    try {
+      await fetchApi('/classes/subjects', {
+        method: 'POST',
+        body: JSON.stringify({ class_id: Number(classId), subjects: [{ subject_id: s.id, is_compulsory: s.is_compulsory, max_students: s.max_students, streams: next }] }),
+      });
+      await load(classId);
+    } catch (err) {
+      setError(errorText(err, 'Could not change that subject.'));
     } finally {
       setBusy(false);
     }
@@ -326,12 +388,17 @@ function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects
 
   if (classes.length === 0) return <Empty>No classes yet. Set them up in the setup checklist first.</Empty>;
 
+  const cls = classes.find((c) => String(c.id) === classId);
+  // Streams this class's arms actually use; a class with none needs no stream column.
+  const classStreams = Array.from(new Set((cls?.arms ?? []).map((a) => a.stream).filter((s): s is string => !!s)));
   const notOffered = subjects.filter((s) => !offered.some((o) => o.id === s.id));
+  const candidates = showAll || !cls ? notOffered : notOffered.filter((s) => taughtAt(s.level_groups, cls.level_category));
+  const allPicked = candidates.length > 0 && candidates.every((s) => picked.includes(s.id));
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
       <Card title="Offered in this class">
-        <select value={classId} onChange={(e) => setClassId(e.target.value)} className={`${inputClass} mb-4 max-w-xs`}>
+        <select value={classId} onChange={(e) => { setClassId(e.target.value); setPicked([]); }} className={`${inputClass} mb-4 max-w-xs`}>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -340,13 +407,32 @@ function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects
         {offered.length === 0 ? (
           <Empty>This class offers no subjects yet.</Empty>
         ) : (
-          <Table columns={['Subject', 'Type', '']}>
+          <Table columns={classStreams.length ? ['Subject', 'Type', 'Taken by', ''] : ['Subject', 'Type', '']}>
             {offered.map((s) => (
               <tr key={s.id}>
                 <Cell className="font-medium text-brand">{s.name}</Cell>
                 <Cell>
                   <Badge tone={s.is_compulsory ? 'blue' : 'amber'}>{s.is_compulsory ? 'Compulsory' : 'Elective'}</Badge>
                 </Cell>
+                {classStreams.length > 0 && (
+                  <Cell>
+                    <div className="flex flex-wrap gap-1.5">
+                      {classStreams.map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          disabled={busy}
+                          aria-pressed={s.streams.includes(st)}
+                          onClick={() => toggleStream(s, st)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${s.streams.includes(st) ? 'bg-brand text-white ring-brand' : 'bg-surface text-ink-muted ring-line-soft'}`}
+                        >
+                          {streams[st] ?? st}
+                        </button>
+                      ))}
+                      {s.streams.length === 0 && <span className="text-xs text-ink-muted">All arms</span>}
+                    </div>
+                  </Cell>
+                )}
                 <Cell>
                   <Button variant="secondary" disabled={busy} onClick={() => remove(s.id)}>Remove</Button>
                 </Cell>
@@ -356,13 +442,24 @@ function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects
         )}
       </Card>
 
-      <Card title="Add subjects to this class">
-        {notOffered.length === 0 ? (
-          <Empty>Every subject is already offered here.</Empty>
+      <Card title="Add subjects to this class" description={showAll ? 'Showing every subject.' : `Showing subjects taught at this level.`}>
+        <div className="mb-3 flex flex-wrap items-center gap-4 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" className="h-4 w-4 accent-brand" checked={allPicked} disabled={candidates.length === 0}
+              onChange={(e) => setPicked(e.target.checked ? candidates.map((s) => s.id) : [])} />
+            Select all ({candidates.length})
+          </label>
+          <label className="flex items-center gap-2 text-ink-muted">
+            <input type="checkbox" className="h-4 w-4 accent-brand" checked={showAll} onChange={(e) => { setShowAll(e.target.checked); setPicked([]); }} />
+            Show subjects from other levels
+          </label>
+        </div>
+        {candidates.length === 0 ? (
+          <Empty>Every subject for this level is already offered here.</Empty>
         ) : (
           <>
             <div className="mb-4 grid gap-2 sm:grid-cols-2">
-              {notOffered.map((s) => (
+              {candidates.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 text-sm text-ink">
                   <input
                     type="checkbox"
@@ -379,6 +476,19 @@ function ClassSubjects({ classes, subjects }: { classes: ClassOption[]; subjects
                 <option value="1">As compulsory</option>
                 <option value="0">As electives</option>
               </select>
+              {classStreams.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="text-ink-muted">Only for:</span>
+                  {classStreams.map((st) => (
+                    <label key={st} className="flex items-center gap-1.5">
+                      <input type="checkbox" className="h-4 w-4 accent-brand" checked={forStreams.includes(st)}
+                        onChange={(e) => setForStreams((f) => (e.target.checked ? [...f, st] : f.filter((x) => x !== st)))} />
+                      {streams[st] ?? st}
+                    </label>
+                  ))}
+                  {forStreams.length === 0 && <span className="text-xs text-ink-muted">(all arms)</span>}
+                </div>
+              )}
               <Button disabled={busy || picked.length === 0} onClick={add}>
                 Add {picked.length || ''} subject{picked.length === 1 ? '' : 's'}
               </Button>

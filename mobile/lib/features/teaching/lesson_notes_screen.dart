@@ -246,7 +246,7 @@ class _AddLessonNoteScreenState extends ConsumerState<AddLessonNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subjects = ref.watch(schoolSubjectsProvider);
+    final subjects = ref.watch(classSubjectsProvider(_classId));
     final classes = ref.watch(classesProvider);
     ref.watch(termsProvider);
     final file = _file;
@@ -296,10 +296,17 @@ class _AddLessonNoteScreenState extends ConsumerState<AddLessonNoteScreen> {
               for (final c in classes.valueOrNull ?? const <ClassRef>[])
                 DropdownMenuItem(value: c.id, child: Text(c.name)),
             ],
-            onChanged: _sending ? null : (v) => setState(() => _classId = v),
+            // A new class has its own subjects; the old pick may not be one.
+            onChanged: _sending
+                ? null
+                : (v) => setState(() {
+                      _classId = v;
+                      _subjectId = null;
+                    }),
           ),
           const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<int>(
+            key: ValueKey('subject-$_classId'),
             initialValue: _subjectId,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Subject'),

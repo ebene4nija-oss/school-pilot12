@@ -116,7 +116,8 @@ export default function BroadsheetPage() {
   const [termId, setTermId] = useState('');
   const [classId, setClassId] = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [subjectOptions, setSubjectOptions] = useState<Option[]>([]);
+  // The class's own subjects (its arms' streams included), not the school's whole list.
+  const [subjectOptions, setSubjectOptions] = useState<{ classId: string; options: Option[] }>({ classId: '', options: [] });
 
   const [dash, setDash] = useState<{ summary: Record<string, number | null>; classes: DashRow[] } | null>(null);
   const [view, setView] = useState<ClassView | null>(null);
@@ -170,10 +171,10 @@ export default function BroadsheetPage() {
 
   const loadSubject = useCallback(async () => {
       let sid = subjectId;
-      let options = subjectOptions;
-      if (options.length === 0) {
-        options = (await fetchApi<{ data?: Option[] }>('/subjects').catch(() => ({ data: [] as Option[] }))).data ?? [];
-        setSubjectOptions(options);
+      let options = subjectOptions.options;
+      if (subjectOptions.classId !== classId) {
+        options = (await fetchApi<{ data?: Option[] }>(`/subjects?class_id=${classId}`).catch(() => ({ data: [] as Option[] }))).data ?? [];
+        setSubjectOptions({ classId, options });
       }
       if (!sid && options[0]) {
         sid = String(options[0].id);
@@ -398,7 +399,7 @@ export default function BroadsheetPage() {
           <div className="mb-4 max-w-xs">
             <Field label="Subject">
               <select className={inputClass} value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-                {(view?.calculation.subjects ?? subjectOptions).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {(view?.calculation.subjects ?? subjectOptions.options).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
           </div>

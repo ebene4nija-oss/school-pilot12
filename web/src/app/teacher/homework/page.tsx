@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
 
 /**
@@ -25,8 +26,8 @@ export default function TeacherHomework() {
   const [list, setList] = useState<Homework[] | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
-  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
   const [form, setForm] = useState(blank);
+  const subjects = useClassSubjects(form.class_id, form.arm_id);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<Homework | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -49,7 +50,6 @@ export default function TeacherHomework() {
       await load();
     })();
     fetchApi<{ data: ClassRow[] }>('/classes').then((r) => setClasses(r.data)).catch(() => undefined);
-    fetchApi<{ data: { id: number; name: string }[] }>('/subjects').then((r) => setSubjects(r.data ?? [])).catch(() => undefined);
     fetchApi<{ id: number }>('/user')
       .then((u) => fetchApi<{ data: Assignment[] }>(`/teachers/${u.id}/subjects`))
       .then((r) => setAssignments(r.data))

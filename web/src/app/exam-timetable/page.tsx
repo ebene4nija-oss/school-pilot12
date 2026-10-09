@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import {
   Badge,
   Button,
@@ -52,7 +53,6 @@ type Sitting = {
 };
 
 type ClassOption = { id: number; name: string; arms?: { id: number; name: string }[] };
-type Option = { id: number; name: string };
 type Term = { id: number; name: string; session_name: string | null };
 type StaffMember = { user_id: number; name: string; role: string };
 
@@ -182,7 +182,6 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
   const [info, setInfo] = useState<{ name: string; status: 'draft' | 'published' } | null>(null);
   const [sittings, setSittings] = useState<Sitting[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [subjects, setSubjects] = useState<Option[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [filterClass, setFilterClass] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +190,7 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
 
   const blank = { class_id: '', arm_id: '', subject_id: '', paper: '', exam_date: '', start_time: '09:00', end_time: '11:00', venue: '', invigilator_id: '' };
   const [form, setForm] = useState(blank);
+  const subjects = useClassSubjects(form.class_id, form.arm_id);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -208,7 +208,6 @@ function Editor({ id, onChanged, onDeleted }: { id: number; onChanged: () => voi
       await load();
     })();
     fetchApi<{ data: ClassOption[] }>('/classes').then((r) => setClasses(r.data ?? [])).catch(() => undefined);
-    fetchApi<{ data: Option[] }>('/subjects').then((r) => setSubjects(r.data ?? [])).catch(() => undefined);
     fetchApi<{ data: StaffMember[] }>('/staff/directory')
       .then((r) => setStaff((r.data ?? []).filter((m) => m.role === 'teacher' || m.role === 'school_admin')))
       .catch(() => undefined);

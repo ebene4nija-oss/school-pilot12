@@ -23,6 +23,8 @@ const SETTINGS: [string, string, string[] | 'bool' | 'number'][] = [
   ['ranking_basis', 'Rank students by', ['average', 'total', 'none']],
   ['ranking_method', 'Ties', ['competition', 'dense']],
   ['ranking_scope', 'Who is ranked', ['all', 'complete_only']],
+  // class: all of SS 2 together · arm: SS 2A among SS 2A · stream: all science students together
+  ['ranking_group', 'Positions within', ['class', 'arm', 'stream']],
   ['absence_policy', 'A missed exam counts as', ['exclude', 'zero']],
   ['pass_mark', 'Pass mark', 'number'],
   ['show_gender', 'Show gender', 'bool'],

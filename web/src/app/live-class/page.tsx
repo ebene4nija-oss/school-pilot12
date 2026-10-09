@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import { roleFromCookie } from '@/components/Sidebar';
 import ProviderConnections from './ProviderConnections';
 import {
@@ -103,7 +104,6 @@ const STATUS_TONE = {
 export default function LiveClassPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -114,6 +114,7 @@ export default function LiveClassPage() {
   const [title, setTitle] = useState('');
   const [classId, setClassId] = useState('');
   const [armId, setArmId] = useState('');
+  const subjects: SubjectOption[] = useClassSubjects(classId, armId);
   const [subjectId, setSubjectId] = useState('');
   const [provider, setProvider] = useState<Session['provider']>('zoom');
   const [meetingUrl, setMeetingUrl] = useState('');
@@ -238,13 +239,9 @@ export default function LiveClassPage() {
 
         // Pickers are optional: a student cannot create a session and does not
         // need them, so a 403 here is not an error worth showing.
-        const [cls, subj] = await Promise.all([
-          fetchApi<{ data?: ClassOption[] }>('/classes').catch(() => null),
-          fetchApi<{ data?: SubjectOption[] }>('/subjects').catch(() => null),
-        ]);
+        const cls = await fetchApi<{ data?: ClassOption[] }>('/classes').catch(() => null);
 
         setClasses(cls?.data ?? []);
-        setSubjects(subj?.data ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not load virtual classes.');
       } finally {

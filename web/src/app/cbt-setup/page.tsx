@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { errorText, fetchApi } from '@/lib/api';
+import { useClassSubjects } from '@/lib/useClassSubjects';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, Table, inputClass } from '@/components/Page';
 
 /**
@@ -22,10 +23,10 @@ const TONE: Record<string, 'green' | 'amber' | 'slate' | 'blue'> = { published: 
 
 export default function CbtSetupPage() {
   const [exams, setExams] = useState<Exam[] | null>(null);
-  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
   const [form, setForm] = useState({ title: '', subject_id: '', class_id: '', term_id: '', duration_minutes: '45', opens_at: '', closes_at: '' });
+  const subjects = useClassSubjects(form.class_id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +43,6 @@ export default function CbtSetupPage() {
     void (async () => {
       await load();
     })();
-    fetchApi<{ data: { id: number; name: string }[] }>('/subjects').then((r) => setSubjects(r.data ?? [])).catch(() => undefined);
     fetchApi<{ data: { id: number; name: string }[] }>('/classes').then((r) => setClasses(r.data ?? [])).catch(() => undefined);
     fetchApi<{ data: { id: number; name: string; session_name?: string | null }[]; current_term_id: number | null }>('/terms').then((r) => {
       setTerms(r.data ?? []);
@@ -79,8 +79,8 @@ export default function CbtSetupPage() {
         <Card title="New exam" className="h-fit">
           <form onSubmit={create} className="space-y-3">
             <Field label="Title"><input className={inputClass} required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="First term Mathematics CA 1" /></Field>
+            <Field label="Class"><select className={inputClass} value={form.class_id} onChange={(e) => setForm({ ...form, class_id: e.target.value, subject_id: '' })}><option value="">Any class</option>{classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
             <Field label="Subject"><select className={inputClass} required value={form.subject_id} onChange={(e) => setForm({ ...form, subject_id: e.target.value })}><option value="">Choose…</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
-            <Field label="Class"><select className={inputClass} value={form.class_id} onChange={(e) => setForm({ ...form, class_id: e.target.value })}><option value="">Any class</option>{classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
             <Field label="Term"><select className={inputClass} value={form.term_id} onChange={(e) => setForm({ ...form, term_id: e.target.value })}><option value="">—</option>{terms.map((t) => <option key={t.id} value={t.id}>{t.name}{t.session_name ? ` — ${t.session_name}` : ''}</option>)}</select></Field>
             <Field label="Duration (minutes)"><input className={inputClass} type="number" min={1} max={600} value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></Field>
             <Field label="Opens (optional)"><input className={inputClass} type="datetime-local" value={form.opens_at} onChange={(e) => setForm({ ...form, opens_at: e.target.value })} /></Field>
