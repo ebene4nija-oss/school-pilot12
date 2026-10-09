@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -34,6 +36,17 @@ class _StaffClockInCardState extends ConsumerState<StaffClockInCard> {
     });
 
     try {
+      // Location switched off in the phone's settings throws from
+      // getCurrentPosition with a message written for developers.
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        setState(() {
+          _busy = false;
+          _message = "Your phone's location is switched off. Turn it on in "
+              'Settings, then tap Clock in again.';
+        });
+        return;
+      }
+
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -57,15 +70,30 @@ class _StaffClockInCardState extends ConsumerState<StaffClockInCard> {
         ),
       );
 
-      final user = ref.read(currentUserProvider);
-      final termId = ref.read(selectedTermProvider);
+      // Awaited rather than read: on a cold start nothing has loaded the terms
+      // yet, the selected term is still null, and the server refuses a
+      // clock-in without one.
+      final terms = await ref.read(termsProvider.future);
+      final termId = ref.read(selectedTermProvider) ??
+          (terms.isEmpty
+              ? null
+              : terms.firstWhere((t) => t.isCurrent, orElse: () => terms.last).id);
+
+      if (termId == null) {
+        setState(() {
+          _busy = false;
+          _message = 'No school term is set up yet, so clock-in cannot be '
+              'recorded. Ask your administrator to add the current term.';
+        });
+        return;
+      }
 
       await ref.read(apiClientProvider).post<dynamic>(
         Api.attendanceStaffGps,
         body: {
-          // The backend keys staff attendance off the staff record, not the
-          // user; where the two ids differ the server rejects it and says so.
-          'staff_id': user?.id,
+          // No staff_id: the server resolves the caller's own staff record.
+          // Sending the *user* id here was read as a staff id, and every
+          // teacher whose two ids differ got "not found" or "only yourself".
           'term_id': termId,
           'latitude': position.latitude,
           'longitude': position.longitude,
@@ -76,6 +104,12 @@ class _StaffClockInCardState extends ConsumerState<StaffClockInCard> {
         _busy = false;
         _success = true;
         _message = 'Clocked in.';
+      });
+    } on TimeoutException {
+      setState(() {
+        _busy = false;
+        _message = 'Could not get a GPS fix. Step outside or near a window '
+            'and try again.';
       });
     } catch (error) {
       final failure = asApiException(error);
