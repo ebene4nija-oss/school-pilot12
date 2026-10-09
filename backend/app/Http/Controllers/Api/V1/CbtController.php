@@ -134,6 +134,14 @@ class CbtController extends Controller
     // Question bank (§7.9)
     // ==================================================================
 
+    /**
+     * Said to anyone saving a question with no class, including an app
+     * installed before the bank was filed by class, which shows this as is.
+     */
+    private const CLASS_REQUIRED = [
+        'class_id.required' => 'Choose the class these questions are for. On the mobile app, update to the latest version to do this.',
+    ];
+
     public function listQuestions(Request $request)
     {
         $schoolId = $this->schoolId();
@@ -179,9 +187,8 @@ class CbtController extends Controller
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
-            // Optional to the API so an older installed app can still save;
-            // the editors always send it.
-            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            // Every new question is filed against a class.
+            'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'group_id' => ['nullable', Rule::exists('cbt_question_groups', 'id')->where('school_id', $schoolId)],
             'group_sequence' => 'nullable|integer|min:1|max:99',
             'topic' => 'nullable|string|max:255',
@@ -198,7 +205,7 @@ class CbtController extends Controller
             'content_format' => 'nullable|in:plain,latex',
             'media' => 'nullable|array',
             'status' => 'nullable|in:draft,approved,retired',
-        ]);
+        ], self::CLASS_REQUIRED);
 
         // A question that is auto-gradable but carries no marking scheme is a
         // question that will silently award zero to the whole class.
@@ -496,7 +503,7 @@ class CbtController extends Controller
 
         $validated = $request->validate([
             'subject_id' => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
-            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
             'questions' => 'required|array|min:1|max:500',
             'questions.*.question' => 'required|string',
             'questions.*.question_type' => ['nullable', Rule::in(QuestionBankItem::TYPES)],
@@ -505,7 +512,7 @@ class CbtController extends Controller
             'questions.*.topic' => 'nullable|string|max:255',
             'questions.*.difficulty' => 'nullable|in:easy,medium,hard',
             'questions.*.marks' => 'nullable|numeric|min:0|max:100',
-        ]);
+        ], self::CLASS_REQUIRED);
 
         $imported = 0;
         $skipped = [];
@@ -522,7 +529,7 @@ class CbtController extends Controller
                 QuestionBankItem::create([
                     'school_id' => $schoolId,
                     'subject_id' => $validated['subject_id'],
-                    'class_id' => $validated['class_id'] ?? null,
+                    'class_id' => $validated['class_id'],
                     'topic' => $row['topic'] ?? null,
                     'question' => $row['question'],
                     'question_type' => $type,

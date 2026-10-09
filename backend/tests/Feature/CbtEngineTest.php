@@ -253,6 +253,7 @@ class CbtEngineTest extends TestCase
 
         $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'question' => 'Identify the labelled part.',
             'question_type' => 'multiple_choice',
             'options' => ['A' => 'Xylem', 'B' => 'Phloem'],
@@ -267,6 +268,7 @@ class CbtEngineTest extends TestCase
     {
         $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'question' => 'Label the parts of the flower.',
             'question_type' => 'diagram_label',
             'answer_schema' => ['zones' => [['id' => 'z1', 'label' => 'stamen', 'x' => 0.1, 'y' => 0.1, 'w' => 0.2, 'h' => 0.2]]],
@@ -338,6 +340,7 @@ class CbtEngineTest extends TestCase
     {
         $response = $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'question' => 'Solve for $x$: $$x^2 - 5x + 6 = 0$$',
             'question_type' => 'multiple_choice',
             'options' => ['A' => '$x = 2, 3$', 'B' => '$x = 1, 6$'],
@@ -354,6 +357,7 @@ class CbtEngineTest extends TestCase
         // the options — the format must be detected from either.
         $response = $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'question' => 'Which of the following is correctly simplified?',
             'question_type' => 'multiple_choice',
             'options' => ['A' => '$\frac{4}{8} = \frac{1}{2}$', 'B' => '$\frac{4}{8} = \frac{1}{4}$'],
@@ -368,6 +372,7 @@ class CbtEngineTest extends TestCase
     {
         $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'question' => 'Find $x^2 + 1 and simplify.',
             'question_type' => 'fill_blank',
             'content_format' => 'latex',
@@ -380,6 +385,7 @@ class CbtEngineTest extends TestCase
         foreach (['\input{/etc/passwd}', '\href{javascript:alert(1)}{click}', '\def\x{\x}\x'] as $payload) {
             $this->asTeacher()->postJson('/api/v1/cbt/questions', [
                 'subject_id' => $this->subject->id,
+                'class_id' => $this->class->id,
                 'question' => 'Evaluate $' . $payload . '$',
                 'question_type' => 'fill_blank',
                 'answer_schema' => ['accepted' => ['x']],

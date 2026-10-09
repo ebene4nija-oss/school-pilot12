@@ -308,6 +308,7 @@ class CbtQuestionGroupTest extends TestCase
 
         $question = $this->asTeacher()->postJson('/api/v1/cbt/questions', [
             'subject_id' => $this->subject->id,
+            'class_id' => $this->class->id,
             'group_id' => $groupId,
             'group_sequence' => 1,
             'question' => 'Which month was wettest?',

@@ -56,9 +56,12 @@ export default function AiStudio() {
 
   async function saveQuestions() {
     const subjectId = subjects.find((s) => s.name === base.subject)?.id;
+    // The bank is filed by class: the class these were drafted for.
+    const classId = classes.find((c) => c.name === base.class_level)?.id;
     const chosen = qs.list.filter((_, i) => qs.keep[i]);
+    if (!classId) { setError('Choose the class so the questions can be filed under it.'); return; }
     if (!subjectId) { setError('Choose the subject from the list so the questions can be filed under it.'); return; }
-    await call(() => post<{ message?: string }>('/cbt/questions/import', { subject_id: subjectId, questions: chosen.map((q) => ({ ...q, question_type: 'multiple_choice' })) }), (r) => setNotice(`${r.message ?? 'Saved.'} They are in the Question bank, ready to add to a paper.`));
+    await call(() => post<{ message?: string }>('/cbt/questions/import', { class_id: classId, subject_id: subjectId, questions: chosen.map((q) => ({ ...q, question_type: 'multiple_choice' })) }), (r) => setNotice(`${r.message ?? 'Saved.'} They are in the Question bank, ready to add to a paper.`));
   }
 
   const head = (

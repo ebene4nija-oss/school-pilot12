@@ -88,12 +88,16 @@ class QuestionBankOrganisationTest extends TestCase
         $this->assertCount(1, $ids('class_id=none'));
         $this->assertCount(1, $ids('level_group=senior_secondary'));
 
-        // An older app that sends no class still saves; the question is unsorted.
+        // A new question must name its class; an older app is told to update.
         $this->as($this->teacher)->postJson('/api/v1/cbt/questions/import', [
             'subject_id' => $this->maths->id,
             'questions' => [['question' => 'Old app', 'options' => ['A' => 'x', 'B' => 'y'], 'correct_answer' => 'A']],
-        ])->assertCreated();
-        $this->assertCount(2, $ids('class_id=none'));
+        ])->assertStatus(422)->assertJsonValidationErrors(['class_id' => 'update to the latest version']);
+        $this->as($this->teacher)->postJson('/api/v1/cbt/questions', [
+            'subject_id' => $this->maths->id, 'question' => 'No class',
+            'question_type' => 'multiple_choice', 'options' => ['A' => '4', 'B' => '5'], 'correct_answer' => 'A',
+        ])->assertStatus(422)->assertJsonValidationErrors('class_id');
+        $this->assertCount(1, $ids('class_id=none'));
     }
 
     public function test_the_summary_counts_by_class_subject_and_topic()

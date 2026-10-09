@@ -9,10 +9,9 @@ use Illuminate\Support\Facades\Schema;
  *
  * A school keeps one Mathematics for Primary 1 to SS 3, so a bank filed only
  * by subject mixes "count the apples" with calculus, and a Primary 4 paper's
- * picker offered SS 3 questions. Every new question is filed against a class
- * by the web and mobile editors. Questions written before this stay null —
- * "unsorted" — until someone files them with the bulk tools; the API still
- * accepts a question without a class so an older installed app can save one.
+ * picker offered SS 3 questions. The API requires a class on every new
+ * question. Questions written before this stay null — "unsorted" — until
+ * someone files them with the bulk tools.
  */
 return new class extends Migration
 {
