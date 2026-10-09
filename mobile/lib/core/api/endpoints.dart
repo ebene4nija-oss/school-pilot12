@@ -107,6 +107,19 @@ class Api {
   static String cbtResult(int id) => '$version/cbt/attempts/$id/result';
   static const cbtOfflineSync = '$version/cbt/offline-sync';
 
+  // CBT authoring and marking — staff only.
+  static const cbtQuestions = '$version/cbt/questions';
+  static const cbtQuestionsImport = '$version/cbt/questions/import';
+  static String cbtExamQuestions(int examId) =>
+      '$version/cbt/exams/$examId/questions';
+  static String cbtExamPublish(int examId) =>
+      '$version/cbt/exams/$examId/publish';
+  static String cbtExamClose(int examId) => '$version/cbt/exams/$examId/close';
+  static String cbtExamQuestion(int examId, int questionId) =>
+      '$version/cbt/exams/$examId/questions/$questionId';
+  static String cbtGrade(int attemptId) =>
+      '$version/cbt/attempts/$attemptId/grade';
+
   // Grouped questions — one shared passage, table or diagram with several
   // sub-questions. Authoring is staff-only; a candidate never calls these,
   // because the group a question belongs to already travels inside the

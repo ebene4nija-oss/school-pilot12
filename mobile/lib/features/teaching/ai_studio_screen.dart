@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -8,6 +9,7 @@ import '../../core/api/endpoints.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/widgets.dart';
+import '../cbt/teacher/cbt_teacher_data.dart';
 
 enum StudioTool {
   lessonPlan('Lesson plan', 'lesson_plan'),
@@ -84,7 +86,16 @@ class _AiStudioScreenState extends ConsumerState<AiStudioScreen> {
     final draft = _draft;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Studio')),
+      appBar: AppBar(
+        title: const Text('AI Studio'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.push('/cbt-exams'),
+            icon: const Icon(Icons.quiz_outlined),
+            label: const Text('CBT exams'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenMargin),
         children: [
@@ -153,6 +164,19 @@ class _AiStudioScreenState extends ConsumerState<AiStudioScreen> {
           if (draft != null) ...[
             const SizedBox(height: AppSpacing.lg),
             DraftView(tool: _tool, draft: draft),
+            if (_tool == StudioTool.questions &&
+                draft['stub'] != true &&
+                listOf(draft['questions']).isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              SaveToBankCard(
+                // Keyed by the draft so a new draft starts with fresh ticks.
+                key: ObjectKey(draft),
+                questions: listOf(draft['questions']),
+                subjectName: _subject.text.trim(),
+                topic: _topic.text.trim(),
+                difficulty: _difficulty,
+              ),
+            ],
           ],
         ],
       ),
@@ -248,5 +272,159 @@ class DraftView extends StatelessWidget {
           ],
         ];
     }
+  }
+}
+
+
+/// Puts the drafted questions the teacher ticks into the school's question
+/// bank, where a CBT paper can draw on them — the same step the web AI Studio
+/// offers. Nothing reaches a student until a teacher adds a question to a
+/// paper and publishes it.
+class SaveToBankCard extends ConsumerStatefulWidget {
+  const SaveToBankCard({
+    super.key,
+    required this.questions,
+    required this.subjectName,
+    required this.topic,
+    required this.difficulty,
+  });
+
+  final List<Map<String, dynamic>> questions;
+  final String subjectName;
+  final String topic;
+  final String difficulty;
+
+  @override
+  ConsumerState<SaveToBankCard> createState() => _SaveToBankCardState();
+}
+
+class _SaveToBankCardState extends ConsumerState<SaveToBankCard> {
+  late final Set<int> _chosen = {
+    for (var i = 0; i < widget.questions.length; i++) i,
+  };
+  int? _subjectId;
+  bool _saving = false;
+  bool _saved = false;
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final res = await ref.read(apiClientProvider).post<dynamic>(
+        Api.cbtQuestionsImport,
+        body: {
+          'subject_id': _subjectId,
+          'questions': [
+            for (final i in _chosen.toList()..sort())
+              {
+                'question': stringOf(widget.questions[i]['question']),
+                'question_type': 'multiple_choice',
+                'options': widget.questions[i]['options'],
+                'correct_answer': widget.questions[i]['correct_answer'],
+                if (widget.topic.isNotEmpty) 'topic': widget.topic,
+                'difficulty': widget.difficulty,
+              },
+          ],
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saved = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${stringOf(mapOf(res)['message'], 'Saved.')} '
+            'They are in the question bank, ready to add to an exam.',
+          ),
+          action: SnackBarAction(
+            label: 'CBT exams',
+            onPressed: () => context.push('/cbt-exams'),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(asApiException(error).message)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subjects = ref.watch(schoolSubjectsProvider).valueOrNull ?? const [];
+
+    // Match the subject the teacher typed, so most of the time this is ready.
+    if (_subjectId == null && subjects.isNotEmpty) {
+      final typed = widget.subjectName.toLowerCase();
+      for (final s in subjects) {
+        if (stringOf(s['name']).toLowerCase() == typed) {
+          _subjectId = intOf(s['id']);
+          break;
+        }
+      }
+    }
+
+    return OutlinedCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Save to question bank', style: AppText.labelLg),
+          const SizedBox(height: 4),
+          Text(
+            'Tick the questions worth keeping. Check each answer first — the AI '
+            'can be wrong.',
+            style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+          ),
+          for (var i = 0; i < widget.questions.length; i++)
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              value: _chosen.contains(i),
+              onChanged: _saved
+                  ? null
+                  : (on) => setState(() {
+                        on == true ? _chosen.add(i) : _chosen.remove(i);
+                      }),
+              title: Text(
+                'Q${i + 1}. ${stringOf(widget.questions[i]['question'])}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          DropdownButtonFormField<int>(
+            initialValue: _subjectId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Subject in the bank'),
+            items: [
+              for (final s in subjects)
+                DropdownMenuItem(
+                  value: intOf(s['id']),
+                  child: Text(stringOf(s['name'], 'Subject')),
+                ),
+            ],
+            onChanged: _saved ? null : (v) => setState(() => _subjectId = v),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _saving || _saved || _chosen.isEmpty || _subjectId == null
+                  ? null
+                  : _save,
+              icon: Icon(_saved ? Icons.check : Icons.save_alt_outlined),
+              label: Text(
+                _saved
+                    ? 'Saved to question bank'
+                    : 'Save ${_chosen.length} to question bank',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -8,6 +8,7 @@ import '../features/academics/academics_screen.dart';
 import '../features/attendance/register_tab.dart';
 import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
+import '../features/cbt/teacher/cbt_exams_screen.dart';
 import '../features/child/child_screen.dart';
 import '../features/child/safety_screen.dart';
 import '../features/classes/classes_tab.dart';
@@ -115,6 +116,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/progress', builder: (_, __) => const ProgressScreen()),
       GoRoute(path: '/leaderboard', builder: (_, __) => const LeaderboardScreen()),
       GoRoute(path: '/ai-studio', builder: (_, __) => const AiStudioScreen()),
+      GoRoute(path: '/cbt-exams', builder: (_, __) => const CbtExamsScreen()),
 
       ShellRoute(
         builder: (context, state, child) =>

@@ -123,6 +123,13 @@ class MoreScreen extends ConsumerWidget {
               detail: 'Draft lesson plans, questions and homework',
               onTap: () => context.push('/ai-studio'),
             ),
+          if (role == UserRole.teacher || role.isAdmin)
+            _Tile(
+              icon: Icons.quiz_outlined,
+              label: 'CBT exams',
+              detail: 'Set papers, publish, close and mark',
+              onTap: () => context.push('/cbt-exams'),
+            ),
           if (role.isFinance)
             _Tile(
               icon: Icons.account_balance_outlined,
