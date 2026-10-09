@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -11,9 +10,9 @@ import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
-import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
+import 'fees_overview.dart';
 import 'gateway_checkout.dart';
 
 /// One Fees tab, two very different jobs: a bursar chasing arrears, and a
@@ -24,7 +23,7 @@ class FeesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentRoleProvider);
-    return role.isFinance ? const _DefaultersScreen() : const _StatementScreen();
+    return role.isFinance ? const FeesOverviewScreen() : const _StatementScreen();
   }
 }
 
@@ -41,135 +40,6 @@ final defaultersProvider =
     fetch: () => api.get<dynamic>(Api.defaulters),
   );
 });
-
-class _DefaultersScreen extends ConsumerWidget {
-  const _DefaultersScreen();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final defaulters = ref.watch(defaultersProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Defaulters'),
-        actions: [
-          IconButton(
-            tooltip: 'Transfers to confirm',
-            icon: const Icon(Icons.account_balance_outlined),
-            onPressed: () => context.push('/fees/transfers'),
-          ),
-        ],
-      ),
-      body: CachedView<dynamic>(
-        value: defaulters,
-        onRetry: () => ref.invalidate(defaultersProvider),
-        builder: (context, data, meta) {
-          final rows = listOf(data, ['defaulters', 'students']);
-          final total = rows.fold<num>(
-            0,
-            (sum, r) => sum + numOf(r['outstanding'] ?? r['balance']),
-          );
-
-          if (rows.isEmpty) {
-            return const EmptyState(
-              icon: Icons.check_circle_outline,
-              title: 'No defaulters',
-              message: 'Every invoice for this term has been settled.',
-            );
-          }
-
-          return RefreshableList(
-            onRefresh: () async => ref.refresh(defaultersProvider.future),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.screenMargin),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: AppRadius.sectionRadius,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'OUTSTANDING',
-                        style: AppText.labelSm.copyWith(
-                          color: AppColors.onPrimaryContainer,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      MoneyText(total, size: 24, color: AppColors.onPrimary),
-                      const SizedBox(height: 4),
-                      Text(
-                        'across ${rows.length} '
-                        '${rows.length == 1 ? 'student' : 'students'}',
-                        style: AppText.bodyMd
-                            .copyWith(color: AppColors.onPrimaryContainer),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              for (final row in rows)
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: AppSpacing.screenMargin,
-                    right: AppSpacing.screenMargin,
-                    bottom: AppSpacing.sm,
-                  ),
-                  child: OutlinedCard(
-                    statusColor: AppColors.overdue,
-                    onTap: intOf(row['student_id']) == 0
-                        ? null
-                        : () => context.push(
-                              '/fees/student/${intOf(row['student_id'])}',
-                              extra: stringOf(row['name'] ?? row['student_name']),
-                            ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                stringOf(
-                                  row['name'] ??
-                                      row['student_name'] ??
-                                      nameOf(row['student']),
-                                  'Student',
-                                ),
-                                style: AppText.bodyLg,
-                              ),
-                              Text(
-                                stringOf(
-                                  nameOf(row['class']) ?? row['class_name'],
-                                ),
-                                style: AppText.bodyMd.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        MoneyText(
-                          numOf(row['outstanding'] ?? row['balance']),
-                          color: AppColors.overdue,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
 
 // -------------------------------------------------- guardian and student
 
