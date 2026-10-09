@@ -155,6 +155,13 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
   bool _saving = false;
   String? _error;
 
+  // During the test, and what students see when they finish.
+  bool _shuffleQuestions = true;
+  bool _shuffleOptions = true;
+  bool _showScore = true;
+  bool _showAnswers = true;
+  bool _showCorrect = false;
+
   @override
   void dispose() {
     _title.dispose();
@@ -162,6 +169,14 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
     _instructions.dispose();
     super.dispose();
   }
+
+  Widget _toggle(String label, bool value, void Function(bool) set) => SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        title: Text(label),
+        value: value,
+        onChanged: _saving ? null : (v) => setState(() => set(v)),
+      );
 
   Future<DateTime?> _pickDateTime(DateTime? initial) async {
     final now = DateTime.now();
@@ -213,8 +228,11 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
             'instructions': _instructions.text.trim(),
           if (_opensAt != null) 'opens_at': _opensAt!.toIso8601String(),
           if (_closesAt != null) 'closes_at': _closesAt!.toIso8601String(),
-          'shuffle_questions': true,
-          'shuffle_options': true,
+          'shuffle_questions': _shuffleQuestions,
+          'shuffle_options': _shuffleOptions,
+          'show_results_immediately': _showScore,
+          'review_answers': _showAnswers,
+          'review_correct_answers': _showCorrect,
         },
       );
       if (!mounted) return;
@@ -315,6 +333,19 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
               labelText: 'Instructions (optional)',
               hintText: 'Answer all questions.',
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text('During the test', style: AppText.labelLg),
+          _toggle('Shuffle the questions for each student', _shuffleQuestions, (v) => _shuffleQuestions = v),
+          _toggle('Shuffle the options', _shuffleOptions, (v) => _shuffleOptions = v),
+          const SizedBox(height: AppSpacing.sm),
+          Text('At the end, students see', style: AppText.labelLg),
+          _toggle('Their score, as soon as they submit', _showScore, (v) => _showScore = v),
+          _toggle('Their answers, marked right or wrong', _showAnswers, (v) => _showAnswers = v),
+          _toggle('The correct options (after the test closes)', _showCorrect, (v) => _showCorrect = v),
+          Text(
+            'You can change these later on the web, even after publishing.',
+            style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
           ),
           if (_error != null) ...[
             const SizedBox(height: AppSpacing.sm),

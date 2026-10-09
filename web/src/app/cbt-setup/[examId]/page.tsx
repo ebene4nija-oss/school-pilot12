@@ -24,6 +24,7 @@ interface Exam {
   id: number; title: string; status: string; subject_id: number; subject: { name: string } | null; class_id: number | null; instructions: string | null;
   duration_minutes: number; opens_at: string | null; closes_at: string | null; shuffle_questions: boolean; shuffle_options: boolean; shuffle_within_group: boolean;
   questions_per_attempt: number | null; max_attempts: number; negative_marking: boolean; pass_mark: number | string | null; show_results_immediately: boolean; allow_offline: boolean;
+  review_answers?: boolean; review_correct_answers?: boolean;
   exam_questions: ExamQ[];
 }
 interface Bank { id: number; question: string; question_type: string; topic: string | null; marks: number; content_format: 'plain' | 'latex' }
@@ -249,23 +250,26 @@ function Settings({ exam, run, busy }: { exam: Exam; run: Run; busy: boolean }) 
     max_attempts: String(exam.max_attempts ?? 1), questions_per_attempt: exam.questions_per_attempt ? String(exam.questions_per_attempt) : '', pass_mark: exam.pass_mark != null ? String(exam.pass_mark) : '50',
     shuffle_questions: exam.shuffle_questions, shuffle_options: exam.shuffle_options, shuffle_within_group: exam.shuffle_within_group, negative_marking: exam.negative_marking,
     show_results_immediately: exam.show_results_immediately, allow_offline: exam.allow_offline,
+    review_answers: exam.review_answers ?? true, review_correct_answers: exam.review_correct_answers ?? false,
   });
+  // What students see at the end may change even while the paper is live.
+  const endOfTest = ['show_results_immediately', 'review_answers', 'review_correct_answers'];
   const live = exam.status !== 'draft';
 
   function save(e: React.FormEvent) {
     e.preventDefault();
     const body = live
-      ? { closes_at: f.closes_at || null, show_results_immediately: f.show_results_immediately }
+      ? { closes_at: f.closes_at || null, show_results_immediately: f.show_results_immediately, review_answers: f.review_answers, review_correct_answers: f.review_correct_answers }
       : { ...f, duration_minutes: Number(f.duration_minutes), max_attempts: Number(f.max_attempts), questions_per_attempt: f.questions_per_attempt ? Number(f.questions_per_attempt) : null, pass_mark: Number(f.pass_mark), opens_at: f.opens_at || null, closes_at: f.closes_at || null };
     void run(() => fetchApi(`/cbt/exams/${exam.id}`, { method: 'PUT', body: JSON.stringify(body) }), 'Could not save settings.');
   }
 
   const check = (k: keyof typeof f, label: string) => (
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={live && k !== 'show_results_immediately'} checked={f[k] as boolean} onChange={(e) => setF({ ...f, [k]: e.target.checked })} /> {label}</label>
+    <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={live && !endOfTest.includes(k)} checked={f[k] as boolean} onChange={(e) => setF({ ...f, [k]: e.target.checked })} /> {label}</label>
   );
 
   return (
-    <Card description={live ? 'While the exam is published, only the closing time and whether students see their results can change.' : undefined}>
+    <Card description={live ? 'While the exam is published, only the closing time and what students see at the end can change.' : undefined}>
       <form onSubmit={save} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Title"><input className={inputClass} disabled={live} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
@@ -282,9 +286,17 @@ function Settings({ exam, run, busy }: { exam: Exam; run: Run; busy: boolean }) 
           {check('shuffle_options', 'Shuffle the options')}
           {check('shuffle_within_group', 'Shuffle questions inside a passage')}
           {check('negative_marking', 'Negative marking (wrong answers lose marks; blanks never do)')}
-          {check('show_results_immediately', 'Show students their score and review after they submit')}
           {check('allow_offline', 'Can be sat offline in a computer lab (needs an opening time)')}
         </div>
+        <fieldset className="rounded-lg border border-line-soft p-4">
+          <legend className="px-1 text-sm font-semibold text-ink">At the end of the test, students see</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {check('show_results_immediately', 'Their score, as soon as they submit')}
+            {check('review_answers', 'Their answers, marked right or wrong')}
+            {check('review_correct_answers', 'The correct options (after the test closes)')}
+          </div>
+          <p className="mt-2 text-xs text-ink-muted">With the score off, nothing shows until you switch it on later to release results. Correct options wait until the closing time so early finishers cannot pass them on.</p>
+        </fieldset>
         <Button type="submit" disabled={busy}>Save settings</Button>
       </form>
     </Card>

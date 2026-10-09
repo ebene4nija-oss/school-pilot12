@@ -25,7 +25,27 @@ export interface ResultPayload {
   grade?: string | null;
   passed?: boolean;
   topic_breakdown?: { topic: string; answered: number; correct: number; mastery_percentage: number }[];
-  questions?: { question_id: number; question: string | null; is_correct: boolean | null; awarded_marks: number; explanation: string | null; feedback: string | null }[];
+  questions?: {
+    question_id: number; question: string | null; is_correct: boolean | null; awarded_marks: number; explanation: string | null; feedback: string | null;
+    your_response?: Record<string, unknown> | null;
+    // Only when the school shows the correct options and the test has closed.
+    correct_answer?: unknown; options?: Record<string, string> | null;
+  }[];
+  review?: { answers: boolean; correct_answers: boolean; correct_answers_after_close?: boolean };
+}
+
+/** "B. 48,000" for a chosen option; the typed text or value otherwise. */
+function answerText(value: unknown, options?: Record<string, string> | null): string {
+  if (value === null || value === undefined || value === '') return '— (left blank)';
+  if (Array.isArray(value)) return value.map((x) => answerText(x, options)).join(', ');
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    const pick = v.option ?? v.selected_option ?? v.options ?? v.value ?? v.text;
+    if (pick !== undefined) return answerText(pick, options);
+    return JSON.stringify(value);
+  }
+  const key = String(value);
+  return options?.[key] !== undefined ? `${key}. ${options[key]}` : key;
 }
 export interface ResultResponse { released?: boolean; message?: string; result?: ResultPayload }
 
@@ -68,6 +88,9 @@ export default function CbtResult({ data }: { data: ResultResponse }) {
         </div>
       )}
 
+      {r.review?.correct_answers_after_close && (
+        <p className="mt-4 rounded-lg bg-info-soft px-3 py-2 text-xs text-info">The correct answers will show here after the test closes.</p>
+      )}
       {r.questions && r.questions.length > 0 && (
         <details className="mt-5">
           <summary className="cursor-pointer text-sm font-semibold text-brand">Review your answers</summary>
@@ -78,6 +101,8 @@ export default function CbtResult({ data }: { data: ResultResponse }) {
                   <span><span className="text-ink-muted">{i + 1}. </span><RichText content={q.question} /></span>
                   {q.is_correct === null ? <Badge tone="amber">to be marked</Badge> : q.is_correct ? <Badge tone="green">correct · {q.awarded_marks}</Badge> : <Badge tone="red">{q.awarded_marks > 0 ? `part · ${q.awarded_marks}` : 'wrong'}</Badge>}
                 </div>
+                {q.your_response !== undefined && <p className="mt-2">Your answer: <span className="font-medium">{answerText(q.your_response, q.options)}</span></p>}
+                {q.correct_answer !== undefined && <p className="mt-1 text-positive">Correct answer: <span className="font-medium">{answerText(q.correct_answer, q.options)}</span></p>}
                 {q.explanation && <p className="mt-2 text-ink-muted">{q.explanation}</p>}
                 {q.feedback && <p className="mt-1">Teacher: {q.feedback}</p>}
               </li>

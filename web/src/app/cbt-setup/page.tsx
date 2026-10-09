@@ -25,7 +25,12 @@ export default function CbtSetupPage() {
   const [exams, setExams] = useState<Exam[] | null>(null);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
-  const [form, setForm] = useState({ title: '', subject_id: '', class_id: '', term_id: '', duration_minutes: '45', opens_at: '', closes_at: '' });
+  const [form, setForm] = useState({
+    title: '', subject_id: '', class_id: '', term_id: '', duration_minutes: '45', opens_at: '', closes_at: '',
+    shuffle_questions: true, shuffle_options: true,
+    // What students see when they finish.
+    show_results_immediately: true, review_answers: true, review_correct_answers: false,
+  });
   const subjects = useClassSubjects(form.class_id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +65,9 @@ export default function CbtSetupPage() {
         body: JSON.stringify({
           title: form.title, subject_id: Number(form.subject_id), class_id: form.class_id ? Number(form.class_id) : null,
           term_id: form.term_id ? Number(form.term_id) : null, duration_minutes: Number(form.duration_minutes) || 45,
-          opens_at: form.opens_at || null, closes_at: form.closes_at || null, shuffle_questions: true, shuffle_options: true,
+          opens_at: form.opens_at || null, closes_at: form.closes_at || null,
+          shuffle_questions: form.shuffle_questions, shuffle_options: form.shuffle_options,
+          show_results_immediately: form.show_results_immediately, review_answers: form.review_answers, review_correct_answers: form.review_correct_answers,
         }),
       });
       window.location.href = `/cbt-setup/${res.exam.id}`;
@@ -85,6 +92,19 @@ export default function CbtSetupPage() {
             <Field label="Duration (minutes)"><input className={inputClass} type="number" min={1} max={600} value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></Field>
             <Field label="Opens (optional)"><input className={inputClass} type="datetime-local" value={form.opens_at} onChange={(e) => setForm({ ...form, opens_at: e.target.value })} /></Field>
             <Field label="Closes (optional)"><input className={inputClass} type="datetime-local" value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} /></Field>
+            <fieldset className="space-y-1.5 rounded-lg border border-line-soft p-3 text-sm">
+              <legend className="px-1 font-semibold text-ink">During the test</legend>
+              {([['shuffle_questions', 'Shuffle the questions for each student'], ['shuffle_options', 'Shuffle the options']] as const).map(([k, l]) => (
+                <label key={k} className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-brand" checked={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} /> {l}</label>
+              ))}
+            </fieldset>
+            <fieldset className="space-y-1.5 rounded-lg border border-line-soft p-3 text-sm">
+              <legend className="px-1 font-semibold text-ink">At the end, students see</legend>
+              {([['show_results_immediately', 'Their score, as soon as they submit'], ['review_answers', 'Their answers, marked right or wrong'], ['review_correct_answers', 'The correct options (after the test closes)']] as const).map(([k, l]) => (
+                <label key={k} className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-brand" checked={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} /> {l}</label>
+              ))}
+              <p className="text-xs text-ink-muted">You can change these later, even after publishing.</p>
+            </fieldset>
             <Button type="submit" disabled={busy} className="w-full">{busy ? 'Creating…' : 'Create draft and add questions'}</Button>
           </form>
         </Card>

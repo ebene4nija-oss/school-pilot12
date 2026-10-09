@@ -603,6 +603,9 @@ class CbtController extends Controller
             'negative_marking' => 'boolean',
             'pass_mark' => 'nullable|numeric|min:0|max:100',
             'show_results_immediately' => 'boolean',
+            // At the end: their answers marked right or wrong; the correct options.
+            'review_answers' => 'boolean',
+            'review_correct_answers' => 'boolean',
             'allow_offline' => 'boolean',
             'integrity_settings' => 'nullable|array',
         ]);
@@ -653,6 +656,8 @@ class CbtController extends Controller
             'negative_marking' => 'boolean',
             'pass_mark' => 'nullable|numeric|min:0|max:100',
             'show_results_immediately' => 'boolean',
+            'review_answers' => 'boolean',
+            'review_correct_answers' => 'boolean',
             'allow_offline' => 'boolean',
             'integrity_settings' => 'nullable|array',
         ]);
@@ -661,7 +666,7 @@ class CbtController extends Controller
         // retroactively alters attempts already in flight. Only the window and
         // release settings stay adjustable.
         if ($exam->status === 'published') {
-            $allowed = ['closes_at', 'show_results_immediately', 'integrity_settings'];
+            $allowed = ['closes_at', 'show_results_immediately', 'review_answers', 'review_correct_answers', 'integrity_settings'];
             $blocked = array_diff(array_keys($validated), $allowed);
 
             if ($blocked) {
@@ -1156,7 +1161,24 @@ class CbtController extends Controller
 
         $worth = $this->questionWorth($exam, $answers->pluck('question_id')->all());
 
-        $payload['questions'] = $answers->map(function (CbtAttemptAnswer $answer) use ($questions, $forStaff, $worth) {
+        // A student sees their answers only if the paper allows it, and the
+        // correct options only if it allows that and the paper has closed.
+        if (! $forStaff && ! $exam->review_answers) {
+            $payload['review'] = ['answers' => false, 'correct_answers' => false];
+
+            return $payload;
+        }
+
+        $closed = $exam->status === 'closed' || ($exam->closes_at && $exam->closes_at->isPast());
+        $showCorrect = $forStaff || ($exam->review_correct_answers && $closed);
+        $payload['review'] = [
+            'answers' => true,
+            'correct_answers' => $showCorrect,
+            // Said to the student when the options are held back for now.
+            'correct_answers_after_close' => ! $forStaff && $exam->review_correct_answers && ! $closed,
+        ];
+
+        $payload['questions'] = $answers->map(function (CbtAttemptAnswer $answer) use ($questions, $showCorrect, $worth) {
             $question = $questions->get($answer->question_id);
 
             $row = [
@@ -1171,9 +1193,11 @@ class CbtController extends Controller
                 'feedback' => $answer->feedback,
             ];
 
-            // The marking scheme itself is staff-only even after release.
-            if ($forStaff) {
+            // The marking scheme: staff always; students only when the
+            // school chose to show it and the paper has closed.
+            if ($showCorrect) {
                 $row['correct_answer'] = $question?->correct_answer;
+                $row['options'] = $question?->options;
             }
 
             return $row;

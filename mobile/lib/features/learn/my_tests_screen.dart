@@ -238,6 +238,14 @@ class TestResultScreen extends ConsumerWidget {
                   ),
               ],
               if (questions.isNotEmpty) const SectionHeader('Questions'),
+              if (mapOf(r['review'])['correct_answers_after_close'] == true)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Text(
+                    'The correct answers will show here after the test closes.',
+                    style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                  ),
+                ),
               for (var i = 0; i < questions.length; i++)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -253,9 +261,15 @@ class TestResultScreen extends ConsumerWidget {
                         Text('${i + 1}. ${stringOf(questions[i]['question'])}', style: AppText.bodyMd),
                         const SizedBox(height: 4),
                         Text(
-                          'Your answer: ${_answer(questions[i]['your_response'])}',
+                          'Your answer: ${_answer(questions[i]['your_response'], questions[i]['options'])}',
                           style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
                         ),
+                        // Only sent when the school shows them and the test has closed.
+                        if (questions[i].containsKey('correct_answer'))
+                          Text(
+                            'Correct answer: ${_answer(questions[i]['correct_answer'], questions[i]['options'])}',
+                            style: AppText.bodyMd.copyWith(color: AppColors.present),
+                          ),
                         Text(
                           '${numOf(questions[i]['awarded_marks'])} / ${numOf(questions[i]['marks'])} marks',
                           style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
@@ -275,11 +289,18 @@ class TestResultScreen extends ConsumerWidget {
     );
   }
 
-  static String _answer(Object? r) {
+  /// "B. 48,000" for a chosen option (the app saves `{'option': 'B'}`), the
+  /// typed text or value otherwise.
+  static String _answer(Object? r, [Object? options]) {
     if (r == null) return '(no answer)';
-    if (r is Map) return stringOf(r['text'] ?? r['answer'] ?? r['value'], '(no answer)');
-    if (r is List) return r.map(stringOf).join(', ');
+    if (r is Map) {
+      final picked = r['option'] ?? r['selected_option'] ?? r['options'] ?? r['text'] ?? r['answer'] ?? r['value'];
+      return picked == null ? '(no answer)' : _answer(picked, options);
+    }
+    if (r is List) return r.map((x) => _answer(x, options)).join(', ');
     final s = stringOf(r);
-    return s.isEmpty ? '(no answer)' : s;
+    if (s.isEmpty) return '(no answer)';
+    final label = options is Map ? options[s] : null;
+    return label == null ? s : '$s. ${stringOf(label)}';
   }
 }
