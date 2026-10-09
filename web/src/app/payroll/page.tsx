@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
 
 /**
@@ -25,7 +25,7 @@ const STATUS_TONE: Record<string, 'slate' | 'amber' | 'green' | 'blue' | 'red'> 
 const n = (v: string | number) => nairaAmount(Number(v));
 
 export default function PayrollPage() {
-  const [role] = useState(roleFromCookie);
+  const role = useCookieRole();
   const manager = role === 'school_admin' || role === 'bursar';
   const admin = role === 'school_admin';
   const [tab, setTab] = useState<Tab>(manager ? 'runs' : 'mine');

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, Table, inputClass } from '@/components/Page';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 
 /**
  * The session view of a class (end of the third term): each student's
@@ -34,7 +34,7 @@ const SETTINGS: [string, string, string[] | 'bool' | 'number'][] = [
 ];
 
 export default function AnnualBroadsheet() {
-  const [admin] = useState(() => roleFromCookie() === 'school_admin');
+  const admin = useCookieRole() === 'school_admin';
   const [tab, setTab] = useState<Tab>('annual');
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [sessions, setSessions] = useState<{ id: number; name: string; is_current: boolean }[]>([]);

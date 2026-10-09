@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass, nairaAmount } from '@/components/Page';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 import StudentPicker, { type PickedStudent } from '@/components/StudentPicker';
 
 /**
@@ -57,7 +57,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en
 
 export default function StorePage() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [admin] = useState(() => roleFromCookie() === 'school_admin');
+  const admin = useCookieRole() === 'school_admin';
   const [tab, setTab] = useState<Tab>('overview');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi, uploadApi } from '@/lib/api';
 import { useClassSubjects } from '@/lib/useClassSubjects';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
 
 /**
@@ -51,7 +51,7 @@ async function openMaterial(m: { id: number; type: string }) {
 }
 
 export default function LearningPage() {
-  const [role] = useState(roleFromCookie);
+  const role = useCookieRole();
   const staff = role === 'school_admin' || role === 'teacher' || role === 'super_admin';
   return staff ? <StaffLearning admin={role !== 'teacher'} /> : <LearnerView parent={role === 'parent'} />;
 }

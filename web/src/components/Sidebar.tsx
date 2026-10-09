@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -219,13 +219,30 @@ export function roleFromCookie(): Role | null {
   return match ? (decodeURIComponent(match[1]) as Role) : null;
 }
 
+/**
+ * The signed-in role from the cookie, safe to use while rendering.
+ *
+ * The server has no cookie to read, so its first render has no role; the
+ * browser does. Reading the cookie in useState made the two first renders
+ * differ, and React reported a hydration mismatch on every page with the
+ * sidebar. useSyncExternalStore states that difference to React: the server
+ * snapshot is null, the browser's is the cookie.
+ */
+export function useCookieRole(): Role | null {
+  return useSyncExternalStore(noSubscribe, roleFromCookie, serverRole);
+}
+
+const noSubscribe = () => () => {};
+const serverRole = () => null;
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
-  // Read synchronously from the cookie so the nav renders correctly on the
-  // first paint rather than flashing the wrong set of links.
-  const [role, setRole] = useState<Role | null>(roleFromCookie);
+  // The cookie gives the role at once; /user confirms it (and wins) once loaded.
+  const cookieRole = useCookieRole();
+  const [apiRole, setRole] = useState<Role | null>(null);
+  const role = apiRole ?? cookieRole;
   const [leaving, setLeaving] = useState(false);
   // Modules SchoolPilot has switched off for this school. Their endpoints
   // already refuse; this just stops the menu offering them.

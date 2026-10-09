@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Button, Card, Empty, ErrorNote, Field, Loading, PageShell, inputClass } from '@/components/Page';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 
 /**
  * Developmental ratings for Nursery and early years: no CA or exam scores,
@@ -23,7 +23,7 @@ interface Sheet {
 type Cell = { rating: string; observation: string };
 
 export default function DevelopmentalPage() {
-  const [admin] = useState(() => roleFromCookie() === 'school_admin');
+  const admin = useCookieRole() === 'school_admin';
   const [classes, setClasses] = useState<{ id: number; name: string; level_category?: string | null }[]>([]);
   const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
   const [pick, setPick] = useState({ class_id: '', term_id: '' });

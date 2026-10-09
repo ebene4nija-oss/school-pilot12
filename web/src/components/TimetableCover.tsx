@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Table, inputClass } from '@/components/Page';
 
 /**
@@ -18,7 +18,7 @@ interface Duty { id: number; date: string; class: string | null; subject_name: s
 interface Teacher { id: number; name: string }
 
 export default function TimetableCover() {
-  const [role] = useState(roleFromCookie);
+  const role = useCookieRole();
   const admin = role === 'school_admin';
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [sheet, setSheet] = useState<Sheet | null>(null);

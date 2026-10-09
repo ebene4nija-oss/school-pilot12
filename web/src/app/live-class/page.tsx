@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { useClassSubjects } from '@/lib/useClassSubjects';
-import { roleFromCookie } from '@/components/Sidebar';
+import { useCookieRole } from '@/components/Sidebar';
 import ProviderConnections from './ProviderConnections';
 import {
   Badge,
@@ -124,7 +124,7 @@ export default function LiveClassPage() {
   const [duration, setDuration] = useState('45');
   const [objectives, setObjectives] = useState('');
   const [repeatUntil, setRepeatUntil] = useState('');
-  const [role] = useState(roleFromCookie);
+  const role = useCookieRole();
   const staff = role === 'school_admin' || role === 'teacher' || role === 'super_admin';
   const [attendance, setAttendance] = useState<({ id: number; title: string; rows: AttendanceRow[]; rules: { present_percent: number; late_grace_minutes: number } } & ProviderInfo) | null>(null);
   const [matchTo, setMatchTo] = useState<Record<string, string>>({});
