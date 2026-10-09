@@ -11,6 +11,7 @@ import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import '../finance/gateway_checkout.dart';
 
 /// The administrator's academics hub: generating report cards, releasing
 /// results (the one action only a school admin may take), PIN stock and the
@@ -202,7 +203,7 @@ class _ReleaseRowState extends ConsumerState<_ReleaseRow> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Release ${widget.className}?'),
         content: const Text(
           'Parents will be able to check these results with a PIN. This '
@@ -210,11 +211,11 @@ class _ReleaseRowState extends ConsumerState<_ReleaseRow> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Release'),
           ),
         ],
@@ -514,15 +515,207 @@ class PinInventoryScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: () => _order(context, ref),
+                icon: const Icon(Icons.add_shopping_cart),
+                label: const Text('Order PINs'),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Text(
-                'Buying more stock and selling over the counter are done from '
-                'the web portal, where the payment and receipt trail lives.',
+                'Selling over the counter is done from the web portal, where '
+                'the receipt trail lives.',
                 style:
                     AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _order(BuildContext context, WidgetRef ref) async {
+    final ordered = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _OrderPinsSheet(),
+    );
+
+    // The PINs arrive when the gateway's callback reaches the server, not when
+    // the checkout closes — so this says "on the way", never "added".
+    if ((ordered ?? false) && context.mounted) {
+      ref.invalidate(pinInventoryProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Payment sent for confirmation. Your PINs are added to stock once '
+            'it clears.',
+          ),
+        ),
+      );
+    }
+  }
+}
+
+final pinPricingProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  return mapOf(await api.get<dynamic>(Api.pinPriceTiers));
+});
+
+/// The per-PIN price for an order of this size — the same rule as the web
+/// portal's `quote()`. Display only: the server prices the order itself.
+num? _quote(Map<String, dynamic> pricing, int quantity) {
+  if (quantity < 1) return null;
+  if (pricing['negotiated'] == true && pricing['unit_price'] != null) {
+    return numOf(pricing['unit_price']);
+  }
+
+  final tiers = listOf(pricing['tiers'])
+    ..sort((a, b) => intOf(b['min_quantity']).compareTo(intOf(a['min_quantity'])));
+
+  for (final tier in tiers) {
+    if (quantity >= intOf(tier['min_quantity'])) return numOf(tier['unit_price']);
+  }
+  return null;
+}
+
+/// Buys a batch of result-checker PINs from SchoolPilot.
+///
+/// Sends a quantity and a gateway and nothing else: the server computes the
+/// price (honouring any negotiated rate) and returns a checkout link.
+class _OrderPinsSheet extends ConsumerStatefulWidget {
+  const _OrderPinsSheet();
+
+  @override
+  ConsumerState<_OrderPinsSheet> createState() => _OrderPinsSheetState();
+}
+
+class _OrderPinsSheetState extends ConsumerState<_OrderPinsSheet> {
+  final _quantity = TextEditingController(text: '100');
+  String _gateway = 'paystack';
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _quantity.dispose();
+    super.dispose();
+  }
+
+  int get _qty => int.tryParse(_quantity.text.trim()) ?? 0;
+
+  Future<void> _submit() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      final res = await ref.read(apiClientProvider).post<Map<String, dynamic>>(
+        Api.pinBatches,
+        body: {'quantity': _qty, 'gateway': _gateway},
+      );
+
+      final url = stringOf(res['authorization_url']);
+      if (!mounted) return;
+      if (url.isEmpty) {
+        setState(() {
+          _busy = false;
+          _error = 'The payment page could not be opened. Please try again.';
+        });
+        return;
+      }
+
+      await GatewayCheckout.open(context, url: url, title: 'Pay for PINs');
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = asApiException(error).message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pricing = ref.watch(pinPricingProvider);
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Order PINs', style: AppText.headlineSm),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _quantity,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: 'How many PINs'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            DropdownButtonFormField<String>(
+              initialValue: _gateway,
+              decoration: const InputDecoration(labelText: 'Pay with'),
+              items: const [
+                DropdownMenuItem(value: 'paystack', child: Text('Paystack')),
+                DropdownMenuItem(
+                  value: 'flutterwave',
+                  child: Text('Flutterwave'),
+                ),
+              ],
+              onChanged: _busy
+                  ? null
+                  : (v) => setState(() => _gateway = v ?? 'paystack'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            pricing.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (_, __) => Text(
+                'Price is confirmed on the payment page.',
+                style: AppText.bodyMd
+                    .copyWith(color: AppColors.onSurfaceVariant),
+              ),
+              data: (data) {
+                final unit = _quote(data, _qty);
+                return Text(
+                  unit == null
+                      ? 'Price is confirmed on the payment page.'
+                      : '${Money.format(unit)} per PIN · '
+                          'Total ${Money.format(unit * _qty)}',
+                  style: AppText.bodyLg,
+                );
+              },
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _error!,
+                style: AppText.bodyMd.copyWith(color: AppColors.error),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: _busy || _qty < 1 ? null : _submit,
+              child: _busy
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Continue to payment'),
+            ),
+          ],
+        ),
       ),
     );
   }

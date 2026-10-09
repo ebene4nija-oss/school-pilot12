@@ -425,7 +425,7 @@ class _SubjectRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   stringOf(
-                    subject['subject']?['name'] ?? subject['name'],
+                    nameOf(subject['subject']) ?? subject['name'],
                     'Subject',
                   ),
                   style: AppText.bodyLg,

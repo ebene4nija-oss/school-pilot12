@@ -249,7 +249,7 @@ class _BehaviourView extends ConsumerWidget {
                       if (report['teacher'] != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          stringOf(report['teacher']?['name']),
+                          stringOf(nameOf(report['teacher'])),
                           style: AppText.labelSm
                               .copyWith(color: AppColors.onSurfaceVariant),
                         ),

@@ -58,12 +58,12 @@ final classesProvider =
     final rows = listOf(cached.data, ['subjects', 'assignments']);
     final seen = <int, ClassRef>{};
     for (final row in rows) {
-      final id = intOf(row['class_id'] ?? row['class']?['id']);
+      final id = intOf(row['class_id'] ?? fieldOf(row['class'], 'id'));
       if (id == 0) continue;
       seen[id] = ClassRef(
         id: id,
         name: stringOf(
-          row['class']?['name'] ?? row['class_name'],
+          nameOf(row['class']) ?? row['class_name'],
           'Class $id',
         ),
       );

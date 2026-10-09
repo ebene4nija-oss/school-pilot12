@@ -199,7 +199,10 @@ class MoreScreen extends ConsumerWidget {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      // The dialog's own context: the screen's context belongs to the tab
+      // shell's navigator, so popping with it closed the wrong route and the
+      // confirmation never came back — sign-out silently did nothing.
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Sign out?'),
         content: Text(
           queued > 0
@@ -209,11 +212,11 @@ class MoreScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(
               'Sign out',
               style: TextStyle(

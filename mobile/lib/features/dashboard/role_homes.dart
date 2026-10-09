@@ -92,7 +92,7 @@ class BursarHome extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              stringOf(r['name'] ?? r['student_name'] ?? r['student']?['name'], 'Student'),
+                              stringOf(r['name'] ?? r['student_name'] ?? nameOf(r['student']), 'Student'),
                               style: AppText.bodyLg,
                             ),
                           ),

@@ -101,3 +101,15 @@ int intOf(Object? value, [int fallback = 0]) => numOf(value, fallback).toInt();
 
 String stringOf(Object? value, [String fallback = '']) =>
     value?.toString() ?? fallback;
+
+/// Reads `key` from a nested object, or null when it is not an object.
+///
+/// `row['class']?['name']` throws when the backend sends `class` as a plain
+/// string ("JSS 1") — Dart's String has an int-only `[]` — and one bad row
+/// takes the whole screen down with it.
+Object? fieldOf(Object? value, String key) =>
+    value is Map ? value[key] : null;
+
+/// A relation's display name, whether it arrives as `{name: ...}` or as the
+/// name itself.
+Object? nameOf(Object? value) => value is Map ? value['name'] : value;

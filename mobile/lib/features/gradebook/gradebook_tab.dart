@@ -100,11 +100,11 @@ class GradebookTab extends ConsumerWidget {
                                       subjectId: intOf(
                                         subject['subject_id'] ??
                                             subject['id'] ??
-                                            subject['subject']?['id'],
+                                            fieldOf(subject['subject'], 'id'),
                                       ),
                                       subjectName: stringOf(
                                         subject['name'] ??
-                                            subject['subject']?['name'],
+                                            nameOf(subject['subject']),
                                         'Subject',
                                       ),
                                       classId: classId,
@@ -120,7 +120,7 @@ class GradebookTab extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 stringOf(
-                                  subject['name'] ?? subject['subject']?['name'],
+                                  subject['name'] ?? nameOf(subject['subject']),
                                   'Subject',
                                 ),
                                 style: AppText.bodyLg,
@@ -140,11 +140,11 @@ class GradebookTab extends ConsumerWidget {
                                             subjectId: intOf(
                                               subject['subject_id'] ??
                                                   subject['id'] ??
-                                                  subject['subject']?['id'],
+                                                  fieldOf(subject['subject'], 'id'),
                                             ),
                                             subjectName: stringOf(
                                               subject['name'] ??
-                                                  subject['subject']?['name'],
+                                                  nameOf(subject['subject']),
                                               'Subject',
                                             ),
                                             classId: classId,

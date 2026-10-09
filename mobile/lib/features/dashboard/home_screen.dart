@@ -124,11 +124,25 @@ class _AdminDashboard extends ConsumerWidget {
       title: 'Dashboard',
       subtitle: user?.name,
       builder: (data) {
-        final enrolment = intOf(data['total_students'] ?? data['enrolment']);
-        final attendance = numOf(data['attendance_rate'] ?? data['attendance']);
-        final collected = numOf(data['fees_collected'] ?? data['total_collected']);
-        final outstanding =
-            numOf(data['outstanding'] ?? data['total_outstanding']);
+        // `/analytics/principal` nests its figures by area. Reading flat keys
+        // that are not there is what made every tile show 0.
+        final population = data['population'];
+        final revenue = data['revenue'];
+        final today = data['attendance_today'];
+
+        final enrolment = intOf(
+          fieldOf(population, 'active') ?? data['total_students'],
+        );
+        final attendance = numOf(
+          fieldOf(today, 'rate_percentage') ?? data['attendance_rate'],
+        );
+        final collected = numOf(
+          fieldOf(revenue, 'total_collected') ?? data['fees_collected'],
+        );
+        final invoiced = numOf(fieldOf(revenue, 'total_invoiced'));
+        final outstanding = fieldOf(revenue, 'total_invoiced') != null
+            ? (invoiced - collected).clamp(0, double.infinity)
+            : numOf(data['outstanding'] ?? data['total_outstanding']);
         final expected = collected + outstanding;
         final defaulters = intOf(data['defaulters'] ?? data['defaulter_count']);
 
@@ -178,14 +192,18 @@ class _AdminDashboard extends ConsumerWidget {
             ),
           ),
           const SectionHeader('Needs attention'),
-          if (defaulters > 0)
+          // The principal payload carries no defaulter count, so the card
+          // keys off the outstanding balance and names a count only if sent.
+          if (defaulters > 0 || outstanding > 0)
             _pad(
               OutlinedCard(
                 statusColor: AppColors.overdue,
                 onTap: () => context.go('/fees'),
                 child: _AttentionRow(
                   icon: Icons.money_off,
-                  title: '$defaulters fee ${defaulters == 1 ? 'defaulter' : 'defaulters'}',
+                  title: defaulters > 0
+                      ? '$defaulters fee ${defaulters == 1 ? 'defaulter' : 'defaulters'}'
+                      : 'Fees outstanding',
                   detail: '${Money.format(outstanding)} outstanding',
                   color: AppColors.overdue,
                 ),
@@ -439,7 +457,7 @@ class _StudentDashboard extends ConsumerWidget {
                               style: AppText.bodyLg,
                             ),
                             Text(
-                              stringOf(h['subject']?['name'] ?? h['subject']),
+                              stringOf(nameOf(h['subject']) ?? h['subject']),
                               style: AppText.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               ),
@@ -507,7 +525,7 @@ class _ParentFeed extends ConsumerWidget {
       onRetry: () => ref.invalidate(parentFeedProvider),
       builder: (context, data, meta) {
         final outstanding = numOf(
-          data['fees']?['outstanding'] ?? data['outstanding_balance'],
+          fieldOf(data['fees'], 'outstanding') ?? data['outstanding_balance'],
         );
         final attendance = listOf(data['attendance'] ?? data['recent_attendance']);
         final behaviour = listOf(data['behavior'] ?? data['behaviour_reports']);
@@ -726,11 +744,11 @@ class ChildSwitcher extends ConsumerWidget {
     );
 
     final name = stringOf(
-      selected['name'] ?? selected['full_name'] ?? selected['user']?['name'],
+      selected['name'] ?? selected['full_name'] ?? nameOf(selected['user']),
       'My child',
     );
     final className = stringOf(
-      selected['class']?['name'] ?? selected['class_name'],
+      nameOf(selected['class']) ?? selected['class_name'],
     );
 
     return InkWell(
@@ -787,7 +805,7 @@ class ChildSwitcher extends ConsumerWidget {
                 leading: InitialsAvatar(stringOf(child['name'], '?')),
                 title: Text(stringOf(child['name'], 'Child')),
                 subtitle: Text(
-                  stringOf(child['class']?['name'] ?? child['class_name']),
+                  stringOf(nameOf(child['class']) ?? child['class_name']),
                 ),
                 trailing: intOf(child['id']) == selectedId
                     ? const Icon(Icons.check, color: AppColors.present)

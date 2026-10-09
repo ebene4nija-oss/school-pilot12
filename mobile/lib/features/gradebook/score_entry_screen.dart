@@ -104,7 +104,7 @@ class _ScoreEntryScreenState extends ConsumerState<ScoreEntryScreen> {
 
       _rows[id] = _Row(
         name: stringOf(
-          student['name'] ?? student['full_name'] ?? student['user']?['name'],
+          student['name'] ?? student['full_name'] ?? nameOf(student['user']),
           'Student',
         ),
         firstCa: mine?['first_ca'],

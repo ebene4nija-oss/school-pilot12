@@ -77,7 +77,7 @@ class MessagesScreen extends ConsumerWidget {
   static String _title(Map<String, dynamic> thread) => stringOf(
         thread['subject'] ??
             thread['title'] ??
-            thread['participant']?['name'] ??
+            nameOf(thread['participant']) ??
             thread['other_party'],
         'Conversation',
       );
@@ -94,7 +94,7 @@ class _ThreadRow extends StatelessWidget {
     final title = MessagesScreen._title(thread);
     final unread = intOf(thread['unread_count'] ?? thread['unread']);
     final preview = stringOf(
-      thread['last_message']?['body'] ?? thread['latest_message'],
+      fieldOf(thread['last_message'], 'body') ?? thread['latest_message'],
     );
 
     return ListTile(

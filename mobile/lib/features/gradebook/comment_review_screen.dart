@@ -106,7 +106,7 @@ class _ReviewList extends ConsumerWidget {
 
     for (final student in students) {
       final name = stringOf(
-        student['name'] ?? student['full_name'] ?? student['user']?['name'],
+        student['name'] ?? student['full_name'] ?? nameOf(student['user']),
         'Student',
       );
       final scores = student['scores'];
@@ -122,7 +122,7 @@ class _ReviewList extends ConsumerWidget {
             scoreId: intOf(score['id']),
             studentName: name,
             subject: stringOf(
-              score['subject']?['name'] ?? score['subject_name'],
+              nameOf(score['subject']) ?? score['subject_name'],
             ),
             text: text,
             // The backend's own vocabulary. Anything not explicitly approved is

@@ -211,7 +211,7 @@ class _ExamCardState extends ConsumerState<_ExamCard> {
           const SizedBox(height: 4),
           Text(
             [
-              stringOf(exam['subject']?['name'] ?? exam['subject_name']),
+              stringOf(nameOf(exam['subject']) ?? exam['subject_name']),
               if (questions > 0) '$questions questions',
               if (duration > 0) '$duration minutes',
             ].where((s) => s.isNotEmpty).join(' · '),

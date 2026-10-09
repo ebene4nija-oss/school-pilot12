@@ -51,15 +51,15 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
         builder: (context, students, meta) {
           final classes = {
             for (final s in students)
-              stringOf(s['class']?['name'] ?? s['class_name'])
+              stringOf(nameOf(s['class']) ?? s['class_name'])
           }..removeWhere((c) => c.isEmpty);
 
           final filtered = students.where((s) {
             final name = stringOf(
-              s['name'] ?? s['full_name'] ?? s['user']?['name'],
+              s['name'] ?? s['full_name'] ?? nameOf(s['user']),
             ).toLowerCase();
             final className =
-                stringOf(s['class']?['name'] ?? s['class_name']);
+                stringOf(nameOf(s['class']) ?? s['class_name']);
             final matchesSearch =
                 _search.isEmpty || name.contains(_search.toLowerCase());
             final matchesClass =
@@ -200,10 +200,10 @@ class _StudentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = stringOf(
-      student['name'] ?? student['full_name'] ?? student['user']?['name'],
+      student['name'] ?? student['full_name'] ?? nameOf(student['user']),
       'Student',
     );
-    final className = stringOf(student['class']?['name'] ?? student['class_name']);
+    final className = stringOf(nameOf(student['class']) ?? student['class_name']);
     final admission = stringOf(
       student['admission_number'] ?? student['adm_no'],
     );
@@ -251,7 +251,7 @@ class _StudentSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = stringOf(
-      student['name'] ?? student['full_name'] ?? student['user']?['name'],
+      student['name'] ?? student['full_name'] ?? nameOf(student['user']),
       'Student',
     );
 
@@ -273,7 +273,7 @@ class _StudentSheet extends StatelessWidget {
                       Text(name, style: AppText.headlineSm),
                       Text(
                         stringOf(
-                          student['class']?['name'] ?? student['class_name'],
+                          nameOf(student['class']) ?? student['class_name'],
                         ),
                         style: AppText.bodyMd
                             .copyWith(color: AppColors.onSurfaceVariant),

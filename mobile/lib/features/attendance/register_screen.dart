@@ -195,7 +195,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           // a teacher correcting one child does not have to re-mark 33 others.
           for (final s in students) {
             final id = intOf(s['id'] ?? s['student_id']);
-            final existing = s['status'] ?? s['attendance']?['status'];
+            final existing = s['status'] ?? fieldOf(s['attendance'], 'status');
             if (existing != null && !_marks.containsKey(id)) {
               _marks[id] = AttendanceStatus.values.firstWhere(
                 (v) => v.wire == existing.toString(),
@@ -233,7 +233,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       name: stringOf(
                         student['name'] ??
                             student['full_name'] ??
-                            student['user']?['name'],
+                            nameOf(student['user']),
                         'Student',
                       ),
                       admissionNumber: stringOf(

@@ -138,14 +138,14 @@ class _DefaultersScreen extends ConsumerWidget {
                                 stringOf(
                                   row['name'] ??
                                       row['student_name'] ??
-                                      row['student']?['name'],
+                                      nameOf(row['student']),
                                   'Student',
                                 ),
                                 style: AppText.bodyLg,
                               ),
                               Text(
                                 stringOf(
-                                  row['class']?['name'] ?? row['class_name'],
+                                  nameOf(row['class']) ?? row['class_name'],
                                 ),
                                 style: AppText.bodyMd.copyWith(
                                   color: AppColors.onSurfaceVariant,
@@ -294,7 +294,7 @@ class _StatementScreenState extends ConsumerState<_StatementScreen> {
                                         stringOf(
                                           invoice['description'] ??
                                               invoice['title'] ??
-                                              invoice['term']?['name'],
+                                              nameOf(invoice['term']),
                                           'Invoice',
                                         ),
                                         style: AppText.bodyMd,
