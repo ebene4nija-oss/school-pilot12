@@ -5,8 +5,8 @@ import { ProductShot } from "@/components/ProductShot";
 import { objections, problems } from "@/content/home";
 
 export const metadata: Metadata = {
-  title: "For proprietors and school leaders",
-  description: "See your whole school from your phone: attendance, fees, results and learning. Priced per student, per term, in Naira.",
+  title: "School Management App for Proprietors",
+  description: "Monitor attendance, fees collected, results and learning across your private school from your phone. From ₦300 per student per term, in Naira.",
   alternates: { canonical: "/solutions/school-owners/" },
 };
 

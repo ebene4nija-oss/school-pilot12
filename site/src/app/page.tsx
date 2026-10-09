@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { allInOne, hero, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
 import { CtaBand, FaqList, Section } from "@/components/Blocks";
 import { DemoSchoolLink, PrimaryCta, SecondaryCta } from "@/components/Cta";
 import { ProductShot } from "@/components/ProductShot";
 import { RoleTabs } from "@/components/RoleTabs";
+
+export const metadata: Metadata = {
+  title: { absolute: "School Management System in Nigeria | SchoolPilot" },
+  alternates: { canonical: "/" },
+};
 
 /**
  * The homepage: ten blocks that read as a chain of solutions (Landing spec

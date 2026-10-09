@@ -3,7 +3,7 @@ import { CtaBand, PageHero } from "@/components/Blocks";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Security & trust",
+  title: "School Data Security and NDPA Compliance",
   description: "How SchoolPilot protects your school's and children's data: NDPA 2023, no biometrics, encryption, two-factor sign-in, audit logs and one-click export.",
   alternates: { canonical: "/trust/" },
 };

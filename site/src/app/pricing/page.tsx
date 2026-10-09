@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
 import { CtaBand, FaqList, PageHero, Section } from "@/components/Blocks";
 import type { Faq } from "@/content/home";
+import { JsonLd, breadcrumbs, faqPage } from "@/components/JsonLd";
+import { BOARDING, RESULTS, SUBSCRIPTION, naira } from "@/lib/pricing";
+import { site } from "@/lib/site";
+
+const title = "School Management Software Pricing in Nigeria";
+const description =
+  "School management software from ₦300 per student per term, or ₦500 with result management. 30-day free trial, boarding ₦1,000, CBT included, no per-exam fees.";
 
 export const metadata: Metadata = {
-  title: "Pricing",
-  description:
-    "School Management with Result Management: ₦500 per active student per term. School Management Subscription: ₦300 after a 30-day free trial. School Management with Boarding School Management: ₦1,000 per term on either plan.",
+  title,
+  description,
   alternates: { canonical: "/pricing/" },
+  openGraph: { title: `${title} | SchoolPilot`, description, url: "/pricing/" },
 };
-
-// Prices approved 2026-10-08. They match the rates in Super Admin > Billing;
-// change both together.
-const RESULTS = 500;
-const SUBSCRIPTION = 300;
-const BOARDING = 1000;
-
-const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
 const included = [
   "Student records and guardians",
@@ -79,6 +78,11 @@ const faq: Faq[] = [
     q: "How does the free trial work?",
     a: "The School Management Subscription starts with 30 days free. A term that ends inside the trial is free; once the trial ends, that term is billed as normal.",
   },
+  {
+    id: "cost",
+    q: "How much does a school management system cost in Nigeria?",
+    a: `SchoolPilot costs ${naira(SUBSCRIPTION)} per active student per term on the School Management Subscription, or ${naira(RESULTS)} per active student per term with Result Management. A school of 500 day students pays ${naira(500 * SUBSCRIPTION)} or ${naira(500 * RESULTS)} per term. Boarders are ${naira(BOARDING)} per term on either plan.`,
+  },
   { id: "cbt", q: "Is CBT charged per exam or per student?", a: "No. CBT is included in both plans, with no per-exam fees." },
   {
     id: "switch",
@@ -88,13 +92,41 @@ const faq: Faq[] = [
   { id: "stop", q: "What happens if we don't pay?", a: "Your data stays accessible and you can export all of it." },
 ];
 
+const offers = [
+  { name: "School Management with Result Management", price: RESULTS, description: "Per active student per term. Includes result computation, report cards, printing and result PINs." },
+  { name: "School Management Subscription", price: SUBSCRIPTION, description: "Per active student per term, after a 30-day free trial. No result computation or printing." },
+  { name: "School Management with Boarding School Management", price: BOARDING, description: "Per boarding student per term, in place of the plan rate, on either plan." },
+];
+
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "SchoolPilot school management system",
+    description,
+    brand: { "@type": "Brand", name: "SchoolPilot" },
+    offers: offers.map((o) => ({
+      "@type": "Offer",
+      name: o.name,
+      description: o.description,
+      price: o.price,
+      priceCurrency: "NGN",
+      availability: "https://schema.org/InStock",
+      url: `${site.url}/pricing/`,
+    })),
+  },
+  breadcrumbs({ name: "Pricing", path: "/pricing/" }),
+  faqPage(faq),
+];
+
 export default function PricingPage() {
   return (
     <>
+      <JsonLd data={structuredData} />
       <PageHero
-        eyebrow="Pricing"
+        eyebrow="School management software pricing"
         title="Per student, per term. In Naira."
-        sub="Two plans. You pay for the students actually enrolled each term, with no per-exam, per-teacher or per-parent fees."
+        sub="Two plans for Nigerian private schools. You pay for the students actually enrolled each term, with no per-exam, per-teacher or per-parent fees."
       />
 
       <Section id="plans" title="Choose your plan">

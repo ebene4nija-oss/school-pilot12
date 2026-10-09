@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { features, getFeature } from "@/content/features";
 import { Callout, CtaBand, FaqList, PageHero, Section, Steps } from "@/components/Blocks";
 import { ProductShot } from "@/components/ProductShot";
+import { JsonLd, breadcrumbs, faqPage } from "@/components/JsonLd";
 
 export const dynamicParams = false;
 
@@ -31,6 +32,12 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
+      <JsonLd
+        data={[
+          breadcrumbs({ name: "Features", path: "/features/" }, { name: feature.name, path: `/features/${feature.slug}/` }),
+          faqPage(feature.faq),
+        ]}
+      />
       <PageHero eyebrow={feature.name} title={feature.title} sub={feature.sub} />
 
       <Section id="problem" eyebrow="The problem today" title="Sound familiar?">

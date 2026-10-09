@@ -44,13 +44,13 @@ Operators set the site's contacts, switches and screenshots in the Super Admin c
 
 Set `SITE_CONFIG_REQUIRED=1` on the production build so it fails if the API can't be reached, instead of shipping without the console's values. Locally, the build keeps the last config it fetched and the `NEXT_PUBLIC_*` values in `.env.local` act as a fallback.
 
-Prices are never shown on the site; bands say "Price confirmed on WhatsApp" until final prices are approved in writing.
+Prices are shown (approved 2026-10-08) and live in `src/lib/pricing.ts`; they must match Super Admin > Billing (`services.billing.*_rate_kobo`), so change both together. SEO keyword map and page ownership: `docs/SEO-Keyword-Research.md`.
 
 ## Content rules
 
 Copy lives in `src/content/`. Every claim must map to something the product does today (Landing PRD §2). Never: hardware or biometrics, inventory or facilities, "AI writes report cards", invented numbers, testimonials or prices. There is no "owner" login; proprietors sign in as the school admin.
 
-Pricing: the core is free, CBT included. Schools pay one charge per term, by student band, when they generate results.
+Pricing: per active student per term. School Management with Result Management ₦500; School Management Subscription ₦300 after a 30-day free trial; Boarding ₦1,000 per boarder on either plan. CBT is included. Never say "free core" or quote by student band.
 
 ## Screenshots
 

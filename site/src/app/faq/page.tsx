@@ -3,8 +3,8 @@ import { faqGroups } from "@/content/faq";
 import { CtaBand, FaqList, PageHero } from "@/components/Blocks";
 
 export const metadata: Metadata = {
-  title: "Frequently asked questions",
-  description: "Honest answers about SchoolPilot: cost, offline CBT, switching mid-session, parents without smartphones, data protection.",
+  title: "School Management Software FAQ",
+  description: "How much school management software costs in Nigeria, how offline CBT works, switching mid-session, parents without smartphones and data protection.",
   alternates: { canonical: "/faq/" },
 };
 

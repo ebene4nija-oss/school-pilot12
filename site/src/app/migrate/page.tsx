@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CtaBand, PageHero, Section } from "@/components/Blocks";
 
 export const metadata: Metadata = {
-  title: "Free migration: switch to SchoolPilot in 24 hours",
+  title: "Free School Data Migration in 24 Hours",
   description: "We move your students, guardians, staff, past results and fee balances into SchoolPilot free, within 24 hours. Leave any time with a one-click export.",
   alternates: { canonical: "/migrate/" },
 };

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CtaBand, PageHero, Section } from "@/components/Blocks";
 
 export const metadata: Metadata = {
-  title: "About",
+  title: "About Us: School Software for Nigeria",
   description: "SchoolPilot is school management built for Nigerian private schools, Nursery to SS3.",
   alternates: { canonical: "/about/" },
 };

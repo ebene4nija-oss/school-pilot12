@@ -6,7 +6,7 @@
  */
 
 export const hero = {
-  eyebrow: "All-in-one school management · Nursery to SS3",
+  eyebrow: "School management system for Nigerian schools · Nursery to SS3",
   headline: "Run your whole school from one login.",
   sub: "One all-in-one system for your school: results, CBT with a computer-lab client, an LMS, fees and school administration, connected for staff, students and parents. Built for Nigerian private schools. From ₦300 per student per term.",
   proof: ["One system, one login", "Free 24-hour data migration", "CBT works offline in your lab"],

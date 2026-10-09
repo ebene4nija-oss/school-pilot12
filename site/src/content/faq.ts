@@ -47,7 +47,8 @@ export const faqGroups: { title: string; items: Faq[] }[] = [
     items: [
       { id: "paid", q: "What exactly do we pay for?", a: "A per-student charge each term: School Management with Result Management at ₦500, or the School Management Subscription at ₦300 after a 30-day free trial. School Management with Boarding School Management is ₦1,000 per term on either plan. CBT is included, with no per-exam fees." },
       { id: "stop", q: "What happens if we stop paying?", a: "Your data stays accessible and you can export all of it." },
-      { id: "session", q: "Can we pay for a whole session?", a: "Yes, and paying for a full session costs less than three separate terms." },
+      { id: "session", q: "Is billing per term or per session?", a: "Per term, for the students enrolled that term. There is no separate session fee." },
+      { id: "how-much", q: "How much does a school management system cost in Nigeria?", a: "SchoolPilot is ₦300 per active student per term on the School Management Subscription, or ₦500 with Result Management. See the pricing page for worked examples." },
     ],
   },
   {

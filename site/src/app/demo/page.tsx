@@ -4,8 +4,8 @@ import { hasWhatsApp } from "@/lib/site";
 import { PrimaryCta } from "@/components/Cta";
 
 export const metadata: Metadata = {
-  title: "Book a demo",
-  description: "See SchoolPilot run your results, CBT, fees and parents. Book a free demo for your school.",
+  title: "Book a School Management Software Demo",
+  description: "See SchoolPilot run your results, CBT, school fees and parent communication on your own school's data. Book a free demo.",
   alternates: { canonical: "/demo/" },
 };
 

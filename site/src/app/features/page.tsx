@@ -4,8 +4,8 @@ import { features } from "@/content/features";
 import { CtaBand, PageHero, Section } from "@/components/Blocks";
 
 export const metadata: Metadata = {
-  title: "Features",
-  description: "The all-in-one school management system for Nigerian private schools: results, CBT with a computer-lab client, LMS, fees and school administration.",
+  title: "School Management System Features",
+  description: "School management software features for Nigerian private schools: result computation, offline CBT, LMS, school fees, student records, HR and payroll.",
   alternates: { canonical: "/features/" },
 };
 
