@@ -5,6 +5,7 @@ import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Card, Empty, ErrorNote, Loading, PageShell } from '@/components/Page';
 import ParentTransfers from '@/components/ParentTransfers';
 import ParentHostel from '@/components/ParentHostel';
+import ParentStore from '@/components/ParentStore';
 import ParentIdCards from '@/components/ParentIdCards';
 import { ParentLibrary } from '@/components/LibraryBooks';
 
@@ -110,6 +111,7 @@ export default function ParentHome() {
   return (
     <PageShell title="My children" subtitle="Attendance, and whether the school tells you when your child is absent.">
       <ErrorNote message={error} />
+      <ParentStore />
       {notice && (
         <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">
           {notice}

@@ -168,6 +168,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/finance/payments', icon: '📒', label: 'Payments ledger', roles: ['school_admin', 'bursar'] },
       { href: '/finance/scholarships', icon: '🎓', label: 'Scholarships', roles: ['school_admin', 'bursar'] },
       { href: '/finance/hostel-charges', icon: '🛏️', label: 'Hostel charges', roles: ['school_admin', 'bursar'], module: 'hostel' },
+      { href: '/store', icon: '👕', label: 'School store', roles: ['school_admin', 'bursar'], module: 'inventory' },
       { href: '/accounting', icon: '📊', label: 'Accounts', roles: ['school_admin', 'bursar'] },
       { href: '/finance/students', icon: '🔎', label: 'Students', roles: ['bursar'] },
       { href: '/payroll', icon: '💼', label: 'Payroll', roles: ['school_admin', 'bursar', 'teacher', 'nurse'] },

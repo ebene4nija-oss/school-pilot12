@@ -29,6 +29,7 @@ class SchoolFeatures
         'hostel' => 'Hostel',
         'library' => 'Library',
         'clinic' => 'Clinic log',
+        'inventory' => 'School store',
     ];
 
     /**
@@ -44,6 +45,8 @@ class SchoolFeatures
         'hostel' => '#^(parent/|me/)?hostel(/|$)#',
         'library' => '#^library(/|$)#',
         'clinic' => '#^health/clinic#',
+        // The school also has its own switch, off until it opts in (InventorySetting).
+        'inventory' => '#^(parent/)?inventory(/|$)#',
     ];
 
     /** AI features a school can switch off for itself, with what each does. */
