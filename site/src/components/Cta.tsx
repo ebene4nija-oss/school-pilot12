@@ -19,7 +19,19 @@ function WhatsAppGlyph() {
  * lets sales join the chat to this visit. Without a configured number it
  * falls back to Book a demo, so the site never shows a dead button.
  */
-export function PrimaryCta({ where, className = "" }: { where: Where; className?: string }) {
+export function PrimaryCta({
+  where,
+  className = "",
+  label = "Chat on WhatsApp",
+  message = "Hello SchoolPilot, I'd like to learn more for my school.",
+}: {
+  where: Where;
+  className?: string;
+  /** Button text, when the page's action is more specific than "Chat". */
+  label?: string;
+  /** What the visitor's first WhatsApp message says; the ref code is added. */
+  message?: string;
+}) {
   if (!hasWhatsApp) {
     return (
       <Link
@@ -43,7 +55,7 @@ export function PrimaryCta({ where, className = "" }: { where: Where; className?
       onClick={(e) => {
         e.preventDefault();
         const ref = newRefCode();
-        const text = `Hello SchoolPilot, I'd like to learn more for my school. (Ref: ${ref})`;
+        const text = `${message} (Ref: ${ref})`;
         const url = `${base}?text=${encodeURIComponent(text)}`;
         sendTouch(ref, "whatsapp");
         track("cta_click", { cta: "whatsapp", location: where });
@@ -53,7 +65,7 @@ export function PrimaryCta({ where, className = "" }: { where: Where; className?
       }}
     >
       <WhatsAppGlyph />
-      Chat on WhatsApp
+      {label}
     </a>
   );
 }

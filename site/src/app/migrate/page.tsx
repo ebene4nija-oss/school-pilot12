@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CtaBand, PageHero, Section } from "@/components/Blocks";
+import { PrimaryCta } from "@/components/Cta";
+import { hasWhatsApp } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Free School Data Migration in 24 Hours",
@@ -31,7 +33,11 @@ export default function MigratePage() {
         sub="Switching mid-session doesn't have to mean chaos. Send us what you have, and your records are in SchoolPilot the next day. Start with results, add the rest when you're ready."
       >
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/start/" className="btn btn-primary">Start my migration</Link>
+          {hasWhatsApp ? (
+            <PrimaryCta where="hero" label="Start my migration on WhatsApp" message="Hello SchoolPilot, I'd like to move my school over to SchoolPilot." />
+          ) : (
+            <Link href="/start/" className="btn btn-primary">Start my migration</Link>
+          )}
           <Link href="/demo/" className="btn btn-secondary">Book a demo first</Link>
         </div>
       </PageHero>
