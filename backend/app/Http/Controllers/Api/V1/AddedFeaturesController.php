@@ -246,7 +246,8 @@ class AddedFeaturesController extends Controller
     public function sendMessage(Request $request)
     {
         $validated = $request->validate([
-            'recipient_id' => 'required|exists:users,id',
+            // A reply names its thread; only a new conversation needs a recipient.
+            'recipient_id' => 'required_without:thread_id|nullable|exists:users,id',
             'student_id'   => 'nullable|exists:students,id',
             'subject'      => 'nullable|string|max:255',
             'body'         => 'required|string|max:10000',
@@ -285,6 +286,28 @@ class AddedFeaturesController extends Controller
                 return response()->json([
                     'error' => 'A conversation must be between a parent and a member of staff.',
                 ], 422);
+            }
+
+            /*
+             * A conversation "about" a child must be with that child's family.
+             * Without this, any staff member could open a thread with any
+             * parent and label it with any pupil's name.
+             */
+            if (! empty($validated['student_id'])) {
+                $student = Student::where('school_id', $schoolId)->find($validated['student_id']);
+                $parentUser = User::find($parentId);
+
+                if (! $student || ! $parentUser || ! $student->isGuardedBy($parentUser)) {
+                    return response()->json([
+                        'error' => 'That parent is not a guardian of this student.',
+                    ], 422);
+                }
+
+                if ($senderRole !== 'parent' && $sender->cannot('view', $student)) {
+                    return response()->json([
+                        'error' => 'You can message only the families of students you teach.',
+                    ], 403);
+                }
             }
 
             $thread = MessageThread::create([

@@ -175,6 +175,8 @@ class Api {
   static const messageThreads = '$version/messages/threads';
   static String messageThread(int id) => '$version/messages/threads/$id';
   static const sendMessage = '$version/messages/send';
+  static String studentMessageRecipients(int id) =>
+      '$version/students/$id/message-recipients';
   static const notificationDevices = '$version/notifications/devices';
   // Pushes to the caller's own handsets and reports per-device delivery.
   // 503 means the deployment has no Firebase credentials, not a client bug.

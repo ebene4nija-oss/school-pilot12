@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
+import '../../core/auth/session.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/cached_view.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'new_message_screen.dart';
 
 final threadsProvider =
     FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
@@ -35,9 +37,19 @@ class MessagesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final threads = ref.watch(threadsProvider);
+    final role = ref.watch(currentRoleProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Messages')),
+      // Staff start conversations with families; a parent replies, or writes
+      // from a teacher's thread.
+      floatingActionButton: role == UserRole.teacher || role.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => _compose(context),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('New message'),
+            )
+          : null,
       body: CachedView<dynamic>(
         value: threads,
         onRetry: () => ref.invalidate(threadsProvider),
@@ -70,6 +82,21 @@ class MessagesScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Opens the new conversation once it is sent, so the teacher sees it land.
+  Future<void> _compose(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final threadId = await navigator.push<int>(
+      MaterialPageRoute(builder: (_) => const NewMessageScreen()),
+    );
+
+    if (threadId == null || threadId == 0) return;
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => ThreadScreen(threadId: threadId, title: 'Conversation'),
       ),
     );
   }

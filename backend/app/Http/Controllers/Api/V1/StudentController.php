@@ -306,6 +306,44 @@ class StudentController extends Controller
     }
 
     /**
+     * Who a member of staff can message about this student.
+     *
+     * The guardians' account ids, so the app can start a conversation —
+     * `/messages/send` takes a user id, and nothing else handed one out. Name
+     * and relationship only: messaging travels inside the app, so phone and
+     * email are not needed here and are not sent (NDPA data minimisation).
+     *
+     * Gated by the same `view` policy as the student record, so a teacher
+     * reaches only the families of children they teach. A guardian without an
+     * app account has nothing to receive a message on and is left out.
+     */
+    public function messageRecipients(Request $request, $id)
+    {
+        $student = Student::where('school_id', $this->schoolId())
+            ->with('user:id,name')
+            ->findOrFail($id);
+
+        $this->authorize('view', $student);
+
+        $guardians = $student->guardians()
+            ->whereNotNull('guardians.user_id')
+            ->with('user:id,name')
+            ->get()
+            ->filter(fn ($g) => $g->user !== null)
+            ->map(fn ($g) => [
+                'user_id' => $g->user->id,
+                'name' => $g->user->name,
+                'relationship' => $g->relationship,
+            ])
+            ->values();
+
+        return response()->json([
+            'student' => ['id' => $student->id, 'name' => $student->user?->name],
+            'recipients' => $guardians,
+        ]);
+    }
+
+    /**
      * A child's health record.
      *
      * Separated from `show()` deliberately. Blood group, allergies, medical

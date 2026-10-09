@@ -205,6 +205,12 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::get('/students/{id}/medical', [StudentController::class, 'medical'])
             ->middleware('role:super_admin,school_admin,parent');
 
+        // A student's guardians as message recipients — account id, name and
+        // relationship only. Policy-checked like the student record itself.
+        Route::get('/students/{id}/message-recipients', [StudentController::class, 'messageRecipients'])
+            ->middleware('role:super_admin,school_admin,teacher')
+            ->whereNumber('id');
+
         // `show()` existed on the controller but had no route — a single
         // student's record was not fetchable at all.
         Route::get('/students/{id}', [StudentController::class, 'show'])
