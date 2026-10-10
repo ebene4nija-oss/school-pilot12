@@ -130,4 +130,121 @@ class ClassStructureController extends Controller
 
         return null;
     }
+
+    /**
+     * Set up many classes and arms at once, from rows a client read out of a
+     * CSV or a pasted list: {class, level?, order?, arms?}.
+     *
+     * Preview first (commit=false says exactly what would be created), then
+     * commit. Safe to repeat: a class or arm that already exists (any case) is
+     * reused, never duplicated. Level may be left out; it is worked out from
+     * the class name (JSS → junior secondary, SS → senior secondary, Primary
+     * or Basic → primary, Nursery / KG / Creche → nursery).
+     */
+    public function importStructure(Request $request): JsonResponse
+    {
+        $schoolId = $this->schoolId();
+        $data = $request->validate([
+            'rows' => 'required|array|min:1|max:200',
+            'rows.*.class' => 'required|string|max:50',
+            'rows.*.level' => 'nullable|string|max:40',
+            'rows.*.order' => 'nullable|integer|min:0|max:255',
+            'rows.*.arms' => 'nullable',
+            'commit' => 'sometimes|boolean',
+        ]);
+
+        $existing = SchoolClass::where('school_id', $schoolId)->with('arms:id,class_id,name')->get()
+            ->keyBy(fn ($c) => mb_strtolower(trim($c->name)));
+
+        $plan = [];
+        $errors = [];
+        $seen = [];
+        foreach ($data['rows'] as $i => $row) {
+            $name = preg_replace('/\s+/', ' ', trim($row['class']));
+            $key = mb_strtolower($name);
+            $level = $this->levelFor($row['level'] ?? null, $name);
+            if ($level === null) {
+                $errors[] = ['row' => $i + 1, 'message' => "Say which level \"{$name}\" is (nursery, primary, junior_secondary, senior_secondary or secondary)."];
+                continue;
+            }
+
+            $arms = is_array($row['arms'] ?? null) ? $row['arms'] : preg_split('/[;|\/]+/', (string) ($row['arms'] ?? ''));
+            $arms = collect($arms)->map(fn ($a) => trim((string) $a))->filter()->unique(fn ($a) => mb_strtolower($a))->values();
+            if ($long = $arms->first(fn ($a) => mb_strlen($a) > 30)) {
+                $errors[] = ['row' => $i + 1, 'message' => "Arm \"{$long}\" is longer than 30 characters."];
+                continue;
+            }
+
+            $class = $existing->get($key);
+            $have = $class ? $class->arms->map(fn ($a) => mb_strtolower($a->name))->all() : [];
+            $entry = $seen[$key] ?? ['class' => $name, 'level' => $level, 'order' => $row['order'] ?? null, 'exists' => (bool) $class, 'new_arms' => []];
+            foreach ($arms as $arm) {
+                if (! in_array(mb_strtolower($arm), $have, true) && ! in_array(mb_strtolower($arm), array_map('mb_strtolower', $entry['new_arms']), true)) {
+                    $entry['new_arms'][] = $arm;
+                }
+            }
+            $seen[$key] = $entry;
+        }
+        $plan = array_values($seen);
+
+        $summary = [
+            'classes_to_create' => count(array_filter($plan, fn ($p) => ! $p['exists'])),
+            'arms_to_create' => array_sum(array_map(fn ($p) => count($p['new_arms']), $plan)),
+            'already_there' => count(array_filter($plan, fn ($p) => $p['exists'] && $p['new_arms'] === [])),
+        ];
+
+        if (! ($data['commit'] ?? false) || $errors !== []) {
+            return response()->json(['plan' => $plan, 'summary' => $summary, 'errors' => $errors, 'committed' => false], $errors !== [] && ($data['commit'] ?? false) ? 422 : 200);
+        }
+
+        DB::transaction(function () use ($plan, $schoolId, $existing) {
+            foreach ($plan as $p) {
+                $class = $existing->get(mb_strtolower($p['class'])) ?? SchoolClass::create([
+                    'school_id' => $schoolId, 'name' => $p['class'], 'level_category' => $p['level'], 'order_index' => $p['order'] ?? 0,
+                ]);
+                foreach ($p['new_arms'] as $arm) {
+                    Arm::create(['school_id' => $schoolId, 'class_id' => $class->id, 'name' => $arm]);
+                }
+            }
+        });
+
+        \App\Models\AuditLog::create([
+            'school_id' => $schoolId,
+            'user_id' => $request->user()->id,
+            'action' => 'classes.imported',
+            'auditable_type' => SchoolClass::class,
+            'auditable_id' => 0,
+            'new_values' => $summary,
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'plan' => $plan, 'summary' => $summary, 'errors' => [], 'committed' => true,
+            'message' => "Added {$summary['classes_to_create']} class(es) and {$summary['arms_to_create']} arm(s).",
+        ]);
+    }
+
+    /** A level key from what was typed, or guessed from the class name. */
+    private function levelFor(?string $given, string $className): ?string
+    {
+        $g = mb_strtolower(trim((string) $given));
+        if ($g !== '') {
+            $g = str_replace([' ', '-'], '_', $g);
+            $aliases = ['jss' => 'junior_secondary', 'junior' => 'junior_secondary', 'jhs' => 'junior_secondary', 'sss' => 'senior_secondary', 'ss' => 'senior_secondary', 'senior' => 'senior_secondary', 'basic' => 'primary', 'kg' => 'nursery', 'pre_school' => 'nursery', 'preschool' => 'nursery'];
+            $g = $aliases[$g] ?? $g;
+
+            return array_key_exists($g, Sections::LEVEL_GROUPS) ? $g : null;
+        }
+
+        $n = mb_strtolower($className);
+
+        return match (true) {
+            (bool) preg_match('/^(jss|jhs|junior)/', $n) => 'junior_secondary',
+            (bool) preg_match('/^(sss|ss|shs|senior)\b|^ss\s*\d/', $n) => 'senior_secondary',
+            (bool) preg_match('/^(primary|basic|pry|grade)/', $n) => 'primary',
+            (bool) preg_match('/^(nursery|kg|kindergarten|creche|crèche|pre)/', $n) => 'nursery',
+            default => null,
+        };
+    }
 }
+

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, PageShell, inputClass } from '@/components/Page';
+import ClassImport from './ClassImport';
 
 /**
  * Classes and their arms.
@@ -77,6 +78,8 @@ export default function ClassesPage() {
     <PageShell title="Classes & arms" subtitle="Your classes in teaching order, their arms, and which stream each arm is.">
       <ErrorNote message={error} />
       {notice && <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}
+
+      <ClassImport onDone={() => { void load(); }} />
 
       <Card title="Add a class" className="mb-6">
         <form onSubmit={addClass} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

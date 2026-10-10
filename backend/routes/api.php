@@ -571,6 +571,8 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
 
         // Setting up classes and arms (stream, merit arm). Admin only.
         Route::post('/classes', [ClassStructureController::class, 'storeClass'])->middleware('role:super_admin,school_admin');
+        // Many classes and arms at once: preview, then commit. Safe to repeat.
+        Route::post('/classes/import', [ClassStructureController::class, 'importStructure'])->middleware(['role:super_admin,school_admin', 'throttle:20,1']);
         Route::put('/classes/{id}', [ClassStructureController::class, 'updateClass'])->middleware('role:super_admin,school_admin')->whereNumber('id');
         Route::delete('/classes/{id}', [ClassStructureController::class, 'destroyClass'])->middleware('role:super_admin,school_admin')->whereNumber('id');
         Route::post('/classes/{id}/arms', [ClassStructureController::class, 'storeArm'])->middleware('role:super_admin,school_admin')->whereNumber('id');
