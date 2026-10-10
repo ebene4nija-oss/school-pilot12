@@ -14,18 +14,25 @@ import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../dashboard/dashboard_providers.dart';
 import '../finance/gateway_checkout.dart';
+import '../learn/learning_widgets.dart';
 
 /// Whose results are being looked at: the signed-in student, or the guardian's
 /// selected child.
-final resultSubjectIdProvider = Provider<int?>((ref) {
+///
+/// A student's own id is their *student record*, from /me/dashboard. The login
+/// id was sent before; the server found no such student (or someone else's
+/// record) and every student's Results tab read "could not load".
+final resultSubjectIdProvider = FutureProvider.autoDispose<int?>((ref) async {
   final role = ref.watch(currentRoleProvider);
   if (role == UserRole.parent) return ref.watch(selectedChildIdProvider);
-  return ref.watch(currentUserProvider)?.id;
+  final me = mapOf((await ref.watch(myDayProvider.future)).data);
+  final id = intOf(fieldOf(me['student'], 'id'));
+  return id == 0 ? null : id;
 });
 
 final resultSummaryProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
-  final studentId = ref.watch(resultSubjectIdProvider);
+  final studentId = await ref.watch(resultSubjectIdProvider.future);
   final termId = ref.watch(selectedTermProvider);
   if (studentId == null || termId == null) return const {};
 
@@ -35,7 +42,7 @@ final resultSummaryProvider =
 
 final fullResultProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
-  final studentId = ref.watch(resultSubjectIdProvider);
+  final studentId = await ref.watch(resultSubjectIdProvider.future);
   final termId = ref.watch(selectedTermProvider);
   if (studentId == null || termId == null) return const {};
 
@@ -132,7 +139,7 @@ class _PinGateState extends ConsumerState<PinGate> {
   }
 
   Future<void> _redeem() async {
-    final studentId = ref.read(resultSubjectIdProvider);
+    final studentId = await ref.read(resultSubjectIdProvider.future);
     final termId = ref.read(selectedTermProvider);
     if (studentId == null || termId == null) return;
 
@@ -163,7 +170,7 @@ class _PinGateState extends ConsumerState<PinGate> {
   }
 
   Future<void> _buy() async {
-    final studentId = ref.read(resultSubjectIdProvider);
+    final studentId = await ref.read(resultSubjectIdProvider.future);
     final termId = ref.read(selectedTermProvider);
     if (studentId == null || termId == null) return;
 

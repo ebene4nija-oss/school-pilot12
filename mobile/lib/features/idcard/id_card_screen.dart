@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
+import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
@@ -16,8 +17,16 @@ import '../../core/ui/widgets.dart';
 /// Not cached to disk: a card reported lost must read as lost at once, never
 /// as yesterday's "valid" copy.
 final myIdCardProvider = FutureProvider.autoDispose<Cached<dynamic>>((ref) async {
-  final data = await ref.watch(apiClientProvider).get<dynamic>(Api.myIdCard);
-  return Cached(data: data, fetchedAt: DateTime.now());
+  try {
+    final data = await ref.watch(apiClientProvider).get<dynamic>(Api.myIdCard);
+    return Cached(data: data, fetchedAt: DateTime.now());
+  } catch (error) {
+    // 404 is the server's answer when the school has digital cards switched
+    // off: a fact to state, not a failure to retry.
+    final failure = asApiException(error);
+    if (!failure.isNotFound) rethrow;
+    return Cached(data: {'card': null, 'unavailable': failure.message}, fetchedAt: DateTime.now());
+  }
 });
 
 class IdCardScreen extends ConsumerWidget {
@@ -32,6 +41,14 @@ class IdCardScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(myIdCardProvider),
         builder: (context, data, meta) {
           final card = mapOf(data)['card'];
+          final unavailable = stringOf(mapOf(data)['unavailable']);
+          if (unavailable.isNotEmpty) {
+            return EmptyState(
+              icon: Icons.badge_outlined,
+              title: 'No digital ID card',
+              message: '$unavailable Ask the school office if you need one.',
+            );
+          }
           if (card is! Map) {
             return const EmptyState(
               icon: Icons.badge_outlined,
