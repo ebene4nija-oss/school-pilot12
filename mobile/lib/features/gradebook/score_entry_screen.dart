@@ -103,8 +103,13 @@ class _ScoreEntryScreenState extends ConsumerState<ScoreEntryScreen> {
       }
 
       _rows[id] = _Row(
+        // The broadsheet sends `student_name`; reading only `name` left every
+        // row labelled "Student".
         name: stringOf(
-          student['name'] ?? student['full_name'] ?? nameOf(student['user']),
+          student['student_name'] ??
+              student['name'] ??
+              student['full_name'] ??
+              nameOf(student['user']),
           'Student',
         ),
         firstCa: mine?['first_ca'],
