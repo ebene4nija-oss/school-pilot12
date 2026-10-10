@@ -160,4 +160,32 @@ class CbtExam extends Model
     {
         return (bool) $this->show_results_immediately || $this->results_released_at !== null;
     }
+
+    /** Attempt statuses that use up one of a candidate's attempts. */
+    public const SPENT_ATTEMPT_STATUSES = ['submitted', 'graded', 'expired'];
+
+    /**
+     * The exams in [$exams] this student can still sit: those where they have
+     * not used every attempt allowed. A paper already taken stays out of
+     * "upcoming tests" rather than inviting the student to a test they cannot
+     * start.
+     *
+     * @param  \Illuminate\Support\Collection<int, self>  $exams
+     * @return \Illuminate\Support\Collection<int, self>
+     */
+    public static function stillOpenTo(\Illuminate\Support\Collection $exams, int $studentId): \Illuminate\Support\Collection
+    {
+        if ($exams->isEmpty()) {
+            return $exams;
+        }
+
+        $used = CbtAttempt::where('student_id', $studentId)
+            ->whereIn('exam_id', $exams->pluck('id'))
+            ->whereIn('status', self::SPENT_ATTEMPT_STATUSES)
+            ->selectRaw('exam_id, COUNT(*) as n')
+            ->groupBy('exam_id')
+            ->pluck('n', 'exam_id');
+
+        return $exams->filter(fn (self $e) => (int) ($used[$e->id] ?? 0) < max(1, (int) ($e->max_attempts ?? 1)))->values();
+    }
 }

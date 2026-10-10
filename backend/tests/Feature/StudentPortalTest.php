@@ -244,4 +244,26 @@ class StudentPortalTest extends TestCase
         $this->assertSame('working.pdf', $files[0]['name']);
         $this->assertSame([], $this->as($this->bayo)->getJson("{$this->host}/academics/homework/{$hw->id}/my-submission")->json('files'));
     }
+
+    /** A paper the student has already sat leaves "upcoming tests". */
+    public function test_a_taken_test_is_not_upcoming_any_more(): void
+    {
+        $taken = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Taken quiz', 'status' => 'published', 'max_attempts' => 1]);
+        $retry = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Two tries', 'status' => 'published', 'max_attempts' => 2]);
+        $timedOut = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Ran out of time', 'status' => 'published', 'max_attempts' => 1]);
+        $fresh = CbtExam::create(['school_id' => $this->school->id, 'subject_id' => $this->maths->id, 'class_id' => $this->jss1->id, 'title' => 'Not started', 'status' => 'published']);
+
+        foreach ([[$taken, 'submitted'], [$retry, 'graded'], [$timedOut, 'expired']] as [$exam, $status]) {
+            CbtAttempt::create(['school_id' => $this->school->id, 'exam_id' => $exam->id, 'student_id' => $this->ada->id, 'attempt_number' => 1, 'seed' => 1, 'status' => $status]);
+        }
+        // Someone else's attempt never hides a paper from Ada.
+        CbtAttempt::create(['school_id' => $this->school->id, 'exam_id' => $fresh->id, 'student_id' => $this->bayo->id, 'attempt_number' => 1, 'seed' => 2, 'status' => 'submitted']);
+
+        $titles = collect($this->as($this->ada)->getJson("{$this->host}/me/dashboard")->assertOk()->json('upcoming_tests'))->pluck('title');
+
+        $this->assertNotContains('Taken quiz', $titles);
+        $this->assertNotContains('Ran out of time', $titles);
+        $this->assertContains('Two tries', $titles, 'One attempt left: still upcoming.');
+        $this->assertContains('Not started', $titles);
+    }
 }

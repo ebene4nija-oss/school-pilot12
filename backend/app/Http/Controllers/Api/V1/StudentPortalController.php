@@ -73,7 +73,8 @@ class StudentPortalController extends Controller
                 'rate' => $marked ? round((($attendance['present'] ?? 0) + ($attendance['late'] ?? 0)) / $marked * 100, 1) : null],
             'subjects_count' => $this->subjectsOf($student)->count(),
             'assignments_due' => $homework->reject(fn ($h) => in_array($h->id, $handedIn, true))->take(5)->map(fn ($h) => ['id' => $h->id, 'title' => $h->title, 'subject' => $h->subject?->name, 'due_date' => $h->due_date->toDateString()])->values(),
-            'upcoming_tests' => $this->exams($student)->filter(fn ($e) => ! $e->closes_at || $e->closes_at->isFuture())->take(5)
+            // Not yet closed, and not already taken (every attempt used).
+            'upcoming_tests' => CbtExam::stillOpenTo($this->exams($student)->filter(fn ($e) => ! $e->closes_at || $e->closes_at->isFuture()), $student->id)->take(5)
                 ->map(fn ($e) => ['id' => $e->id, 'title' => $e->title, 'subject' => $e->subject?->name, 'opens_at' => $e->opens_at?->toIso8601String(), 'closes_at' => $e->closes_at?->toIso8601String()])->values(),
             'virtual_classes' => SchoolFeatures::moduleEnabled($school, 'live_classes') ? LiveClass::where('class_id', $student->class_id)->where(fn ($q) => $q->whereNull('arm_id')->orWhere('arm_id', $student->arm_id))
                 ->whereIn('status', ['scheduled', 'live'])->where('scheduled_for', '>=', now()->subHour())->orderBy('scheduled_for')->limit(3)->get()

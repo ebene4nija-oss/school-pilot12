@@ -468,8 +468,11 @@ class AnalyticsController extends Controller
             ->where(fn ($q) => $q->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
             ->with('subject:id,name')
             ->orderBy('opens_at')
-            ->limit(10)
-            ->get(['id', 'title', 'subject_id', 'duration_minutes', 'opens_at', 'closes_at']);
+            ->limit(20)
+            ->get(['id', 'title', 'subject_id', 'duration_minutes', 'opens_at', 'closes_at', 'max_attempts']);
+        // A paper already taken (every attempt used) is not "upcoming".
+        $upcomingTests = CbtExam::stillOpenTo($upcomingTests, $student->id)->take(10)
+            ->map(fn ($e) => $e->makeHidden('max_attempts'))->values();
 
         $gamification = StudentGamification::where('school_id', $schoolId)
             ->where('student_id', $student->id)
