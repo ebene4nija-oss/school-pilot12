@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:schoolpilot/features/students/student_edit.dart';
+import 'package:schoolpilot/core/providers.dart';
+import 'package:schoolpilot/core/auth/session.dart';
 import 'package:schoolpilot/core/data/reference_data.dart';
 import 'package:schoolpilot/features/attendance/school_today_screen.dart';
 import 'package:schoolpilot/features/students/enrol_student_screen.dart';
@@ -55,6 +58,8 @@ void main() {
     _tall(tester);
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        currentRoleProvider.overrideWithValue(UserRole.schoolAdmin),
+        studentPhotoProvider(7).overrideWith((ref) async => null),
         studentQuickViewProvider(7).overrideWith((ref) async => {
               'id': 7,
               'name': 'Ada Obi',
@@ -78,6 +83,25 @@ void main() {
     expect(find.text('71.2%'), findsOneWidget);
     expect(find.text('Owing'), findsOneWidget);
     expect(find.textContaining('Record incomplete: date of birth'), findsOneWidget);
+    // An admin may correct the record and take the photo.
+    expect(find.text('Edit details'), findsOneWidget);
+    expect(find.text('Passport photo'), findsOneWidget);
+  });
+
+  testWidgets('a teacher may take the photo but not edit the record', (tester) async {
+    _tall(tester);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentRoleProvider.overrideWithValue(UserRole.teacher),
+        studentPhotoProvider(7).overrideWith((ref) async => null),
+        studentQuickViewProvider(7).overrideWith((ref) async => {'id': 7, 'name': 'Ada Obi'}),
+      ],
+      child: const MaterialApp(home: Scaffold(body: StudentProfileSheet(student: {'id': 7, 'name': 'Ada Obi'}))),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Passport photo'), findsOneWidget);
+    expect(find.text('Edit details'), findsNothing);
   });
 
   testWidgets('enrolling needs the child basics before anything is sent', (tester) async {

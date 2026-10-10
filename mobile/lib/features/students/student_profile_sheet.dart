@@ -4,11 +4,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/endpoints.dart';
+import '../../core/auth/session.dart';
 import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
 import 'academic_history_screen.dart';
+import 'student_edit.dart';
 
 final studentQuickViewProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, id) async {
   final api = ref.watch(apiClientProvider);
@@ -28,6 +30,7 @@ class StudentProfileSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = intOf(student['id']);
+    final role = ref.watch(currentRoleProvider);
     final full = ref.watch(studentQuickViewProvider(id));
     final s = {...student, ...?full.valueOrNull};
     final name = stringOf(s['name'] ?? s['full_name'], 'Student');
@@ -53,7 +56,7 @@ class StudentProfileSheet extends ConsumerWidget {
           children: [
             Row(
               children: [
-                InitialsAvatar(name, size: 56),
+                _Photo(studentId: id, name: name),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
@@ -112,6 +115,32 @@ class StudentProfileSheet extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                // Who may is the server's call (an admin, or the class's
+                // form teacher); it says so plainly if not.
+                if (role.isAdmin || role == UserRole.teacher)
+                  OutlinedButton.icon(
+                    onPressed: () => takePassportPhoto(context, ref, id, name),
+                    icon: const Icon(Icons.photo_camera_outlined),
+                    label: const Text('Passport photo'),
+                  ),
+                if (role.isAdmin)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+                        builder: (_) => EditStudentScreen(studentId: id),
+                      ));
+                      if (saved == true) ref.invalidate(studentQuickViewProvider(id));
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit details'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => AcademicHistoryScreen(
@@ -133,5 +162,20 @@ class StudentProfileSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// The passport photo when one is on file, initials otherwise.
+class _Photo extends ConsumerWidget {
+  const _Photo({required this.studentId, required this.name});
+
+  final int studentId;
+  final String name;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bytes = ref.watch(studentPhotoProvider(studentId)).valueOrNull;
+    if (bytes == null) return InitialsAvatar(name, size: 56);
+    return ClipOval(child: Image.memory(bytes, width: 56, height: 56, fit: BoxFit.cover));
   }
 }

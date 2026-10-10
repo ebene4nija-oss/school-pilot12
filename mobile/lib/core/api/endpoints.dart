@@ -36,6 +36,8 @@ class Api {
   // Students
   static const students = '$version/students';
   static String student(int id) => '$version/students/$id';
+  /// The passport photo: private, fetched with the session; POST to take one.
+  static String studentPhoto(int id) => '$version/students/$id/photo';
   static String studentMedical(int id) => '$version/students/$id/medical';
   static String studentSubjects(int id) => '$version/students/$id/subjects';
   static String studentPortfolio(int id) => '$version/students/$id/portfolio';
