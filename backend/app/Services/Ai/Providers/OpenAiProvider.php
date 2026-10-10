@@ -14,7 +14,12 @@ class OpenAiProvider implements AiProvider
         $chat = $system !== null ? [['role' => 'system', 'content' => $system]] : [];
 
         foreach ($messages as $m) {
-            $chat[] = ['role' => $m['role'] === 'assistant' ? 'assistant' : 'user', 'content' => $m['content']];
+            $chat[] = [
+                'role' => $m['role'] === 'assistant' ? 'assistant' : 'user',
+                'content' => is_array($m['content']) ? array_map(fn (array $part) => ($part['type'] ?? '') === 'image'
+                    ? ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$part['mime'].';base64,'.$part['data']]]
+                    : ['type' => 'text', 'text' => (string) ($part['text'] ?? '')], $m['content']) : $m['content'],
+            ];
         }
 
         $response = Http::withToken($apiKey)

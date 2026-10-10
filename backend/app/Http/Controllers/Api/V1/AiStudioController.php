@@ -347,4 +347,66 @@ class AiStudioController extends Controller
             'needs_work' => $rows->where('mastery_percentage', '<', 50)->values(),
         ]);
     }
+
+    // ------------------------------------------------------------------
+    // AI with pictures, for CBT. Drafts only: the teacher reviews, and
+    // saving goes through the question bank's own checks.
+    // ------------------------------------------------------------------
+
+    /** Questions about a picture already in this school's CBT media library. */
+    public function questionsFromImage(Request $request)
+    {
+        $data = $request->validate([
+            'asset_id' => 'required|integer',
+            'subject' => 'required|string|max:100',
+            'topic' => 'nullable|string|max:255',
+            'count' => 'nullable|integer|min:1|max:10',
+            'class_level' => 'nullable|string|max:50',
+            'difficulty' => 'nullable|in:easy,medium,hard',
+        ]);
+        $asset = \App\Models\CbtMediaAsset::where('school_id', $this->schoolId())->findOrFail($data['asset_id']);
+
+        return $this->aiCall(fn ($ai) => $ai->questionsFromImage(
+            $this->schoolId(), $asset, $data['subject'], $data['topic'] ?? null, (int) ($data['count'] ?? 5), $data['class_level'] ?? null, $data['difficulty'] ?? 'medium'
+        ));
+    }
+
+    /** Photographs of a printed paper (up to six pages), read into draft questions. */
+    public function scanQuestionPaper(Request $request)
+    {
+        $request->validate([
+            'pages' => 'required|array|min:1|max:6',
+            'pages.*' => 'file|mimes:jpg,jpeg,png,webp|max:6144',
+            'subject' => 'required|string|max:100',
+            'class_level' => 'nullable|string|max:50',
+        ]);
+        $pages = array_map(fn ($f) => ['mime' => $f->getMimeType(), 'bytes' => (string) file_get_contents($f->getRealPath())], $request->file('pages'));
+
+        return $this->aiCall(fn ($ai) => $ai->scanQuestionPaper($this->schoolId(), $pages, $request->input('subject'), $request->input('class_level')));
+    }
+
+    /** A suggested alt text and caption for an image before it is uploaded. */
+    public function describeImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|file|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'subject' => 'nullable|string|max:100',
+        ]);
+        $file = $request->file('image');
+
+        return $this->aiCall(fn ($ai) => $ai->describeImage($this->schoolId(), (string) file_get_contents($file->getRealPath()), (string) $file->getMimeType(), $request->input('subject')));
+    }
+
+    /** Runs an AI call, turning "switched off" and provider failures into a plain message. */
+    private function aiCall(callable $call)
+    {
+        try {
+            return response()->json($call(app(\App\Services\AiManagerService::class)));
+        } catch (\App\Services\Ai\AiUnavailableException $e) {
+            return response()->json(['message' => 'AI is not set up for this school yet. An administrator adds an AI key in Settings.'], 503);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], str_contains($e->getMessage(), 'switched off') ? 403 : 422);
+        }
+    }
 }
+

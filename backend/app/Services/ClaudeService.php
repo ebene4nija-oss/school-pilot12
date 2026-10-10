@@ -136,6 +136,39 @@ class ClaudeService
         return $decoded;
     }
 
+    /**
+     * teachingJson, with pictures: the model sees [$images] (each
+     * ['mime' => …, 'bytes' => …]) alongside the prompt.
+     */
+    public function visionJson(string $instructions, string $prompt, array $images, ?int $schoolId, array $stub, int $maxTokens = 4000): array
+    {
+        if ($this->gateway->shouldStub($schoolId)) {
+            return $stub + ['stub' => true];
+        }
+
+        $system = "You are an experienced teacher in a Nigerian private school (Nursery, Primary, JSS, SS), "
+            . "working to the Nigerian curriculum with WAEC/NECO and BECE in view. Use British English. "
+            . "{$instructions} Reply with a single JSON object only — no prose before or after it, no Markdown fences.";
+
+        $content = array_map(fn (array $img) => ['type' => 'image', 'mime' => $img['mime'], 'data' => base64_encode($img['bytes'])], $images);
+        $content[] = ['type' => 'text', 'text' => $prompt];
+
+        $reply = $this->gateway->complete($schoolId, 'document', $system, [['role' => 'user', 'content' => $content]], $maxTokens);
+
+        if ($reply->stop === 'max_tokens') {
+            throw new RuntimeException('The AI reply was cut short. Ask for less at once and try again.');
+        }
+
+        $text = preg_replace('/^```(?:json)?\s*|\s*```$/', '', trim($reply->text)) ?? trim($reply->text);
+        $decoded = json_decode($text, true);
+
+        if (! is_array($decoded)) {
+            throw new RuntimeException('The AI reply could not be read. Please try again.');
+        }
+
+        return $decoded;
+    }
+
     private function request(string $purpose, string $prompt, int $maxTokens, ?int $schoolId = null, ?string $system = null): Ai\AiReply
     {
         return $this->gateway->complete($schoolId, $purpose, $system, [['role' => 'user', 'content' => $prompt]], $maxTokens);

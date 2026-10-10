@@ -15,7 +15,11 @@ class GeminiProvider implements AiProvider
     {
         $contents = array_map(fn (array $m) => [
             'role' => $m['role'] === 'assistant' ? 'model' : 'user',
-            'parts' => [['text' => $m['content']]],
+            'parts' => is_array($m['content'])
+                ? array_map(fn (array $part) => ($part['type'] ?? '') === 'image'
+                    ? ['inline_data' => ['mime_type' => $part['mime'], 'data' => $part['data']]]
+                    : ['text' => (string) ($part['text'] ?? '')], $m['content'])
+                : [['text' => $m['content']]],
         ], $messages);
 
         $response = Http::withHeaders(['x-goog-api-key' => $apiKey])

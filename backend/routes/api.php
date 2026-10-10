@@ -634,6 +634,13 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         Route::post('/ai/settings', [AiStudioController::class, 'updateAiSettings'])->middleware('role:super_admin,school_admin');
         Route::post('/ai/lesson-plan', [AiStudioController::class, 'generateLessonPlan'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/ai/exam-generation', [AiStudioController::class, 'generateExams'])->middleware('role:super_admin,school_admin,teacher');
+        // AI with pictures for CBT: questions from an image, a photographed
+        // paper read into questions, and alt text for an image. Drafts only.
+        Route::middleware(['role:super_admin,school_admin,teacher', 'throttle:20,1'])->group(function () {
+            Route::post('/ai/cbt/questions-from-image', [AiStudioController::class, 'questionsFromImage']);
+            Route::post('/ai/cbt/scan-paper', [AiStudioController::class, 'scanQuestionPaper']);
+            Route::post('/ai/cbt/describe-image', [AiStudioController::class, 'describeImage']);
+        });
         Route::post('/ai/homework-ideas', [AiStudioController::class, 'generateHomework'])->middleware('role:super_admin,school_admin,teacher');
         Route::post('/ai/translate', [AiStudioController::class, 'translate'])->middleware('role:super_admin,school_admin,teacher');
         Route::get('/ai/performance-summary/{studentId}', [AiStudioController::class, 'summarizePerformance'])->middleware('role:super_admin,school_admin,teacher');

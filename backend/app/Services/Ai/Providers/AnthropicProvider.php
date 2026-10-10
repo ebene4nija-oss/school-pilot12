@@ -26,7 +26,12 @@ class AnthropicProvider implements AiProvider
                 'max_tokens' => $maxTokens,
                 'system' => $system,
                 'temperature' => $temperature,
-                'messages' => $messages,
+                'messages' => array_map(fn (array $m) => [
+                    'role' => $m['role'],
+                    'content' => is_array($m['content']) ? array_map(fn (array $part) => ($part['type'] ?? '') === 'image'
+                        ? ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $part['mime'], 'data' => $part['data']]]
+                        : ['type' => 'text', 'text' => (string) ($part['text'] ?? '')], $m['content']) : $m['content'],
+                ], $messages),
             ], fn ($v) => $v !== null));
 
         if ($response->failed()) {

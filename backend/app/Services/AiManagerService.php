@@ -147,6 +147,129 @@ class AiManagerService
         return ['subject' => $subject, 'topic' => $topic, 'question_count' => count($questions), 'questions' => $questions, 'stub' => $result['stub'] ?? false];
     }
 
+    /**
+     * Questions about a picture from the school's CBT media library (a
+     * diagram, map, graph, photograph). Each comes back with that picture
+     * attached in the stem, as a draft: the teacher reviews before anything
+     * enters the bank.
+     */
+    public function questionsFromImage(int $schoolId, \App\Models\CbtMediaAsset $asset, string $subject, ?string $topic = null, int $count = 5, ?string $classLevel = null, string $difficulty = 'medium'): array
+    {
+        $this->assertFeature($schoolId, 'exam_generation', 'question generation');
+
+        $bytes = \Illuminate\Support\Facades\Storage::disk($asset->disk ?: 'public')->get($asset->path);
+        if (! $bytes) {
+            throw new Exception('That image could not be read from the media library.');
+        }
+
+        $result = app(ClaudeService::class)->visionJson(
+            'Write multiple-choice questions that can only be answered by looking at the image provided (read values, labels, parts, trends from it). '
+            . 'Each has exactly four options A–D with one correct answer, plausible distractors, no "all of the above". Refer to it as "the diagram" or "the image". Use $…$ for any maths. '
+            . 'If the image is unsuitable for questions, return {"questions": [], "reason": "…"}. '
+            . 'JSON: {"questions": [{"question","options":{"A","B","C","D"},"correct_answer":"A|B|C|D","topic","difficulty":"easy|medium|hard","explanation"}]}.',
+            "Subject: {$subject}\nTopic: " . ($topic ?: 'whatever the image shows') . "\nClass: " . ($classLevel ?: 'not given')
+                . "\nDifficulty: {$difficulty}\nNumber of questions: {$count}\nThe image's description: {$asset->alt_text}",
+            [['mime' => $asset->mime_type, 'bytes' => $bytes]],
+            $schoolId,
+            ['questions' => [[
+                'question' => 'Placeholder: what does the diagram show?',
+                'options' => ['A' => 'First', 'B' => 'Second', 'C' => 'Third', 'D' => 'Fourth'],
+                'correct_answer' => 'A', 'topic' => $topic ?: $subject, 'difficulty' => $difficulty, 'explanation' => 'Placeholder.',
+            ]]],
+            min(16000, 700 * $count + 1500),
+        );
+
+        $questions = collect($result['questions'] ?? [])->filter(fn ($q) => $this->wellFormedObjective($q))
+            ->map(fn ($q) => $q + ['question_type' => 'multiple_choice', 'media' => [['asset_id' => $asset->id, 'role' => 'stem']]])
+            ->values()->all();
+
+        return [
+            'subject' => $subject, 'question_count' => count($questions), 'questions' => $questions,
+            'image' => ['asset_id' => $asset->id, 'alt_text' => $asset->alt_text],
+            'reason' => $result['reason'] ?? null, 'stub' => $result['stub'] ?? false,
+        ];
+    }
+
+    /**
+     * A printed question paper, photographed: its questions read out as drafts
+     * for the teacher to check. Objective questions keep their options and,
+     * only where the paper itself shows it, the answer; everything else is a
+     * theory question. Nothing is invented and nothing enters the bank here.
+     *
+     * @param  array<int, array{mime: string, bytes: string}>  $pages
+     */
+    public function scanQuestionPaper(int $schoolId, array $pages, string $subject, ?string $classLevel = null): array
+    {
+        $this->assertFeature($schoolId, 'exam_generation', 'question generation');
+
+        $result = app(ClaudeService::class)->visionJson(
+            'These are photographs of a printed question paper, in page order. Transcribe its questions faithfully, in order, correcting only obvious OCR-style misreads. '
+            . 'Do not invent questions, options or answers. For an objective question give its options keyed by their letters; give "correct_answer" only if the paper itself marks it, otherwise null. '
+            . 'A question with no options is a theory question. Skip instructions, headers and page numbers. If a question depends on a figure on the paper, say so in "needs_figure". '
+            . 'Use $…$ for maths. JSON: {"questions": [{"number","question","question_type":"multiple_choice|theory","options":{"A":…}|null,"correct_answer":"A"|null,"needs_figure":true|false}], "unreadable": "what could not be read, or null"}.',
+            "Subject: {$subject}\nClass: " . ($classLevel ?: 'not given'),
+            $pages,
+            $schoolId,
+            ['questions' => [[
+                'number' => 1, 'question' => 'Placeholder transcribed question?', 'question_type' => 'multiple_choice',
+                'options' => ['A' => 'First', 'B' => 'Second', 'C' => 'Third', 'D' => 'Fourth'], 'correct_answer' => null, 'needs_figure' => false,
+            ]]],
+            16000,
+        );
+
+        $questions = collect($result['questions'] ?? [])->filter(fn ($q) => is_array($q) && trim((string) ($q['question'] ?? '')) !== '')
+            ->map(function (array $q) {
+                $options = is_array($q['options'] ?? null) && count($q['options']) >= 2 ? $q['options'] : null;
+                $answer = $options && isset($options[$q['correct_answer'] ?? '']) ? $q['correct_answer'] : null;
+
+                return [
+                    'number' => $q['number'] ?? null,
+                    'question' => trim((string) $q['question']),
+                    'question_type' => $options ? 'multiple_choice' : 'theory',
+                    'options' => $options,
+                    'correct_answer' => $answer,
+                    // The teacher must supply the key before an objective question can be saved.
+                    'needs_answer' => $options !== null && $answer === null,
+                    'needs_figure' => (bool) ($q['needs_figure'] ?? false),
+                ];
+            })->values()->all();
+
+        return ['subject' => $subject, 'question_count' => count($questions), 'questions' => $questions, 'unreadable' => $result['unreadable'] ?? null, 'stub' => $result['stub'] ?? false];
+    }
+
+    /**
+     * A suggested alt text and caption for an image about to go into the CBT
+     * library, which the teacher checks. Alt text is what a candidate using a
+     * screen reader hears, so it describes, it does not give answers away.
+     */
+    public function describeImage(int $schoolId, string $bytes, string $mime, ?string $subject = null): array
+    {
+        $this->assertFeature($schoolId, 'exam_generation', 'question generation');
+
+        $result = app(ClaudeService::class)->visionJson(
+            'Describe this image for use in an exam question. "alt_text": one or two plain sentences saying what is shown (labels, axes, parts), for a candidate using a screen reader, '
+            . 'without giving away any answer. "caption": a short title of at most eight words. JSON: {"alt_text","caption"}.',
+            'Subject: ' . ($subject ?: 'not given'),
+            [['mime' => $mime, 'bytes' => $bytes]],
+            $schoolId,
+            ['alt_text' => 'Placeholder description of the image.', 'caption' => 'Placeholder caption'],
+            600,
+        );
+
+        return [
+            'alt_text' => mb_substr(trim((string) ($result['alt_text'] ?? '')), 0, 255),
+            'caption' => mb_substr(trim((string) ($result['caption'] ?? '')), 0, 255),
+            'stub' => $result['stub'] ?? false,
+        ];
+    }
+
+    /** One correct answer that is actually one of the options. */
+    private function wellFormedObjective(mixed $q): bool
+    {
+        return is_array($q) && ! empty($q['question']) && is_array($q['options'] ?? null)
+            && count($q['options']) >= 2 && isset($q['options'][$q['correct_answer'] ?? '']);
+    }
+
     public function generateHomeworkIdeas(int $schoolId, string $subject, string $topic, ?string $classLevel = null): array
     {
         $this->assertFeature($schoolId, 'homework_ideas', 'homework ideas');
