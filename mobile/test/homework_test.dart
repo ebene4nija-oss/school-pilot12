@@ -87,4 +87,25 @@ void main() {
     expect(find.text('📎 page1.jpg'), findsOneWidget);
     expect(find.text('Save marks'), findsOneWidget);
   });
+
+  testWidgets("the teacher's attachments are listed on the homework", (tester) async {
+    await tester.pumpWidget(_app(const HandInScreen(work: {
+      'id': 9,
+      'title': 'Photosynthesis',
+      'description': 'Watch the video, then answer the worksheet.',
+      'due_date': '2026-10-15',
+      'submission_type': 'text',
+      'submitted': false,
+      'materials': [
+        {'id': 31, 'title': 'How plants make food', 'type': 'video'},
+        {'id': 32, 'title': 'Worksheet 3', 'type': 'pdf'},
+      ],
+    })));
+    await tester.pumpAndSettle();
+
+    expect(find.text('From your teacher'), findsOneWidget);
+    expect(find.text('How plants make food'), findsOneWidget);
+    expect(find.text('Worksheet 3'), findsOneWidget);
+    expect(find.byIcon(Icons.ondemand_video_outlined), findsOneWidget);
+  });
 }

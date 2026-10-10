@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +13,7 @@ import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/teacher/cbt_teacher_data.dart';
+import '../learn/material_upload.dart';
 
 /// The homework this teacher has set, recent and upcoming.
 final teacherHomeworkProvider =
@@ -143,6 +145,12 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
   bool _saving = false;
   bool _drafting = false;
   String? _error;
+  String? _progress;
+
+  /// Notes, worksheets, video or audio to go with the homework. Uploaded as
+  /// learning materials for the class when the homework is set, then linked
+  /// to it, so students open them from the homework itself.
+  final _attachments = <PendingAttachment>[];
 
   @override
   void dispose() {
@@ -219,6 +227,52 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
     }
   }
 
+  Future<void> _addFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: materialExtensions,
+      allowMultiple: true,
+    );
+    final files = (result?.files ?? const <PlatformFile>[]).where((f) => f.path != null);
+    if (files.isEmpty) return;
+    setState(() => _attachments.addAll(files.map(PendingAttachment.file)));
+  }
+
+  Future<void> _addLink() async {
+    final url = TextEditingController();
+    final title = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add a link'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: url,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(labelText: 'Link', hintText: 'https://youtube.com/…'),
+            ),
+            TextField(
+              controller: title,
+              decoration: const InputDecoration(labelText: 'Name (optional)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Add')),
+        ],
+      ),
+    );
+    final link = url.text.trim();
+    if (ok == true && Uri.tryParse(link)?.hasScheme == true) {
+      setState(() => _attachments.add(PendingAttachment.link(link, title: title.text)));
+    }
+    url.dispose();
+    title.dispose();
+  }
+
   Future<void> _save({required bool draft}) async {
     if (_classId == null || _subjectId == null || _title.text.trim().isEmpty || _instructions.text.trim().isEmpty) {
       setState(() => _error = 'Class, subject, title and instructions are all needed.');
@@ -229,7 +283,25 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
       _error = null;
     });
     try {
-      final res = mapOf(await ref.read(apiClientProvider).post<dynamic>(
+      final api = ref.read(apiClientProvider);
+      final materialIds = <int>[];
+      var awaitingReview = false;
+      for (var i = 0; i < _attachments.length; i++) {
+        setState(() => _progress = 'Uploading ${i + 1} of ${_attachments.length}: ${_attachments[i].title}');
+        final material = await uploadMaterial(
+          api,
+          _attachments[i],
+          classId: _classId!,
+          subjectId: _subjectId,
+          termId: ref.read(selectedTermProvider),
+          topic: _title.text.trim(),
+        );
+        materialIds.add(intOf(material['id']));
+        if (stringOf(material['status']) == 'pending_approval') awaitingReview = true;
+      }
+      if (mounted) setState(() => _progress = null);
+
+      final res = mapOf(await api.post<dynamic>(
         Api.homework,
         body: {
           'class_id': _classId,
@@ -241,13 +313,23 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
           'submission_type': _type,
           'allow_late': _allowLate,
           'draft': draft,
+          if (materialIds.isNotEmpty) 'material_ids': materialIds,
         },
       ));
-      if (mounted) Navigator.pop(context, stringOf(res['message'], 'Homework set.'));
+      final message = stringOf(res['message'], 'Homework set.');
+      if (mounted) {
+        Navigator.pop(
+          context,
+          awaitingReview
+              ? '$message The attachments show to students once a reviewer approves them.'
+              : message,
+        );
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _saving = false;
+        _progress = null;
         _error = asApiException(error).message;
       });
     }
@@ -343,6 +425,58 @@ class _SetHomeworkScreenState extends ConsumerState<SetHomeworkScreen> {
             value: _allowLate,
             onChanged: (v) => setState(() => _allowLate = v),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Attachments', style: AppText.labelLg),
+          Text(
+            'Notes, worksheets, photos, video, audio or a link. Students open them from the homework.',
+            style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+          ),
+          for (var i = 0; i < _attachments.length; i++)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                _attachments[i].url != null
+                    ? Icons.link
+                    : _attachments[i].isVideo
+                        ? Icons.ondemand_video_outlined
+                        : _attachments[i].isAudio
+                            ? Icons.headphones_outlined
+                            : Icons.description_outlined,
+              ),
+              title: Text(_attachments[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                tooltip: 'Remove',
+                icon: const Icon(Icons.close),
+                onPressed: _saving ? null : () => setState(() => _attachments.removeAt(i)),
+              ),
+            ),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _addFile,
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Add file'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _addLink,
+                icon: const Icon(Icons.add_link),
+                label: const Text('Add link'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (_progress != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                children: [
+                  const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: Text(_progress!, style: AppText.bodyMd)),
+                ],
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),

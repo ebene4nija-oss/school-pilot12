@@ -11,6 +11,7 @@ import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
+import '../learn/learning_widgets.dart';
 
 /// What the server accepts on a submission (`HomeworkSubmissionController`).
 const homeworkFileExtensions = [
@@ -155,6 +156,28 @@ class _HandInScreenState extends ConsumerState<HandInScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedCard(child: Text(stringOf(w['description']), style: AppText.bodyMd)),
+          // What the teacher attached: notes, worksheets, video, audio, links.
+          if (listOf(w['materials']).isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text('From your teacher', style: AppText.labelLg),
+            for (final m in listOf(w['materials']))
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  switch (stringOf(m['type'])) {
+                    'video' => Icons.ondemand_video_outlined,
+                    'audio' => Icons.headphones_outlined,
+                    'link' => Icons.link,
+                    'image' => Icons.image_outlined,
+                    _ => Icons.description_outlined,
+                  },
+                  color: AppColors.primaryContainer,
+                ),
+                title: Text(stringOf(m['title'], 'Attachment')),
+                trailing: const Icon(Icons.open_in_new, size: 18, color: AppColors.outline),
+                onTap: () => openMaterial(context, ref, intOf(m['id'])),
+              ),
+          ],
           if (submitted) ...[
             const SizedBox(height: AppSpacing.md),
             Text(

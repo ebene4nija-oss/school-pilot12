@@ -14,6 +14,7 @@ import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/teacher/cbt_teacher_data.dart';
+import '../learn/material_upload.dart';
 
 /// The lesson notes this teacher has shared, newest first.
 final myLessonNotesProvider =
@@ -145,16 +146,6 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-/// Exactly what `LearningMaterialController::TYPES` accepts, so a teacher
-/// cannot pick a file the server will refuse after a long upload.
-const _allowedExtensions = [
-  'pdf',
-  'doc', 'docx', 'odt', 'rtf', 'txt',
-  'ppt', 'pptx', 'odp',
-  'jpg', 'jpeg', 'png', 'gif', 'webp',
-  'mp4', 'webm', '3gp', 'mov',
-  'mp3', 'm4a', 'aac', 'ogg', 'wav',
-];
 
 class AddLessonNoteScreen extends ConsumerStatefulWidget {
   const AddLessonNoteScreen({super.key});
@@ -184,7 +175,7 @@ class _AddLessonNoteScreenState extends ConsumerState<AddLessonNoteScreen> {
   Future<void> _pick() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: _allowedExtensions,
+      allowedExtensions: materialExtensions,
     );
     final file = result?.files.single;
     if (file == null || file.path == null) return;

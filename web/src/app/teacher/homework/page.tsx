@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { errorText, fetchApi } from '@/lib/api';
+import { errorText, fetchApi, uploadApi } from '@/lib/api';
 import { useClassSubjects } from '@/lib/useClassSubjects';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
 
@@ -36,6 +36,12 @@ export default function TeacherHomework() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Notes, worksheets, video, audio or links to go with the homework. Shared
+  // with the class as learning materials, then linked to the homework.
+  const [files, setFiles] = useState<File[]>([]);
+  const [links, setLinks] = useState<string[]>([]);
+  const [linkDraft, setLinkDraft] = useState('');
+  const [progress, setProgress] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -72,19 +78,43 @@ export default function TeacherHomework() {
     setBusy(true);
     setError(null);
     try {
+      const materialIds: number[] = [];
+      let awaitingReview = false;
+      const items: (File | string)[] = [...files, ...links];
+      for (const [i, item] of items.entries()) {
+        const name = typeof item === 'string' ? item : item.name;
+        setProgress(`Uploading ${i + 1} of ${items.length}: ${name}`);
+        const fd = new FormData();
+        fd.append('title', typeof item === 'string' ? item : item.name.replace(/\.[^.]+$/, ''));
+        fd.append('topic', form.title);
+        fd.append('class_id', form.class_id);
+        if (form.subject_id) fd.append('subject_id', form.subject_id);
+        fd.append('downloadable', '1');
+        fd.append('targets[0][target_type]', 'class');
+        fd.append('targets[0][class_id]', form.class_id);
+        if (typeof item === 'string') fd.append('url', item); else fd.append('file', item);
+        const up = await uploadApi<{ material: { id: number; status: string } }>('/learning-materials', fd);
+        materialIds.push(up.material.id);
+        if (up.material.status === 'pending_approval') awaitingReview = true;
+      }
+      setProgress(null);
       const res = await fetchApi<{ message: string }>('/academics/homework', {
         method: 'POST',
         body: JSON.stringify({
           ...form,
           class_id: Number(form.class_id), subject_id: Number(form.subject_id), arm_id: form.arm_id ? Number(form.arm_id) : null,
           max_score: form.max_score ? Number(form.max_score) : null, draft,
+          ...(materialIds.length ? { material_ids: materialIds } : {}),
         }),
       });
-      setNotice(res.message);
+      setNotice(awaitingReview ? `${res.message} The attachments show to students once a reviewer approves them.` : res.message);
       setForm(blank);
+      setFiles([]);
+      setLinks([]);
       setCreating(false);
       await load();
     } catch (err) {
+      setProgress(null);
       setError(errorText(err, 'Could not set this homework.'));
     } finally {
       setBusy(false);
@@ -160,6 +190,27 @@ export default function TeacherHomework() {
             </Field>
             <label className="flex items-center gap-2 self-end text-sm"><input type="checkbox" checked={form.allow_late} onChange={(e) => setForm({ ...form, allow_late: e.target.checked })} /> Accept late work</label>
             <label className="flex items-center gap-2 self-end text-sm"><input type="checkbox" checked={form.allow_parent_assist} onChange={(e) => setForm({ ...form, allow_parent_assist: e.target.checked })} /> A parent may hand in for a young child</label>
+            <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+              <p className="text-sm font-medium text-ink">Attachments <span className="font-normal text-ink-muted">— notes, worksheets, photos, video, audio or a link</span></p>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.3gp,.mov,.mp3,.m4a,.aac,.ogg,.wav"
+                className="text-sm"
+                onChange={(e) => { const picked = Array.from(e.target.files ?? []); setFiles((f) => [...f, ...picked]); e.target.value = ''; }}
+              />
+              <div className="flex max-w-xl gap-2">
+                <input className={inputClass} type="url" placeholder="https://youtube.com/…" value={linkDraft} onChange={(e) => setLinkDraft(e.target.value)} />
+                <Button type="button" variant="secondary" disabled={!/^https?:\/\//.test(linkDraft.trim())} onClick={() => { setLinks((l) => [...l, linkDraft.trim()]); setLinkDraft(''); }}>Add link</Button>
+              </div>
+              {(files.length > 0 || links.length > 0) && (
+                <ul className="space-y-1 text-sm">
+                  {files.map((f, i) => <li key={`f${i}`} className="flex items-center gap-2">📎 {f.name}<button type="button" className="text-negative" aria-label={`Remove ${f.name}`} onClick={() => setFiles((x) => x.filter((_, j) => j !== i))}>✕</button></li>)}
+                  {links.map((l, i) => <li key={`l${i}`} className="flex items-center gap-2">🔗 {l}<button type="button" className="text-negative" aria-label={`Remove ${l}`} onClick={() => setLinks((x) => x.filter((_, j) => j !== i))}>✕</button></li>)}
+                </ul>
+              )}
+              {progress && <p className="text-sm text-ink-muted">{progress}</p>}
+            </div>
             <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
               <Button type="submit" disabled={busy}>Set and tell students</Button>
               <Button type="button" variant="secondary" disabled={busy} onClick={(e) => create(e as unknown as React.FormEvent, true)}>Save as draft</Button>
