@@ -133,6 +133,12 @@ class Api {
 
   // CBT authoring and marking — staff only.
   static const cbtQuestions = '$version/cbt/questions';
+  /// The school's CBT image library (upload needs alt text).
+  static const cbtMedia = '$version/cbt/media';
+  // AI with pictures: drafts for the teacher to review.
+  static const aiQuestionsFromImage = '$version/ai/cbt/questions-from-image';
+  static const aiScanPaper = '$version/ai/cbt/scan-paper';
+  static const aiDescribeImage = '$version/ai/cbt/describe-image';
   static const cbtQuestionsImport = '$version/cbt/questions/import';
   static String cbtExamQuestions(int examId) =>
       '$version/cbt/exams/$examId/questions';

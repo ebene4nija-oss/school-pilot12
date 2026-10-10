@@ -11,6 +11,7 @@ import '../../core/data/reference_data.dart';
 import '../../core/providers.dart';
 import '../../core/ui/widgets.dart';
 import '../cbt/teacher/cbt_teacher_data.dart';
+import 'ai_pictures_screen.dart';
 
 enum StudioTool {
   lessonPlan('Lesson plan', 'lesson_plan'),
@@ -100,6 +101,31 @@ class _AiStudioScreenState extends ConsumerState<AiStudioScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenMargin),
         children: [
+          // The camera route into the question bank.
+          OutlinedCard(
+            statusColor: AppColors.primaryContainer,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AiPicturesScreen())),
+            child: Row(
+              children: [
+                const Icon(Icons.document_scanner_outlined, color: AppColors.primaryContainer),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From a picture or paper', style: AppText.bodyLg),
+                      Text(
+                        'Photograph a diagram for questions, or scan a printed paper into the bank',
+                        style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.outline),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           SegmentedButton<StudioTool>(
             segments: [for (final t in StudioTool.values) ButtonSegment(value: t, label: Text(t.label))],
             selected: {_tool},
