@@ -11,6 +11,18 @@
  */
 import generated from "@/generated/site-config.json";
 
+/** The offline CBT lab client's current release, published in Super Admin > Downloads. */
+export type OfflineClient = {
+  version: string;
+  sha256: string;
+  size_bytes: number | null;
+  notes: string | null;
+  published_at: string | null;
+  min_supported_version: string | null;
+  /** The stable link: the API redirects it to whichever release is current. */
+  download_url: string;
+};
+
 type Console = Partial<{
   whatsapp_number: string | null;
   response_minutes: number;
@@ -24,6 +36,7 @@ type Console = Partial<{
   og_image: string | null;
   google_site_verification: string | null;
   bing_site_verification: string | null;
+  offline_client: OfflineClient | null;
 }>;
 
 const fromConsole = generated as Console;
@@ -70,6 +83,14 @@ export const site = {
   googleVerification: fromConsole.google_site_verification ?? "",
   bingVerification: fromConsole.bing_site_verification ?? "",
 
+  /**
+   * The lab client as of this build. The download button uses its stable
+   * link, so a newer release is served without a rebuild; the version and
+   * checksum shown on the page refresh on the next rebuild. Null until a
+   * first release is published, and the page then offers a demo instead.
+   */
+  offlineClient: fromConsole.offline_client ?? null,
+
   turnstileSiteKey: env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
 
   /** Self-hosted Plausible or Umami, cookieless. Unset = no analytics script. */
@@ -82,6 +103,7 @@ export const site = {
 
 export const hasWhatsApp = site.whatsappNumber.length >= 12;
 export const hasDemoSchool = site.demoSchoolUrl.length > 0;
+export const hasOfflineClient = site.offlineClient !== null;
 
 export const nav = [
   { href: "/features/", label: "Features" },
@@ -99,6 +121,7 @@ export const footer = [
       { href: "/features/", label: "Features" },
       { href: "/pricing/", label: "Pricing" },
       { href: "/migrate/", label: "Free migration" },
+      { href: "/download/", label: "Download CBT lab client" },
       { href: "/trust/", label: "Security & trust" },
     ],
   },

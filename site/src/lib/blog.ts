@@ -7,7 +7,9 @@
 import MarkdownIt from "markdown-it";
 import generated from "@/generated/blog.json";
 
-export type Video = { provider: "youtube" | "vimeo"; id: string };
+import type { Video } from "./video";
+
+export { embedUrl, watchUrl, type Video } from "./video";
 
 export type Post = {
   id: number;
@@ -19,6 +21,8 @@ export type Post = {
   cover: string | null;
   cover_alt: string | null;
   video: Video | null;
+  /** Where else the video is shown: "home", a feature slug, or "download". Set in Super Admin > Blog. */
+  video_placement?: string | null;
   meta_title: string | null;
   meta_description: string | null;
   author_name: string;
@@ -32,6 +36,11 @@ export type Post = {
 export const posts = generated as unknown as Post[];
 
 export const hasBlog = posts.length > 0;
+
+/** Published posts whose video is placed on a page, newest first. */
+export function videosFor(placement: string) {
+  return posts.filter((p) => p.video && p.video_placement === placement);
+}
 
 export function getPost(slug: string) {
   return posts.find((p) => p.slug === slug);
@@ -51,12 +60,6 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 
 export const renderMarkdown = (source: string) => md.render(source);
 
-export const watchUrl = (v: Video) => (v.provider === "youtube" ? `https://www.youtube.com/watch?v=${v.id}` : `https://vimeo.com/${v.id}`);
-
-export const embedUrl = (v: Video) =>
-  v.provider === "youtube"
-    ? `https://www.youtube-nocookie.com/embed/${v.id}?rel=0`
-    : `https://player.vimeo.com/video/${v.id}?dnt=1`;
 
 /** Rough reading time, for the post header. */
 export const readingMinutes = (body: string) => Math.max(1, Math.round(body.split(/\s+/).length / 220));

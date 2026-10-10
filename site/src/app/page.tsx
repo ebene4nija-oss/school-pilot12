@@ -1,12 +1,13 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { allInOne, boarding, hero, store, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
+import { allInOne, beforeAfter, boarding, hero, noRisk, store, objections, pillars, problems, proofStrip, roles, termSteps } from "@/content/home";
 import { CtaBand, FaqList, Section } from "@/components/Blocks";
 import { DemoSchoolLink, PrimaryCta, SecondaryCta } from "@/components/Cta";
 import { ProductShot } from "@/components/ProductShot";
 import { RoleTabs } from "@/components/RoleTabs";
-import { IconTile } from "@/components/Icon";
+import { Icon, IconTile } from "@/components/Icon";
+import { VideoCards } from "@/components/VideoCards";
 import { BOARDING, naira } from "@/lib/pricing";
 
 export const metadata: Metadata = {
@@ -115,6 +116,38 @@ export default function Home() {
         </div>
       </Section>
 
+      {/* 4a · Before and after */}
+      <Section
+        id="before-after"
+        tone="surface"
+        eyebrow="What actually changes"
+        title="The same term. Without the scramble."
+        intro="Nothing about how your school runs has to change. These are the moments that get easier."
+      >
+        <div className="overflow-hidden rounded-2xl border border-line-soft">
+          <div aria-hidden="true" className="hidden grid-cols-[11rem_1fr_1fr] bg-navy-deep text-sm font-semibold uppercase tracking-wide text-white md:grid">
+            <span className="px-5 py-3">When</span>
+            <span className="px-5 py-3 text-white/70">Today</span>
+            <span className="px-5 py-3 text-accent-light">With SchoolPilot</span>
+          </div>
+          <ul className="divide-y divide-line-soft">
+            {beforeAfter.map((row, i) => (
+              <li key={row.id} data-reveal style={d(i * 70)} className="grid gap-2 bg-canvas p-5 md:grid-cols-[11rem_1fr_1fr] md:gap-0 md:p-0">
+                <h3 className="font-display text-lg font-semibold text-brand md:px-5 md:py-4">{row.moment}</h3>
+                <p className="flex gap-2 text-ink-muted md:px-5 md:py-4">
+                  <span aria-hidden="true" className="mt-0.5 font-bold text-negative">✕</span>
+                  <span><span className="sr-only">Today: </span>{row.before}</span>
+                </p>
+                <p className="flex gap-2 font-medium text-ink md:bg-positive/5 md:px-5 md:py-4">
+                  <span aria-hidden="true" className="mt-0.5 text-positive"><Icon name="check" size={18} /></span>
+                  <span><span className="sr-only">With SchoolPilot: </span>{row.after}</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Section>
+
       {/* 4b · All in one */}
       <Section
         id="all-in-one"
@@ -159,6 +192,9 @@ export default function Home() {
           ))}
         </ol>
       </Section>
+
+      {/* 5b · Walkthrough videos placed on the homepage from the blog */}
+      <VideoCards placement="home" tone="sunken" title="See SchoolPilot doing the work" intro="Short walkthroughs recorded in the real product, so you can see it before you talk to anyone." />
 
       {/* 6 · Roles */}
       <Section id="roles" eyebrow="For everyone in your school" title="One school, five ways in.">
@@ -250,6 +286,33 @@ export default function Home() {
         <p className="mt-6 text-ink-muted">
           Library and transport too, when you need them. <a href="#boarding" className="font-semibold text-brand underline underline-offset-4">Boarding school? See the hostel side ↑</a>
         </p>
+      </Section>
+
+      {/* 7b · Risk reversal */}
+      <Section
+        id="no-risk"
+        tone="sunken"
+        eyebrow="Trying it costs you nothing"
+        title="Switching is our job, not yours."
+        intro="The hard part of a new system is getting started. So we do that part, and you can walk away whenever you like."
+      >
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {noRisk.map((item, i) => (
+            <li key={item.id} data-reveal style={d((i % 3) * 100)} className="lift flex gap-4 rounded-2xl border border-line-soft bg-surface p-6">
+              <IconTile name={item.icon} tone="accent" size="sm" />
+              <div>
+                <h3 className="text-lg font-semibold">{item.title}</h3>
+                <p className="mt-1 text-[0.95rem] text-ink-muted">{item.text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <PrimaryCta where="page" label="Start with a chat" message="Hello SchoolPilot, I'd like to try SchoolPilot for my school." />
+          <Link href="/migrate/" className="font-semibold text-brand underline underline-offset-4">
+            How the free migration works <span className="arrow-nudge">→</span>
+          </Link>
+        </div>
       </Section>
 
       {/* 8 · Pricing model */}

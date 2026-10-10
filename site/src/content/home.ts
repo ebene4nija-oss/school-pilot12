@@ -220,3 +220,57 @@ export const store = {
     { id: "confirm", icon: "check", title: "Parents confirm receipt", text: "Parents tick what arrived in their app. Anything missing comes back to you with a note, so you can sort it out." },
   ],
 } as const;
+
+/**
+ * "Before and after": the same moments of a term, today and in SchoolPilot.
+ * Each "after" restates something already claimed on a feature page; no
+ * numbers, because we have none we can stand behind yet.
+ */
+export const beforeAfter = [
+  {
+    id: "results",
+    moment: "Results week",
+    before: "Teachers add up CA and exam scores by hand, and someone stays up computing positions in Excel.",
+    after: "Teachers enter scores on their phones. Totals, averages and positions are computed as the scores come in.",
+  },
+  {
+    id: "corrections",
+    moment: "A score is wrong",
+    before: "One wrong cell moves every position below it, and nobody can say who changed what.",
+    after: "A change after submission goes through approval, and the history is kept.",
+  },
+  {
+    id: "fees",
+    moment: "Fees",
+    before: "The bursar finds out who owes at resumption, from receipts, bank alerts and the fees book.",
+    after: "Every invoice, part-payment and scholarship in one place. Balances by class before term starts.",
+  },
+  {
+    id: "parents",
+    moment: "Parents",
+    before: "Parents call to ask whether results are out, what they owe, and why their child was marked absent.",
+    after: "Results, fee balance and absences show on the parent's phone as they happen.",
+  },
+  {
+    id: "cbt",
+    moment: "CBT day",
+    before: "The light goes off or the network drops, and the exam stops for the whole lab.",
+    after: "The lab client runs the paper over the lab's own network. Nothing needs the internet until it's time to upload.",
+  },
+  {
+    id: "homework",
+    moment: "Homework",
+    before: "Homework is copied from the board, and half the class never writes it down.",
+    after: "Assignments and notes are on the student app, and work is submitted online.",
+  },
+];
+
+/** Risk reversal: why trying SchoolPilot costs a school nothing. Each line is in pricing.ts, /migrate/ or /trust/. */
+export const noRisk = [
+  { id: "trial", icon: "gift", title: "30 days free", text: "The School Management Subscription starts with a 30-day free trial." },
+  { id: "migration", icon: "transfer", title: "We move you in", text: "Your records migrated free, within 24 hours. No retyping." },
+  { id: "start-small", icon: "check", title: "Start with one thing", text: "Begin with results, or fees, and switch the rest on when you're ready." },
+  { id: "hardware", icon: "apps", title: "Nothing to buy", text: "It runs on the phones and computers your school already has." },
+  { id: "fees", icon: "fees", title: "No surprise fees", text: "Per active student, per term. No per-exam, per-teacher or per-parent charges." },
+  { id: "export", icon: "unlock", title: "Leave any time", text: "Export all of your school's data in one click. No lock-in." },
+] as const;

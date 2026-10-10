@@ -6,6 +6,7 @@ import { Callout, CtaBand, FaqList, PageHero, Section, Steps } from "@/component
 import { FeatureVisual } from "@/components/FeatureVisual";
 import { Icon, IconTile } from "@/components/Icon";
 import { JsonLd, breadcrumbs, faqPage } from "@/components/JsonLd";
+import { WatchItWork } from "@/components/WatchItWork";
 
 export const dynamicParams = false;
 
@@ -57,6 +58,24 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           <FeatureVisual shot={feature.shot} icon={feature.icon} name={feature.name} points={feature.benefits.map((b) => b.title)} />
         </div>
       </Section>
+
+      <WatchItWork placement={feature.slug} tone="canvas" title={`Watch ${feature.name.split(" (")[0]} in action`} />
+
+      {feature.slug === "cbt" && (
+        <section aria-labelledby="lab-client-title" className="bg-navy-deep py-12 text-white md:py-16">
+          <div className="container-site flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+            <div className="max-w-2xl">
+              <p className="eyebrow !text-accent-light">CBT lab client</p>
+              <h2 id="lab-client-title" className="mt-2 text-2xl font-bold text-white md:text-3xl">Get the lab client for your computer lab.</h2>
+              <p className="mt-3 text-white/80">One installer for the invigilator&apos;s laptop and every lab PC. Windows, included in every plan.</p>
+            </div>
+            <Link href="/download/" className="btn btn-primary shrink-0">
+              <Icon name="export" size={20} />
+              Download the lab client
+            </Link>
+          </div>
+        </section>
+      )}
 
       <Section id="benefits" eyebrow="What changes" title="What your school gets">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

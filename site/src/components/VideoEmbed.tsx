@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { embedUrl, watchUrl, type Video } from "@/lib/blog";
+import { embedUrl, watchUrl, type Video } from "@/lib/video";
 
 /**
  * A YouTube or Vimeo video that loads only when clicked. Until then the page
