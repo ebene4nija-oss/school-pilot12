@@ -457,7 +457,11 @@ HTML;
                 'class' => $student->currentClass->name ?? '',
                 'arm' => $student->currentArm->name ?? '',
                 'gender' => $student->gender,
-                'photo_url' => $student->passport_photo_path,
+                // Embedded, not linked: the renderer fetches nothing, and the
+                // photo is private. A path here printed as a broken image.
+                'photo_url' => $student->passport_photo_path
+                    ? (app(\App\Services\IdCard\PhotoPreflightService::class)->resolve($student->passport_photo_path)['data_uri'] ?? '')
+                    : '',
                 'position' => $overallPosition === false ? null : $overallPosition + 1,
                 'class_size' => $classmateIds->count(),
                 // True only for first in class, so a card can say so.

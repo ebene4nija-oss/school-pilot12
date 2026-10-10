@@ -17,6 +17,7 @@ use App\Services\GuardianDirectory;
 use App\Services\PasswordResetService;
 use App\Services\StudentImportService;
 use App\Support\TeacherScope;
+use App\Services\StudentPhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -152,10 +153,11 @@ class StudentController extends Controller
 
         $resets = app(PasswordResetService::class);
 
-        $passportPhotoPath = $request->passport_photo_path;
+        // A client-supplied path is ignored: photos are uploaded, never named.
+        $passportPhotoPath = null;
         if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
             $file = $request->file('avatar') ?? $request->file('passport_photo');
-            $passportPhotoPath = $file->store('students/avatars', 'public');
+            $passportPhotoPath = app(StudentPhotoService::class)->store($file);
         }
 
         // The same path an accepted admission or an approved transfer takes.
@@ -384,12 +386,14 @@ class StudentController extends Controller
         $schoolId = $this->schoolId();
 
         $student = Student::where('school_id', $schoolId)->findOrFail($id);
+        $this->authorize('editRecord', $student);
 
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|string|max:255',
             'email' => 'nullable|email|unique:users,email,' . $student->user_id,
-            'class_id' => 'nullable|exists:classes,id',
-            'arm_id' => 'nullable|exists:arms,id',
+            // This school's classes and arms only: a bare exists: let any id through.
+            'class_id' => ['nullable', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'arm_id' => ['nullable', Rule::exists('arms', 'id')->where('class_id', $request->input('class_id', $student->class_id))],
             'admission_number' => 'nullable|string',
             'gender' => 'nullable|in:male,female,other',
             'date_of_birth' => 'nullable|date',
@@ -421,14 +425,14 @@ class StudentController extends Controller
                 $user->save();
             }
 
-            $passportPhotoPath = $request->input('passport_photo_path', $student->passport_photo_path);
+            // Never a client-named path (it could point anywhere on disk);
+            // only an uploaded file replaces the photo.
+            $passportPhotoPath = $student->passport_photo_path;
             if ($request->hasFile('avatar') || $request->hasFile('passport_photo')) {
+                $photos = app(StudentPhotoService::class);
                 $file = $request->file('avatar') ?? $request->file('passport_photo');
-                $passportPhotoPath = $file->store('students/avatars', 'public');
-
-                if ($user && $user->userProfile) {
-                    $user->userProfile->update(['avatar_url' => $passportPhotoPath]);
-                }
+                $passportPhotoPath = $photos->store($file);
+                $photos->delete($student->passport_photo_path);
             }
 
             $student->update([
@@ -453,6 +457,11 @@ class StudentController extends Controller
                 'action' => 'student.updated',
                 'auditable_type' => Student::class,
                 'auditable_id' => $student->id,
+                // Which fields, not their values: the values are personal data.
+                'new_values' => ['fields' => array_values(array_intersect(array_keys($request->all()), [
+                    'name', 'email', 'class_id', 'arm_id', 'admission_number', 'gender', 'date_of_birth', 'state_of_origin', 'lga',
+                    'blood_group', 'allergies', 'medical_notes', 'birth_certificate_reference', 'emergency_contacts',
+                ]))],
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
@@ -462,6 +471,53 @@ class StudentController extends Controller
                 'student' => new StudentResource($student->load('user:id,name,email')),
             ]);
         });
+    }
+
+    /**
+     * The passport photo, to someone allowed to see the student. Photos are
+     * private (doc §12); this is the only way to them.
+     */
+    public function photo(Request $request, $id)
+    {
+        $student = Student::where('school_id', $this->schoolId())->findOrFail($id);
+        $this->authorize('view', $student);
+
+        $file = app(StudentPhotoService::class)->absolutePath($student->passport_photo_path);
+        abort_unless($file, 404, 'No photo on file.');
+
+        return response()->file($file, [
+            'Cache-Control' => 'private, max-age=300',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /** Take or replace the passport photo: an admin, or the class's form teacher. */
+    public function uploadPhoto(Request $request, $id)
+    {
+        $student = Student::where('school_id', $this->schoolId())->findOrFail($id);
+        $this->authorize('updatePhoto', $student);
+
+        $request->validate(['photo' => 'required|file|image|mimes:jpg,jpeg,png,webp|max:5120']);
+
+        $photos = app(StudentPhotoService::class);
+        $previous = $student->passport_photo_path;
+        $student->update(['passport_photo_path' => $photos->store($request->file('photo'))]);
+        $photos->delete($previous);
+
+        AuditLog::create([
+            'school_id' => $student->school_id,
+            'user_id' => $request->user()->id,
+            'action' => 'student.photo_updated',
+            'auditable_type' => Student::class,
+            'auditable_id' => $student->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'message' => 'Photo saved.',
+            'photo_url' => url("/api/v1/students/{$student->id}/photo").'?v='.substr(md5((string) $student->passport_photo_path), 0, 8),
+        ]);
     }
 
     public function promote(Request $request)

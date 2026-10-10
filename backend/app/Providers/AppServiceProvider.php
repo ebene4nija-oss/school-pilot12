@@ -84,7 +84,7 @@ class AppServiceProvider extends ServiceProvider
     private const PLATFORM_COMMANDS = [
         'cbt:expire-attempts', 'id-cards:sweep', 'exports:sweep', 'admissions:purge',
         'lms:remind', 'lms:sync-attendance', 'library:daily', 'marketing:prune-leads',
-        'schoolpilot:generate-insights',
+        'schoolpilot:generate-insights', 'students:privatise-photos',
         'migrate', 'migrate:fresh', 'migrate:refresh', 'migrate:rollback', 'db:seed',
     ];
 

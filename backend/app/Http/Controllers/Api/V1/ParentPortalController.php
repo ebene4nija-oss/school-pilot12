@@ -76,7 +76,7 @@ class ParentPortalController extends Controller
                 'class_id' => $student->class_id,
                 'class_name' => $student->currentClass?->name,
                 'arm_name' => $student->currentArm?->name,
-                'photo_url' => $student->passport_photo_path,
+                'photo_url' => $student->passport_photo_path ? url("/api/v1/students/{$student->id}/photo") : null,
                 'status' => $student->status,
                 'is_primary_guardian' => (bool) $student->pivot->is_primary,
             ]);

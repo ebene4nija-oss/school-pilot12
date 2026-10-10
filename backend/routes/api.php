@@ -229,6 +229,18 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // student's record was not fetchable at all.
         Route::get('/students/{id}', [StudentController::class, 'show'])
             ->middleware('role:super_admin,school_admin,teacher,parent,student');
+        // Editing a student's record. `update()` existed with no route, so
+        // nothing after enrolment could be corrected. Admin only (the policy
+        // checks too). POST as well as PUT: PHP does not parse multipart PUT,
+        // and an edit may carry a photo.
+        Route::match(['put', 'post'], '/students/{id}', [StudentController::class, 'update'])
+            ->middleware('role:super_admin,school_admin')->whereNumber('id');
+        // The passport photo: private, served only to those who may see the
+        // student; taken by an admin or the class's form teacher.
+        Route::get('/students/{id}/photo', [StudentController::class, 'photo'])
+            ->middleware('role:super_admin,school_admin,teacher,parent,student')->whereNumber('id');
+        Route::post('/students/{id}/photo', [StudentController::class, 'uploadPhoto'])
+            ->middleware(['role:super_admin,school_admin,teacher', 'throttle:30,1'])->whereNumber('id');
         Route::post('/students/import', [StudentController::class, 'bulkImport'])->middleware('role:super_admin,school_admin');
 
         /*

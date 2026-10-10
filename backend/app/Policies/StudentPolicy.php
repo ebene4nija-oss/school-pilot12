@@ -75,6 +75,45 @@ class StudentPolicy
     }
 
     /**
+     * Changing a student's record (name, class, date of birth, contacts,
+     * health notes). School admins only: a teacher who teaches a child may
+     * read their record but not rewrite it.
+     */
+    public function editRecord(User $user, Student $student): bool
+    {
+        $profile = $user->userProfile;
+
+        return $profile !== null
+            && in_array($profile->role, ['super_admin', 'school_admin'], true)
+            && ($profile->role === 'super_admin' || $profile->school_id === $student->school_id);
+    }
+
+    /**
+     * Taking a student's passport photo: an admin, or the form teacher of the
+     * student's class (and arm, where the assignment names one) this session.
+     */
+    public function updatePhoto(User $user, Student $student): bool
+    {
+        if ($this->editRecord($user, $student)) {
+            return true;
+        }
+
+        $profile = $user->userProfile;
+        if ($profile?->role !== 'teacher' || $profile->school_id !== $student->school_id || ! $student->class_id) {
+            return false;
+        }
+
+        $session = \App\Models\AcademicSession::where('school_id', $student->school_id)->where('is_current', true)->value('id');
+
+        return \App\Models\ClassTeacherAssignment::where('school_id', $student->school_id)
+            ->when($session, fn ($q) => $q->where('session_id', $session))
+            ->where('class_id', $student->class_id)
+            ->where('form_teacher_id', $user->id)
+            ->where(fn ($q) => $q->whereNull('arm_id')->orWhere('arm_id', $student->arm_id))
+            ->exists();
+    }
+
+    /**
      * A student's fee records — statement, invoices, receipts — and nothing
      * else of theirs. Whoever may view the student may view these, and so may
      * the bursar, who works the fee book without seeing results or health

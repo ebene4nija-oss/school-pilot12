@@ -45,6 +45,8 @@ class StudentResource extends JsonResource
             'religion' => $this->religion,
             'previous_school' => $this->previous_school,
             'passport_photo_path' => $this->passport_photo_path,
+            // The only way to the photo itself: private, behind the student policy.
+            'photo_url' => $this->passport_photo_path ? url("/api/v1/students/{$this->id}/photo") : null,
 
             // Deliberately absent: blood_group, allergies, medical_notes,
             // emergency_contacts. See StudentMedicalResource.
