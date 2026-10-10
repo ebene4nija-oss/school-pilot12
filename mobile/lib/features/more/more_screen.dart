@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../app/theme.dart';
 import '../../core/auth/session.dart';
@@ -287,10 +288,17 @@ class MoreScreen extends ConsumerWidget {
             onTap: () => _signOut(context, ref),
           ),
           const SizedBox(height: AppSpacing.lg),
+          // Read from the installed build, not typed in: a hard-coded "1.1.0"
+          // made every screenshot look like the same old build.
           Center(
-            child: Text(
-              'SchoolPilot 1.1.0',
-              style: AppText.labelSm.copyWith(color: AppColors.outline),
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snap) => Text(
+                snap.hasData
+                    ? 'SchoolPilot ${snap.data!.version} (build ${snap.data!.buildNumber})'
+                    : 'SchoolPilot',
+                style: AppText.labelSm.copyWith(color: AppColors.outline),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),

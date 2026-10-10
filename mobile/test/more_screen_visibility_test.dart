@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:schoolpilot/app/theme.dart';
 import 'package:schoolpilot/core/auth/session.dart';
 import 'package:schoolpilot/core/providers.dart';
@@ -22,6 +23,11 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
+  PackageInfo.setMockInitialValues(
+    appName: 'SchoolPilot', packageName: 'ng.schoolpilot', version: '1.2.2',
+    buildNumber: '5', buildSignature: '',
+  );
+
   for (final role in UserRole.values) {
     testWidgets('every More item is readable for ${role.wire}', (tester) async {
       tester.view.physicalSize = const Size(1080, 6000);
