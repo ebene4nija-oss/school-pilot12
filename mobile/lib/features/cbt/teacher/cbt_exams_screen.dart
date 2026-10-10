@@ -158,6 +158,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
   // During the test, and what students see when they finish.
   bool _shuffleQuestions = true;
   bool _shuffleOptions = true;
+  bool _shuffleWithinGroup = false;
   bool _showScore = true;
   bool _showAnswers = true;
   bool _showCorrect = false;
@@ -230,6 +231,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
           if (_closesAt != null) 'closes_at': _closesAt!.toIso8601String(),
           'shuffle_questions': _shuffleQuestions,
           'shuffle_options': _shuffleOptions,
+          'shuffle_within_group': _shuffleWithinGroup,
           'show_results_immediately': _showScore,
           'review_answers': _showAnswers,
           'review_correct_answers': _showCorrect,
@@ -338,6 +340,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
           Text('During the test', style: AppText.labelLg),
           _toggle('Shuffle the questions for each student', _shuffleQuestions, (v) => _shuffleQuestions = v),
           _toggle('Shuffle the options', _shuffleOptions, (v) => _shuffleOptions = v),
+          _toggle('Shuffle questions inside a passage', _shuffleWithinGroup, (v) => _shuffleWithinGroup = v),
           const SizedBox(height: AppSpacing.sm),
           Text('At the end, students see', style: AppText.labelLg),
           _toggle('Their score, as soon as they submit', _showScore, (v) => _showScore = v),

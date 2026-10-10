@@ -304,8 +304,10 @@ function Settings({ exam, run, busy }: { exam: Exam; run: Run; busy: boolean }) 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Title"><input className={inputClass} disabled={live} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
           <Field label="Duration (minutes)"><input className={inputClass} disabled={live} type="number" min={1} max={600} value={f.duration_minutes} onChange={(e) => setF({ ...f, duration_minutes: e.target.value })} /></Field>
-          <Field label="Opens"><input className={inputClass} disabled={live} type="datetime-local" value={f.opens_at} onChange={(e) => setF({ ...f, opens_at: e.target.value })} /></Field>
-          <Field label="Closes"><input className={inputClass} type="datetime-local" value={f.closes_at} onChange={(e) => setF({ ...f, closes_at: e.target.value })} /></Field>
+          {/* Two columns each: a date-time box in a quarter of a laptop screen
+              clips its text and leaves only the calendar icon. */}
+          <div className="sm:col-span-2"><Field label="Opens"><input className={inputClass} disabled={live} type="datetime-local" value={f.opens_at} onChange={(e) => setF({ ...f, opens_at: e.target.value })} /></Field></div>
+          <div className="sm:col-span-2"><Field label="Closes"><input className={inputClass} type="datetime-local" value={f.closes_at} onChange={(e) => setF({ ...f, closes_at: e.target.value })} /></Field></div>
           <Field label="Attempts allowed"><input className={inputClass} disabled={live} type="number" min={1} max={10} value={f.max_attempts} onChange={(e) => setF({ ...f, max_attempts: e.target.value })} /></Field>
           <Field label="Questions per student (random draw)"><input className={inputClass} disabled={live} type="number" min={1} placeholder="All" value={f.questions_per_attempt} onChange={(e) => setF({ ...f, questions_per_attempt: e.target.value })} /></Field>
           <Field label="Pass mark (%)"><input className={inputClass} disabled={live} type="number" min={0} max={100} value={f.pass_mark} onChange={(e) => setF({ ...f, pass_mark: e.target.value })} /></Field>

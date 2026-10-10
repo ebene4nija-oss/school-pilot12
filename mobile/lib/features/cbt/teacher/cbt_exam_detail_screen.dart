@@ -275,6 +275,17 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
                     label: const Text('Results released · withdraw'),
                   ),
               ],
+              _ShuffleSettings(
+                exam: exam,
+                editable: isDraft && !_busy,
+                onChanged: (field, value) => _run(
+                  () => ref.read(apiClientProvider).put<dynamic>(
+                        Api.cbtExam(widget.examId),
+                        body: {field: value},
+                      ),
+                  'Saved.',
+                ),
+              ),
               SectionHeader(
                 'Questions (${rows.length})',
                 action: isDraft ? 'Add from bank' : null,
@@ -556,6 +567,65 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Whether each student gets the paper in their own order.
+///
+/// The same three settings as the web setup page. The server deals each
+/// attempt its order from a seed, so a student who reconnects sees the same
+/// paper. Locked once published: changing the order mid-exam would move
+/// questions under students who are already answering.
+class _ShuffleSettings extends StatelessWidget {
+  const _ShuffleSettings({
+    required this.exam,
+    required this.editable,
+    required this.onChanged,
+  });
+
+  final Map<String, dynamic> exam;
+  final bool editable;
+  final void Function(String field, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget toggle(String field, String label, String help) => SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: Text(label),
+          subtitle: Text(help),
+          value: exam[field] == true,
+          onChanged: editable ? (v) => onChanged(field, v) : null,
+        );
+
+    final isDraft = stringOf(exam['status'], 'draft') == 'draft';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader('Shuffling'),
+        toggle(
+          'shuffle_questions',
+          'Shuffle the questions',
+          'Each student gets the questions in a different order.',
+        ),
+        toggle(
+          'shuffle_options',
+          'Shuffle the options',
+          'A, B, C, D are rearranged for each student. Marking still follows the right answer.',
+        ),
+        toggle(
+          'shuffle_within_group',
+          'Shuffle inside a passage',
+          'Questions that share a passage stay together; this also mixes their order.',
+        ),
+        if (!isDraft)
+          Text(
+            'Locked while the exam is published or closed.',
+            style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+          ),
+      ],
     );
   }
 }

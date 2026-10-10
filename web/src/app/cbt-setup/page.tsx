@@ -27,7 +27,7 @@ export default function CbtSetupPage() {
   const [terms, setTerms] = useState<{ id: number; name: string; session_name?: string | null }[]>([]);
   const [form, setForm] = useState({
     title: '', subject_id: '', class_id: '', term_id: '', duration_minutes: '45', opens_at: '', closes_at: '',
-    shuffle_questions: true, shuffle_options: true,
+    shuffle_questions: true, shuffle_options: true, shuffle_within_group: false,
     // What students see when they finish.
     show_results_immediately: true, review_answers: true, review_correct_answers: false,
   });
@@ -66,7 +66,7 @@ export default function CbtSetupPage() {
           title: form.title, subject_id: Number(form.subject_id), class_id: form.class_id ? Number(form.class_id) : null,
           term_id: form.term_id ? Number(form.term_id) : null, duration_minutes: Number(form.duration_minutes) || 45,
           opens_at: form.opens_at || null, closes_at: form.closes_at || null,
-          shuffle_questions: form.shuffle_questions, shuffle_options: form.shuffle_options,
+          shuffle_questions: form.shuffle_questions, shuffle_options: form.shuffle_options, shuffle_within_group: form.shuffle_within_group,
           show_results_immediately: form.show_results_immediately, review_answers: form.review_answers, review_correct_answers: form.review_correct_answers,
         }),
       });
@@ -94,7 +94,7 @@ export default function CbtSetupPage() {
             <Field label="Closes (optional)"><input className={inputClass} type="datetime-local" value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} /></Field>
             <fieldset className="space-y-1.5 rounded-lg border border-line-soft p-3 text-sm">
               <legend className="px-1 font-semibold text-ink">During the test</legend>
-              {([['shuffle_questions', 'Shuffle the questions for each student'], ['shuffle_options', 'Shuffle the options']] as const).map(([k, l]) => (
+              {([['shuffle_questions', 'Shuffle the questions for each student'], ['shuffle_options', 'Shuffle the options'], ['shuffle_within_group', 'Shuffle questions inside a passage']] as const).map(([k, l]) => (
                 <label key={k} className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-brand" checked={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} /> {l}</label>
               ))}
             </fieldset>
