@@ -73,6 +73,35 @@ class LearnTab extends ConsumerWidget {
               await ref.read(availableExamsProvider.future);
             },
             children: [
+              // The whole library, not just the newest ten shown further down.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenMargin, AppSpacing.screenMargin, AppSpacing.screenMargin, 0,
+                ),
+                child: OutlinedCard(
+                  statusColor: AppColors.primaryContainer,
+                  onTap: () => context.push('/materials'),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.menu_book_outlined, color: AppColors.primaryContainer),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Lesson notes & materials', style: AppText.bodyLg),
+                            Text(
+                              'Notes, videos, audio and links from your teachers',
+                              style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.outline),
+                    ],
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.screenMargin),
                 child: OutlinedCard(

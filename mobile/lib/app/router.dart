@@ -8,6 +8,7 @@ import '../features/academics/academics_screen.dart';
 import '../features/attendance/register_tab.dart';
 import '../features/attendance/school_today_screen.dart';
 import '../features/attendance/clock_in_location_screen.dart';
+import '../features/learn/materials_screen.dart';
 import '../features/attendance/staff_attendance_screen.dart';
 import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
@@ -103,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/timetable-full', builder: (_, __) => const TimetableScreen()),
       GoRoute(path: '/learn/tutor', builder: (_, __) => const TutorChatScreen()),
+      GoRoute(path: '/materials', builder: (_, __) => const MaterialsScreen()),
       GoRoute(
         path: '/gradebook/comments',
         builder: (_, __) => const CommentReviewScreen(),
