@@ -7,6 +7,8 @@ import '../core/providers.dart';
 import '../features/academics/academics_screen.dart';
 import '../features/attendance/register_tab.dart';
 import '../features/attendance/school_today_screen.dart';
+import '../features/attendance/clock_in_location_screen.dart';
+import '../features/attendance/staff_attendance_screen.dart';
 import '../features/auth/find_school_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/cbt/teacher/cbt_exams_screen.dart';
@@ -133,6 +135,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/send-notification', builder: (_, __) => const SendNotificationScreen()),
       GoRoute(path: '/approvals', builder: (_, __) => const ApprovalsScreen()),
       GoRoute(path: '/school-today', builder: (_, __) => const SchoolTodayScreen()),
+      GoRoute(path: '/staff-attendance', builder: (_, __) => const StaffAttendanceScreen()),
+      GoRoute(
+        path: '/staff-attendance/:id',
+        builder: (_, state) => StaffAttendanceMemberScreen(
+          staffId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+          from: state.uri.queryParameters['from'] ?? '',
+          to: state.uri.queryParameters['to'] ?? '',
+          name: state.extra is String ? state.extra as String : null,
+        ),
+      ),
+      GoRoute(path: '/clock-in-location', builder: (_, __) => const ClockInLocationScreen()),
       GoRoute(path: '/payments-ledger', builder: (_, __) => const PaymentsLedgerScreen()),
       GoRoute(path: '/fee-status', builder: (_, __) => const FeeStatusScreen()),
       GoRoute(path: '/expenses', builder: (_, __) => const ExpensesScreen()),

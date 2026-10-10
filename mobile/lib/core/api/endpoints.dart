@@ -57,6 +57,11 @@ class Api {
   static const attendanceMark = '$version/attendance/mark';
   static const attendanceQrToken = '$version/attendance/qr-token';
   static const attendanceStaffGps = '$version/attendance/staff-gps';
+  // Admin: staff attendance, and the location a clock-in is checked against.
+  static const staffAttendance = '$version/attendance/staff';
+  static String staffAttendanceMember(int staffId) => '$version/attendance/staff/$staffId';
+  static const clockInLocation = '$version/attendance/clock-in-location';
+  static const clockInLocationTest = '$version/attendance/clock-in-location/test';
 
   // Timetable
   static const timetableView = '$version/timetable/view';

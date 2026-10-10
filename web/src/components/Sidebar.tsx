@@ -148,6 +148,8 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/exam-timetable', icon: '🗒️', label: 'Exam timetable', roles: ['school_admin'] },
       { href: '/attendance', icon: '⏱️', label: 'Attendance', roles: ['school_admin', 'teacher'] },
       { href: '/attendance/corrections', icon: '✏️', label: 'Attendance changes', roles: ['school_admin', 'teacher'] },
+      { href: '/attendance/staff', icon: '🧾', label: 'Staff attendance', roles: ['school_admin'] },
+      { href: '/attendance/clock-in-location', icon: '📍', label: 'Clock-in location', roles: ['school_admin'] },
       { href: '/results', icon: '📝', label: 'Score entry', roles: ['school_admin', 'teacher'] },
       { href: '/broadsheet', icon: '📋', label: 'Broadsheet & approval', roles: ['school_admin', 'teacher'] },
       { href: '/broadsheet/annual', icon: '🎓', label: 'Session results & promotion', roles: ['school_admin', 'teacher'] },

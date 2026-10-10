@@ -39,6 +39,7 @@ List<QuickAction> quickActionsFor(UserRole role) => switch (role) {
       UserRole.schoolAdmin || UserRole.superAdmin => const [
           QuickAction(Icons.task_alt, 'Approvals', '/approvals'),
           QuickAction(Icons.today_outlined, 'Today', '/school-today'),
+          QuickAction(Icons.badge_outlined, 'Staff in', '/staff-attendance'),
           QuickAction(Icons.campaign_outlined, 'Send notice', '/send-notification'),
           QuickAction(Icons.forum_outlined, 'Messages', '/messages'),
           QuickAction(Icons.calendar_month_outlined, 'Timetable', '/timetable'),

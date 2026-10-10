@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Services\GeofenceService;
 use App\Services\QrAttendanceTokenService;
+use App\Support\StaffDay;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -357,12 +358,17 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        // Day and lateness are settled now, in school time, so changing the
+        // resume time later does not rewrite past days.
+        $at = StaffDay::now();
+        $late = StaffDay::isLate($school, $at);
+
         $record = AttendanceRecord::create([
             'school_id' => $schoolId,
             'staff_id' => $staffId,
             'term_id' => $request->term_id,
-            'date' => now()->toDateString(),
-            'status' => 'present',
+            'date' => $at->toDateString(),
+            'status' => $late ? 'late' : 'present',
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
         ]);
@@ -385,7 +391,10 @@ class AttendanceController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Staff GPS clock-in recorded successfully',
+            'message' => $late
+                ? 'Clock-in recorded. You are after the resume time of '.StaffDay::resumeTime($school).', so this counts as late.'
+                : 'Staff GPS clock-in recorded successfully',
+            'late' => $late,
             'distance_metres' => $result['distance'],
             'record' => $record,
         ], 201);

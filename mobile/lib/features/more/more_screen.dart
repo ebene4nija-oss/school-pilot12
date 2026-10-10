@@ -79,6 +79,20 @@ class MoreScreen extends ConsumerWidget {
             ),
           if (role.isAdmin)
             _Tile(
+              icon: Icons.badge_outlined,
+              label: 'Staff attendance',
+              detail: 'Who clocked in, late and missed days',
+              onTap: () => context.push('/staff-attendance'),
+            ),
+          if (role.isAdmin)
+            _Tile(
+              icon: Icons.edit_location_alt_outlined,
+              label: 'Clock-in location',
+              detail: 'Where staff must be to clock in, and the resume time',
+              onTap: () => context.push('/clock-in-location'),
+            ),
+          if (role.isAdmin)
+            _Tile(
               icon: Icons.task_alt,
               label: 'Approvals',
               detail: 'Leave, lesson notes, CBT, admissions, broadsheets',

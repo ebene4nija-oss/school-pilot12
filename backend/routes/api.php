@@ -72,6 +72,7 @@ use App\Http\Controllers\Api\V1\SchoolProfileController;
 use App\Http\Controllers\Api\V1\SchoolSmsGatewayController;
 use App\Http\Controllers\Api\V1\SelfProfileController;
 use App\Http\Controllers\Api\V1\SessionRolloverController;
+use App\Http\Controllers\Api\V1\StaffAttendanceController;
 use App\Http\Controllers\Api\V1\StaffDirectoryController;
 use App\Http\Controllers\Api\V1\StaffHrController;
 use App\Http\Controllers\Api\V1\StaffStudentAccessController;
@@ -251,6 +252,15 @@ Route::middleware([TenantResolutionMiddleware::class, 'throttle:60,1'])->group(f
         // The whole school today: registers in, who is absent, staff clocked in.
         Route::get('/attendance/today', [AttendanceTodayController::class, 'show'])->middleware('role:super_admin,school_admin');
         Route::post('/attendance/staff-gps', [AttendanceController::class, 'staffGpsClockIn'])->middleware('role:super_admin,school_admin,teacher');
+        // Staff attendance for the admin, and the school location and resume
+        // time that a GPS clock-in is checked against.
+        Route::middleware('role:super_admin,school_admin')->group(function () {
+            Route::get('/attendance/staff', [StaffAttendanceController::class, 'index']);
+            Route::get('/attendance/staff/{staffId}', [StaffAttendanceController::class, 'show'])->whereNumber('staffId');
+            Route::get('/attendance/clock-in-location', [StaffAttendanceController::class, 'location']);
+            Route::put('/attendance/clock-in-location', [StaffAttendanceController::class, 'updateLocation']);
+            Route::post('/attendance/clock-in-location/test', [StaffAttendanceController::class, 'testLocation'])->middleware('throttle:30,1');
+        });
 
         // Timetable Solver Engine & Management
         Route::post('/timetable/generate', [TimetableController::class, 'generate'])->middleware('role:super_admin,school_admin');

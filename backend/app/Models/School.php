@@ -20,6 +20,7 @@ class School extends Model
         'latitude',
         'longitude',
         'geofence_radius_meters',
+        'staff_resume_time',
         'logo_url',
         'status',
         'ai_enabled',
