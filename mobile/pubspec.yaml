@@ -1,7 +1,7 @@
 name: schoolpilot
 description: SchoolPilot — one app for admins, teachers, students and parents.
 publish_to: 'none'
-version: 1.2.3+6
+version: 1.2.4+7
 
 environment:
   sdk: ^3.11.0

@@ -24,8 +24,8 @@ double _contrast(Color a, Color b) {
 
 void main() {
   PackageInfo.setMockInitialValues(
-    appName: 'SchoolPilot', packageName: 'ng.schoolpilot', version: '1.2.3',
-    buildNumber: '6', buildSignature: '',
+    appName: 'SchoolPilot', packageName: 'ng.schoolpilot', version: '1.2.4',
+    buildNumber: '7', buildSignature: '',
   );
 
   for (final role in UserRole.values) {
@@ -65,6 +65,8 @@ void main() {
       }
 
       expect(problems, isEmpty, reason: problems.join('\n'));
+      // The footer shows the installed build, not a hard-coded number.
+      expect(find.text('SchoolPilot 1.2.4 (build 7)'), findsOneWidget);
     });
   }
 }
