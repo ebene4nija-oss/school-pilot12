@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi, uploadApi } from '@/lib/api';
+import AiFromPictures from './AiFromPictures';
 import { useClassSubjects } from '@/lib/useClassSubjects';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, Table, inputClass } from '@/components/Page';
 import { RichText } from '@/components/RichContent';
@@ -21,7 +22,7 @@ import QuestionEditor, { TYPES, blankQuestion, type Media, type QuestionInput } 
  * full when its author opens it.
  */
 
-type Tab = 'questions' | 'groups' | 'images' | 'import';
+type Tab = 'questions' | 'groups' | 'images' | 'ai' | 'import';
 interface Row { id: number; subject: string | null; subject_id: number; class_id: number | null; class: string | null; group_title: string | null; topic: string | null; question: string; question_type: string; content_format: 'plain' | 'latex'; difficulty: string | null; status: string; marks: number; times_answered: number | null; difficulty_index: number | null }
 interface Group { id: number; title: string; subject_id: number | null; stimulus: string | null; instructions: string | null; content_format: string; questions_count?: number }
 interface Version { version: number; created_at: string; change_summary: string | null; affects_scoring: boolean; payload?: { question?: string } }
@@ -37,6 +38,8 @@ type Filters = typeof BLANK_FILTERS;
 
 export default function QuestionBankPage() {
   const [tab, setTab] = useState<Tab>('questions');
+  // The library image a teacher chose to write questions from.
+  const [aiAsset, setAiAsset] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Option[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -60,7 +63,7 @@ export default function QuestionBankPage() {
   return (
     <PageShell title="Question bank" subtitle="Write questions once and use them on any paper. Filed by class, subject and topic.">
       <nav className="mb-5 flex flex-wrap gap-2">
-        {([['questions', 'Questions'], ['groups', 'Passages'], ['images', 'Images'], ['import', 'Import']] as [Tab, string][]).map(([k, l]) => (
+        {([['questions', 'Questions'], ['groups', 'Passages'], ['images', 'Images'], ['ai', 'AI from pictures'], ['import', 'Import']] as [Tab, string][]).map(([k, l]) => (
           <Button key={k} variant={tab === k ? 'primary' : 'secondary'} onClick={() => { setTab(k); setNotice(null); setError(null); }}>{l}</Button>
         ))}
       </nav>
@@ -68,7 +71,8 @@ export default function QuestionBankPage() {
       {notice && <p role="status" className="mb-6 rounded-lg bg-positive-soft px-4 py-3 text-sm text-positive">{notice}</p>}
       {tab === 'questions' && <Questions subjects={subjects} classes={classes} groups={groups} media={media} onDone={done} onError={fail} />}
       {tab === 'groups' && <Groups subjects={subjects} groups={groups} reload={loadGroups} onDone={done} onError={fail} />}
-      {tab === 'images' && <Images media={media} reload={loadMedia} onDone={done} onError={fail} />}
+      {tab === 'images' && <Images media={media} reload={loadMedia} onDone={done} onError={fail} onWriteQuestions={(id) => { setAiAsset(id); setTab('ai'); }} />}
+      {tab === 'ai' && <AiFromPictures key={aiAsset ?? 0} subjects={subjects} classes={classes} media={media} initialAssetId={aiAsset} onDone={done} onError={fail} />}
       {tab === 'import' && <Import classes={classes} onDone={done} onError={fail} />}
     </PageShell>
   );
@@ -450,11 +454,25 @@ function Groups({ subjects, groups, reload, onDone, onError }: { subjects: { id:
   );
 }
 
-function Images({ media, reload, onDone, onError }: { media: Media[]; reload: () => Promise<unknown> } & Handlers) {
+function Images({ media, reload, onDone, onError, onWriteQuestions }: { media: Media[]; reload: () => Promise<unknown>; onWriteQuestions: (assetId: number) => void } & Handlers) {
   const [file, setFile] = useState<File | null>(null);
   const [alt, setAlt] = useState('');
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+
+  /** AI reads the picture and suggests a description and caption, which the teacher checks. */
+  async function suggest() {
+    if (!file) return;
+    setSuggesting(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const r = await uploadApi<{ alt_text: string; caption: string }>('/ai/cbt/describe-image', fd);
+      if (r.alt_text) setAlt(r.alt_text);
+      if (r.caption && !caption) setCaption(r.caption);
+    } catch (err) { onError(err, 'The AI could not describe it just now.'); } finally { setSuggesting(false); }
+  }
 
   async function upload(e: React.FormEvent) {
     e.preventDefault();
@@ -487,7 +505,10 @@ function Images({ media, reload, onDone, onError }: { media: Media[]; reload: ()
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.thumbnail_url ?? m.url} alt={m.alt_text} className="h-28 w-full rounded bg-white object-contain" />
                 <figcaption className="mt-1"><span className="font-mono">#{m.asset_id}</span> {m.alt_text}</figcaption>
-                <button type="button" className="mt-1 text-negative underline" onClick={() => remove(m)}>Delete</button>
+                <div className="mt-1 flex gap-3">
+                  <button type="button" className="text-brand underline" onClick={() => onWriteQuestions(m.asset_id)}>Write questions (AI)</button>
+                  <button type="button" className="text-negative underline" onClick={() => remove(m)}>Delete</button>
+                </div>
               </figure>
             ))}
           </div>
@@ -497,6 +518,7 @@ function Images({ media, reload, onDone, onError }: { media: Media[]; reload: ()
         <form onSubmit={upload} className="space-y-3">
           <Field label="Picture (JPEG, PNG, WebP or GIF, up to 5 MB)"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block text-sm" /></Field>
           <Field label="Describe it (read aloud to a student using a screen reader)"><input className={inputClass} required minLength={3} maxLength={255} value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Cross-section of a hibiscus flower" /></Field>
+          <button type="button" className="text-sm text-brand underline disabled:opacity-50" disabled={!file || suggesting} onClick={suggest}>{suggesting ? 'Reading the picture…' : 'Suggest a description with AI'}</button>
           <Field label="Caption (optional)"><input className={inputClass} maxLength={255} value={caption} onChange={(e) => setCaption(e.target.value)} /></Field>
           <Button type="submit" disabled={busy || !file}>Upload</Button>
         </form>
