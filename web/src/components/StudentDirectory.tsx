@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Cell, Empty, ErrorNote, Field, inputClass } from '@/components/Page';
+import StudentEditPanel from '@/components/StudentEditPanel';
 
 /**
  * The student list (View Students page instructions).
@@ -363,6 +364,7 @@ export default function StudentDirectory() {
             <h2 className="font-headline mt-4 text-xl font-bold">{quick.display_name}</h2>
             <p className="text-sm text-ink-muted">{quick.admission_number} · {[quick.class, quick.arm].filter(Boolean).join(' ') || 'No class'}</p>
             <Badge tone={STATUS[quick.status]?.tone ?? 'slate'}>{STATUS[quick.status]?.label ?? quick.status}</Badge>
+            <StudentEditPanel key={quick.id} studentId={quick.id} />
             <dl className="mt-4 space-y-2 text-sm">
               {quick.guardian_name && <div><dt className="text-ink-muted">Guardian</dt><dd>{quick.guardian_name}{quick.guardian_phone ? ` · ${quick.guardian_phone}` : ''}</dd></div>}
               {quick.attendance_rate != null && <div><dt className="text-ink-muted">Attendance this session</dt><dd>{quick.attendance_rate}%</dd></div>}
