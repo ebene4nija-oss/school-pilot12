@@ -1,5 +1,12 @@
 # Offline CBT Client — Design & Build Specification
 
+> **Superseded (October 2026).** The relay design below was dropped for something
+> simpler: exams are sat on the school's web portal inside the **SchoolPilot
+> Exam** desktop app, and answers are held on the PC whenever the internet drops,
+> as on the mobile app. See [`desktop/README.md`](../desktop/README.md). This
+> document and the relay code (git history, last at `f4e0dca`) are kept for
+> the record only.
+
 **Status:** §19 steps 1–4 are built and tested. A candidate sits a whole paper,
 maths and all, in a fullscreen kiosk window, over TLS whose certificate the
 client pins, on a machine paired the day before. The softAP measurement of

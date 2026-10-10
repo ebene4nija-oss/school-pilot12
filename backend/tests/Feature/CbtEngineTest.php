@@ -923,7 +923,8 @@ class CbtEngineTest extends TestCase
         $this->attach($exam, $question);
 
         $attemptId = $this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->json('attempt.id');
-        CbtAttempt::find($attemptId)->update(['server_deadline_at' => now()->subHour()]);
+        // Past the grace a hall with no internet is given, not just the deadline.
+        CbtAttempt::find($attemptId)->update(['server_deadline_at' => CbtExamService::sweepCutoff()->subMinute()]);
 
         $this->artisan('cbt:expire-attempts')
             ->expectsOutputToContain('Auto-submitted and graded 1 overdue CBT attempt(s).')
@@ -958,7 +959,7 @@ class CbtEngineTest extends TestCase
         $this->attach($exam, $question);
 
         $attemptId = $this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->json('attempt.id');
-        CbtAttempt::find($attemptId)->update(['server_deadline_at' => now()->subHour()]);
+        CbtAttempt::find($attemptId)->update(['server_deadline_at' => CbtExamService::sweepCutoff()->subMinute()]);
 
         $closed = app(CbtExamService::class)->expireOverdueAttempts();
 

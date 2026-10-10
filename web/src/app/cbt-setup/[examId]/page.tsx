@@ -10,7 +10,8 @@ import { TYPES } from '@/components/cbt/QuestionEditor';
 
 /**
  * One CBT exam (§7.8): the paper, its settings, publishing, results and
- * marking, and offline bundles for a lab with no internet.
+ * marking. Any published paper can be sat in an exam hall on the desktop
+ * app; a PC that loses its internet keeps answers locally and syncs them.
  *
  * A published paper is frozen — questions cannot be added, removed or
  * re-marked underneath candidates; only the closing time and the results
@@ -18,7 +19,7 @@ import { TYPES } from '@/components/cbt/QuestionEditor';
  * question is worth (the API refuses it).
  */
 
-type Tab = 'paper' | 'settings' | 'results' | 'offline';
+type Tab = 'paper' | 'settings' | 'results';
 interface ExamQ { id: number; question_id: number; order_index: number; marks: number | string | null; negative_marks: number | string | null; section: string | null; question: { id: number; question: string; question_type: string; topic: string | null; difficulty: string | null; marks: number | string } | null }
 interface Exam {
   id: number; title: string; status: string; subject_id: number; subject: { name: string } | null; class_id: number | null; instructions: string | null;
@@ -34,7 +35,6 @@ interface Results {
   item_analysis: { question_id: number; answered: number; correct: number; facility_index: number | null }[];
 }
 interface Script { attempt_id: number; exam_title: string; percentage?: number; raw_score?: number; max_score?: number; questions?: { question_id: number; question_type: string | null; marks: number | null; question: string | null; your_response: Record<string, unknown> | null; is_correct: boolean | null; awarded_marks: number; correct_answer?: unknown; feedback: string | null }[] }
-interface Bundle { bundle_id: string; relay_identity: string | null; attempt_count: number; question_count: number; ciphertext_bytes: number; built_at: string | null; unlocked_at: string | null; revoked_at: string | null }
 
 const TYPE_NAME = Object.fromEntries(TYPES);
 const local = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : '');
@@ -146,7 +146,7 @@ Release anyway?`)) {
     >
       <p className="-mt-3 mb-4 text-sm"><Link href="/cbt-setup" className="text-brand underline">← All exams</Link></p>
       <nav className="mb-5 flex flex-wrap gap-2">
-        {([['paper', 'Paper'], ['settings', 'Settings'], ['results', 'Results & marking'], ['offline', 'Offline lab']] as [Tab, string][]).map(([k, l]) => (
+        {([['paper', 'Paper'], ['settings', 'Settings'], ['results', 'Results & marking']] as [Tab, string][]).map(([k, l]) => (
           <Button key={k} variant={tab === k ? 'primary' : 'secondary'} onClick={() => { setTab(k); setNotice(null); setError(null); }}>{l}</Button>
         ))}
       </nav>
@@ -162,7 +162,6 @@ Release anyway?`)) {
       {tab === 'paper' && <Paper exam={exam} draft={draft} busy={busy} run={run} />}
       {tab === 'settings' && <Settings exam={exam} run={run} busy={busy} />}
       {tab === 'results' && <ResultsTab examId={exam.id} onError={(e, f) => setError(errorText(e, f))} onDone={setNotice} />}
-      {tab === 'offline' && <Offline exam={exam} run={run} busy={busy} />}
     </PageShell>
   );
 }
@@ -317,7 +316,7 @@ function Settings({ exam, run, busy }: { exam: Exam; run: Run; busy: boolean }) 
           {check('shuffle_options', 'Shuffle the options')}
           {check('shuffle_within_group', 'Shuffle questions inside a passage')}
           {check('negative_marking', 'Negative marking (wrong answers lose marks; blanks never do)')}
-          {check('allow_offline', 'Can be sat offline in a computer lab (needs an opening time)')}
+          {check('allow_offline', 'Exam-hall paper: fixed opening time, scores hidden until you release them')}
         </div>
         <fieldset className="rounded-lg border border-line-soft p-4">
           <legend className="px-1 text-sm font-semibold text-ink">At the end of the test, students see</legend>
@@ -437,50 +436,5 @@ function ResultsTab({ examId, onError, onDone }: { examId: number; onError: (e: 
         </Card>
       )}
     </div>
-  );
-}
-
-function Offline({ exam, run, busy }: { exam: Exam; run: Run; busy: boolean }) {
-  const [bundles, setBundles] = useState<Bundle[] | null>(null);
-  const [size, setSize] = useState<number | null>(null);
-  const [relay, setRelay] = useState('');
-
-  const load = useCallback(async () => {
-    const r = await fetchApi<{ data: Bundle[] }>(`/cbt/exams/${exam.id}/offline-bundles`).catch(() => ({ data: [] as Bundle[] }));
-    setBundles(r.data);
-  }, [exam.id]);
-
-  useEffect(() => {
-    void (async () => {
-      await load();
-    })();
-    fetchApi<{ media_manifest?: { total_bytes?: number } }>(`/cbt/exams/${exam.id}/offline-package`).then((p) => setSize(p.media_manifest?.total_bytes ?? null)).catch(() => undefined);
-  }, [load, exam.id]);
-
-  if (!exam.allow_offline) return <Empty>This exam is online only. Turn on “Can be sat offline” in Settings to prepare it for a lab with no internet.</Empty>;
-
-  return (
-    <Card description="An encrypted copy of the paper for the school's relay laptop. The relay fetches the key itself on exam day; it is never shown here.">
-      {size !== null && <p className="mb-3 text-sm">Images to copy to the lab: {(size / 1_048_576).toFixed(1)} MB.</p>}
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        <Field label="Relay laptop name (optional)"><input className={inputClass} value={relay} onChange={(e) => setRelay(e.target.value)} placeholder="ICT lab relay" /></Field>
-        <Button disabled={busy || exam.status !== 'published'} onClick={() => run(() => fetchApi(`/cbt/exams/${exam.id}/offline-bundle`, { method: 'POST', body: JSON.stringify({ relay_identity: relay || undefined }) }).then((r) => { void load(); return r as { message?: string }; }), 'Could not build the bundle.')}>Build bundle</Button>
-        {exam.status !== 'published' && <span className="text-xs text-ink-muted">Publish the exam first.</span>}
-      </div>
-      {!bundles ? <Loading /> : bundles.length === 0 ? <Empty>No bundles built.</Empty> : (
-        <Table columns={['Bundle', 'Relay', 'Students', 'Built', 'State', '']}>
-          {bundles.map((b) => (
-            <tr key={b.bundle_id}>
-              <Cell className="font-mono text-xs">{b.bundle_id.slice(0, 12)}…</Cell>
-              <Cell>{b.relay_identity ?? '—'}</Cell>
-              <Cell>{b.attempt_count}</Cell>
-              <Cell className="text-xs">{b.built_at?.slice(0, 16).replace('T', ' ')}</Cell>
-              <Cell><Badge tone={b.revoked_at ? 'red' : b.unlocked_at ? 'green' : 'amber'}>{b.revoked_at ? 'revoked' : b.unlocked_at ? 'unlocked' : 'waiting'}</Badge></Cell>
-              <Cell>{!b.revoked_at && <button type="button" className="text-sm text-negative underline" onClick={() => { if (window.confirm('Revoke this bundle? Its key will never be released, and unsat attempts are returned.')) void run(() => fetchApi(`/cbt/offline-bundle/${b.bundle_id}/revoke`, { method: 'POST', body: '{}' }).then((r) => { void load(); return r as { message?: string }; }), 'Could not revoke.'); }}>Revoke</button>}</Cell>
-            </tr>
-          ))}
-        </Table>
-      )}
-    </Card>
   );
 }

@@ -27,6 +27,7 @@ class CbtAttemptEvent extends Model
         'network_restored',
         // Recorded by the server as the attempt moves through its lifecycle.
         'offline_sync',
+        'late_sync',
         'reconnected',
         'resumed',
         'auto_submit',

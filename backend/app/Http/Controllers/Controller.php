@@ -62,9 +62,8 @@ abstract class Controller
 
         /*
          * Host-resolved tenant, last. This is the path for routes reached
-         * without an authenticated profile — the CBT offline-bundle endpoints a
-         * lab machine calls, and anything resolved by subdomain before the user
-         * is known. Several controllers each carried their own copy of this
+         * without an authenticated profile — anything resolved by subdomain
+         * before the user is known. Several controllers each carried their own copy of this
          * fallback; they now share this one.
          */
         $tenantSchool = request()?->attributes->get('tenant_school');

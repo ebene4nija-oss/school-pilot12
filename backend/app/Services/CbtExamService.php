@@ -1000,7 +1000,7 @@ class CbtExamService
         $query = CbtAttempt::withoutGlobalScopes()
             ->where('status', 'in_progress')
             ->whereNotNull('server_deadline_at')
-            ->where('server_deadline_at', '<', now());
+            ->where('server_deadline_at', '<', self::sweepCutoff());
 
         if ($schoolId) {
             $query->where('school_id', $schoolId);
@@ -1013,6 +1013,16 @@ class CbtExamService
         }
 
         return $closed;
+    }
+
+    /**
+     * Deadlines before this moment are swept. Later ones are still inside the
+     * grace window, in case the candidate's answers are waiting on a hall's
+     * internet to come back (config schoolpilot.cbt_offline_grace_minutes).
+     */
+    public static function sweepCutoff(): \Illuminate\Support\Carbon
+    {
+        return now()->subMinutes(max(0, (int) config('schoolpilot.cbt_offline_grace_minutes', 120)));
     }
 
     /**

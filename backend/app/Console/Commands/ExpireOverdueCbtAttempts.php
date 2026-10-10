@@ -40,7 +40,7 @@ class ExpireOverdueCbtAttempts extends Command
             $query = CbtAttempt::withoutGlobalScopes()
                 ->where('status', 'in_progress')
                 ->whereNotNull('server_deadline_at')
-                ->where('server_deadline_at', '<', now());
+                ->where('server_deadline_at', '<', CbtExamService::sweepCutoff());
 
             if ($schoolId) {
                 $query->where('school_id', $schoolId);

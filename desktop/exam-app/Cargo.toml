@@ -1,0 +1,31 @@
+[package]
+name = "schoolpilot-exam"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.75"
+description = "SchoolPilot Exam — the school's CBT portal in a locked fullscreen window for the exam hall"
+license = "proprietary"
+
+[[bin]]
+name = "SchoolPilotExam"
+path = "src/main.rs"
+
+[dependencies]
+dirs = "5"
+getrandom = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tao = "0.36"
+wry = "0.48"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+# Lab PCs are old and the installer may travel on a phone hotspot. Size
+# matters more than the last 5% of speed.
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

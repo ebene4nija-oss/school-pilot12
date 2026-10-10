@@ -18,11 +18,18 @@ import CbtResult, { type ResultResponse } from '../CbtResult';
  * zero the paper is submitted, and the API auto-submits an expired attempt
  * anyway, so a closed laptop cannot buy extra time.
  *
- * Answers save in the background a moment after each change and retry until
- * they land, each stamped with a sequence number so the server keeps the
- * latest one however the requests arrive. Leaving the page, copying, pasting
- * and losing the connection are reported for a human invigilator to read —
- * no camera, nothing biometric (doc §3).
+ * Built to survive an exam hall losing its internet, the way the mobile app
+ * does. Every answer goes into localStorage the moment it is given, stamped
+ * with a sequence number so the server keeps the latest one however the
+ * requests arrive. Nothing leaves that store until the server has it, so a
+ * dropped line, a frozen PC or a restarted desktop app loses nothing. When
+ * time runs out with no connection the paper ends here, on this clock, and
+ * the held answers go up with the submit through `/cbt/offline-sync` once the
+ * line is back — the server waits for them (config
+ * schoolpilot.cbt_offline_grace_minutes).
+ *
+ * Leaving the page, copying, pasting and losing the connection are reported
+ * for a human invigilator to read — no camera, nothing biometric (doc §3).
  */
 
 interface Paper {
@@ -30,6 +37,44 @@ interface Paper {
   exam: { id: number; title: string; instructions: string | null; duration_minutes: number; total_marks: number; negative_marking: boolean };
   questions: Question[];
 }
+
+/** Answers this machine has that the server may not — the mobile app's SQLite buffer, in localStorage. */
+interface Held {
+  answers: Record<number, { response: Response; flagged: boolean; client_sequence: number; client_timestamp: string }>;
+  /** The paper is over (submitted, or the clock ran out) and only needs sending. */
+  submit?: boolean;
+}
+
+const heldKey = (attemptId: string) => `cbt-held-${attemptId}`;
+
+function readHeld(attemptId: string): Held {
+  try {
+    const raw = localStorage.getItem(heldKey(attemptId));
+    if (raw) return JSON.parse(raw) as Held;
+  } catch { /* storage blocked or corrupt */ }
+  return { answers: {} };
+}
+
+function writeHeld(attemptId: string, held: Held) {
+  try {
+    if (Object.keys(held.answers).length === 0 && !held.submit) localStorage.removeItem(heldKey(attemptId));
+    else localStorage.setItem(heldKey(attemptId), JSON.stringify(held));
+  } catch { /* storage full or blocked: the in-memory copy still saves online */ }
+}
+
+const payloadOf = (answers: Held['answers']) => Object.entries(answers).map(([id, a]) => ({
+  question_id: Number(id),
+  response: a.response,
+  flagged_for_review: a.flagged,
+  client_sequence: a.client_sequence,
+  client_timestamp: a.client_timestamp,
+}));
+
+/** A request that never reached the server, as opposed to one it refused. */
+const isOffline = (err: unknown) => !(err instanceof ApiError);
+
+/** Stop the routine autosave this close to the end; the submit carries the rest. */
+const END_MARGIN_MS = 3000;
 
 const clock = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -47,15 +92,14 @@ export default function SitPaper() {
   const [started, setStarted] = useState(false);
   const [left, setLeft] = useState<number | null>(null);
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'offline'>('saved');
-  const [phase, setPhase] = useState<'loading' | 'sitting' | 'submitting' | 'done'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'sitting' | 'submitting' | 'waiting' | 'done'>('loading');
   const [result, setResult] = useState<ResultResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const deadline = useRef<number | null>(null);
-  const dirty = useRef<Set<number>>(new Set());
   const latest = useRef<{ responses: Record<number, Response>; flags: Record<number, boolean> }>({ responses: {}, flags: {} });
-  // Seeded from the clock when the paper loads, so a reloaded page keeps
-  // numbering above anything the last one sent.
+  // Seeded from the clock, so numbering stays above anything an earlier
+  // session on this machine already sent.
   const sequence = useRef(0);
   const saving = useRef<Promise<void> | null>(null);
   const finished = useRef(false);
@@ -79,9 +123,65 @@ export default function SitPaper() {
     setPhase('done');
   }, [attemptId]);
 
+  /** Write one answer to this machine before anything else happens to it. */
+  const hold = useCallback((qid: number, response: Response, flagged: boolean) => {
+    const held = readHeld(attemptId);
+    held.answers[qid] = { response, flagged, client_sequence: ++sequence.current, client_timestamp: new Date().toISOString() };
+    writeHeld(attemptId, held);
+  }, [attemptId]);
+
+  /**
+   * Send everything held, in one request that also submits if the paper is
+   * over. The store is cleared only once the server has answered. Returns the
+   * attempt's status as the server now sees it.
+   */
+  const sendHeld = useCallback(async (): Promise<string> => {
+    const held = readHeld(attemptId);
+    const answers = payloadOf(held.answers);
+    let status = 'in_progress';
+    if (answers.length) {
+      const res = await fetchApi<{ attempt_status?: string }>('/cbt/offline-sync', {
+        method: 'POST',
+        body: JSON.stringify({ attempt_id: Number(attemptId), answers, submit: !!held.submit }),
+      });
+      status = res.attempt_status ?? (held.submit ? 'submitted' : status);
+    } else if (held.submit) {
+      try {
+        await fetchApi(`/cbt/attempts/${attemptId}/submit`, { method: 'POST', body: '{}' });
+      } catch (err) {
+        // 409: it was already closed, which is what we wanted.
+        if (!(err instanceof ApiError && err.status === 409)) throw err;
+      }
+      status = 'submitted';
+    }
+    try { localStorage.removeItem(heldKey(attemptId)); } catch { /* ignore */ }
+    return status;
+  }, [attemptId]);
+
   // ---- load ------------------------------------------------------------
   useEffect(() => {
     (async () => {
+      sequence.current = Date.now();
+
+      // Answers left here by an earlier session — the app was closed, the PC
+      // restarted, or the paper ended with no internet. They go up before the
+      // paper is reopened, because reopening an expired paper closes it.
+      const held = readHeld(attemptId);
+      if (held.submit || Object.keys(held.answers).length) {
+        try {
+          const status = await sendHeld();
+          if (status !== 'in_progress') { await showResult(); return; }
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 409) { await showResult(err.message); return; }
+          if (isOffline(err)) {
+            if (held.submit) { finished.current = true; setPhase('waiting'); return; }
+            setError('No internet connection. Your saved answers are safe on this computer — reopen this paper when the connection is back.');
+            return;
+          }
+          // Refused for another reason: open the paper; the autosave retries.
+        }
+      }
+
       let p: Paper | null = null;
       try {
         const stored = sessionStorage.getItem(`cbt-paper-${attemptId}`);
@@ -101,48 +201,58 @@ export default function SitPaper() {
         setError(errorText(err, 'Could not open this paper.'));
         return;
       }
-      sequence.current = Date.now();
+
+      // Fetch every image now, while there is a connection, so a diagram on
+      // question 38 still shows if the line drops at question 5.
+      for (const q of p.questions) {
+        const media = [...q.media, ...(q.group?.media ?? []), ...q.options.flatMap((o) => (o.image ? [o.image] : []))];
+        for (const m of media) if (m?.url) new Image().src = m.url;
+      }
+
+      const local = readHeld(attemptId).answers;
       setPaper(p);
-      setResponses(Object.fromEntries(p.questions.map((q) => [q.question_id, q.saved_response ?? null])));
+      setResponses(Object.fromEntries(p.questions.map((q) => [q.question_id, local[q.question_id]?.response ?? q.saved_response ?? null])));
+      setFlags(Object.fromEntries(Object.entries(local).map(([id, a]) => [id, a.flagged])));
       // A paper already in progress (resumed) skips the instructions screen.
-      setStarted(p.questions.some((q) => q.saved_response));
+      setStarted(p.questions.some((q) => q.saved_response || local[q.question_id]));
       if (p.attempt.seconds_remaining !== null) {
         deadline.current = Date.now() + p.attempt.seconds_remaining * 1000;
         setLeft(p.attempt.seconds_remaining);
       }
       setPhase('sitting');
     })();
-  }, [attemptId, showResult]);
+  }, [attemptId, showResult, sendHeld]);
 
   // ---- autosave --------------------------------------------------------
   const flush = useCallback(async (): Promise<void> => {
     if (saving.current) await saving.current;
-    if (dirty.current.size === 0 || finished.current) return;
-    const ids = [...dirty.current];
-    dirty.current.clear();
+    if (finished.current) return;
+    // In the last seconds the server may already count the paper as over, and
+    // an expired save is refused unsaved. The submit carries these instead.
+    if (deadline.current !== null && deadline.current - Date.now() < END_MARGIN_MS) return;
+    const sent = readHeld(attemptId).answers;
+    const answers = payloadOf(sent);
+    if (!answers.length) return;
     setSaveState('saving');
     const run = (async () => {
       try {
         const res = await fetchApi<{ seconds_remaining: number | null }>(`/cbt/attempts/${attemptId}/answers`, {
           method: 'POST',
-          body: JSON.stringify({
-            answers: ids.map((id) => ({
-              question_id: id,
-              response: latest.current.responses[id] ?? null,
-              flagged_for_review: !!latest.current.flags[id],
-              client_timestamp: new Date().toISOString(),
-              client_sequence: ++sequence.current,
-            })),
-          }),
+          body: JSON.stringify({ answers }),
         });
         if (res.seconds_remaining !== null) deadline.current = Date.now() + res.seconds_remaining * 1000;
-        setSaveState(dirty.current.size ? 'saving' : 'saved');
+        // Forget only what was sent; anything answered since stays held.
+        const held = readHeld(attemptId);
+        for (const [id, a] of Object.entries(sent)) {
+          if (held.answers[Number(id)]?.client_sequence === a.client_sequence) delete held.answers[Number(id)];
+        }
+        writeHeld(attemptId, held);
+        setSaveState(Object.keys(held.answers).length ? 'saving' : 'saved');
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) {
           await showResult(err.message);
           return;
         }
-        ids.forEach((id) => dirty.current.add(id));
         setSaveState('offline');
       }
     })();
@@ -153,40 +263,60 @@ export default function SitPaper() {
 
   useEffect(() => {
     if (phase !== 'sitting') return;
-    const t = setInterval(() => { if (dirty.current.size) void flush(); }, 4000);
+    const t = setInterval(() => { void flush(); }, 4000);
     return () => clearInterval(t);
   }, [phase, flush]);
 
   const answer = (qid: number, r: Response) => {
     setResponses((prev) => ({ ...prev, [qid]: r }));
-    dirty.current.add(qid);
-    setSaveState('saving');
+    hold(qid, r, !!latest.current.flags[qid]);
+    setSaveState((s) => (s === 'offline' ? s : 'saving'));
   };
   const toggleFlag = (qid: number) => {
-    setFlags((prev) => ({ ...prev, [qid]: !prev[qid] }));
-    dirty.current.add(qid);
+    const flagged = !latest.current.flags[qid];
+    setFlags((prev) => ({ ...prev, [qid]: flagged }));
+    hold(qid, latest.current.responses[qid] ?? null, flagged);
   };
 
   // ---- submit ----------------------------------------------------------
-  const submit = useCallback(async (auto = false) => {
+  const submit = useCallback(async () => {
     if (finished.current) return;
+    // The decision is recorded on this machine first: with the line down the
+    // paper is still over, and it is sent the moment the line returns.
+    finished.current = true;
+    writeHeld(attemptId, { ...readHeld(attemptId), submit: true });
     setPhase('submitting');
-    await flush();
-    if (finished.current) return;
+    if (saving.current) await saving.current;
     try {
-      const res = await fetchApi<{ message: string; result: ResultResponse['result'] }>(`/cbt/attempts/${attemptId}/submit`, { method: 'POST', body: '{}' });
-      finished.current = true;
-      setResult({ message: res.message, result: res.result });
-      setPhase('done');
+      await sendHeld();
+      await showResult();
     } catch (err) {
-      if (auto || (err instanceof ApiError && err.status === 409)) {
-        await showResult();
-        return;
-      }
-      setError(errorText(err, 'Could not submit. Check your connection and try again.'));
-      setPhase('sitting');
+      if (err instanceof ApiError && err.status === 409) { await showResult(err.message); return; }
+      if (!isOffline(err)) setError(errorText(err, 'Could not submit yet.'));
+      setPhase('waiting');
     }
-  }, [attemptId, flush, showResult]);
+  }, [attemptId, sendHeld, showResult]);
+
+  // A finished paper waiting for the internet: retry until it lands.
+  useEffect(() => {
+    if (phase !== 'waiting') return;
+    let busy = false;
+    const retry = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        await sendHeld();
+        await showResult();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) await showResult(err.message);
+      } finally {
+        busy = false;
+      }
+    };
+    const t = setInterval(() => { void retry(); }, 10000);
+    window.addEventListener('online', retry);
+    return () => { clearInterval(t); window.removeEventListener('online', retry); };
+  }, [phase, sendHeld, showResult]);
 
   // ---- clock -----------------------------------------------------------
   useEffect(() => {
@@ -194,7 +324,7 @@ export default function SitPaper() {
     const t = setInterval(() => {
       const s = Math.max(0, Math.round(((deadline.current ?? 0) - Date.now()) / 1000));
       setLeft(s);
-      if (s === 0) void submit(true);
+      if (s === 0) void submit();
     }, 1000);
     return () => clearInterval(t);
   }, [phase, submit]);
@@ -207,20 +337,17 @@ export default function SitPaper() {
     const paste = () => report('paste');
     const offline = () => { report('network_lost'); setSaveState('offline'); };
     const online = () => { report('network_restored'); void flush(); };
-    const leave = (e: BeforeUnloadEvent) => { if (dirty.current.size) e.preventDefault(); };
     document.addEventListener('visibilitychange', vis);
     document.addEventListener('copy', copy);
     document.addEventListener('paste', paste);
     window.addEventListener('offline', offline);
     window.addEventListener('online', online);
-    window.addEventListener('beforeunload', leave);
     return () => {
       document.removeEventListener('visibilitychange', vis);
       document.removeEventListener('copy', copy);
       document.removeEventListener('paste', paste);
       window.removeEventListener('offline', offline);
       window.removeEventListener('online', online);
-      window.removeEventListener('beforeunload', leave);
     };
   }, [phase, started, report, flush]);
 
@@ -231,6 +358,20 @@ export default function SitPaper() {
         <h1 className="mb-4 font-headline text-2xl font-bold text-brand">Paper submitted</h1>
         <CbtResult data={result} />
         <Link href="/student/tests" className="mt-4 inline-block text-sm text-brand underline">Back to my tests</Link>
+      </main>
+    );
+  }
+
+  if (phase === 'waiting') {
+    return (
+      <main className="mx-auto min-h-screen max-w-2xl bg-canvas p-6 text-ink">
+        <h1 className="font-headline text-2xl font-bold text-brand">Your paper is finished</h1>
+        <section className="mt-5 rounded-xl bg-surface p-5 shadow-sm ring-1 ring-line-soft">
+          <p className="text-sm">There is no internet connection right now. <strong>Every answer you gave is saved on this computer</strong> and will be sent automatically when the connection is back.</p>
+          <p className="mt-3 text-sm text-ink-muted">You do not need to do anything. Please leave this computer on — if it is switched off, your answers are sent the next time this paper is opened on it.</p>
+          <ErrorNote message={error} />
+          <p className="mt-4 flex items-center gap-2 text-xs text-ink-muted"><span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" /> Waiting for the internet…</p>
+        </section>
       </main>
     );
   }
@@ -252,7 +393,7 @@ export default function SitPaper() {
           <p className="mt-2 whitespace-pre-wrap text-sm">{paper.exam.instructions || 'Answer every question. Your answers save as you go.'}</p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-muted">
             <li>The clock is already running and does not stop if you leave this page.</li>
-            <li>Answers save automatically. You can go back to any question before you submit.</li>
+            <li>Answers save automatically, even if the internet goes off. You can go back to any question before you submit.</li>
             {paper.exam.negative_marking && <li>Wrong answers lose marks. Leave a question blank if you do not know it.</li>}
             <li>Leaving this page, copying and pasting are recorded for your invigilator.</li>
           </ul>
@@ -272,7 +413,7 @@ export default function SitPaper() {
       <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-line-soft bg-surface px-5 py-3 shadow-sm">
         <div className="min-w-0">
           <p className="truncate font-headline font-semibold text-brand">{paper.exam.title}</p>
-          <p className="text-xs text-ink-muted">{answeredCount} of {qs.length} answered · <span className={saveState === 'offline' ? 'text-negative' : ''}>{saveState === 'saved' ? 'All answers saved' : saveState === 'saving' ? 'Saving…' : 'Not saved — will retry when you are back online'}</span></p>
+          <p className="text-xs text-ink-muted">{answeredCount} of {qs.length} answered · <span className={saveState === 'offline' ? 'font-semibold text-accent' : ''}>{saveState === 'saved' ? 'All answers saved' : saveState === 'saving' ? 'Saving…' : 'No internet — your answers are saved on this computer and will send when it is back'}</span></p>
         </div>
         {left !== null && (
           <p role="timer" aria-live={low ? 'assertive' : 'off'} className={`rounded-lg px-3 py-1.5 font-mono text-lg font-bold ${low ? 'bg-negative-soft text-negative' : 'bg-surface-raised text-brand'}`}>{clock(left)}</p>

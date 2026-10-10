@@ -86,4 +86,20 @@ return [
     'backup_dir' => env('BACKUP_DIR', '/home/schoolpilotorg/backups'),
     'backup_log' => env('BACKUP_LOG', '/home/schoolpilotorg/logs/backup.log'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | CBT: how long a paper waits for a hall that lost its internet
+    |--------------------------------------------------------------------------
+    |
+    | A candidate's machine keeps every answer locally when the connection
+    | drops and sends them when it returns. The overdue-attempt sweep waits
+    | this many minutes past the deadline before closing an attempt, because
+    | closing it any sooner throws away answers that are on their way.
+    | Candidates cannot keep working in the meantime: their own screen
+    | finishes the paper at the deadline, and every late sync is logged.
+    |
+    */
+
+    'cbt_offline_grace_minutes' => (int) env('CBT_OFFLINE_GRACE_MINUTES', 120),
+
 ];

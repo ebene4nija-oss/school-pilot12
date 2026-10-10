@@ -686,7 +686,7 @@ class CbtController extends Controller
         ]);
     }
 
-    private const OFFLINE_RESULTS_NOTICE = 'Offline papers do not show results in the exam room. Marks are released by the school after the relay syncs.';
+    private const OFFLINE_RESULTS_NOTICE = 'Offline papers do not show results in the exam room. Marks are released by the school once every answer from the exam hall has synced.';
 
     /**
      * An offline paper never shows a score in the room (§5.4).
@@ -787,7 +787,7 @@ class CbtController extends Controller
 
         if ($exam->allow_offline && ! $exam->opens_at) {
             return response()->json([
-                'error' => 'An offline paper needs an opening time before it is published, so the relay can carry a real deadline into a room with no clock it can trust.',
+                'error' => 'An offline paper needs an opening time before it is published, so the hall has a fixed start and a fixed deadline.',
             ], 422);
         }
 
@@ -1355,6 +1355,7 @@ class CbtController extends Controller
             'answers.*.response' => 'nullable',
             'answers.*.client_timestamp' => 'nullable|date',
             'answers.*.client_sequence' => 'nullable|integer|min:0',
+            'answers.*.flagged_for_review' => 'nullable|boolean',
             'submit' => 'nullable|boolean',
         ]);
 
@@ -1371,6 +1372,15 @@ class CbtController extends Controller
                 'status' => 'ignored',
                 'message' => 'Attempt has already been finalised and submitted.',
                 'synced_count' => 0,
+            ]);
+        }
+
+        // A hall that lost its internet sends its answers after the deadline,
+        // inside the sweep's grace window. Accepted, and written down with how
+        // late it was, so an invigilator can see it rather than wonder.
+        if ($attempt->hasExpired()) {
+            $this->exams->logEvent($attempt, 'late_sync', [
+                'minutes_after_deadline' => (int) floor((now()->getTimestamp() - $attempt->server_deadline_at->getTimestamp()) / 60),
             ]);
         }
 

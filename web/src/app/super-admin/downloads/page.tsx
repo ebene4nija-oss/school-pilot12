@@ -160,7 +160,7 @@ export default function DownloadsAdminPage() {
           <form className="space-y-3" onSubmit={(e) => void save(e)}>
             <Field label="Version">
               <input className={inputClass} required disabled={locked} pattern="\d+\.\d+\.\d+" placeholder="1.0.0" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} />
-              <span className="mt-1 block text-xs text-ink-muted">The AppVersion in desktop/packaging/SchoolPilot.iss, which must match relay&apos;s Cargo.toml.</span>
+              <span className="mt-1 block text-xs text-ink-muted">The version in desktop/exam-app/Cargo.toml; Build-Package.ps1 prints it with the SHA-256.</span>
             </Field>
             <Field label="Installer link (https)">
               <input className={inputClass} type="url" required disabled={locked} placeholder="https://github.com/…/SchoolPilot-Setup-1.0.0.exe" value={form.download_url} onChange={(e) => setForm({ ...form, download_url: e.target.value })} />
