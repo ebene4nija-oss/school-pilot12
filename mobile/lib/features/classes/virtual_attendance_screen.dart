@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -9,10 +10,16 @@ import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
+import 'schedule_virtual_class_screen.dart';
 
 /// The teacher's virtual classes from the last fortnight.
 final recentVirtualClassesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   return listOf(await ref.watch(apiClientProvider).get<dynamic>(Api.liveClasses, query: {'recent': 1}));
+});
+
+/// Classes still to come (and any that started in the last two hours).
+final upcomingVirtualClassesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return listOf(await ref.watch(apiClientProvider).get<dynamic>(Api.liveClasses, query: {'upcoming': 1}));
 });
 
 /// One class's register. Never cached: it changes when the provider report
@@ -34,9 +41,23 @@ class VirtualClassesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classes = ref.watch(recentVirtualClassesProvider);
+    final upcoming = ref.watch(upcomingVirtualClassesProvider).valueOrNull ?? const <Map<String, dynamic>>[];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Virtual class attendance')),
+      appBar: AppBar(title: const Text('Virtual classes')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final message = await Navigator.of(context).push<String>(
+            MaterialPageRoute(builder: (_) => const ScheduleVirtualClassScreen()),
+          );
+          if (message == null || !context.mounted) return;
+          ref.invalidate(upcomingVirtualClassesProvider);
+          ref.invalidate(recentVirtualClassesProvider);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Schedule a class'),
+      ),
       body: classes.when(
         loading: () => const LoadingState(),
         error: (e, _) => ErrorState(error: asApiException(e), onRetry: () => ref.invalidate(recentVirtualClassesProvider)),
@@ -49,8 +70,43 @@ class VirtualClassesScreen extends ConsumerWidget {
             : RefreshIndicator(
                 onRefresh: () async => ref.refresh(recentVirtualClassesProvider.future),
                 child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.screenMargin),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin, AppSpacing.screenMargin, AppSpacing.screenMargin, 96),
                   children: [
+                    if (upcoming.isNotEmpty) ...[
+                      Text('Upcoming', style: AppText.labelLg),
+                      const SizedBox(height: AppSpacing.sm),
+                      for (final u in upcoming)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: OutlinedCard(
+                            statusColor: AppColors.primaryContainer,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(stringOf(u['title'], 'Virtual class'), style: AppText.bodyLg),
+                                      Text(
+                                        Dates.dayAndTime(Dates.tryParse(u['scheduled_for'])?.toLocal()),
+                                        style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (stringOf(u['meeting_url']).isNotEmpty)
+                                  TextButton(
+                                    onPressed: () => launchUrl(Uri.parse(stringOf(u['meeting_url'])), mode: LaunchMode.externalApplication),
+                                    child: const Text('Open'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text('Attendance from recent classes', style: AppText.labelLg),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
                     for (final c in rows)
                       Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),

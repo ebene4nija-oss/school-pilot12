@@ -118,8 +118,8 @@ class MoreScreen extends ConsumerWidget {
           if (role == UserRole.teacher || role.isAdmin)
             _Tile(
               icon: Icons.videocam_outlined,
-              label: 'Virtual class attendance',
-              detail: 'Read from Zoom or Meet, match names, correct',
+              label: 'Virtual classes',
+              detail: 'Schedule Zoom or Meet classes, then take attendance',
               onTap: () => context.push('/virtual-classes'),
             ),
           if (role != UserRole.parent && role != UserRole.other)
