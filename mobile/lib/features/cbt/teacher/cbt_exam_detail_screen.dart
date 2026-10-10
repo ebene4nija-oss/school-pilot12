@@ -426,7 +426,9 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
         Api.cbtQuestions,
         query: {
           if (widget.subjectId > 0) 'subject_id': widget.subjectId,
-          if (widget.classId != null && _thisClassOnly) 'class_id': widget.classId,
+          // Tagged to this class or to none; `class_id` alone hid every
+          // untagged question and the list came up empty.
+          if (widget.classId != null && _thisClassOnly) 'for_class': widget.classId,
           if (_search.text.trim().isNotEmpty) 'search': _search.text.trim(),
           'status': 'approved',
           'per_page': 100,
@@ -530,12 +532,25 @@ class _QuestionBankPickerState extends ConsumerState<QuestionBankPicker> {
                 : questions == null
                     ? const LoadingState(rows: 5)
                     : questions.isEmpty
-                        ? const EmptyState(
-                            icon: Icons.inventory_2_outlined,
-                            title: 'No questions to add',
-                            message: 'Draft some in AI Studio and save them to '
-                                'the question bank, or add them on the web.',
-                          )
+                        ? (widget.classId != null && _thisClassOnly
+                            ? EmptyState(
+                                icon: Icons.inventory_2_outlined,
+                                title: 'None for this class',
+                                message: 'There may be questions in this subject '
+                                    'tagged to other classes.',
+                                actionLabel: 'Show all classes',
+                                onAction: () {
+                                  setState(() => _thisClassOnly = false);
+                                  _load();
+                                },
+                              )
+                            : const EmptyState(
+                                icon: Icons.inventory_2_outlined,
+                                title: 'No questions to add',
+                                message: 'Only approved questions in this subject '
+                                    'are listed. Draft some in AI Studio and save '
+                                    'them to the question bank, or add them on the web.',
+                              ))
                         : ListView.builder(
                             itemCount: questions.length,
                             itemBuilder: (context, i) {

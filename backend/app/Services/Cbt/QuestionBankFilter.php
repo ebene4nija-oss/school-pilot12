@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  */
 class QuestionBankFilter
 {
-    public const FILTERS = ['subject_id', 'class_id', 'level_group', 'group_id', 'topic', 'difficulty', 'question_type', 'exam_body', 'status', 'search'];
+    public const FILTERS = ['subject_id', 'class_id', 'for_class', 'level_group', 'group_id', 'topic', 'difficulty', 'question_type', 'exam_body', 'status', 'search'];
 
     /** @param  array<string, mixed>  $filters */
     public static function apply(Builder $query, int $schoolId, array $filters): Builder
@@ -36,6 +36,13 @@ class QuestionBankFilter
             $filters['class_id'] === 'none'
                 ? $query->whereNull('class_id')
                 : $query->where('class_id', $filters['class_id']);
+        }
+
+        // What a paper for this class can use: questions tagged to it, and the
+        // ones tagged to no class. A plain `class_id` match hid every untagged
+        // question, so the picker came up empty over a full bank.
+        if (filled($filters['for_class'] ?? null)) {
+            $query->where(fn ($q) => $q->where('class_id', $filters['for_class'])->orWhereNull('class_id'));
         }
 
         if (filled($filters['level_group'] ?? null)) {

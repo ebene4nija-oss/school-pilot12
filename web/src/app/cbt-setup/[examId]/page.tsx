@@ -181,7 +181,8 @@ function Paper({ exam, draft, busy, run }: { exam: Exam; draft: boolean; busy: b
   const filters = useMemo(() => ({
     status: 'approved',
     subject_id: String(exam.subject_id),
-    ...(exam.class_id && !otherClasses ? { class_id: String(exam.class_id) } : {}),
+    // for_class keeps questions tagged to no class; class_id alone hid them.
+    ...(exam.class_id && !otherClasses ? { for_class: String(exam.class_id) } : {}),
     ...Object.fromEntries(Object.entries(search).filter(([, v]) => v)),
   }), [search, exam.subject_id, exam.class_id, otherClasses]);
 

@@ -966,4 +966,24 @@ class CbtEngineTest extends TestCase
         $this->assertEquals(1, $closed);
         $this->assertTrue(CbtAttempt::find($attemptId)->isFinalised());
     }
+
+    public function test_picking_for_a_class_includes_questions_tagged_to_no_class()
+    {
+        $other = SchoolClass::create(['school_id' => $this->school->id, 'name' => 'JSS 3']);
+        $mine = $this->makeQuestion(['question' => 'Tagged to JSS 2', 'class_id' => $this->class->id]);
+        $untagged = $this->makeQuestion(['question' => 'Tagged to no class']);
+        $theirs = $this->makeQuestion(['question' => 'Tagged to JSS 3', 'class_id' => $other->id]);
+
+        $ids = collect($this->asTeacher()
+            ->getJson("/api/v1/cbt/questions?subject_id={$this->subject->id}&status=approved&for_class={$this->class->id}")
+            ->assertOk()->json('data'))->pluck('id');
+
+        $this->assertEqualsCanonicalizing([$mine->id, $untagged->id], $ids->all());
+        $this->assertNotContains($theirs->id, $ids);
+
+        // class_id keeps its exact meaning for the bank's own filter.
+        $this->assertSame([$mine->id], collect($this->asTeacher()
+            ->getJson("/api/v1/cbt/questions?class_id={$this->class->id}")
+            ->json('data'))->pluck('id')->all());
+    }
 }
