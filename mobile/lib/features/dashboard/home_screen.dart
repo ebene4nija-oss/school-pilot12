@@ -17,6 +17,9 @@ import '../more/approvals_screen.dart';
 import '../store/parent_store_screen.dart';
 import 'quick_actions.dart';
 import 'role_homes.dart';
+import '../attendance/my_attendance_screen.dart';
+import '../students/academic_history_screen.dart';
+import '../../core/api/endpoints.dart';
 
 /// One route, a home per role. Which one you get is decided by the role the
 /// backend returned at login, not by anything the client chooses.
@@ -470,18 +473,25 @@ class _StudentDashboard extends ConsumerWidget {
 
         return [
           _tileRow([
+            // Each figure opens what it is made of: the academic record
+            // (every term and progress over time), and attendance by day.
             StatTile(
               label: 'Average this term',
               value: released ? '${average.toStringAsFixed(1)}%' : '—',
-              caption: released ? null : 'No results released yet',
-              onTap: () => context.go('/results'),
+              caption: released ? 'Tap for your record' : 'No results released yet',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const AcademicHistoryScreen(path: Api.myAcademicHistory),
+              )),
             ),
             StatTile(
               label: 'Attendance',
               value: attendanceRate == null
                   ? '—'
                   : '${numOf(attendanceRate).toStringAsFixed(0)}%',
-              caption: attendanceRate == null ? 'Not marked yet' : 'this term',
+              caption: attendanceRate == null ? 'Not marked yet' : 'this term · tap for days',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const MyAttendanceScreen(),
+              )),
             ),
           ]),
           const TodayLessonsCard(showWhenEmpty: true),

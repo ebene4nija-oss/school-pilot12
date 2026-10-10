@@ -250,6 +250,40 @@ class StudentPortalController extends Controller
      * this answers "where is the result of the test I sat last week". A score
      * appears only where the exam shows results to candidates.
      */
+    /**
+     * My attendance, day by day: the history behind the dashboard's rate.
+     * The current term by default, or ?term_id= for an earlier one of mine.
+     */
+    public function attendance(Request $request): JsonResponse
+    {
+        $student = $this->student($request);
+        $request->validate(['term_id' => 'nullable|integer']);
+        $term = $request->filled('term_id')
+            ? \App\Models\Term::where('school_id', $student->school_id)->find($request->integer('term_id'))
+            : CurrentTerm::for($student->school_id);
+
+        $records = $term
+            ? AttendanceRecord::where('student_id', $student->id)->where('term_id', $term->id)->orderByDesc('date')->get(['date', 'status'])
+            : collect();
+        $counts = $records->countBy('status');
+        $marked = $records->count();
+
+        return response()->json([
+            'term' => $term ? ['id' => $term->id, 'name' => $term->name] : null,
+            'summary' => [
+                'marked_days' => $marked,
+                'present' => ($counts['present'] ?? 0) + ($counts['late'] ?? 0),
+                'late' => $counts['late'] ?? 0,
+                'absent' => $counts['absent'] ?? 0,
+                'excused' => $counts['excused'] ?? 0,
+                'rate' => $marked ? round((($counts['present'] ?? 0) + ($counts['late'] ?? 0)) / $marked * 100, 1) : null,
+            ],
+            'days' => $records->map(fn ($r) => ['date' => substr((string) $r->date, 0, 10), 'status' => $r->status])->values(),
+            // Earlier terms to switch to: this school's, newest first.
+            'terms' => \App\Models\Term::where('school_id', $student->school_id)->orderByDesc('start_date')->limit(9)->get(['id', 'name']),
+        ]);
+    }
+
     public function tests(Request $request): JsonResponse
     {
         $student = $this->student($request);

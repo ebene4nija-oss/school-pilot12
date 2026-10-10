@@ -323,6 +323,8 @@ class Api {
   static const myIdCard = '$version/me/id-card';
   // Academic history: own (student), a child's (guardian), any in scope (staff).
   static const myAcademicHistory = '$version/me/academic-history';
+  /// A student's own attendance, day by day (?term_id= for an earlier term).
+  static const myAttendance = '$version/me/attendance';
   static String childAcademicHistory(int studentId) => '$version/parent/children/$studentId/academic-history';
   static String studentAcademicHistory(int studentId) => '$version/students/$studentId/academic-history';
   static const parentIdCards = '$version/parent/id-cards';

@@ -266,4 +266,19 @@ class StudentPortalTest extends TestCase
         $this->assertContains('Two tries', $titles, 'One attempt left: still upcoming.');
         $this->assertContains('Not started', $titles);
     }
+
+    /** The attendance history behind the dashboard rate: mine, newest first. */
+    public function test_my_attendance_lists_my_days_and_the_rate(): void
+    {
+        foreach ([['2026-09-14', 'present'], ['2026-09-15', 'late'], ['2026-09-16', 'absent'], ['2026-09-17', 'present']] as [$date, $status]) {
+            \App\Models\AttendanceRecord::create(['school_id' => $this->school->id, 'term_id' => $this->term->id, 'student_id' => $this->ada->id, 'date' => $date, 'status' => $status]);
+        }
+        \App\Models\AttendanceRecord::create(['school_id' => $this->school->id, 'term_id' => $this->term->id, 'student_id' => $this->bayo->id, 'date' => '2026-09-14', 'status' => 'absent']);
+
+        $res = $this->as($this->ada)->getJson("{$this->host}/me/attendance?term_id={$this->term->id}")->assertOk();
+
+        $this->assertSame(['marked_days' => 4, 'present' => 3, 'late' => 1, 'absent' => 1, 'excused' => 0, 'rate' => 75], $res->json('summary'));
+        $this->assertSame('2026-09-17', $res->json('days.0.date'), 'Newest first.');
+        $this->assertCount(4, $res->json('days'), "Never another student's days.");
+    }
 }

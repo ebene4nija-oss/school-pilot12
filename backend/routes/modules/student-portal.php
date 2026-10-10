@@ -19,6 +19,7 @@ Route::middleware('role:student')->group(function () {
     Route::get('/me/results', [StudentPortalController::class, 'results']);
     Route::get('/me/profile', [StudentPortalController::class, 'profile']);
     Route::get('/me/tests', [StudentPortalController::class, 'tests']);
+    Route::get('/me/attendance', [StudentPortalController::class, 'attendance']);
 });
 
 /*
