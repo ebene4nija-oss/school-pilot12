@@ -27,6 +27,27 @@ final threadsProvider =
   );
 });
 
+/// Who a conversation is with, seen from my side: the parent for the teacher,
+/// the teacher for the parent.
+///
+/// Threads have no `participant` field — they carry `teacher` and `parent`.
+/// Reading the one that does not exist titled every row "Conversation".
+String threadWith(Map<String, dynamic> thread, int? meId) {
+  final iAmTeacher = meId != null && intOf(thread['teacher_id']) == meId;
+  final other = nameOf(iAmTeacher ? thread['parent'] : thread['teacher']);
+  return stringOf(other ?? thread['subject'], 'Conversation');
+}
+
+/// "About Ada Obi · Homework" — the child and subject, when there are any.
+String threadAbout(Map<String, dynamic> thread) {
+  final child = stringOf(nameOf(fieldOf(thread['student'], 'user')));
+  final subject = stringOf(thread['subject']);
+  return [
+    if (child.isNotEmpty) 'About $child',
+    if (subject.isNotEmpty) subject,
+  ].join(' · ');
+}
+
 final threadProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, int>((ref, id) async {
   final api = ref.watch(apiClientProvider);
@@ -40,6 +61,7 @@ class MessagesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threads = ref.watch(threadsProvider);
     final role = ref.watch(currentRoleProvider);
+    final meId = ref.watch(currentUserProvider)?.id;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Messages')),
@@ -72,11 +94,12 @@ class MessagesScreen extends ConsumerWidget {
               for (final thread in list)
                 _ThreadRow(
                   thread: thread,
+                  meId: meId,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => ThreadScreen(
                         threadId: intOf(thread['id']),
-                        title: _title(thread),
+                        title: threadWith(thread, meId),
                       ),
                     ),
                   ),
@@ -104,25 +127,19 @@ class MessagesScreen extends ConsumerWidget {
       ),
     );
   }
-
-  static String _title(Map<String, dynamic> thread) => stringOf(
-        thread['subject'] ??
-            thread['title'] ??
-            nameOf(thread['participant']) ??
-            thread['other_party'],
-        'Conversation',
-      );
 }
 
 class _ThreadRow extends StatelessWidget {
-  const _ThreadRow({required this.thread, required this.onTap});
+  const _ThreadRow({required this.thread, required this.meId, required this.onTap});
 
   final Map<String, dynamic> thread;
+  final int? meId;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final title = MessagesScreen._title(thread);
+    final title = threadWith(thread, meId);
+    final about = threadAbout(thread);
     final unread = intOf(thread['unread_count'] ?? thread['unread']);
     final preview = stringOf(
       fieldOf(thread['last_message'], 'body') ?? thread['latest_message'],
@@ -132,9 +149,14 @@ class _ThreadRow extends StatelessWidget {
       onTap: onTap,
       leading: InitialsAvatar(title),
       title: Text(title, style: AppText.bodyLg),
-      subtitle: preview.isEmpty
+      isThreeLine: about.isNotEmpty && preview.isNotEmpty,
+      subtitle: about.isEmpty && preview.isEmpty
           ? null
-          : Text(preview, maxLines: 1, overflow: TextOverflow.ellipsis),
+          : Text(
+              [if (about.isNotEmpty) about, if (preview.isNotEmpty) preview].join('\n'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -244,8 +266,23 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final thread = ref.watch(threadProvider(widget.threadId));
     final me = ref.watch(currentUserProvider);
 
+    // The thread names both people, so a conversation opened straight after
+    // sending (title not yet known) still says who it is with.
+    final loaded = thread.valueOrNull;
+    final title = loaded == null ? widget.title : threadWith(mapOf(loaded['thread']), me?.id);
+    final about = loaded == null ? '' : threadAbout(mapOf(loaded['thread']));
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title),
+            if (about.isNotEmpty)
+              Text(about, style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Expanded(

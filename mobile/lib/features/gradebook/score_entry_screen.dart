@@ -84,6 +84,16 @@ class _ScoreEntryScreenState extends ConsumerState<ScoreEntryScreen> {
     super.dispose();
   }
 
+  // The broadsheet sends `student_name`; reading only `name` left every row
+  // labelled "Student".
+  static String _nameOf(Map<String, dynamic> student) => stringOf(
+        student['student_name'] ??
+            student['name'] ??
+            student['full_name'] ??
+            nameOf(student['user']),
+        'Student',
+      );
+
   void _hydrate(List<Map<String, dynamic>> students) {
     if (_loaded) return;
     _loaded = true;
@@ -103,15 +113,7 @@ class _ScoreEntryScreenState extends ConsumerState<ScoreEntryScreen> {
       }
 
       _rows[id] = _Row(
-        // The broadsheet sends `student_name`; reading only `name` left every
-        // row labelled "Student".
-        name: stringOf(
-          student['student_name'] ??
-              student['name'] ??
-              student['full_name'] ??
-              nameOf(student['user']),
-          'Student',
-        ),
+        name: _nameOf(student),
         firstCa: mine?['first_ca'],
         secondCa: mine?['second_ca'],
         exam: mine?['exam'],
@@ -204,7 +206,11 @@ class _ScoreEntryScreenState extends ConsumerState<ScoreEntryScreen> {
         value: broadsheet,
         onRetry: () => ref.invalidate(broadsheetProvider(_query)),
         builder: (context, data, meta) {
-          final students = listOf(data, ['students', 'broadsheet', 'rows']);
+          // The broadsheet arrives ranked by average; marking goes down the
+          // register, so alphabetical.
+          // Copied: listOf hands back a const list when there are no rows.
+          final students = [...listOf(data, ['students', 'broadsheet', 'rows'])]
+            ..sort((a, b) => _nameOf(a).toLowerCase().compareTo(_nameOf(b).toLowerCase()));
           if (students.isEmpty) {
             return const EmptyState(
               icon: Icons.groups_outlined,
