@@ -8,6 +8,7 @@ import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/widgets.dart';
+import 'academic_history_screen.dart';
 
 final studentQuickViewProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, id) async {
   final api = ref.watch(apiClientProvider);
@@ -110,6 +111,17 @@ class StudentProfileSheet extends ConsumerWidget {
                   style: AppText.labelSm.copyWith(color: AppColors.late),
                 ),
               ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => AcademicHistoryScreen(
+                  path: Api.studentAcademicHistory(id),
+                  title: name,
+                ),
+              )),
+              icon: const Icon(Icons.history_edu_outlined),
+              label: const Text('Academic history & progress'),
+            ),
             const SizedBox(height: AppSpacing.md),
             // Health data is deliberately not shown here. It is a separate,
             // audited endpoint and is never cached on the device (NDPA, doc §12).

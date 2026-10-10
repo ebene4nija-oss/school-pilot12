@@ -319,6 +319,10 @@ class Api {
 
   // Digital ID cards, where the school issues them
   static const myIdCard = '$version/me/id-card';
+  // Academic history: own (student), a child's (guardian), any in scope (staff).
+  static const myAcademicHistory = '$version/me/academic-history';
+  static String childAcademicHistory(int studentId) => '$version/parent/children/$studentId/academic-history';
+  static String studentAcademicHistory(int studentId) => '$version/students/$studentId/academic-history';
   static const parentIdCards = '$version/parent/id-cards';
 
   // Staff payslips (approved and paid months only)

@@ -113,6 +113,7 @@ const SECTIONS: { heading?: string; items: Item[] }[] = [
       { href: '/student/tests', icon: '💻', label: 'Tests (CBT)', roles: ['student'], module: 'cbt' },
       { href: '/student/results', icon: '📄', label: 'Results & report card', roles: ['student'] },
       { href: '/student/progress', icon: '📈', label: 'My progress', roles: ['student'] },
+      { href: '/student/history', icon: '🎓', label: 'My academic history', roles: ['student'] },
       { href: '/student/tutor', icon: '🤖', label: 'AI tutor', roles: ['student'] },
       { href: '/student/notifications', icon: '🔔', label: 'Notifications', roles: ['student'] },
     ],

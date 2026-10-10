@@ -8,6 +8,9 @@ import '../../core/auth/session.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_service.dart';
 import '../../core/ui/widgets.dart';
+import '../students/academic_history_screen.dart';
+import '../dashboard/dashboard_providers.dart';
+import '../../core/api/endpoints.dart';
 
 /// Everything that did not fit in the tabs.
 class MoreScreen extends ConsumerWidget {
@@ -131,6 +134,28 @@ class MoreScreen extends ConsumerWidget {
               label: 'Library desk',
               detail: 'Lend and take back books by scanning',
               onTap: () => context.push('/library/desk'),
+            ),
+          if (role == UserRole.student || role == UserRole.parent)
+            _Tile(
+              icon: Icons.history_edu_outlined,
+              label: role == UserRole.student ? 'My academic history' : 'Academic history',
+              detail: 'Every term, subject by subject, and progress over time',
+              onTap: () {
+                final childId = ref.read(selectedChildIdProvider);
+                if (role == UserRole.parent && childId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Choose a child on the Child tab first.')),
+                  );
+                  return;
+                }
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => AcademicHistoryScreen(
+                    path: role == UserRole.student
+                        ? Api.myAcademicHistory
+                        : Api.childAcademicHistory(childId!),
+                  ),
+                ));
+              },
             ),
           if (role == UserRole.student || role == UserRole.parent)
             _Tile(
