@@ -117,6 +117,8 @@ class Api {
   static String cbtExamResults(int examId) =>
       '$version/cbt/exams/$examId/results';
   static String cbtAttempt(int id) => '$version/cbt/attempts/$id';
+  /// Admin only: void an attempt (kept for the record) so the student can sit again.
+  static String cbtAttemptReset(int id) => '$version/cbt/attempts/$id/reset';
   static String cbtAnswers(int id) => '$version/cbt/attempts/$id/answers';
   static String cbtSubmit(int id) => '$version/cbt/attempts/$id/submit';
   static String cbtEvents(int id) => '$version/cbt/attempts/$id/events';

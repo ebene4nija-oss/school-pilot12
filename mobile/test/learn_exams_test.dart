@@ -9,6 +9,11 @@ Cached<dynamic> _c(Object data) => Cached<dynamic>(data: data, fetchedAt: DateTi
 
 void main() {
   testWidgets('exams from /cbt/available show resume, attempts and used-up states', (tester) async {
+    // A phone-height screen: Learn now opens with the materials card.
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(ProviderScope(
       overrides: [
         homeworkProvider.overrideWith((ref) async => _c(const <String, dynamic>{})),

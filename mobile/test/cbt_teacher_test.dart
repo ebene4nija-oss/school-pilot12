@@ -5,7 +5,9 @@ import 'package:schoolpilot/features/cbt/teacher/cbt_exam_detail_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_exams_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_results_screen.dart';
 import 'package:schoolpilot/features/cbt/teacher/cbt_teacher_data.dart';
+import 'package:schoolpilot/core/auth/session.dart';
 import 'package:schoolpilot/core/data/reference_data.dart';
+import 'package:schoolpilot/core/providers.dart';
 import 'package:schoolpilot/features/teaching/ai_studio_screen.dart';
 
 Widget _app(Widget home, List<Override> overrides) => ProviderScope(
@@ -112,6 +114,7 @@ void main() {
 
   testWidgets('results put scripts awaiting marks first', (tester) async {
     await tester.pumpWidget(_app(const CbtResultsScreen(examId: 2), [
+      currentRoleProvider.overrideWithValue(UserRole.teacher),
       examResultsProvider(2).overrideWith((ref) async => {
             'summary': {
               'attempts': 2,
@@ -177,5 +180,30 @@ void main() {
 
     expect(find.text('Mathematics'), findsOneWidget);
     expect(save().onPressed, isNotNull);
+  });
+
+  testWidgets('only an admin is offered Reset attempt', (tester) async {
+    final results = examResultsProvider(2).overrideWith((ref) async => {
+          'summary': {'attempts': 1, 'awaiting_marking': 0},
+          'candidates': [
+            {'attempt_id': 1, 'student_name': 'Ada', 'percentage': 80, 'grade': 'A1', 'requires_manual_grading': false},
+          ],
+        });
+
+    await tester.pumpWidget(_app(const CbtResultsScreen(examId: 2), [
+      currentRoleProvider.overrideWithValue(UserRole.teacher),
+      results,
+    ]));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('More'), findsNothing);
+
+    await tester.pumpWidget(_app(const CbtResultsScreen(examId: 2), [
+      currentRoleProvider.overrideWithValue(UserRole.schoolAdmin),
+      results,
+    ]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reset attempt'), findsOneWidget);
   });
 }

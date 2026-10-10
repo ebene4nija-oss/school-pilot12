@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
+import '../../../core/auth/session.dart';
 import '../../../core/data/cached.dart';
 import '../../../core/providers.dart';
 import '../../../core/ui/cached_view.dart';
@@ -107,7 +108,21 @@ class CbtResultsScreen extends ConsumerWidget {
                           : AppColors.onSurfaceVariant,
                     ),
                   ),
-                  trailing: Text(pct(c['percentage']), style: AppText.bodyLg),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(pct(c['percentage']), style: AppText.bodyLg),
+                      // The server lets only a school admin reset.
+                      if (ref.watch(currentRoleProvider) == UserRole.schoolAdmin)
+                        PopupMenuButton<String>(
+                          tooltip: 'More',
+                          onSelected: (_) => _reset(context, ref, c),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'reset', child: Text('Reset attempt')),
+                          ],
+                        ),
+                    ],
+                  ),
                   onTap: () async {
                     await Navigator.of(context).push<void>(
                       MaterialPageRoute(
@@ -125,6 +140,55 @@ class CbtResultsScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+}
+
+/// Voids [candidate]'s attempt so they can sit the paper again. Asks for a
+/// reason (the server requires one and records it); the old attempt and its
+/// answers are kept.
+Future<void> _reset(BuildContext context, WidgetRef ref, Map<String, dynamic> candidate) async {
+  final name = stringOf(candidate['student_name'], 'this student');
+  final reason = TextEditingController();
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text("Reset $name's attempt?"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('They can sit the paper again. This attempt and its answers are kept for the record.'),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: reason,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Reason', hintText: 'e.g. Power went off mid-paper'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Reset')),
+      ],
+    ),
+  );
+  final why = reason.text.trim();
+  reason.dispose();
+  if (ok != true || !context.mounted) return;
+  final messenger = ScaffoldMessenger.of(context);
+  if (why.length < 5) {
+    messenger.showSnackBar(const SnackBar(content: Text('Give a reason of at least a few words.')));
+    return;
+  }
+  try {
+    final res = mapOf(await ref.read(apiClientProvider).post<dynamic>(
+      Api.cbtAttemptReset(intOf(candidate['attempt_id'])),
+      body: {'reason': why},
+    ));
+    messenger.showSnackBar(SnackBar(content: Text(stringOf(res['message'], 'Attempt reset.'))));
+    ref.invalidate(examResultsProvider);
+  } catch (error) {
+    messenger.showSnackBar(SnackBar(content: Text(asApiException(error).message)));
   }
 }
 

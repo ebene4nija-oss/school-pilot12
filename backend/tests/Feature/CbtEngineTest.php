@@ -986,4 +986,33 @@ class CbtEngineTest extends TestCase
             ->getJson("/api/v1/cbt/questions?class_id={$this->class->id}")
             ->json('data'))->pluck('id')->all());
     }
+
+    /** An admin resets a sat paper (with a reason); the student starts afresh. */
+    public function test_an_admin_reset_lets_the_student_sit_the_paper_again()
+    {
+        $admin = User::create(['name' => 'Principal', 'email' => 'principal@graceland.test', 'password' => bcrypt('password')]);
+        UserProfile::create(['school_id' => $this->school->id, 'user_id' => $admin->id, 'role' => 'school_admin']);
+
+        $question = $this->makeQuestion();
+        $exam = $this->makeExam(['max_attempts' => 1]);
+        $this->attach($exam, $question);
+
+        $first = $this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->json('attempt.id');
+        $this->asStudent()->postJson("/api/v1/cbt/attempts/{$first}/submit")->assertOk();
+
+        // Used up: no second sitting.
+        $this->assertNull($this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->json('attempt.id'));
+
+        // A teacher cannot reset; a reason is required.
+        $this->asTeacher()->postJson("/api/v1/cbt/attempts/{$first}/reset", ['reason' => 'Power went off'])->assertForbidden();
+        $this->actingAs($admin, 'sanctum')->postJson("/api/v1/cbt/attempts/{$first}/reset", [])->assertStatus(422);
+
+        $this->actingAs($admin, 'sanctum')->postJson("/api/v1/cbt/attempts/{$first}/reset", ['reason' => 'Power went off mid-paper'])->assertOk();
+
+        $this->assertSame('voided', CbtAttempt::find($first)->status, 'Kept, not deleted.');
+        $second = $this->asStudent()->postJson("/api/v1/cbt/exams/{$exam->id}/start")->assertSuccessful()->json('attempt.id');
+        $this->assertNotNull($second);
+        $this->assertNotEquals($first, $second);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'cbt.attempt_reset', 'auditable_id' => $first]);
+    }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useCookieRole } from '@/components/Sidebar';
 import { errorText, fetchApi } from '@/lib/api';
 import { Badge, Button, Card, Cell, Empty, ErrorNote, Field, Loading, PageShell, StatTile, Table, inputClass } from '@/components/Page';
 
@@ -30,6 +31,8 @@ const STATE: Record<string, { tone: 'green' | 'amber' | 'red' | 'slate' | 'blue'
 };
 
 export default function CbtOversightPage() {
+  // The server allows resets to school admins only; offer it to no one else.
+  const admin = useCookieRole() === 'school_admin';
   const [exams, setExams] = useState<Exam[]>([]);
   const [examId, setExamId] = useState('');
   const [tab, setTab] = useState<Tab>('monitor');
@@ -147,8 +150,14 @@ export default function CbtOversightPage() {
                         <div className="flex flex-wrap gap-2">
                           <Button variant="secondary" disabled={busy} onClick={() => { const m = window.prompt('Add how many minutes?', '10'); if (m) withReason(`/cbt/attempts/${s.attempt_id}/extend`, { minutes: Number(m) }); }}>Extend</Button>
                           <Button variant="secondary" disabled={busy} onClick={() => withReason(`/cbt/attempts/${s.attempt_id}/force-submit`)}>Submit</Button>
-                          <Button variant="danger" disabled={busy} onClick={() => withReason(`/cbt/attempts/${s.attempt_id}/reset`, {}, 'Reset voids this attempt so the student restarts. Reason:')}>Reset</Button>
+                          {admin && <Button variant="danger" disabled={busy} onClick={() => withReason(`/cbt/attempts/${s.attempt_id}/reset`, {}, 'Reset voids this attempt so the student restarts. Reason:')}>Reset</Button>}
                         </div>
+                      )}
+                      {/* A sat paper can be reset too (a power cut, the wrong
+                          student signed in); admin only, with a reason, and
+                          the voided attempt is kept. */}
+                      {admin && s.attempt_id && s.state === 'submitted' && (
+                        <Button variant="danger" disabled={busy} onClick={() => withReason(`/cbt/attempts/${s.attempt_id}/reset`, {}, `Reset ${s.name}'s submitted paper so they can sit it again? Their answers are kept for the record. Reason:`)}>Reset</Button>
                       )}
                     </Cell>
                   </tr>
