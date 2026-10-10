@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -8,7 +14,6 @@ import '../../core/auth/session.dart';
 import '../../core/data/cached.dart';
 import '../../core/data/reference_data.dart';
 import '../../core/providers.dart';
-import '../../core/ui/formatters.dart';
 import '../../core/ui/pickers.dart';
 import '../../core/ui/states.dart';
 import '../../core/ui/widgets.dart';
@@ -40,16 +45,6 @@ final resultSummaryProvider =
   return api.get<Map<String, dynamic>>(Api.resultSummary(studentId, termId));
 });
 
-final fullResultProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
-  final studentId = await ref.watch(resultSubjectIdProvider.future);
-  final termId = ref.watch(selectedTermProvider);
-  if (studentId == null || termId == null) return const {};
-
-  final api = ref.watch(apiClientProvider);
-  return api.get<Map<String, dynamic>>(Api.result(studentId, termId));
-});
-
 /// Results, gated twice.
 ///
 /// First by release: until the school publishes the term for that class,
@@ -78,9 +73,11 @@ class ResultsScreen extends ConsumerWidget {
                       onRetry: () => ref.invalidate(resultSummaryProvider),
                     ),
                     data: (data) {
-                      if (!_isReleased(data)) return const _NotReleased();
+                      if (!_isReleased(data)) {
+                        return _NotReleased(message: stringOf(data['message']));
+                      }
                       if (!_isUnlocked(data)) return const PinGate();
-                      return const _ResultDetail();
+                      return ReportCardView(summary: data);
                     },
                   ),
           ),
@@ -93,6 +90,9 @@ class ResultsScreen extends ConsumerWidget {
   /// as not released — showing an unpublished result to a parent is far worse
   /// than making them wait.
   static bool _isReleased(Map<String, dynamic> data) =>
+      // What /summary sends. The other spellings were read alone before, so
+      // every released result read "not released yet".
+      stringOf(data['status']) == 'released' ||
       data['released'] == true ||
       data['is_released'] == true ||
       stringOf(data['release_status']) == 'released';
@@ -104,16 +104,20 @@ class ResultsScreen extends ConsumerWidget {
 }
 
 class _NotReleased extends StatelessWidget {
-  const _NotReleased();
+  const _NotReleased({this.message = ''});
+
+  /// The server's own reason, e.g. "No scores have been recorded...".
+  final String message;
 
   @override
   Widget build(BuildContext context) {
-    return const EmptyState(
+    return EmptyState(
       icon: Icons.lock_clock,
       title: 'Results not released yet',
-      message:
-          'Your school has not published results for this term. They will '
-          'appear here once marking is complete.',
+      message: message.isNotEmpty
+          ? message
+          : 'Your school has not published results for this term. They will '
+              'appear here once marking is complete.',
     );
   }
 }
@@ -302,70 +306,142 @@ class _PinGateState extends ConsumerState<PinGate> {
   }
 }
 
-class _ResultDetail extends ConsumerWidget {
-  const _ResultDetail();
+/// The report card itself: the school's own design, as a PDF.
+///
+/// Fetched exactly once per opening, because with result PINs every fetch
+/// spends one of the PIN's views. Viewing, saving and sharing all use that one
+/// downloaded file, so "Save" never costs a parent a second view.
+class ReportCardView extends ConsumerStatefulWidget {
+  const ReportCardView({super.key, required this.summary});
+
+  final Map<String, dynamic> summary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(fullResultProvider);
+  ConsumerState<ReportCardView> createState() => _ReportCardViewState();
+}
 
-    return result.when(
-      loading: () => const LoadingState(rows: 4),
-      error: (error, _) => ErrorState(
-        error: asApiException(error),
-        onRetry: () => ref.invalidate(fullResultProvider),
-      ),
-      data: (data) {
-        final map = mapOf(data, ['result', 'data']);
-        final subjects = listOf(map['subjects'] ?? map['scores'], ['subjects']);
-        final total = numOf(map['total'] ?? map['total_score']);
-        final average = numOf(map['average']);
-        final position = intOf(map['position'] ?? map['position_in_class']);
-        final classSize = intOf(map['class_size'] ?? map['out_of']);
+class _ReportCardViewState extends ConsumerState<ReportCardView> {
+  Future<File>? _pdf;
 
-        return ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenMargin),
+  static String _slug(String value) =>
+      value.trim().replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-');
+
+  String get _fileName =>
+      'Report-card-${_slug(stringOf(widget.summary['student_name'], 'student'))}'
+      '-${_slug(stringOf(widget.summary['term_name'], 'term'))}.pdf';
+
+  Future<File> _download() async {
+    final studentId = intOf(widget.summary['student_id']);
+    final termId = intOf(widget.summary['term_id']);
+    final bytes = await ref
+        .read(apiClientProvider)
+        .getBytes('${Api.result(studentId, termId)}?format=pdf');
+    // Kept in the app's documents rather than temp, so a reopen of this screen
+    // in the same session never needs a second (paid) fetch.
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dir.path, _fileName));
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  Future<void> _share(File file) async {
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path, mimeType: 'application/pdf')],
+      subject: 'Report card - ${stringOf(widget.summary['student_name'])}',
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = mapOf(widget.summary['preview']);
+    final access = mapOf(widget.summary['access']);
+    final viewsLeft = access['views_remaining'];
+
+    if (_pdf == null) {
+      return ListView(
+        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        children: [
+          OutlinedCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${stringOf(widget.summary['student_name'])} · '
+                  '${stringOf(widget.summary['term_name'])}',
+                  style: AppText.labelLg,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Metric(
+                        label: 'Average',
+                        value: '${numOf(preview['average']).toStringAsFixed(1)}%',
+                      ),
+                    ),
+                    Expanded(
+                      child: _Metric(
+                        label: 'Subjects',
+                        value: '${intOf(preview['subjects_count'])}',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: () => setState(() => _pdf = _download()),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            label: const Text('Open report card'),
+          ),
+          if (viewsLeft != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Opening uses one view of your PIN ($viewsLeft left). '
+              'Save it once it opens and you can read it again for free.',
+              style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return FutureBuilder<File>(
+      future: _pdf,
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return ErrorState(
+            error: asApiException(snap.error!),
+            onRetry: () => setState(() => _pdf = _download()),
+          );
+        }
+        if (!snap.hasData) return const LoadingState(rows: 4);
+        final file = snap.data!;
+
+        return Column(
           children: [
-            OutlinedCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Overall', style: AppText.labelSm),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _Metric(
-                          label: 'Total',
-                          value: total.toStringAsFixed(0),
-                        ),
-                      ),
-                      Expanded(
-                        child: _Metric(
-                          label: 'Average',
-                          value: '${average.toStringAsFixed(1)}%',
-                        ),
-                      ),
-                      if (position > 0)
-                        Expanded(
-                          child: _Metric(
-                            label: 'Position',
-                            value: Academic.ordinal(position),
-                            caption: classSize > 0 ? 'of $classSize' : null,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
+            Expanded(
+              child: PdfPreview(
+                build: (_) => file.readAsBytes(),
+                pdfFileName: _fileName,
+                canChangePageFormat: false,
+                canChangeOrientation: false,
+                canDebug: false,
+                // Our own Save / Share below; Print stays because Android's
+                // print dialog also offers "Save as PDF".
+                allowSharing: false,
+                allowPrinting: true,
               ),
             ),
-            const SectionHeader('Subjects'),
-            for (final subject in subjects)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _SubjectRow(subject: subject),
+            BottomActionBar(
+              child: FilledButton.icon(
+                onPressed: () => _share(file),
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Save or share PDF'),
               ),
-            const SizedBox(height: AppSpacing.xl),
+            ),
           ],
         );
       },
@@ -374,11 +450,10 @@ class _ResultDetail extends ConsumerWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value, this.caption});
+  const _Metric({required this.label, required this.value});
 
   final String label;
   final String value;
-  final String? caption;
 
   @override
   Widget build(BuildContext context) {
@@ -394,75 +469,7 @@ class _Metric extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         NumericText(value, size: 20, weight: FontWeight.w700),
-        if (caption != null)
-          Text(
-            caption!,
-            style: AppText.labelSm.copyWith(color: AppColors.onSurfaceVariant),
-          ),
       ],
-    );
-  }
-}
-
-class _SubjectRow extends StatelessWidget {
-  const _SubjectRow({required this.subject});
-
-  final Map<String, dynamic> subject;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = numOf(subject['total'] ?? subject['total_score']);
-    final firstCa = numOf(subject['first_ca']);
-    final secondCa = numOf(subject['second_ca']);
-    final exam = numOf(subject['exam']);
-    final grade = stringOf(subject['grade'], Academic.grade(total));
-    final colour = total >= 50
-        ? AppColors.present
-        : total >= 40
-            ? AppColors.late
-            : AppColors.absent;
-
-    return OutlinedCard(
-      statusColor: colour,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  stringOf(
-                    nameOf(subject['subject']) ?? subject['name'],
-                    'Subject',
-                  ),
-                  style: AppText.bodyLg,
-                ),
-              ),
-              StatusChip(grade, color: colour),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'CA ${(firstCa + secondCa).toStringAsFixed(0)}/40 · '
-            'Exam ${exam.toStringAsFixed(0)}/60',
-            style: AppText.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              NumericText(
-                '${total.toStringAsFixed(0)}%',
-                size: 18,
-                weight: FontWeight.w700,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: ProgressBar(value: total / 100, color: colour),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

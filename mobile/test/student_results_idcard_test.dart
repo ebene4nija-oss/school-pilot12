@@ -76,4 +76,35 @@ void main() {
 
     expect(find.text('No card yet'), findsOneWidget);
   });
+
+  Widget results(Map<String, dynamic> summary) => ProviderScope(
+        overrides: [
+          selectedTermProvider.overrideWith((ref) => 3),
+          resultSummaryProvider.overrideWith((ref) async => summary),
+        ],
+        child: const MaterialApp(home: ResultsScreen()),
+      );
+
+  testWidgets('a released result (status: released) offers the report card', (tester) async {
+    await tester.pumpWidget(results({
+      'student_id': 42, 'student_name': 'Ada Obi', 'term_id': 3, 'term_name': 'First Term',
+      'status': 'released', 'unlocked': true, 'pin_required': false,
+      'preview': {'subjects_count': 9, 'average': 71.4},
+    }));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open report card'), findsOneWidget);
+    expect(find.text('71.4%'), findsOneWidget);
+    expect(find.text('Results not released yet'), findsNothing);
+  });
+
+  testWidgets("an unreleased result gives the server's reason", (tester) async {
+    await tester.pumpWidget(results({
+      'status': 'no_scores',
+      'message': 'No scores have been recorded for this student this term. Please contact the school.',
+    }));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('No scores have been recorded'), findsOneWidget);
+  });
 }
