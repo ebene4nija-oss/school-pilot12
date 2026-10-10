@@ -359,4 +359,48 @@ class DashboardTest extends TestCase
         $this->assertEquals(100000.0, $forecast['total_invoiced']);
         $this->assertEquals(100000.0, $forecast['outstanding']);
     }
+
+    /**
+     * The mobile home reads pending_comments, homework_to_grade and
+     * my_classes. None were sent, so both tiles read 0 for every teacher.
+     */
+    public function test_teacher_dashboard_sends_the_counts_the_mobile_home_reads()
+    {
+        $teacher = $this->user('Teacher Five', 'teacher5@riverside.test', 'teacher');
+        DB::table('teacher_subjects')->insert([
+            'school_id' => $this->school->id, 'teacher_id' => $teacher->id,
+            'subject_id' => $this->maths->id, 'class_id' => $this->class->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $ada = $this->student('Ada Pending', 'RS/100');
+        $bayo = $this->student('Bayo Pending', 'RS/101');
+        $this->score($ada, $this->maths, $this->termTwo, 60);
+        $this->score($bayo, $this->maths, $this->termTwo, 70);
+        DB::table('score_entries')->where('subject_id', $this->maths->id)->update(['ai_comment_status' => 'pending_approval']);
+
+        $homework = Homework::create([
+            'school_id' => $this->school->id, 'class_id' => $this->class->id,
+            'subject_id' => $this->maths->id, 'teacher_id' => $teacher->id,
+            'title' => 'Fractions', 'description' => 'x', 'due_date' => now()->addDay(),
+        ]);
+        foreach ([[$ada, 'submitted'], [$bayo, 'graded']] as [$student, $status]) {
+            DB::table('homework_submissions')->insert([
+                'school_id' => $this->school->id, 'homework_id' => $homework->id,
+                'student_id' => $student->id, 'submitted_at' => now(), 'status' => $status,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        $res = $this->actingAs($teacher, 'sanctum')
+            ->getJson('http://riverside.schoolpilot.test/api/v1/analytics/teacher')
+            ->assertOk();
+
+        $this->assertSame(2, $res->json('pending_comments'));
+        $this->assertSame(1, $res->json('homework_to_grade'));
+        $this->assertSame($this->class->name, $res->json('my_classes.0.name'));
+        $this->assertGreaterThanOrEqual(2, $res->json('my_classes.0.student_count'));
+        // The nested figures stay for anything already reading them.
+        $this->assertSame(2, $res->json('marking_progress.pending_reviews'));
+    }
 }

@@ -275,17 +275,6 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
                     label: const Text('Results released · withdraw'),
                   ),
               ],
-              _ShuffleSettings(
-                exam: exam,
-                editable: isDraft && !_busy,
-                onChanged: (field, value) => _run(
-                  () => ref.read(apiClientProvider).put<dynamic>(
-                        Api.cbtExam(widget.examId),
-                        body: {field: value},
-                      ),
-                  'Saved.',
-                ),
-              ),
               SectionHeader(
                 'Questions (${rows.length})',
                 action: isDraft ? 'Add from bank' : null,
@@ -311,6 +300,17 @@ class _CbtExamDetailScreenState extends ConsumerState<CbtExamDetailScreen> {
                       ? () => _remove(intOf(rows[i]['question_id']))
                       : null,
                 ),
+              _ShuffleSettings(
+                exam: exam,
+                editable: isDraft && !_busy,
+                onChanged: (field, value) => _run(
+                  () => ref.read(apiClientProvider).put<dynamic>(
+                        Api.cbtExam(widget.examId),
+                        body: {field: value},
+                      ),
+                  'Saved.',
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
           );

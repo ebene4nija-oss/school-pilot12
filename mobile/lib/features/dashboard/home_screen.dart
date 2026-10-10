@@ -346,8 +346,8 @@ class _TeacherDashboard extends ConsumerWidget {
       title: '$greeting,',
       subtitle: user?.name,
       builder: (data) {
-        final pendingComments =
-            intOf(data['pending_comments'] ?? data['comments_pending']);
+        final pendingComments = intOf(data['pending_comments'] ??
+            fieldOf(data['marking_progress'], 'pending_reviews'));
         final toGrade = intOf(data['ungraded'] ?? data['homework_to_grade']);
         final classes = listOf(data['classes'] ?? data['my_classes']);
 

@@ -113,6 +113,10 @@ class TeacherSafeguardsTest extends TestCase
 
     public function test_gps_clock_in_is_for_yourself_only(): void
     {
+        // Before the 07:30 resume time, so the clock-in is on time ("present")
+        // whenever the suite runs; after it, the same clock-in is "late".
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-07 07:15', 'Africa/Lagos'));
+
         $mine = Staff::create(['school_id' => $this->school->id, 'user_id' => $this->teacher->id, 'staff_id' => 'T-001']);
         $colleague = Staff::create(['school_id' => $this->school->id, 'user_id' => $this->stranger->id, 'staff_id' => 'T-002']);
         $atGate = ['term_id' => $this->term->id, 'latitude' => 6.5245, 'longitude' => 3.3793];

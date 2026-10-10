@@ -266,8 +266,39 @@ class AnalyticsController extends Controller
             ->whereNull('messages.read_at')
             ->count();
 
+        // Homework handed in to this teacher and not yet marked.
+        $homeworkToGrade = DB::table('homework_submissions as hs')
+            ->join('homework as h', 'h.id', '=', 'hs.homework_id')
+            ->where('hs.school_id', $schoolId)
+            ->where('h.teacher_id', $teacherId)
+            ->whereNotNull('hs.submitted_at')
+            ->where('hs.status', 'submitted')
+            ->count();
+
+        $myClasses = DB::table('classes')
+            ->where('school_id', $schoolId)
+            ->whereIn('id', $myClassIds->all() ?: [0])
+            ->orderBy('order_index')->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($c) => [
+                'id' => (int) $c->id,
+                'name' => $c->name,
+                'student_count' => DB::table('students')->where('school_id', $schoolId)
+                    ->where('class_id', $c->id)->where('status', 'active')->whereNull('deleted_at')->count(),
+            ]);
+
         return response()->json([
             'role' => 'teacher',
+            /*
+             * The keys the mobile home reads. It looked for `pending_comments`,
+             * `homework_to_grade` and `my_classes` and found none of them, so
+             * two tiles read 0 and "My classes" never showed. Added flat, beside
+             * everything already here, so installed apps pick them up without
+             * an update and nothing that reads `marking_progress` changes.
+             */
+            'pending_comments' => $pendingComments,
+            'homework_to_grade' => $homeworkToGrade,
+            'my_classes' => $myClasses,
             'my_subjects' => Subject::whereIn('id', $mySubjectIds)->pluck('name'),
             'my_class_count' => $myClassIds->count(),
             'todays_classes' => $todaysClasses,

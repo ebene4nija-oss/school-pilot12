@@ -24,8 +24,8 @@ double _contrast(Color a, Color b) {
 
 void main() {
   PackageInfo.setMockInitialValues(
-    appName: 'SchoolPilot', packageName: 'ng.schoolpilot', version: '1.2.2',
-    buildNumber: '5', buildSignature: '',
+    appName: 'SchoolPilot', packageName: 'ng.schoolpilot', version: '1.2.3',
+    buildNumber: '6', buildSignature: '',
   );
 
   for (final role in UserRole.values) {
