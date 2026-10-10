@@ -81,14 +81,14 @@ class GradebookTab extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   Text('Enter scores', style: AppText.headlineSm),
                   const SizedBox(height: AppSpacing.sm),
-                  if (list.isEmpty)
+                  if (subjectsForClass(list, classId).isEmpty)
                     Text(
                       'You have no subjects assigned yet. Your administrator '
                       'assigns these from the web portal.',
                       style: AppText.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
                     ),
-                  for (final subject in list)
+                  for (final subject in subjectsForClass(list, classId))
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: OutlinedCard(
@@ -103,8 +103,7 @@ class GradebookTab extends ConsumerWidget {
                                             fieldOf(subject['subject'], 'id'),
                                       ),
                                       subjectName: stringOf(
-                                        subject['name'] ??
-                                            nameOf(subject['subject']),
+                                        subjectNameOf(subject),
                                         'Subject',
                                       ),
                                       classId: classId,
@@ -118,12 +117,22 @@ class GradebookTab extends ConsumerWidget {
                                 color: AppColors.primaryContainer),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
-                              child: Text(
-                                stringOf(
-                                  subject['name'] ?? nameOf(subject['subject']),
-                                  'Subject',
-                                ),
-                                style: AppText.bodyLg,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    stringOf(subjectNameOf(subject), 'Subject'),
+                                    style: AppText.bodyLg,
+                                  ),
+                                  if (classId == null &&
+                                      stringOf(subject['class_name']).isNotEmpty)
+                                    Text(
+                                      stringOf(subject['class_name']),
+                                      style: AppText.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             // A CA filled from homework and quizzes, which
@@ -143,8 +152,7 @@ class GradebookTab extends ConsumerWidget {
                                                   fieldOf(subject['subject'], 'id'),
                                             ),
                                             subjectName: stringOf(
-                                              subject['name'] ??
-                                                  nameOf(subject['subject']),
+                                              subjectNameOf(subject),
                                               'Subject',
                                             ),
                                             classId: classId,
@@ -167,4 +175,28 @@ class GradebookTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The subject's name. `/teachers/{id}/subjects` sends `subject_name`;
+/// reading only `name` labelled every row "Subject".
+Object? subjectNameOf(Map<String, dynamic> row) =>
+    row['subject_name'] ?? row['name'] ?? nameOf(row['subject']);
+
+/// What this teacher teaches in [classId], one row per subject.
+///
+/// The server sends one row per subject *and class*, so a teacher with Maths
+/// in JSS 1 and JSS 2 saw Maths twice whichever class was chosen. A row with
+/// no class (a subject taught school-wide) applies to every class.
+List<Map<String, dynamic>> subjectsForClass(
+  List<Map<String, dynamic>> rows,
+  int? classId,
+) {
+  if (classId == null) return rows;
+  final seen = <int>{};
+  return [
+    for (final r in rows)
+      if ((r['class_id'] == null || intOf(r['class_id']) == classId) &&
+          seen.add(intOf(r['subject_id'] ?? r['id'] ?? fieldOf(r['subject'], 'id'))))
+        r,
+  ];
 }
