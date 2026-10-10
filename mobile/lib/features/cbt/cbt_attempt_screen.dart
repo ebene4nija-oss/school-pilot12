@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/api/endpoints.dart';
+import '../../core/data/cached.dart';
 import '../../core/providers.dart';
 import '../../core/ui/formatters.dart';
 import '../../core/ui/states.dart';
@@ -14,6 +15,7 @@ import '../../core/ui/widgets.dart';
 import 'cbt_answer_buffer.dart';
 import 'cbt_answer_widgets.dart';
 import 'cbt_paper.dart';
+import 'cbt_submitted_screen.dart';
 import 'question_content.dart';
 
 final answerBufferProvider = Provider<CbtAnswerBuffer>(
@@ -234,8 +236,9 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
       // Everything still on the device goes up with the submit, through the
       // offline-sync route that understands client sequencing.
       final pending = await buffer.unsyncedPayload(widget.attemptId);
+      final Object? res;
       if (pending.isNotEmpty) {
-        await api.post<dynamic>(
+        res = await api.post<dynamic>(
           Api.cbtOfflineSync,
           body: {
             'attempt_id': widget.attemptId,
@@ -244,12 +247,23 @@ class _CbtAttemptScreenState extends ConsumerState<CbtAttemptScreen>
           },
         );
       } else {
-        await api.post<dynamic>(Api.cbtSubmit(widget.attemptId));
+        res = await api.post<dynamic>(Api.cbtSubmit(widget.attemptId));
       }
 
       await buffer.clear(widget.attemptId);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      // The paper gives way to a calm "it's in" screen; the caller still
+      // hears `true` so it refreshes the list of tests.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => CbtSubmittedScreen(
+            answered: _questions.length - _unansweredCount,
+            total: _questions.length,
+            result: mapOf(mapOf(res)['result']),
+          ),
+        ),
+        result: true,
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);

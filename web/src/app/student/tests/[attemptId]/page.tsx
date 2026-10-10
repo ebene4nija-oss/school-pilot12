@@ -353,11 +353,34 @@ export default function SitPaper() {
 
   // ---- render ----------------------------------------------------------
   if (phase === 'done' && result) {
+    // Calm on purpose: the first thing after a test says "it is safe, you are
+    // done", then the facts, then the score if the school releases it now.
+    const total = paper?.questions.length ?? 0;
+    const answered = paper ? paper.questions.filter((q) => isAnswered(responses[q.question_id])).length : 0;
     return (
-      <main className="mx-auto min-h-screen max-w-3xl bg-canvas p-6 text-ink">
-        <h1 className="mb-4 font-headline text-2xl font-bold text-brand">Paper submitted</h1>
-        <CbtResult data={result} />
-        <Link href="/student/tests" className="mt-4 inline-block text-sm text-brand underline">Back to my tests</Link>
+      <main className="min-h-screen bg-canvas px-4 py-10 text-ink sm:py-16">
+        <div className="mx-auto max-w-xl">
+          <div className="sp-settle text-center">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-positive-soft">
+              <svg viewBox="0 0 24 24" className="h-12 w-12 text-positive" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            </div>
+            <h1 className="mt-6 font-headline text-3xl font-bold text-brand">Paper submitted</h1>
+            <p className="mt-2 text-ink-muted">Well done. Your answers are safely in — take a breath.</p>
+            {paper?.exam.title && <p className="mt-1 text-sm font-medium text-ink-muted">{paper.exam.title}</p>}
+          </div>
+          {paper && (
+            <dl className="mt-8 divide-y divide-line-soft rounded-xl bg-surface px-5 shadow-sm ring-1 ring-line-soft">
+              <div className="flex justify-between py-3 text-sm"><dt className="text-ink-muted">Questions answered</dt><dd className="font-semibold">{answered} of {total}</dd></div>
+              <div className="flex justify-between py-3 text-sm"><dt className="text-ink-muted">Submitted</dt><dd className="font-semibold">{new Date().toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd></div>
+            </dl>
+          )}
+          <div className="mt-6">
+            <CbtResult data={result} />
+          </div>
+          <div className="mt-8 text-center">
+            <Link href="/student/tests" className="inline-block rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-soft">Done</Link>
+          </div>
+        </div>
       </main>
     );
   }

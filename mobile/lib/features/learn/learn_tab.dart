@@ -222,9 +222,7 @@ class _ExamStartCardState extends ConsumerState<ExamStartCard> {
       if ((submitted ?? false) && mounted) {
         ref.invalidate(availableExamsProvider);
         widget.onSubmitted?.call();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Paper submitted')),
-        );
+        // The submitted screen has already said so, calmly.
       }
     } catch (error) {
       if (!mounted) return;

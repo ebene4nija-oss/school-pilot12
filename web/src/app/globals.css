@@ -127,3 +127,8 @@
 .sp-article .tableWrapper { overflow-x: auto; }
 .sp-editor .ProseMirror { min-height: 26rem; outline: none; }
 .sp-editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--color-ink-faint); float: left; height: 0; pointer-events: none; }
+
+/* A gentle arrival for calm confirmation screens (CBT "Paper submitted"). */
+@keyframes sp-settle { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: none; } }
+.sp-settle { animation: sp-settle 0.7s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .sp-settle { animation: none; } }
